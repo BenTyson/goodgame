@@ -26,8 +26,12 @@ src/app/
 │       ├── score-sheet/page.tsx
 │       ├── setup/page.tsx
 │       └── reference/page.tsx
-├── categories/[slug]/page.tsx
-├── collections/[slug]/page.tsx
+├── categories/
+│   ├── page.tsx              # Categories listing
+│   └── [slug]/page.tsx       # Category detail
+├── collections/
+│   ├── page.tsx              # Collections listing
+│   └── [slug]/page.tsx       # Collection detail
 ├── score-sheets/page.tsx
 └── rules/page.tsx
 ```
@@ -46,10 +50,19 @@ src/components/
 ### Data & Config
 ```
 src/lib/supabase/              # Database clients
-src/types/database.ts          # TypeScript types (includes GameImage)
-src/data/mock-games.ts         # Mock data with images
+src/types/database.ts          # TypeScript types (Game, Category, Collection, GameImage)
+src/data/mock-games.ts         # Mock data: games, categories, collections, images
 supabase/migrations/           # Database schema (3 files)
 next.config.ts                 # Remote image patterns (cf.geekdo-images.com)
+```
+
+### Helper Functions (in mock-games.ts)
+```typescript
+getGameImages(gameSlug)        // Get images for a game
+getGameCoverImage(gameSlug)    // Get primary cover image
+getCollectionGames(collSlug)   // Get games in a collection
+getGameCollections(gameSlug)   // Get collections containing a game
+getRelatedGames(gameSlug, limit)  // Get related games by category/complexity/player count
 ```
 
 ## Naming Conventions

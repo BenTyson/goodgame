@@ -8,6 +8,7 @@ import { Gamepad2, Menu, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { SearchDialog } from '@/components/search'
 
 const navigation = [
   { name: 'Games', href: '/games' },
@@ -20,6 +21,20 @@ const navigation = [
 export function Header() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = React.useState(false)
+  const [searchOpen, setSearchOpen] = React.useState(false)
+
+  // Cmd+K keyboard shortcut
+  React.useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setSearchOpen((open) => !open)
+      }
+    }
+
+    document.addEventListener('keydown', down)
+    return () => document.removeEventListener('keydown', down)
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -63,15 +78,23 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
-          {/* Search button (will trigger command palette) */}
+          {/* Search button */}
           <Button
             variant="ghost"
-            size="icon"
-            className="h-9 w-9"
+            size="sm"
+            className="h-9 gap-2 text-muted-foreground"
+            onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
             <Search className="h-4 w-4" />
+            <span className="hidden sm:inline-flex">Search</span>
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <span className="text-xs">⌘</span>K
+            </kbd>
           </Button>
+
+          {/* Search Dialog */}
+          <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
           {/* Mobile menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>

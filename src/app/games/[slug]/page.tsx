@@ -19,8 +19,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ImageGallery } from '@/components/games'
-import { mockGames, getGameImages } from '@/data/mock-games'
+import { ImageGallery, RelatedGames } from '@/components/games'
+import { mockGames, getGameImages, getRelatedGames } from '@/data/mock-games'
 
 interface GamePageProps {
   params: Promise<{ slug: string }>
@@ -321,6 +321,20 @@ export default async function GamePage({ params }: GamePageProps) {
           </div>
         </>
       )}
+
+      {/* Related games */}
+      {(() => {
+        const relatedGames = getRelatedGames(game.slug)
+        if (relatedGames.length > 0) {
+          return (
+            <>
+              <Separator className="my-10" />
+              <RelatedGames games={relatedGames} />
+            </>
+          )
+        }
+        return null
+      })()}
     </div>
   )
 }

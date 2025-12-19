@@ -1,5 +1,5 @@
 // Mock data for development until Supabase is connected
-import type { Game, Category, GameImage } from '@/types/database'
+import type { Game, Category, GameImage, Collection } from '@/types/database'
 
 export const mockCategories: Category[] = [
   {
@@ -559,3 +559,179 @@ export function getGameCoverImage(gameSlug: string): GameImage | undefined {
   const images = getGameImages(gameSlug)
   return images.find((img) => img.image_type === 'cover' && img.is_primary) || images[0]
 }
+
+// Collections data
+type CollectionWithGameSlugs = Collection & {
+  gameSlugs: string[]
+}
+
+export const mockCollections: CollectionWithGameSlugs[] = [
+  {
+    id: 'c1',
+    slug: 'gateway-games',
+    name: 'Gateway Games',
+    description:
+      'Perfect games for introducing new players to the hobby. These titles feature approachable rules, reasonable play times, and engaging gameplay that hooks people on modern board games.',
+    short_description: 'Perfect for introducing new players to board games',
+    hero_image_url: null,
+    display_order: 1,
+    is_featured: true,
+    is_published: true,
+    meta_title: 'Gateway Board Games - Best Games for Beginners',
+    meta_description:
+      'Discover the best gateway board games perfect for introducing new players to the hobby. Easy to learn, fun to play.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    gameSlugs: ['catan', 'ticket-to-ride', 'azul', 'codenames'],
+  },
+  {
+    id: 'c2',
+    slug: 'under-30-minutes',
+    name: 'Quick Games',
+    description:
+      'Games that play in 30 minutes or less. Perfect for lunch breaks, warm-up games, or when you want fast-paced fun without a lengthy time commitment.',
+    short_description: 'Games that play in 30 minutes or less',
+    hero_image_url: null,
+    display_order: 2,
+    is_featured: true,
+    is_published: true,
+    meta_title: 'Quick Board Games Under 30 Minutes',
+    meta_description:
+      'Find board games that play in 30 minutes or less. Perfect for quick gaming sessions.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    gameSlugs: ['azul', 'codenames'],
+  },
+  {
+    id: 'c3',
+    slug: 'best-at-2-players',
+    name: 'Best at Two Players',
+    description:
+      'Games that shine with exactly two players. Whether you\'re looking for head-to-head competition or cooperative adventures, these games are ideal for couples, friends, or parent-child game nights.',
+    short_description: 'Games that shine with exactly two players',
+    hero_image_url: null,
+    display_order: 3,
+    is_featured: true,
+    is_published: true,
+    meta_title: 'Best 2 Player Board Games',
+    meta_description:
+      'Discover the best board games for two players. Perfect for couples and head-to-head gaming.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    gameSlugs: ['azul', 'ticket-to-ride'],
+  },
+  {
+    id: 'c4',
+    slug: 'engine-builders',
+    name: 'Engine Builders',
+    description:
+      'Games where you build up systems that generate resources, actions, or points over time. The satisfaction of watching your engine come together is what makes these games so rewarding.',
+    short_description: 'Build systems that generate resources and points',
+    hero_image_url: null,
+    display_order: 4,
+    is_featured: false,
+    is_published: true,
+    meta_title: 'Best Engine Building Board Games',
+    meta_description:
+      'Explore the best engine building board games where you create powerful combos and systems.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    gameSlugs: ['wingspan', 'terraforming-mars'],
+  },
+  {
+    id: 'c5',
+    slug: 'heavy-strategy',
+    name: 'Heavy Strategy',
+    description:
+      'Complex games for experienced players who want deep strategic decisions. These games reward planning, adaptation, and mastery over multiple plays.',
+    short_description: 'Complex games for experienced players',
+    hero_image_url: null,
+    display_order: 5,
+    is_featured: false,
+    is_published: true,
+    meta_title: 'Heavy Strategy Board Games',
+    meta_description:
+      'Find complex strategy board games for experienced players seeking deep gameplay.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    gameSlugs: ['terraforming-mars'],
+  },
+]
+
+// Helper to get games in a collection
+export function getCollectionGames(collectionSlug: string): GameWithCategories[] {
+  const collection = mockCollections.find((c) => c.slug === collectionSlug)
+  if (!collection) return []
+  return collection.gameSlugs
+    .map((slug) => mockGames.find((g) => g.slug === slug))
+    .filter((g): g is GameWithCategories => g !== undefined)
+}
+
+// Helper to get collections for a game
+export function getGameCollections(gameSlug: string): Collection[] {
+  return mockCollections.filter((c) => c.gameSlugs.includes(gameSlug))
+}
+
+// Helper to get related games based on category, player count, and complexity
+export function getRelatedGames(
+  gameSlug: string,
+  limit: number = 4
+): GameWithCategories[] {
+  const currentGame = mockGames.find((g) => g.slug === gameSlug)
+  if (!currentGame) return []
+
+  const currentCategories = currentGame.categories?.map((c) => c.slug) || []
+
+  // Score each game based on similarity
+  const scoredGames = mockGames
+    .filter((g) => g.slug !== gameSlug && g.is_published)
+    .map((game) => {
+      let score = 0
+
+      // Category overlap (most important)
+      const gameCategories = game.categories?.map((c) => c.slug) || []
+      const categoryOverlap = currentCategories.filter((c) =>
+        gameCategories.includes(c)
+      ).length
+      score += categoryOverlap * 3
+
+      // Similar player count range
+      const playerOverlap =
+        Math.min(currentGame.player_count_max, game.player_count_max) -
+        Math.max(currentGame.player_count_min, game.player_count_min)
+      if (playerOverlap >= 0) {
+        score += 2
+      }
+
+      // Similar complexity (within 1.0 weight)
+      if (currentGame.weight && game.weight) {
+        const weightDiff = Math.abs(currentGame.weight - game.weight)
+        if (weightDiff <= 0.5) {
+          score += 2
+        } else if (weightDiff <= 1.0) {
+          score += 1
+        }
+      }
+
+      // Similar play time (within 30 min)
+      if (currentGame.play_time_min && game.play_time_min) {
+        const timeDiff = Math.abs(currentGame.play_time_min - game.play_time_min)
+        if (timeDiff <= 15) {
+          score += 1
+        } else if (timeDiff <= 30) {
+          score += 0.5
+        }
+      }
+
+      return { game, score }
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((item) => item.game)
+
+  return scoredGames
+}
+
+// Type export for use in pages
+export type { GameWithCategories }

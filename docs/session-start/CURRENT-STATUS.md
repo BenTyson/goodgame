@@ -2,7 +2,7 @@
 
 > Last Updated: 2025-12-18
 
-## Phase: 2 - Game Content System (Complete)
+## Phase: 3 - Discovery Features (In Progress)
 
 ### Completed
 - [x] Next.js 14 project initialized with App Router
@@ -36,25 +36,29 @@
 - [x] **Game images feature: ImageGallery component with lightbox**
 - [x] **BoardGameGeek images configured in Next.js (cf.geekdo-images.com)**
 - [x] **Mock data updated with real BGG image URLs for all 6 games**
+- [x] **Collections listing page (`/collections`)**
+- [x] **Collection detail pages (`/collections/[slug]`) - 5 curated collections**
+- [x] **Mock collections data with helper functions**
 
 ### In Progress
-- [ ] Connect Supabase (waiting for credentials)
-- [ ] Run database migrations
+- [ ] Supabase connection (blocked on credentials)
+
+### Recently Completed
+- [x] **Related games component** - RelatedGames component, getRelatedGames helper, similarity scoring
+- [x] **Search with Cmd+K dialog** - SearchDialog component, keyboard shortcut, search games/categories/collections
 
 ### Blocked
 - **Supabase credentials needed** - User needs to create Supabase project and add credentials to `.env.local`
 
-### Next Up (Phase 3: Discovery Features)
-1. Get Supabase credentials and add to `.env.local`
-2. Run migrations in Supabase dashboard (or via CLI)
-3. Collections pages (`/collections/[slug]`)
-4. Search functionality with Cmd+K dialog
-5. Related games component
+### Next Up
+1. Get Supabase credentials and connect database
+2. SEO & monetization features (meta tags, JSON-LD, AdSense)
 
 ## Build Stats
-- **42+ static pages generated**
+- **50+ static pages generated**
 - **6 games** with full content (Rules, Setup, Reference, Score Sheets)
 - **5 categories** browsable
+- **5 collections** curated (Gateway Games, Quick Games, Best at 2, Engine Builders, Heavy Strategy)
 - **All 4 content types** implemented (Rules, Score Sheets, Setup, Reference)
 - **Image galleries** with real BoardGameGeek photos
 
@@ -80,6 +84,8 @@
 /games/[slug]/reference     Quick reference card (printable)
 /categories                 Category listing
 /categories/[slug]          Games by category
+/collections                Collections listing
+/collections/[slug]         Games in collection
 /score-sheets               Browse all score sheets
 /rules                      Browse all rules
 ```
@@ -96,20 +102,23 @@
 - `src/app/games/[slug]/reference/page.tsx` - Quick reference (all 6 games)
 - `src/app/categories/page.tsx` - Categories listing
 - `src/app/categories/[slug]/page.tsx` - Category detail
+- `src/app/collections/page.tsx` - Collections listing
+- `src/app/collections/[slug]/page.tsx` - Collection detail
 - `src/app/score-sheets/page.tsx` - Score sheets browse
 - `src/app/rules/page.tsx` - Rules browse
 
 ### Components
 - `src/components/layout/` - Header, Footer, ThemeProvider
-- `src/components/games/` - GameCard, GameGrid, GameFilters, **ImageGallery**
+- `src/components/games/` - GameCard, GameGrid, GameFilters, ImageGallery, **RelatedGames**
 - `src/components/score-sheet/` - ScoreSheetGenerator (with jsPDF integration)
 - `src/components/setup/` - SetupChecklist (interactive)
+- `src/components/search/` - SearchDialog (Cmd+K)
 - `src/components/ui/print-button.tsx` - Print button component
 
 ### Data & Config
 - `src/lib/supabase/` - client.ts, server.ts
-- `src/types/database.ts` - Full TypeScript types (includes GameImage)
-- `src/data/mock-games.ts` - Mock data with images array and BGG URLs
+- `src/types/database.ts` - Full TypeScript types (includes GameImage, Collection)
+- `src/data/mock-games.ts` - Mock data with games, categories, collections, images
 - `supabase/migrations/00001_initial_schema.sql` - Complete database schema
 - `supabase/migrations/00002_seed_data.sql` - All 10 pilot games + categories + mechanics
 - `supabase/migrations/00003_game_images.sql` - Game images table
@@ -140,8 +149,7 @@ npm run lint    # ESLint (currently passing with 0 errors)
    ```
 3. Run SQL from `supabase/migrations/` files in the SQL editor (run in order: 00001, 00002, 00003)
 
-### Priority 2: Discovery Features
-- Collections pages (`/collections/[slug]`)
+### Priority 2: Remaining Discovery Features
 - Search with Cmd+K dialog
 - Related games component
 
