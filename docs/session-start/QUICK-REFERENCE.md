@@ -65,6 +65,17 @@ getGameCollections(gameSlug)   // Get collections containing a game
 getRelatedGames(gameSlug, limit)  // Get related games by category/complexity/player count
 ```
 
+### SEO Components (in src/lib/seo/)
+```typescript
+GameJsonLd          // Game schema for game hub pages
+HowToJsonLd         // HowTo schema for rules pages
+ItemListJsonLd      // ItemList for game listings
+CollectionJsonLd    // Collection schema for collections
+BreadcrumbJsonLd    // Breadcrumb navigation schema
+OrganizationJsonLd  // Site-wide organization info
+WebSiteJsonLd       // Site-wide website info with search
+```
+
 ## Naming Conventions
 
 | Type | Convention | Example |

@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ImageGallery, RelatedGames } from '@/components/games'
 import { mockGames, getGameImages, getRelatedGames } from '@/data/mock-games'
+import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface GamePageProps {
   params: Promise<{ slug: string }>
@@ -95,9 +96,18 @@ export default async function GamePage({ params }: GamePageProps) {
     (section) => game[section.key as keyof typeof game]
   )
 
+  const breadcrumbs = [
+    { name: 'Home', href: '/' },
+    { name: 'Games', href: '/games' },
+    { name: game.name, href: `/games/${game.slug}` },
+  ]
+
   return (
-    <div className="container py-8 md:py-12">
-      {/* Breadcrumb */}
+    <>
+      <GameJsonLd game={game} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <div className="container py-8 md:py-12">
+        {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link href="/games" className="hover:text-foreground">
           Games
@@ -335,6 +345,7 @@ export default async function GamePage({ params }: GamePageProps) {
         }
         return null
       })()}
-    </div>
+      </div>
+    </>
   )
 }

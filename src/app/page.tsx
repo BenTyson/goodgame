@@ -62,8 +62,8 @@ export default function HomePage() {
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/5 via-background to-background">
         {/* Animated background decoration */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-1/3 left-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute top-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-amber-500/8 blur-3xl" />
+          <div className="absolute -top-1/3 left-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute top-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-amber-500/8 blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
         </div>
 
         <div className="container py-20 md:py-32">
@@ -121,11 +121,10 @@ export default function HomePage() {
           {contentTypes.map((type) => (
             <Link key={type.title} href={type.href} className="group">
               <Card
-                className="h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30"
-                interactive
+                className="h-full [box-shadow:var(--shadow-card)] hover:[box-shadow:var(--shadow-card-hover)] transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/30"
               >
                 <CardHeader>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-transform duration-300 group-hover:scale-110">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:[box-shadow:var(--shadow-glow-primary)]">
                     <type.icon className="h-7 w-7 text-primary" />
                   </div>
                   <CardTitle className="mt-4 text-lg">{type.title}</CardTitle>
@@ -188,9 +187,9 @@ export default function HomePage() {
             const Icon = categoryIcons[category.slug] || Brain
             return (
               <Link key={category.slug} href={`/categories/${category.slug}`} className="group">
-                <Card className="h-full transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1">
+                <Card className="h-full [box-shadow:var(--shadow-sm)] hover:[box-shadow:var(--shadow-card-hover)] transition-all duration-300 hover:border-primary/30 hover:-translate-y-1.5">
                   <CardContent className="flex flex-col items-center p-6 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-transform duration-300 group-hover:scale-110">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:[box-shadow:var(--shadow-glow-primary)]">
                       <Icon className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="mt-4 font-semibold text-lg">{category.name}</h3>

@@ -5,6 +5,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -69,6 +70,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
+      </head>
       <body
         className={`${inter.variable} ${outfit.variable} font-sans antialiased`}
       >

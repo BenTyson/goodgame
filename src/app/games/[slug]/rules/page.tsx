@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { mockGames } from '@/data/mock-games'
+import { HowToJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface RulesPageProps {
   params: Promise<{ slug: string }>
@@ -367,9 +368,29 @@ export default async function RulesPage({ params }: RulesPageProps) {
 
   const content = rulesContent[game.slug] || defaultRulesContent
 
+  const breadcrumbs = [
+    { name: 'Home', href: '/' },
+    { name: 'Games', href: '/games' },
+    { name: game.name, href: `/games/${game.slug}` },
+    { name: 'Rules', href: `/games/${game.slug}/rules` },
+  ]
+
+  // Generate HowTo steps from content
+  const howToSteps = [
+    { name: 'Setup', text: content.setup.join(' ') },
+    ...content.turnStructure.map((step) => ({
+      name: step.title,
+      text: step.description,
+    })),
+    { name: 'Scoring', text: content.scoring.map((s) => `${s.category}: ${s.points}`).join('. ') },
+  ]
+
   return (
-    <div className="container py-8 md:py-12">
-      {/* Breadcrumb & Back */}
+    <>
+      <HowToJsonLd game={game} steps={howToSteps} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <div className="container py-8 md:py-12">
+        {/* Breadcrumb & Back */}
       <div className="mb-6 flex items-center justify-between">
         <nav className="text-sm text-muted-foreground">
           <Link href="/games" className="hover:text-foreground">
@@ -611,6 +632,7 @@ export default async function RulesPage({ params }: RulesPageProps) {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

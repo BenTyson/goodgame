@@ -44,6 +44,7 @@
 - [ ] Supabase connection (blocked on credentials)
 
 ### Recently Completed
+- [x] **SEO features** - JSON-LD structured data, dynamic sitemap, robots.txt
 - [x] **Related games component** - RelatedGames component, getRelatedGames helper, similarity scoring
 - [x] **Search with Cmd+K dialog** - SearchDialog component, keyboard shortcut, search games/categories/collections
 
@@ -52,7 +53,7 @@
 
 ### Next Up
 1. Get Supabase credentials and connect database
-2. SEO & monetization features (meta tags, JSON-LD, AdSense)
+2. AdSense integration (monetization)
 
 ## Build Stats
 - **50+ static pages generated**
@@ -117,8 +118,11 @@
 
 ### Data & Config
 - `src/lib/supabase/` - client.ts, server.ts
+- `src/lib/seo/` - JSON-LD structured data components
 - `src/types/database.ts` - Full TypeScript types (includes GameImage, Collection)
 - `src/data/mock-games.ts` - Mock data with games, categories, collections, images
+- `src/app/sitemap.ts` - Dynamic sitemap generation
+- `src/app/robots.ts` - Robots.txt configuration
 - `supabase/migrations/00001_initial_schema.sql` - Complete database schema
 - `supabase/migrations/00002_seed_data.sql` - All 10 pilot games + categories + mechanics
 - `supabase/migrations/00003_game_images.sql` - Game images table
@@ -149,12 +153,6 @@ npm run lint    # ESLint (currently passing with 0 errors)
    ```
 3. Run SQL from `supabase/migrations/` files in the SQL editor (run in order: 00001, 00002, 00003)
 
-### Priority 2: Remaining Discovery Features
-- Search with Cmd+K dialog
-- Related games component
-
-### Priority 3: SEO & Monetization
-- Meta tags on all pages
-- JSON-LD structured data
+### Priority 2: Monetization
 - AdSense integration
 - Affiliate link tracking

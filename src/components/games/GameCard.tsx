@@ -45,8 +45,9 @@ export function GameCard({
       className={cn(
         'group overflow-hidden cursor-pointer',
         'transition-all duration-300',
-        'shadow-sm hover:shadow-xl',
-        'hover:-translate-y-1 hover:border-primary/30',
+        '[box-shadow:var(--shadow-card)] hover:[box-shadow:var(--shadow-card-hover)]',
+        'hover:-translate-y-1.5 hover:border-primary/30',
+        'active:translate-y-0 active:[box-shadow:var(--shadow-md)]',
         variant === 'featured' && 'md:col-span-2'
       )}
       padding="none"

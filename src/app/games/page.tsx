@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { GameGrid } from '@/components/games'
 import { GameFilters } from '@/components/games/GameFilters'
 import { mockGames, mockCategories } from '@/data/mock-games'
+import { ItemListJsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
   title: 'All Games',
@@ -25,7 +26,13 @@ const mockMechanics = [
 
 export default function GamesPage() {
   return (
-    <div className="container py-8 md:py-12">
+    <>
+      <ItemListJsonLd
+        games={mockGames}
+        name="All Board Games"
+        description="Browse our collection of board games with rules summaries, printable score sheets, setup guides, and quick reference cards."
+      />
+      <div className="container py-8 md:py-12">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
@@ -60,6 +67,7 @@ export default function GamesPage() {
           <GameGrid games={mockGames} columns={3} />
         </main>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

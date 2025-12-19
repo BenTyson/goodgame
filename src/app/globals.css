@@ -45,45 +45,45 @@
 }
 
 /* ============================================
-   LIGHT MODE - Clean & Fresh with Teal
+   LIGHT MODE - Warm & Inviting with Teal
    ============================================ */
 :root {
   --radius: 0.625rem;
 
-  /* Backgrounds - clean white */
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.15 0.02 250);
+  /* Backgrounds - warm cream white */
+  --background: oklch(0.992 0.004 70);
+  --foreground: oklch(0.18 0.02 55);
 
-  /* Cards - pure white with subtle shadow for depth */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 250);
+  /* Cards - warm white with depth */
+  --card: oklch(1 0.002 70);
+  --card-foreground: oklch(0.18 0.02 55);
 
   /* Popovers */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 250);
+  --popover: oklch(1 0.002 70);
+  --popover-foreground: oklch(0.18 0.02 55);
 
   /* Primary: Fresh Teal */
   --primary: oklch(0.55 0.15 195);
   --primary-foreground: oklch(1 0 0);
 
-  /* Secondary: Light gray */
-  --secondary: oklch(0.96 0.005 250);
-  --secondary-foreground: oklch(0.25 0.02 250);
+  /* Secondary: Warm light gray */
+  --secondary: oklch(0.96 0.008 65);
+  --secondary-foreground: oklch(0.25 0.02 55);
 
-  /* Muted: Soft gray */
-  --muted: oklch(0.96 0.005 250);
-  --muted-foreground: oklch(0.45 0.02 250);
+  /* Muted: Warm soft gray */
+  --muted: oklch(0.96 0.008 65);
+  --muted-foreground: oklch(0.45 0.015 55);
 
   /* Accent: Very light teal tint */
   --accent: oklch(0.96 0.02 195);
-  --accent-foreground: oklch(0.25 0.02 250);
+  --accent-foreground: oklch(0.25 0.02 55);
 
   /* Destructive */
   --destructive: oklch(0.55 0.2 25);
 
-  /* Borders - light gray */
-  --border: oklch(0.91 0.005 250);
-  --input: oklch(0.91 0.005 250);
+  /* Borders - warm gray */
+  --border: oklch(0.90 0.012 60);
+  --input: oklch(0.90 0.012 60);
   --ring: oklch(0.55 0.15 195);
 
   /* Chart colors - teal-based palette */
@@ -94,24 +94,24 @@
   --chart-5: oklch(0.6 0.08 180);
 
   /* Sidebar */
-  --sidebar: oklch(0.98 0.005 250);
-  --sidebar-foreground: oklch(0.15 0.02 250);
+  --sidebar: oklch(0.98 0.006 65);
+  --sidebar-foreground: oklch(0.18 0.02 55);
   --sidebar-primary: oklch(0.55 0.15 195);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.96 0.02 195);
-  --sidebar-accent-foreground: oklch(0.25 0.02 250);
-  --sidebar-border: oklch(0.91 0.005 250);
+  --sidebar-accent-foreground: oklch(0.25 0.02 55);
+  --sidebar-border: oklch(0.90 0.012 60);
   --sidebar-ring: oklch(0.55 0.15 195);
 
-  /* Shadow system */
-  --shadow-xs: 0 1px 2px oklch(0.55 0.15 195 / 0.04);
-  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.05), 0 1px 2px oklch(0 0 0 / 0.03);
-  --shadow-md: 0 4px 6px oklch(0 0 0 / 0.05), 0 2px 4px oklch(0 0 0 / 0.03);
-  --shadow-lg: 0 10px 15px oklch(0 0 0 / 0.06), 0 4px 6px oklch(0 0 0 / 0.03);
-  --shadow-xl: 0 20px 25px oklch(0 0 0 / 0.08), 0 8px 10px oklch(0 0 0 / 0.04);
-  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.05), 0 1px 2px oklch(0 0 0 / 0.03);
-  --shadow-card-hover: 0 10px 20px oklch(0 0 0 / 0.08), 0 4px 8px oklch(0 0 0 / 0.04);
-  --shadow-glow-primary: 0 0 20px oklch(0.55 0.15 195 / 0.15);
+  /* Enhanced shadow system - more depth */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px oklch(0 0 0 / 0.07), 0 2px 4px oklch(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px oklch(0 0 0 / 0.08), 0 4px 6px oklch(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 25px oklch(0 0 0 / 0.10), 0 8px 10px oklch(0 0 0 / 0.06);
+  --shadow-card: 0 2px 8px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.04);
+  --shadow-card-hover: 0 12px 24px oklch(0 0 0 / 0.10), 0 6px 12px oklch(0 0 0 / 0.06);
+  --shadow-glow-primary: 0 0 24px oklch(0.55 0.15 195 / 0.18);
 }
 
 /* ============================================

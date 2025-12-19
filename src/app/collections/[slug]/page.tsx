@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { GameGrid } from '@/components/games/GameGrid'
 import { mockCollections, getCollectionGames } from '@/data/mock-games'
+import { CollectionJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>
@@ -65,8 +66,22 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     .filter((c) => c.slug !== slug && c.is_published)
     .slice(0, 4)
 
+  const breadcrumbs = [
+    { name: 'Home', href: '/' },
+    { name: 'Collections', href: '/collections' },
+    { name: collection.name, href: `/collections/${collection.slug}` },
+  ]
+
   return (
-    <div className="container py-8 md:py-12">
+    <>
+      <CollectionJsonLd
+        name={collection.name}
+        description={collection.description || collection.short_description || ''}
+        slug={collection.slug}
+        games={gamesInCollection}
+      />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <div className="container py-8 md:py-12">
       {/* Breadcrumb & Back */}
       <div className="mb-6 flex items-center justify-between">
         <nav className="text-sm text-muted-foreground">
@@ -154,6 +169,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

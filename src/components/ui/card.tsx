@@ -4,17 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "bg-card text-card-foreground flex flex-col rounded-xl border transition-all duration-200",
+  "bg-card text-card-foreground flex flex-col rounded-xl border transition-all duration-300",
   {
     variants: {
       depth: {
         flat: "shadow-none",
-        subtle: "shadow-sm",
-        raised: "shadow-md",
-        floating: "shadow-lg",
+        subtle: "[box-shadow:var(--shadow-sm)]",
+        raised: "[box-shadow:var(--shadow-card)]",
+        floating: "[box-shadow:var(--shadow-lg)]",
       },
       interactive: {
-        true: "cursor-pointer hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5",
+        true: "cursor-pointer hover:[box-shadow:var(--shadow-card-hover)] hover:border-primary/30 hover:-translate-y-1 active:translate-y-0 active:shadow-md",
         false: "",
       },
       padding: {
