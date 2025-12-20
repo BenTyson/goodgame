@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchDialog } from '@/components/search'
+import { ThemeToggle } from './ThemeToggle'
 
 const navigation = [
   { name: 'Games', href: '/games' },
@@ -95,6 +96,9 @@ export function Header() {
 
           {/* Search Dialog */}
           <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+
+          {/* Theme toggle */}
+          <ThemeToggle />
 
           {/* Mobile menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
