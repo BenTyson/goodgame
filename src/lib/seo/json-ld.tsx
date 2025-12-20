@@ -1,4 +1,4 @@
-import type { Game } from '@/types/database'
+import type { GameRow } from '@/types/database'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodgame.guide'
 const SITE_NAME = 'Good Game'
@@ -47,7 +47,7 @@ export function WebSiteJsonLd() {
 
 // Game schema (Product + Game)
 interface GameJsonLdProps {
-  game: Game & { categories?: { slug: string; name: string }[] }
+  game: GameRow & { categories?: { slug: string; name: string }[] }
 }
 
 export function GameJsonLd({ game }: GameJsonLdProps) {
@@ -85,7 +85,7 @@ export function GameJsonLd({ game }: GameJsonLdProps) {
 
 // HowTo schema for rules pages
 interface HowToJsonLdProps {
-  game: Game
+  game: GameRow
   steps: { name: string; text: string }[]
 }
 
@@ -120,7 +120,7 @@ export function HowToJsonLd({ game, steps }: HowToJsonLdProps) {
 
 // ItemList schema for game listings
 interface ItemListJsonLdProps {
-  games: (Game & { categories?: { slug: string; name: string }[] })[]
+  games: (GameRow & { categories?: { slug: string; name: string }[] })[]
   name: string
   description: string
 }
@@ -202,7 +202,7 @@ interface CollectionJsonLdProps {
   name: string
   description: string
   slug: string
-  games: (Game & { categories?: { slug: string; name: string }[] })[]
+  games: (GameRow & { categories?: { slug: string; name: string }[] })[]
 }
 
 export function CollectionJsonLd({

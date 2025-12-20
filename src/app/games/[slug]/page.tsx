@@ -12,7 +12,6 @@ import {
   FileText,
   ListChecks,
   Bookmark,
-  ShoppingCart,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -20,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ImageGallery, RelatedGames } from '@/components/games'
+import { BuyButtons } from '@/components/monetization'
 import { mockGames, getGameImages, getRelatedGames } from '@/data/mock-games'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
@@ -241,22 +241,13 @@ export default async function GamePage({ params }: GamePageProps) {
             </div>
           )}
 
-          {/* Buy button */}
-          {game.amazon_asin && (
-            <div className="mt-6">
-              <Button size="lg" className="gap-2" asChild>
-                <a
-                  href={`https://www.amazon.com/dp/${game.amazon_asin}?tag=goodgame-20`}
-                  target="_blank"
-                  rel="noopener sponsored"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Buy on Amazon
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            </div>
-          )}
+          {/* Buy buttons */}
+          <div className="mt-6">
+            <BuyButtons
+              amazonAsin={game.amazon_asin}
+              gameSlug={game.slug}
+            />
+          </div>
         </div>
       </div>
 

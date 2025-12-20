@@ -8,10 +8,10 @@ import { Users, Clock, Brain, BookOpen, FileText, ListChecks, Bookmark } from 'l
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { Game, Category } from '@/types/database'
+import type { GameRow, Category } from '@/types/database'
 
 interface GameCardProps {
-  game: Game & {
+  game: GameRow & {
     categories?: Pick<Category, 'slug' | 'name'>[]
   }
   variant?: 'default' | 'compact' | 'featured'
@@ -33,7 +33,7 @@ export function GameCard({
   ] as const
 
   const availableContent = contentTypes.filter(
-    (type) => game[type.key as keyof Game]
+    (type) => game[type.key as keyof GameRow]
   )
 
   const handleCardClick = () => {

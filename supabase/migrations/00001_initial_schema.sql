@@ -262,7 +262,7 @@ ALTER TABLE games ADD COLUMN fts tsvector
     setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
     setweight(to_tsvector('english', coalesce(tagline, '')), 'B') ||
     setweight(to_tsvector('english', coalesce(description, '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(designers, ' '), '')), 'D')
+    setweight(to_tsvector('english', coalesce(publisher, '')), 'D')
   ) STORED;
 
 CREATE INDEX games_fts ON games USING GIN (fts);

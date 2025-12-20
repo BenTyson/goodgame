@@ -1,12 +1,23 @@
 # Database Schema
 
+## Connection Info
+
+**Project ID**: `jnaibnwxpweahpawxycf`
+**Status**: Connected and migrations applied
+
+```bash
+# Regenerate types after schema changes
+supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+```
+
 ## Overview
 
 The database uses Supabase (PostgreSQL) with the following main entities:
-- **games** - Core game metadata
+- **games** - Core game metadata with full-text search
 - **categories** - Game categories (strategy, family, party, etc.)
 - **mechanics** - Game mechanics (deck building, worker placement, etc.)
 - **collections** - Curated game collections
+- **game_images** - Multiple images per game
 - **score_sheet_configs** - PDF generation configuration per game
 - **affiliate_links** - Centralized affiliate link management
 
@@ -26,6 +37,10 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 └─────────────┘       └──────────────────┘             │
                                                        │
                       ┌──────────────────┐             │
+                      │   game_images    │◄────────────┤
+                      └──────────────────┘             │
+                                                       │
+                      ┌──────────────────┐             │
                       │score_sheet_configs│◄───────────┤
                       └──────────────────┘             │
                              │                         │
@@ -38,10 +53,16 @@ The database uses Supabase (PostgreSQL) with the following main entities:
                       └──────────────────┘
 ```
 
+## Migration Files
+
+1. `00001_initial_schema.sql` - Core tables, indexes, RLS, full-text search
+2. `00002_seed_data.sql` - Categories and mechanics seed data
+3. `00003_game_images.sql` - Game images table
+
 ## Tables
 
 ### games
-Primary table for all game metadata.
+Primary table for all game metadata. Includes generated `fts` column for full-text search.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -73,6 +94,7 @@ Primary table for all game metadata.
 | meta_description | VARCHAR(160) | SEO description |
 | is_published | BOOLEAN | Published status |
 | is_featured | BOOLEAN | Featured on homepage |
+| fts | TSVECTOR | Generated full-text search column |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
@@ -88,6 +110,8 @@ Game categories for filtering and navigation.
 | icon | VARCHAR(50) | Icon identifier |
 | display_order | SMALLINT | Sort order |
 | is_primary | BOOLEAN | Show in main nav |
+| meta_title | VARCHAR(70) | SEO title |
+| meta_description | VARCHAR(160) | SEO description |
 
 ### mechanics
 Game mechanics for filtering.
@@ -114,13 +138,31 @@ Curated game lists.
 | is_featured | BOOLEAN | Featured status |
 | is_published | BOOLEAN | Published status |
 
+### game_images
+Multiple images per game with type categorization.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| game_id | UUID | Foreign key to games |
+| url | TEXT | Image URL |
+| alt_text | VARCHAR(255) | Alt text for accessibility |
+| caption | TEXT | Optional caption |
+| image_type | VARCHAR(20) | 'cover', 'hero', 'gallery', 'setup', 'gameplay', 'components' |
+| display_order | SMALLINT | Sort order |
+| storage_path | VARCHAR(500) | Supabase storage path (optional) |
+| width | INTEGER | Image width |
+| height | INTEGER | Image height |
+| file_size | INTEGER | File size in bytes |
+| is_primary | BOOLEAN | Primary image for type |
+
 ### score_sheet_configs
 Per-game PDF configuration.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | UUID | Primary key |
-| game_id | UUID | Foreign key to games |
+| game_id | UUID | Foreign key to games (unique) |
 | layout_type | VARCHAR(20) | 'table', 'grid', 'custom' |
 | player_min | SMALLINT | Min players for sheet |
 | player_max | SMALLINT | Max players for sheet |
@@ -199,7 +241,45 @@ Many-to-many: collections ↔ games (ordered)
 - `games(is_featured)` - Homepage queries
 - `games(weight)` - Complexity filtering
 - `games(player_count_min, player_count_max)` - Player count filtering
-- Full-text search index on games (name, tagline, description, designers)
+- `games(fts)` - GIN index for full-text search
+- `game_images(game_id)` - Fast image lookups
+
+## Row Level Security (RLS)
+
+All tables have RLS enabled with public read access for:
+- Published games (`is_published = true`)
+- All categories and mechanics
+- Published collections (`is_published = true`)
+- All junction tables
+- All score sheet configs and fields
+- All affiliate links and game images
+
+## Full-Text Search
+
+The `fts` column is a generated `TSVECTOR` combining:
+- Name (weight A - highest priority)
+- Tagline (weight B)
+- Description (weight C)
+- Publisher (weight D - lowest priority)
+
+```sql
+-- Search function
+SELECT * FROM search_games('wingspan');
+```
+
+## TypeScript Types
+
+Types are auto-generated from the schema:
+
+```typescript
+// src/types/database.ts
+import type { GameRow } from '@/types/database'
+
+// GameRow - Game without fts column (for mock data)
+// Game - Full game type with fts
+// GameInsert - For inserting new games
+// Category, Collection, GameImage, etc.
+```
 
 ## Common Queries
 
@@ -228,8 +308,19 @@ SELECT g.*,
   (SELECT json_agg(m.*) FROM mechanics m
    JOIN game_mechanics gm ON m.id = gm.mechanic_id
    WHERE gm.game_id = g.id) as mechanics,
+  (SELECT json_agg(gi.*) FROM game_images gi
+   WHERE gi.game_id = g.id
+   ORDER BY gi.display_order) as images,
   (SELECT json_agg(al.*) FROM affiliate_links al
    WHERE al.game_id = g.id) as affiliate_links
 FROM games g
 WHERE g.slug = 'catan';
+```
+
+### Get game images by type
+```sql
+SELECT * FROM game_images
+WHERE game_id = 'uuid-here'
+  AND image_type = 'gallery'
+ORDER BY display_order;
 ```

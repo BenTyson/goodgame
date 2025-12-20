@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Inter, Outfit } from 'next/font/google'
 import './globals.css'
 
@@ -6,6 +7,9 @@ import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo'
+
+// AdSense client ID from environment
+const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID
 
 const inter = Inter({
   variable: '--font-inter',
@@ -73,6 +77,15 @@ export default function RootLayout({
       <head>
         <OrganizationJsonLd />
         <WebSiteJsonLd />
+        {/* Google AdSense */}
+        {ADSENSE_CLIENT_ID && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body
         className={`${inter.variable} ${outfit.variable} font-sans antialiased`}

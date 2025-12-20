@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-18
+> Last Updated: 2025-12-19
 
-## Phase: 3 - Discovery Features (In Progress)
+## Phase: 4 - SEO & Monetization (In Progress)
 
 ### Completed
 - [x] Next.js 14 project initialized with App Router
@@ -16,7 +16,7 @@
 - [x] Database schema designed and migration files created
 - [x] TypeScript types for database created
 - [x] Supabase client configuration (server + browser)
-- [x] **Design system implemented (teal primary, light mode only)**
+- [x] **Design system implemented (warm charcoal dark mode, teal primary)**
 - [x] Layout components built (Header, Footer)
 - [x] Homepage with hero, featured games, categories, CTA sections
 - [x] GameCard and GameGrid components with hover actions
@@ -32,36 +32,42 @@
 - [x] Browse Rules page (`/rules`)
 - [x] Categories listing page (`/categories`)
 - [x] Category detail pages (`/categories/[slug]`)
-- [x] **Visual refresh: Teal primary color, light mode only, unified color palette**
 - [x] **Game images feature: ImageGallery component with lightbox**
 - [x] **BoardGameGeek images configured in Next.js (cf.geekdo-images.com)**
-- [x] **Mock data updated with real BGG image URLs for all 6 games**
+- [x] **Mock data updated with real BGG image URLs for all 6 games (900x600 resolution)**
 - [x] **Collections listing page (`/collections`)**
 - [x] **Collection detail pages (`/collections/[slug]`) - 5 curated collections**
 - [x] **Mock collections data with helper functions**
+- [x] **SEO features** - JSON-LD structured data, dynamic sitemap, robots.txt
+- [x] **Related games component** - RelatedGames component, getRelatedGames helper
+- [x] **Search with Cmd+K dialog** - SearchDialog component, keyboard shortcut
+- [x] **Visual refresh** - Warm color palette, enhanced shadow system, animated hero
+- [x] **Supabase connected** - Project linked, migrations applied, types generated
+
+### Recently Completed (This Session)
+- [x] **Supabase CLI connected** - `supabase link --project-ref jnaibnwxpweahpawxycf`
+- [x] **Database migrations applied** - All 3 migrations pushed to remote
+- [x] **TypeScript types generated** - `supabase gen types typescript`
+- [x] **Type system updated** - `GameRow` type for mock data compatibility
+- [x] **Fixed nullable field issues** - sitemap, collections, components
 
 ### In Progress
-- [ ] Supabase connection (blocked on credentials)
-
-### Recently Completed
-- [x] **SEO features** - JSON-LD structured data, dynamic sitemap, robots.txt
-- [x] **Related games component** - RelatedGames component, getRelatedGames helper, similarity scoring
-- [x] **Search with Cmd+K dialog** - SearchDialog component, keyboard shortcut, search games/categories/collections
-
-### Blocked
-- **Supabase credentials needed** - User needs to create Supabase project and add credentials to `.env.local`
+- [ ] AdSense integration (monetization)
+- [ ] Affiliate link tracking
 
 ### Next Up
-1. Get Supabase credentials and connect database
-2. AdSense integration (monetization)
+1. AdSense integration
+2. Amazon affiliate links on game pages
+3. Analytics setup (Plausible)
+4. Performance optimization
 
 ## Build Stats
-- **50+ static pages generated**
+- **50 static pages generated**
 - **6 games** with full content (Rules, Setup, Reference, Score Sheets)
 - **5 categories** browsable
 - **5 collections** curated (Gateway Games, Quick Games, Best at 2, Engine Builders, Heavy Strategy)
 - **All 4 content types** implemented (Rules, Score Sheets, Setup, Reference)
-- **Image galleries** with real BoardGameGeek photos
+- **Image galleries** with real BoardGameGeek photos (900x600)
 
 ## Pilot Games (All Complete)
 | Game | Rules | Setup | Reference | Score Sheet | Images |
@@ -89,12 +95,14 @@
 /collections/[slug]         Games in collection
 /score-sheets               Browse all score sheets
 /rules                      Browse all rules
+/sitemap.xml                Dynamic sitemap
+/robots.txt                 Robots configuration
 ```
 
 ## Key Files Created/Modified
 
 ### Pages
-- `src/app/page.tsx` - Homepage
+- `src/app/page.tsx` - Homepage (animated hero, warm colors)
 - `src/app/games/page.tsx` - Games listing
 - `src/app/games/[slug]/page.tsx` - Game hub (with ImageGallery)
 - `src/app/games/[slug]/rules/page.tsx` - Rules page (all 6 games)
@@ -107,52 +115,76 @@
 - `src/app/collections/[slug]/page.tsx` - Collection detail
 - `src/app/score-sheets/page.tsx` - Score sheets browse
 - `src/app/rules/page.tsx` - Rules browse
+- `src/app/sitemap.ts` - Dynamic sitemap generation
+- `src/app/robots.ts` - Robots.txt configuration
 
 ### Components
 - `src/components/layout/` - Header, Footer, ThemeProvider
-- `src/components/games/` - GameCard, GameGrid, GameFilters, ImageGallery, **RelatedGames**
+- `src/components/games/` - GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
 - `src/components/score-sheet/` - ScoreSheetGenerator (with jsPDF integration)
 - `src/components/setup/` - SetupChecklist (interactive)
 - `src/components/search/` - SearchDialog (Cmd+K)
 - `src/components/ui/print-button.tsx` - Print button component
 
-### Data & Config
+### Data & Types
+- `src/types/supabase.ts` - Auto-generated Supabase types
+- `src/types/database.ts` - Convenience types (GameRow, GameInsert, etc.)
+- `src/data/mock-games.ts` - Mock data with games, categories, collections, images
 - `src/lib/supabase/` - client.ts, server.ts
 - `src/lib/seo/` - JSON-LD structured data components
-- `src/types/database.ts` - Full TypeScript types (includes GameImage, Collection)
-- `src/data/mock-games.ts` - Mock data with games, categories, collections, images
-- `src/app/sitemap.ts` - Dynamic sitemap generation
-- `src/app/robots.ts` - Robots.txt configuration
+
+### Database
 - `supabase/migrations/00001_initial_schema.sql` - Complete database schema
-- `supabase/migrations/00002_seed_data.sql` - All 10 pilot games + categories + mechanics
+- `supabase/migrations/00002_seed_data.sql` - Categories + mechanics seed data
 - `supabase/migrations/00003_game_images.sql` - Game images table
-- `next.config.ts` - Configured cf.geekdo-images.com for remote images
+
+## Supabase Connection
+
+**Project ID**: `jnaibnwxpweahpawxycf`
+
+```bash
+# Regenerate types after schema changes
+supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+```
+
+**Environment Variables** (in `.env.local`):
+- `NEXT_PUBLIC_SUPABASE_URL` - ✅ Configured
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - ✅ Configured
+- `SUPABASE_SERVICE_ROLE_KEY` - ✅ Configured
 
 ## Design System
-- **Primary**: Fresh teal (`oklch(0.55 0.15 195)`)
-- **Background**: Clean white (`oklch(0.99 0 0)`)
-- **Theme**: Light mode only (no dark mode)
-- **Fonts**: Inter (body), system fonts
-- **All icons/accents**: Unified teal color (no rainbow colors)
+- **Primary**: Teal (`oklch(0.55 0.15 195)`)
+- **Dark mode**: Warm charcoal (hue 55-70)
+- **Light mode**: Warm cream whites
+- **Shadows**: CSS variable system (`--shadow-card`, `--shadow-card-hover`, etc.)
+- **Typography**: Enhanced with better line heights
 
 ## Dev Commands
 ```bash
 npm run dev     # Runs on http://localhost:3399
-npm run build   # Production build
-npm run lint    # ESLint (currently passing with 0 errors)
+npm run build   # Production build (50 pages)
+npm run lint    # ESLint
+
+# Supabase
+supabase login
+supabase link --project-ref jnaibnwxpweahpawxycf
+supabase db push                    # Push migrations
+supabase gen types typescript ...   # Generate types
 ```
 
 ## Notes for Next Session
 
-### Priority 1: Supabase Setup
-1. Go to supabase.com and create a new project
-2. Copy URL and anon key to `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
-   ```
-3. Run SQL from `supabase/migrations/` files in the SQL editor (run in order: 00001, 00002, 00003)
+### Priority 1: Monetization
+1. AdSense integration
+2. Amazon affiliate links on game pages
+3. Affiliate link tracking in Supabase
 
-### Priority 2: Monetization
-- AdSense integration
-- Affiliate link tracking
+### Priority 2: Polish
+1. Performance optimization (Core Web Vitals)
+2. Accessibility audit
+3. Error pages (404, error.tsx)
+
+### Priority 3: Deployment
+1. Railway deployment configuration
+2. Domain setup
+3. Google Search Console submission

@@ -1,5 +1,5 @@
 // Mock data for development until Supabase is connected
-import type { Game, Category, GameImage, Collection } from '@/types/database'
+import type { GameRow, Category, GameImage, Collection } from '@/types/database'
 
 export const mockCategories: Category[] = [
   {
@@ -69,7 +69,7 @@ export const mockCategories: Category[] = [
   },
 ]
 
-type GameWithCategories = Game & {
+type GameWithCategories = GameRow & {
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

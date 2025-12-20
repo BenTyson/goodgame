@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { Game } from '@/types/database'
+import type { GameRow } from '@/types/database'
 
 interface ScoreField {
   name: string
@@ -16,7 +16,7 @@ interface ScoreField {
 }
 
 interface ScoreSheetGeneratorProps {
-  game: Game
+  game: GameRow
   fields?: ScoreField[]
   minPlayers?: number
   maxPlayers?: number

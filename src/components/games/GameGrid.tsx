@@ -1,8 +1,8 @@
 import { GameCard } from './GameCard'
-import type { Game, Category } from '@/types/database'
+import type { GameRow, Category } from '@/types/database'
 
 interface GameGridProps {
-  games: (Game & { categories?: Pick<Category, 'slug' | 'name'>[] })[]
+  games: (GameRow & { categories?: Pick<Category, 'slug' | 'name'>[] })[]
   columns?: 2 | 3 | 4
   showContentBadges?: boolean
 }

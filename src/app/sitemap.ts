@@ -51,7 +51,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((game) => game.is_published)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}`,
-      lastModified: new Date(game.updated_at),
+      lastModified: game.updated_at ? new Date(game.updated_at) : now,
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     }))
@@ -61,7 +61,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((game) => game.is_published && game.has_rules)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/rules`,
-      lastModified: new Date(game.updated_at),
+      lastModified: game.updated_at ? new Date(game.updated_at) : now,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     }))
@@ -71,7 +71,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((game) => game.is_published && game.has_score_sheet)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/score-sheet`,
-      lastModified: new Date(game.updated_at),
+      lastModified: game.updated_at ? new Date(game.updated_at) : now,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     }))
@@ -81,7 +81,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((game) => game.is_published && game.has_setup_guide)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/setup`,
-      lastModified: new Date(game.updated_at),
+      lastModified: game.updated_at ? new Date(game.updated_at) : now,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     }))
@@ -91,7 +91,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((game) => game.is_published && game.has_reference)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/reference`,
-      lastModified: new Date(game.updated_at),
+      lastModified: game.updated_at ? new Date(game.updated_at) : now,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     }))
@@ -99,7 +99,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Category pages
   const categoryPages: MetadataRoute.Sitemap = mockCategories.map((category) => ({
     url: `${SITE_URL}/categories/${category.slug}`,
-    lastModified: new Date(category.updated_at),
+    lastModified: category.updated_at ? new Date(category.updated_at) : now,
     changeFrequency: 'monthly' as const,
     priority: 0.6,
   }))
@@ -109,7 +109,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((collection) => collection.is_published)
     .map((collection) => ({
       url: `${SITE_URL}/collections/${collection.slug}`,
-      lastModified: new Date(collection.updated_at),
+      lastModified: collection.updated_at ? new Date(collection.updated_at) : now,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     }))

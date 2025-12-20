@@ -29,7 +29,7 @@ export default function CollectionsPage() {
       ...collection,
       gameCount: getCollectionGames(collection.slug).length,
     }))
-    .sort((a, b) => a.display_order - b.display_order)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 
   const featuredCollections = collectionsWithCounts.filter((c) => c.is_featured)
   const otherCollections = collectionsWithCounts.filter((c) => !c.is_featured)
