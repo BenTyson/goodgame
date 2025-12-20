@@ -5,7 +5,7 @@ import { ArrowLeft, Brain, Users, Gamepad2, HandshakeIcon, UserRound } from 'luc
 
 import { Button } from '@/components/ui/button'
 import { GameGrid } from '@/components/games/GameGrid'
-import { mockGames, mockCategories } from '@/data/mock-games'
+import { getCategoryBySlug, getGamesByCategory, getCategories, getAllCategorySlugs } from '@/lib/supabase/queries'
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
@@ -31,7 +31,7 @@ export async function generateMetadata({
   params,
 }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const category = mockCategories.find((c) => c.slug === slug)
+  const category = await getCategoryBySlug(slug)
 
   if (!category) {
     return {
@@ -46,23 +46,21 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockCategories.map((category) => ({
-    slug: category.slug,
-  }))
+  const slugs = await getAllCategorySlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-  const category = mockCategories.find((c) => c.slug === slug)
+  const [category, gamesInCategory, allCategories] = await Promise.all([
+    getCategoryBySlug(slug),
+    getGamesByCategory(slug),
+    getCategories()
+  ])
 
   if (!category) {
     notFound()
   }
-
-  // Get games in this category
-  const gamesInCategory = mockGames.filter((game) =>
-    game.categories.some((cat) => cat.slug === slug)
-  )
 
   const icon = categoryIcons[slug] || <Brain className="h-6 w-6" />
 
@@ -130,7 +128,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       <div className="mt-12">
         <h2 className="text-xl font-bold mb-4">Other Categories</h2>
         <div className="flex flex-wrap gap-3">
-          {mockCategories
+          {allCategories
             .filter((c) => c.slug !== slug)
             .map((cat) => {
               const catIcon = categoryIcons[cat.slug] || <Brain className="h-4 w-4" />

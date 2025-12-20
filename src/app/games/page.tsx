@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 
 import { GameGrid } from '@/components/games'
 import { GameFilters } from '@/components/games/GameFilters'
-import { mockGames, mockCategories } from '@/data/mock-games'
+import { getGames, getCategories } from '@/lib/supabase/queries'
 import { ItemListJsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     'Browse our collection of board games with rules summaries, printable score sheets, setup guides, and quick reference cards.',
 }
 
-// Mock mechanics for filters
+// Mock mechanics for filters (will come from Supabase later)
 const mockMechanics = [
   { id: '1', slug: 'worker-placement', name: 'Worker Placement' },
   { id: '2', slug: 'deck-building', name: 'Deck Building' },
@@ -24,11 +24,16 @@ const mockMechanics = [
   { id: '8', slug: 'trading', name: 'Trading' },
 ]
 
-export default function GamesPage() {
+export default async function GamesPage() {
+  const [games, categories] = await Promise.all([
+    getGames(),
+    getCategories()
+  ])
+
   return (
     <>
       <ItemListJsonLd
-        games={mockGames}
+        games={games}
         name="All Board Games"
         description="Browse our collection of board games with rules summaries, printable score sheets, setup guides, and quick reference cards."
       />
@@ -39,7 +44,7 @@ export default function GamesPage() {
           All Games
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Browse our collection of {mockGames.length} board games with rules,
+          Browse our collection of {games.length} board games with rules,
           score sheets, and reference materials.
         </p>
       </div>
@@ -50,7 +55,7 @@ export default function GamesPage() {
         <aside className="w-full shrink-0 lg:w-64">
           <Suspense fallback={<div className="h-96 animate-pulse bg-muted rounded-lg" />}>
             <GameFilters
-              categories={mockCategories}
+              categories={categories}
               mechanics={mockMechanics}
             />
           </Suspense>
@@ -60,11 +65,11 @@ export default function GamesPage() {
         <main className="flex-1">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {mockGames.length} games
+              Showing {games.length} games
             </p>
           </div>
 
-          <GameGrid games={mockGames} columns={3} />
+          <GameGrid games={games} columns={3} />
         </main>
       </div>
       </div>

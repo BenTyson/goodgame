@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-19
+> Last Updated: 2025-12-20
 
-## Phase: 4 - SEO & Monetization (In Progress)
+## Phase: 5 - Production Ready (In Progress)
 
 ### Completed
 - [x] Next.js 14 project initialized with App Router
@@ -21,7 +21,6 @@
 - [x] Homepage with hero, featured games, categories, CTA sections
 - [x] GameCard and GameGrid components with hover actions
 - [x] GameFilters component
-- [x] Mock data for development (6 pilot games)
 - [x] Games listing page (`/games`) with filtering
 - [x] Game hub page (`/games/[slug]`) with all content sections
 - [x] Score Sheet Generator (`/games/[slug]/score-sheet`) with PDF export
@@ -34,65 +33,80 @@
 - [x] Category detail pages (`/categories/[slug]`)
 - [x] **Game images feature: ImageGallery component with lightbox**
 - [x] **BoardGameGeek images configured in Next.js (cf.geekdo-images.com)**
-- [x] **Mock data updated with real BGG image URLs for all 6 games (900x600 resolution)**
 - [x] **Collections listing page (`/collections`)**
 - [x] **Collection detail pages (`/collections/[slug]`) - 5 curated collections**
-- [x] **Mock collections data with helper functions**
 - [x] **SEO features** - JSON-LD structured data, dynamic sitemap, robots.txt
-- [x] **Related games component** - RelatedGames component, getRelatedGames helper
+- [x] **Related games component** - RelatedGames component
 - [x] **Search with Cmd+K dialog** - SearchDialog component, keyboard shortcut
 - [x] **Visual refresh** - Warm color palette, enhanced shadow system, animated hero
 - [x] **Supabase connected** - Project linked, migrations applied, types generated
+- [x] **Monetization components** - AdUnit, AffiliateButton, BuyButtons
+- [x] **Error pages** - 404, error.tsx, global-error.tsx
+- [x] **Railway deployed** - https://goodgame-production.up.railway.app
 
 ### Recently Completed (This Session)
-- [x] **Supabase CLI connected** - `supabase link --project-ref jnaibnwxpweahpawxycf`
-- [x] **Database migrations applied** - All 3 migrations pushed to remote
-- [x] **TypeScript types generated** - `supabase gen types typescript`
-- [x] **Type system updated** - `GameRow` type for mock data compatibility
-- [x] **Fixed nullable field issues** - sitemap, collections, components
+- [x] **Seed script created** - `supabase/migrations/00004_seed_games.sql`
+- [x] **6 pilot games seeded** - Catan, Wingspan, Ticket to Ride, Azul, Codenames, Terraforming Mars
+- [x] **5 collections seeded** - Gateway Games, Quick Games, Best at 2, Engine Builders, Heavy Strategy
+- [x] **Game-category links created**
+- [x] **Collection-game links created**
+- [x] **Game images seeded** - 2-3 images per game from BoardGameGeek
+- [x] **Data access layer created** - `src/lib/supabase/queries.ts`
+  - getGames, getGameBySlug, getFeaturedGames
+  - getCategories, getCategoryBySlug, getGamesByCategory
+  - getCollections, getCollectionBySlug, getGamesInCollection
+  - getGameWithDetails, getRelatedGames
+  - getGameImages, getAffiliateLinks
+  - searchGames (full-text search)
+  - getAllGameSlugs, getAllCategorySlugs, getAllCollectionSlugs (for static generation)
+- [x] **Pages migrated to Supabase**
+  - Homepage (`/`) - featured games, categories from DB
+  - Games listing (`/games`) - all games from DB
+  - Game hub (`/games/[slug]`) - game details, images, related games from DB
+  - Categories (`/categories/[slug]`) - games by category from DB
+  - Collections (`/collections/[slug]`) - games in collection from DB
 
 ### In Progress
-- [ ] AdSense integration (monetization)
-- [ ] Affiliate link tracking
+- [ ] Update remaining static pages with actual content
 
 ### Next Up
-1. AdSense integration
-2. Amazon affiliate links on game pages
-3. Analytics setup (Plausible)
-4. Performance optimization
+1. Analytics setup (Plausible)
+2. Performance optimization
+3. Add more games to database
 
 ## Build Stats
-- **50 static pages generated**
+- **60 static pages generated**
 - **6 games** with full content (Rules, Setup, Reference, Score Sheets)
 - **5 categories** browsable
 - **5 collections** curated (Gateway Games, Quick Games, Best at 2, Engine Builders, Heavy Strategy)
 - **All 4 content types** implemented (Rules, Score Sheets, Setup, Reference)
 - **Image galleries** with real BoardGameGeek photos (900x600)
+- **All pages now fetch from Supabase**
 
 ## Pilot Games (All Complete)
-| Game | Rules | Setup | Reference | Score Sheet | Images |
-|------|-------|-------|-----------|-------------|--------|
-| Catan | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Wingspan | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Ticket to Ride | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Azul | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Codenames | ✅ | ✅ | ✅ | ❌ (party game) | ✅ |
-| Terraforming Mars | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Game | Rules | Setup | Reference | Score Sheet | Images | In DB |
+|------|-------|-------|-----------|-------------|--------|-------|
+| Catan | X | X | X | X | X | X |
+| Wingspan | X | X | X | X | X | X |
+| Ticket to Ride | X | X | X | X | X | X |
+| Azul | X | X | X | X | X | X |
+| Codenames | X | X | X | - (party game) | X | X |
+| Terraforming Mars | X | X | X | X | X | X |
 
 ## Routes Created
 
 ```
-/                           Homepage
-/games                      All games listing with filters
-/games/[slug]               Game hub page (with image gallery)
+/                           Homepage (fetches from Supabase)
+/games                      All games listing (fetches from Supabase)
+/games/[slug]               Game hub page (fetches from Supabase)
 /games/[slug]/rules         Rules summary
 /games/[slug]/score-sheet   Score sheet generator
 /games/[slug]/setup         Setup guide with checklist
 /games/[slug]/reference     Quick reference card (printable)
 /categories                 Category listing
-/categories/[slug]          Games by category
+/categories/[slug]          Games by category (fetches from Supabase)
 /collections                Collections listing
-/collections/[slug]         Games in collection
+/collections/[slug]         Games in collection (fetches from Supabase)
 /score-sheets               Browse all score sheets
 /rules                      Browse all rules
 /sitemap.xml                Dynamic sitemap
@@ -101,42 +115,30 @@
 
 ## Key Files Created/Modified
 
-### Pages
-- `src/app/page.tsx` - Homepage (animated hero, warm colors)
-- `src/app/games/page.tsx` - Games listing
-- `src/app/games/[slug]/page.tsx` - Game hub (with ImageGallery)
-- `src/app/games/[slug]/rules/page.tsx` - Rules page (all 6 games)
-- `src/app/games/[slug]/score-sheet/page.tsx` - Score sheet page
-- `src/app/games/[slug]/setup/page.tsx` - Setup guide (all 6 games)
-- `src/app/games/[slug]/reference/page.tsx` - Quick reference (all 6 games)
-- `src/app/categories/page.tsx` - Categories listing
-- `src/app/categories/[slug]/page.tsx` - Category detail
-- `src/app/collections/page.tsx` - Collections listing
-- `src/app/collections/[slug]/page.tsx` - Collection detail
-- `src/app/score-sheets/page.tsx` - Score sheets browse
-- `src/app/rules/page.tsx` - Rules browse
-- `src/app/sitemap.ts` - Dynamic sitemap generation
-- `src/app/robots.ts` - Robots.txt configuration
+### Data Access Layer (NEW)
+- `src/lib/supabase/queries.ts` - All database query functions
 
-### Components
-- `src/components/layout/` - Header, Footer, ThemeProvider
-- `src/components/games/` - GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
-- `src/components/score-sheet/` - ScoreSheetGenerator (with jsPDF integration)
-- `src/components/setup/` - SetupChecklist (interactive)
-- `src/components/search/` - SearchDialog (Cmd+K)
-- `src/components/ui/print-button.tsx` - Print button component
+### Pages (Updated to use Supabase)
+- `src/app/page.tsx` - Homepage (fetches featured games + categories)
+- `src/app/games/page.tsx` - Games listing (fetches all games)
+- `src/app/games/[slug]/page.tsx` - Game hub (fetches game with details)
+- `src/app/categories/[slug]/page.tsx` - Category detail (fetches games by category)
+- `src/app/collections/[slug]/page.tsx` - Collection detail (fetches games in collection)
 
-### Data & Types
-- `src/types/supabase.ts` - Auto-generated Supabase types
-- `src/types/database.ts` - Convenience types (GameRow, GameInsert, etc.)
-- `src/data/mock-games.ts` - Mock data with games, categories, collections, images
-- `src/lib/supabase/` - client.ts, server.ts
-- `src/lib/seo/` - JSON-LD structured data components
+### Error Pages (NEW)
+- `src/app/not-found.tsx` - Custom 404 page
+- `src/app/error.tsx` - Error boundary
+- `src/app/global-error.tsx` - Root layout error handler
 
-### Database
+### Monetization Components (NEW)
+- `src/components/monetization/AdUnit.tsx` - AdSense component
+- `src/components/monetization/AffiliateButton.tsx` - Amazon + affiliate buttons
+
+### Database Migrations
 - `supabase/migrations/00001_initial_schema.sql` - Complete database schema
 - `supabase/migrations/00002_seed_data.sql` - Categories + mechanics seed data
 - `supabase/migrations/00003_game_images.sql` - Game images table
+- `supabase/migrations/00004_seed_games.sql` - 6 pilot games + collections + images
 
 ## Supabase Connection
 
@@ -148,9 +150,19 @@ supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supa
 ```
 
 **Environment Variables** (in `.env.local`):
-- `NEXT_PUBLIC_SUPABASE_URL` - ✅ Configured
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - ✅ Configured
-- `SUPABASE_SERVICE_ROLE_KEY` - ✅ Configured
+- `NEXT_PUBLIC_SUPABASE_URL` - Configured
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Configured
+- `SUPABASE_SERVICE_ROLE_KEY` - Configured
+
+## Railway Deployment
+
+**Domain**: https://goodgame-production.up.railway.app
+
+**Environment Variables** (set via Railway CLI):
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SITE_URL=https://goodgame-production.up.railway.app`
 
 ## Design System
 - **Primary**: Teal (`oklch(0.55 0.15 195)`)
@@ -162,7 +174,7 @@ supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supa
 ## Dev Commands
 ```bash
 npm run dev     # Runs on http://localhost:3399
-npm run build   # Production build (50 pages)
+npm run build   # Production build (60 pages)
 npm run lint    # ESLint
 
 # Supabase
@@ -170,21 +182,26 @@ supabase login
 supabase link --project-ref jnaibnwxpweahpawxycf
 supabase db push                    # Push migrations
 supabase gen types typescript ...   # Generate types
+
+# Railway
+railway link
+railway variables set KEY=value
+railway logs
 ```
 
 ## Notes for Next Session
 
-### Priority 1: Monetization
-1. AdSense integration
-2. Amazon affiliate links on game pages
-3. Affiliate link tracking in Supabase
+### Priority 1: Analytics & Monitoring
+1. Plausible or Vercel Analytics setup
+2. Error monitoring (Sentry or similar)
+3. Performance monitoring
 
-### Priority 2: Polish
-1. Performance optimization (Core Web Vitals)
-2. Accessibility audit
-3. Error pages (404, error.tsx)
+### Priority 2: Content Expansion
+1. Add more games to database
+2. Create score sheet configs in database
+3. Add game mechanics linking
 
-### Priority 3: Deployment
-1. Railway deployment configuration
-2. Domain setup
-3. Google Search Console submission
+### Priority 3: Enhancements
+1. Accessibility audit
+2. Performance optimization (Core Web Vitals)
+3. PWA support for offline access

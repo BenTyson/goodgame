@@ -6,10 +6,14 @@ import { Users, Clock } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { GameWithCategories } from '@/data/mock-games'
+import type { Game } from '@/types/database'
+
+type GameWithOptionalCategories = Game & {
+  categories?: { name: string; slug: string }[]
+}
 
 interface RelatedGamesProps {
-  games: GameWithCategories[]
+  games: GameWithOptionalCategories[]
   title?: string
 }
 

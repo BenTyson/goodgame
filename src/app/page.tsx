@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GameGrid } from '@/components/games'
-import { mockGames, mockCategories } from '@/data/mock-games'
+import { getFeaturedGames, getCategories } from '@/lib/supabase/queries'
 
 const contentTypes = [
   {
@@ -52,9 +52,10 @@ const categoryIcons: Record<string, React.ElementType> = {
   'two-player': User2,
 }
 
-export default function HomePage() {
-  const featuredGames = mockGames.filter((game) => game.is_featured)
-  const primaryCategories = mockCategories.filter((cat) => cat.is_primary)
+export default async function HomePage() {
+  const featuredGames = await getFeaturedGames(6)
+  const categories = await getCategories()
+  const primaryCategories = categories.filter((cat) => cat.is_primary)
 
   return (
     <div className="flex flex-col">

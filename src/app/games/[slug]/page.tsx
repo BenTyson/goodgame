@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ImageGallery, RelatedGames } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
-import { mockGames, getGameImages, getRelatedGames } from '@/data/mock-games'
+import { getGameWithDetails, getRelatedGames, getAllGameSlugs } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface GamePageProps {
@@ -31,7 +31,7 @@ export async function generateMetadata({
   params,
 }: GamePageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameWithDetails(slug)
 
   if (!game) {
     return {
@@ -48,9 +48,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockGames.map((game) => ({
-    slug: game.slug,
-  }))
+  const slugs = await getAllGameSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 const contentSections = [
@@ -86,7 +85,7 @@ const contentSections = [
 
 export default async function GamePage({ params }: GamePageProps) {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameWithDetails(slug)
 
   if (!game) {
     notFound()
@@ -101,6 +100,8 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: 'Games', href: '/games' },
     { name: game.name, href: `/games/${game.slug}` },
   ]
+
+  const relatedGames = await getRelatedGames(game.slug)
 
   return (
     <>
@@ -120,31 +121,27 @@ export default async function GamePage({ params }: GamePageProps) {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Game images */}
         <div className="lg:col-span-1">
-          {(() => {
-            const images = getGameImages(game.slug)
-            if (images.length > 0) {
-              return <ImageGallery images={images} gameName={game.name} />
-            }
-            return (
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-                {game.box_image_url ? (
-                  <Image
-                    src={game.box_image_url}
-                    alt={game.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                    <span className="text-8xl font-bold text-primary/40">
-                      {game.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
+          {game.images && game.images.length > 0 ? (
+            <ImageGallery images={game.images} gameName={game.name} />
+          ) : (
+            <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+              {game.box_image_url ? (
+                <Image
+                  src={game.box_image_url}
+                  alt={game.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                  <span className="text-8xl font-bold text-primary/40">
+                    {game.name.charAt(0)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Game info */}
@@ -324,18 +321,12 @@ export default async function GamePage({ params }: GamePageProps) {
       )}
 
       {/* Related games */}
-      {(() => {
-        const relatedGames = getRelatedGames(game.slug)
-        if (relatedGames.length > 0) {
-          return (
-            <>
-              <Separator className="my-10" />
-              <RelatedGames games={relatedGames} />
-            </>
-          )
-        }
-        return null
-      })()}
+      {relatedGames.length > 0 && (
+        <>
+          <Separator className="my-10" />
+          <RelatedGames games={relatedGames} />
+        </>
+      )}
       </div>
     </>
   )

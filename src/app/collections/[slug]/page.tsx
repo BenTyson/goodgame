@@ -6,7 +6,7 @@ import { ArrowLeft, Library, Sparkles, Clock, Users2, Cog, Brain } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { GameGrid } from '@/components/games/GameGrid'
-import { mockCollections, getCollectionGames } from '@/data/mock-games'
+import { getCollectionBySlug, getGamesInCollection, getCollections, getAllCollectionSlugs } from '@/lib/supabase/queries'
 import { CollectionJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface CollectionPageProps {
@@ -26,7 +26,7 @@ export async function generateMetadata({
   params,
 }: CollectionPageProps): Promise<Metadata> {
   const { slug } = await params
-  const collection = mockCollections.find((c) => c.slug === slug)
+  const collection = await getCollectionBySlug(slug)
 
   if (!collection) {
     return {
@@ -43,27 +43,27 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockCollections
-    .filter((c) => c.is_published)
-    .map((collection) => ({
-      slug: collection.slug,
-    }))
+  const slugs = await getAllCollectionSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { slug } = await params
-  const collection = mockCollections.find((c) => c.slug === slug)
+  const [collection, gamesInCollection, allCollections] = await Promise.all([
+    getCollectionBySlug(slug),
+    getGamesInCollection(slug),
+    getCollections()
+  ])
 
-  if (!collection || !collection.is_published) {
+  if (!collection) {
     notFound()
   }
 
-  const gamesInCollection = getCollectionGames(slug)
   const icon = collectionIcons[slug] || <Library className="h-6 w-6" />
 
   // Get other collections for the "More Collections" section
-  const otherCollections = mockCollections
-    .filter((c) => c.slug !== slug && c.is_published)
+  const otherCollections = allCollections
+    .filter((c) => c.slug !== slug)
     .slice(0, 4)
 
   const breadcrumbs = [
@@ -152,7 +152,6 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           <div className="flex flex-wrap gap-3">
             {otherCollections.map((coll) => {
               const collIcon = collectionIcons[coll.slug] || <Library className="h-4 w-4" />
-              const gameCount = getCollectionGames(coll.slug).length
 
               return (
                 <Link
@@ -162,7 +161,6 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                 >
                   <span className="text-primary">{collIcon}</span>
                   <span className="font-medium">{coll.name}</span>
-                  <span className="text-sm text-muted-foreground">({gameCount})</span>
                 </Link>
               )
             })}
