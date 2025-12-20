@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { PrintButton } from '@/components/ui/print-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { mockGames } from '@/data/mock-games'
+import { getGameBySlug, getAllGameSlugs } from '@/lib/supabase/queries'
 
 interface ReferencePageProps {
   params: Promise<{ slug: string }>
@@ -17,7 +17,7 @@ export async function generateMetadata({
   params,
 }: ReferencePageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
   if (!game) {
     return {
@@ -32,11 +32,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockGames
-    .filter((game) => game.has_reference)
-    .map((game) => ({
-      slug: game.slug,
-    }))
+  const slugs = await getAllGameSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 // Reference content for each game
@@ -214,6 +211,125 @@ const referenceContent: Record<string, {
     ],
     endGame: 'When all 3 global parameters maxed (14% O2, +8°C, 9 oceans). Final greenery placement, then scoring.',
   },
+  splendor: {
+    turnSummary: [
+      { phase: 'Option A', action: 'Take 3 different gem tokens' },
+      { phase: 'Option B', action: 'Take 2 same-color gems (if 4+ available)' },
+      { phase: 'Option C', action: 'Reserve a card + take 1 gold' },
+      { phase: 'Option D', action: 'Purchase a card with gems' },
+      { phase: 'End of turn', action: 'Receive noble visit if qualified' },
+    ],
+    keyRules: [
+      { rule: 'Max 10 gems', detail: 'Must return excess gems to supply' },
+      { rule: 'Max 3 reserved', detail: 'Cannot reserve 4th card' },
+      { rule: 'Gold is wild', detail: 'Replaces any gem color' },
+      { rule: 'Noble visits', detail: 'Automatic when you meet bonus requirements' },
+      { rule: 'Cards = permanent gems', detail: 'Reduce future purchase costs' },
+    ],
+    costs: [
+      { item: 'Level 1 cards', cost: '2-4 gems, 0-1 VP' },
+      { item: 'Level 2 cards', cost: '4-6 gems, 1-3 VP' },
+      { item: 'Level 3 cards', cost: '6-7 gems, 3-5 VP' },
+      { item: 'Nobles', cost: '3 VP each (free when qualified)' },
+    ],
+    quickReminders: [
+      'Taking 2 same gems requires 4+ in supply',
+      'Cards reduce cost permanently',
+      'Gold tokens are wild but limited (5 total)',
+      'Nobles come to you - no action needed',
+    ],
+    endGame: 'First player to 15+ prestige points triggers final round. Highest score after that round wins.',
+  },
+  pandemic: {
+    turnSummary: [
+      { phase: '1. Actions (4)', action: 'Move, treat, share, cure, build' },
+      { phase: '2. Draw', action: 'Draw 2 player cards (hand limit 7)' },
+      { phase: '3. Infect', action: 'Draw infection cards = rate' },
+    ],
+    keyRules: [
+      { rule: 'Outbreak', detail: '4th cube = spread to all connected cities' },
+      { rule: 'Cure', detail: '5 matching cards at research station' },
+      { rule: 'Eradicate', detail: 'Cure + remove all cubes = no new infections' },
+      { rule: 'Hand limit', detail: '7 cards max (discard at end of turn)' },
+      { rule: 'Epidemic', detail: 'Infect new city, shuffle discards on top' },
+    ],
+    costs: [
+      { item: 'Move (drive/ferry)', cost: '1 action' },
+      { item: 'Move (direct flight)', cost: '1 action + discard destination card' },
+      { item: 'Move (charter)', cost: '1 action + discard current city card' },
+      { item: 'Treat disease', cost: '1 action = remove 1 cube (all if cured)' },
+      { item: 'Build station', cost: '1 action + current city card' },
+      { item: 'Share knowledge', cost: '1 action (same city, that city\'s card)' },
+      { item: 'Discover cure', cost: '1 action + 5 matching cards at station' },
+    ],
+    quickReminders: [
+      'Cooperate! Discuss strategy openly',
+      '8 outbreaks = immediate loss',
+      'Running out of cubes/cards = loss',
+      'Use role abilities every turn',
+    ],
+    endGame: 'Win: Cure all 4 diseases. Lose: 8 outbreaks, run out of cubes, or player deck empty.',
+  },
+  carcassonne: {
+    turnSummary: [
+      { phase: '1. Draw', action: 'Draw and reveal a tile' },
+      { phase: '2. Place', action: 'Add tile to the map (edges must match)' },
+      { phase: '3. Deploy', action: 'Optionally place 1 meeple on the new tile' },
+      { phase: '4. Score', action: 'Score any completed features' },
+    ],
+    keyRules: [
+      { rule: 'Matching edges', detail: 'Roads to roads, cities to cities, fields to fields' },
+      { rule: 'Meeple placement', detail: 'Only on tile just placed, not in occupied features' },
+      { rule: 'Scoring returns', detail: 'Meeples return after completed features score' },
+      { rule: 'Fields', detail: 'Meeples stay until game end, score 3 per completed city' },
+      { rule: 'Majority wins', detail: 'Ties share points equally' },
+    ],
+    costs: [
+      { item: 'Road complete', cost: '1 point per tile' },
+      { item: 'City complete', cost: '2 points per tile + 2 per pennant' },
+      { item: 'Monastery complete', cost: '9 points (all 8 surrounding + center)' },
+      { item: 'Incomplete road', cost: '1 point per tile at game end' },
+      { item: 'Incomplete city', cost: '1 point per tile + 1 per pennant at game end' },
+      { item: 'Fields', cost: '3 points per completed city touching field' },
+    ],
+    quickReminders: [
+      'Save meeples - can\'t place if none available',
+      'Fields are powerful but risky (game-long commitment)',
+      'Connect to opponents\' features to share/steal points',
+      'Score track: 50+ = flip meeple to indicate +50',
+    ],
+    endGame: 'Last tile placed, then score all incomplete features and fields. Highest score wins.',
+  },
+  '7-wonders': {
+    turnSummary: [
+      { phase: '1. Choose', action: 'Select 1 card from hand simultaneously' },
+      { phase: '2. Reveal', action: 'All reveal chosen cards together' },
+      { phase: '3. Build', action: 'Pay cost OR build wonder stage OR sell for 3 coins' },
+      { phase: '4. Pass', action: 'Pass remaining cards to neighbor' },
+    ],
+    keyRules: [
+      { rule: 'Resource trading', detail: '2 coins per resource from neighbors' },
+      { rule: 'Chain building', detail: 'Symbol on card = free prerequisite' },
+      { rule: 'Military', detail: 'Compare shields at end of each age' },
+      { rule: 'Science scoring', detail: 'Sets of 3 + squares of matching symbols' },
+      { rule: 'Yellow cards', detail: 'Often provide coins or trading discounts' },
+    ],
+    costs: [
+      { item: 'Age I military', cost: '+1/-1 tokens' },
+      { item: 'Age II military', cost: '+3/-1 tokens' },
+      { item: 'Age III military', cost: '+5/-1 tokens' },
+      { item: 'Buy neighbor resource', cost: '2 coins each' },
+      { item: 'Discard card', cost: 'Gain 3 coins' },
+      { item: 'Wonder stage', cost: 'Pay wonder cost, tuck any card' },
+    ],
+    quickReminders: [
+      'Pass left in Ages I & III, right in Age II',
+      'Science: set of 3 different = 7 points',
+      'Science: each matching symbol = symbol² points',
+      'Can only build 1 of each card (by name)',
+    ],
+    endGame: 'After Age III military. Sum all victory points. Most points wins.',
+  },
 }
 
 // Default reference content
@@ -233,13 +349,9 @@ const defaultReferenceContent = {
 
 export default async function ReferencePage({ params }: ReferencePageProps) {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
-  if (!game) {
-    notFound()
-  }
-
-  if (!game.has_reference) {
+  if (!game || !game.has_reference) {
     notFound()
   }
 

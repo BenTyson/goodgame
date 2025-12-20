@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SetupChecklist } from '@/components/setup/SetupChecklist'
-import { mockGames } from '@/data/mock-games'
+import { getGameBySlug, getAllGameSlugs } from '@/lib/supabase/queries'
 
 interface SetupPageProps {
   params: Promise<{ slug: string }>
@@ -17,7 +17,7 @@ export async function generateMetadata({
   params,
 }: SetupPageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
   if (!game) {
     return {
@@ -32,11 +32,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockGames
-    .filter((game) => game.has_setup_guide)
-    .map((game) => ({
-      slug: game.slug,
-    }))
+  const slugs = await getAllGameSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 // Setup content for each game
@@ -409,6 +406,213 @@ const setupContent: Record<string, {
       'Don\'t ignore milestones and awards - they can swing the game',
     ],
   },
+  splendor: {
+    playerSetup: [
+      {
+        title: 'Choose seating',
+        description: 'Players sit around the table. No individual player pieces needed.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Shuffle development cards',
+        description: 'Separate cards by level (Level 1/green backs, Level 2/yellow, Level 3/blue). Shuffle each deck.',
+      },
+      {
+        title: 'Deal face-up cards',
+        description: 'Reveal 4 cards from each level in a row. Level 1 at the bottom, Level 3 at top.',
+        tip: 'Leave room between rows for remaining decks.',
+      },
+      {
+        title: 'Set out gem tokens',
+        description: 'For 4 players: 7 of each gem color. For 3 players: 5 each. For 2 players: 4 each. Always 5 gold tokens.',
+      },
+      {
+        title: 'Reveal noble tiles',
+        description: 'Shuffle noble tiles and reveal equal to players + 1 (5 for 4 players, 4 for 3, 3 for 2).',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Development cards (Level 1)', quantity: '40' },
+      { name: 'Development cards (Level 2)', quantity: '30' },
+      { name: 'Development cards (Level 3)', quantity: '20' },
+      { name: 'Noble tiles', quantity: '10' },
+      { name: 'Emerald tokens (green)', quantity: '7' },
+      { name: 'Diamond tokens (white)', quantity: '7' },
+      { name: 'Sapphire tokens (blue)', quantity: '7' },
+      { name: 'Onyx tokens (black)', quantity: '7' },
+      { name: 'Ruby tokens (red)', quantity: '7' },
+      { name: 'Gold tokens (joker)', quantity: '5' },
+    ],
+    firstPlayerRule: 'The youngest player goes first, then play continues clockwise.',
+    quickTips: [
+      'Cards give permanent gem discounts - build your engine early',
+      'Watch what gems opponents are collecting',
+      'Gold tokens are wild and valuable for key purchases',
+    ],
+  },
+  pandemic: {
+    playerSetup: [
+      {
+        title: 'Choose roles',
+        description: 'Shuffle role cards and deal 1 to each player. Each role has unique abilities.',
+        tip: 'For first game, deal 2 roles per player and let them choose.',
+      },
+      {
+        title: 'Take role pawn',
+        description: 'Each player takes the pawn matching their role card color.',
+      },
+      {
+        title: 'Deal player cards',
+        description: '4 players: 2 cards each. 3 players: 3 cards. 2 players: 4 cards.',
+      },
+      {
+        title: 'Place pawns in Atlanta',
+        description: 'All players start at the Atlanta research station.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Place research station',
+        description: 'Place one research station in Atlanta on the game board.',
+      },
+      {
+        title: 'Set infection rate',
+        description: 'Place marker on the "2" space of the infection rate track.',
+      },
+      {
+        title: 'Set outbreak marker',
+        description: 'Place marker on the "0" space of the outbreak track.',
+      },
+      {
+        title: 'Place cure markers',
+        description: 'Place the 4 cure markers (vial side up) near the cure indicators.',
+      },
+      {
+        title: 'Set up infection deck',
+        description: 'Shuffle infection cards. Draw and infect 3 cities with 3 cubes, 3 cities with 2 cubes, 3 cities with 1 cube.',
+        tip: 'Use matching color cubes for each city.',
+      },
+      {
+        title: 'Add epidemic cards',
+        description: 'Divide player draw pile into equal piles (4/5/6 for easy/medium/hard). Add 1 epidemic card to each pile, shuffle each, stack.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Disease cubes (each color)', quantity: '24 x 4 colors' },
+      { name: 'Research stations', quantity: '6' },
+      { name: 'Infection cards', quantity: '48' },
+      { name: 'Player cards', quantity: '59' },
+      { name: 'Epidemic cards', quantity: '6' },
+      { name: 'Role cards', quantity: '7' },
+      { name: 'Cure markers', quantity: '4' },
+      { name: 'Player pawns', quantity: '7' },
+    ],
+    firstPlayerRule: 'The player with the highest city population on a player card goes first.',
+    quickTips: [
+      'This is cooperative - discuss strategy openly',
+      'Prevent outbreaks by treating clusters early',
+      'Share knowledge at research stations to find cures faster',
+    ],
+  },
+  carcassonne: {
+    playerSetup: [
+      {
+        title: 'Choose colors',
+        description: 'Each player picks a color and takes all 7 meeples of that color.',
+      },
+      {
+        title: 'Keep 1 meeple for scoring',
+        description: 'Place 1 meeple on the "0" space of the score track. Use remaining 6 for placement.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Place starting tile',
+        description: 'Find the starting tile (darker back or marked) and place face-up in center of table.',
+      },
+      {
+        title: 'Shuffle remaining tiles',
+        description: 'Shuffle all other tiles face-down. Create several stacks for easy access.',
+        tip: 'River expansion tiles should be placed first if included.',
+      },
+      {
+        title: 'Set up scoring track',
+        description: 'Place the scoreboard where all players can reach it.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Land tiles', quantity: '72 (including start)' },
+      { name: 'Meeples per player', quantity: '7' },
+      { name: 'Scoring track', quantity: '1' },
+      { name: 'Rule summary cards', quantity: '5' },
+    ],
+    firstPlayerRule: 'The youngest player goes first, then play continues clockwise.',
+    quickTips: [
+      'Save some meeples - you can\'t place if you have none',
+      'Fields lock meeples until game end but score big',
+      'Complete features quickly to get meeples back',
+    ],
+  },
+  '7-wonders': {
+    playerSetup: [
+      {
+        title: 'Deal wonder boards',
+        description: 'Shuffle and deal 1 wonder board to each player, or let players choose.',
+        tip: 'A/B sides have different powers. Use A side for first game.',
+      },
+      {
+        title: 'Take coins',
+        description: 'Each player takes 3 coins (value 1) from the bank.',
+      },
+      {
+        title: 'Note your neighbors',
+        description: 'Players to your immediate left and right are your neighbors for trading and military.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Separate cards by age',
+        description: 'Sort cards into Age I, II, and III piles (check card backs).',
+      },
+      {
+        title: 'Adjust for player count',
+        description: 'Some cards have player count symbols. Remove cards requiring more players than you have.',
+      },
+      {
+        title: 'Prepare Guild cards (Age III)',
+        description: 'Shuffle purple Guild cards. Add players + 2 to Age III deck (7 for 5 players, etc.).',
+      },
+      {
+        title: 'Shuffle each age deck',
+        description: 'Shuffle Age I, II, and III separately. Set II and III aside.',
+      },
+      {
+        title: 'Deal Age I cards',
+        description: 'Deal 7 Age I cards to each player.',
+      },
+      {
+        title: 'Set up conflict tokens',
+        description: 'Place -1 tokens nearby. Separate +1, +3, +5 tokens by age.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Wonder boards', quantity: '7' },
+      { name: 'Age I cards', quantity: '49' },
+      { name: 'Age II cards', quantity: '49' },
+      { name: 'Age III cards', quantity: '50' },
+      { name: 'Guild cards (purple)', quantity: '10' },
+      { name: 'Conflict tokens', quantity: '46' },
+      { name: 'Coins (value 1)', quantity: '46' },
+      { name: 'Coins (value 3)', quantity: '24' },
+    ],
+    firstPlayerRule: 'The player who most recently visited an ancient monument goes first (or choose randomly).',
+    quickTips: [
+      'Resources from neighbors cost 2 coins each',
+      'Build chains - some cards let you build later cards free',
+      'Watch military - losing costs -1 each age',
+    ],
+  },
 }
 
 // Default setup content
@@ -429,13 +633,9 @@ const defaultSetupContent = {
 
 export default async function SetupPage({ params }: SetupPageProps) {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
-  if (!game) {
-    notFound()
-  }
-
-  if (!game.has_setup_guide) {
+  if (!game || !game.has_setup_guide) {
     notFound()
   }
 

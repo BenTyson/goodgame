@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { mockGames } from '@/data/mock-games'
+import { getGameBySlug, getAllGameSlugs } from '@/lib/supabase/queries'
 import { HowToJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface RulesPageProps {
@@ -18,7 +18,7 @@ export async function generateMetadata({
   params,
 }: RulesPageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
   if (!game) {
     return {
@@ -33,11 +33,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockGames
-    .filter((game) => game.has_rules)
-    .map((game) => ({
-      slug: game.slug,
-    }))
+  const slugs = await getAllGameSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 // Placeholder rules content - in production this would come from MDX files
@@ -337,6 +334,190 @@ const rulesContent: Record<string, {
       'Greeneries next to your cities maximize end-game points',
     ],
   },
+  splendor: {
+    quickStart: [
+      'Take gem tokens or reserve a card on your turn',
+      'Use gems to purchase development cards',
+      'Cards give permanent gem bonuses for future purchases',
+      'First to 15 points wins!',
+    ],
+    overview:
+      'Splendor is an elegant engine-building game where players collect gem tokens to purchase development cards. Each card provides permanent gem bonuses, making future purchases cheaper. Attract nobles by building the right combinations to reach 15 prestige points.',
+    setup: [
+      'Shuffle each development card deck separately (Level 1, 2, 3)',
+      'Reveal 4 cards from each level in a row',
+      'Place gem tokens based on player count (7/5/4 for 4/3/2 players)',
+      'Reveal nobles equal to players + 1',
+    ],
+    turnStructure: [
+      {
+        title: 'Take Gems',
+        description:
+          'Take 3 different gem tokens, OR take 2 of the same color (if 4+ available). Maximum 10 gems in hand.',
+      },
+      {
+        title: 'Reserve a Card',
+        description:
+          'Take a face-up card or top of any deck into your hand (max 3 reserved). Gain 1 gold joker token.',
+      },
+      {
+        title: 'Purchase a Card',
+        description:
+          'Pay the gem cost (reduced by your card bonuses) to buy a face-up card or reserved card. Place it in front of you.',
+      },
+    ],
+    scoring: [
+      { category: 'Level 1 cards', points: '0-1 VP each' },
+      { category: 'Level 2 cards', points: '1-3 VP each' },
+      { category: 'Level 3 cards', points: '3-5 VP each' },
+      { category: 'Nobles', points: '3 VP each' },
+    ],
+    tips: [
+      'Focus on one or two colors early to build engine quickly',
+      'Watch what opponents are collecting to deny key cards',
+      'Gold tokens are powerful - reserve strategically',
+      'Nobles come free - plan your purchases to attract them',
+    ],
+  },
+  pandemic: {
+    quickStart: [
+      'Work as a team to cure 4 diseases before outbreaks overwhelm the world',
+      'Use your unique role ability to maximum effect',
+      'Trade cards and meet at research stations to find cures',
+      'Cure all 4 diseases to win - too many outbreaks means game over!',
+    ],
+    overview:
+      'Pandemic is a cooperative game where players are disease-fighting specialists working to save humanity. Travel the world treating infections, sharing knowledge, and racing to discover cures before diseases spread out of control.',
+    setup: [
+      'Place research station in Atlanta, all pawns start there',
+      'Shuffle and deal player cards (varies by player count)',
+      'Infect 9 cities from infection deck (3 cities with 3, 3, 1 cubes)',
+      'Add epidemic cards to player deck based on difficulty',
+    ],
+    turnStructure: [
+      {
+        title: 'Take 4 Actions',
+        description:
+          'Drive/ferry to adjacent city, fly to card city, charter flight from current city, or shuttle between research stations. Also: treat disease, share knowledge, discover cure, build station.',
+      },
+      {
+        title: 'Draw 2 Player Cards',
+        description:
+          'Draw cards to your hand (max 7). Epidemic cards cause immediate outbreak in new city and intensify infection deck.',
+      },
+      {
+        title: 'Infect Cities',
+        description:
+          'Draw infection cards equal to infection rate. Add 1 disease cube to each city drawn. 4th cube triggers outbreak!',
+      },
+    ],
+    scoring: [
+      { category: 'Win condition', points: 'Cure all 4 diseases' },
+      { category: 'Lose: Outbreaks', points: '8 outbreaks = game over' },
+      { category: 'Lose: Cubes', points: 'Run out of any color = game over' },
+      { category: 'Lose: Cards', points: 'No player cards left = game over' },
+    ],
+    tips: [
+      'Communicate constantly - plan several turns ahead',
+      'Treat disease clusters before they outbreak',
+      'Use role abilities! Medic and Researcher are powerful',
+      'Don\'t neglect any disease - all 4 must be cured to win',
+    ],
+  },
+  carcassonne: {
+    quickStart: [
+      'Draw a tile and add it to the map',
+      'Optionally place one of your meeples on the tile',
+      'Score completed roads, cities, and monasteries',
+      'Most points at game end wins!',
+    ],
+    overview:
+      'Carcassonne is a tile-laying game where players build the medieval French countryside. Draw tiles depicting roads, cities, monasteries, and fields, then place them to extend the landscape. Deploy your followers strategically to score points.',
+    setup: [
+      'Place the starting tile face-up in the center',
+      'Shuffle all other tiles face-down in stacks',
+      'Each player takes 7 meeples in their color',
+      'Determine starting player randomly',
+    ],
+    turnStructure: [
+      {
+        title: 'Draw and Place Tile',
+        description:
+          'Draw a tile and place it adjacent to existing tiles. Roads must connect to roads, cities to cities, fields to fields.',
+      },
+      {
+        title: 'Place a Meeple (Optional)',
+        description:
+          'Place one meeple on a feature of the tile you just placed: road (thief), city (knight), monastery (monk), or field (farmer). Cannot join features with opponent\'s meeple.',
+      },
+      {
+        title: 'Score Completed Features',
+        description:
+          'When a road, city, or monastery is completed, score it immediately and return meeples. Fields score at game end only.',
+      },
+    ],
+    scoring: [
+      { category: 'Completed road', points: '1 per tile' },
+      { category: 'Completed city', points: '2 per tile + 2 per pennant' },
+      { category: 'Completed monastery', points: '9 points (center + 8 surrounding)' },
+      { category: 'Incomplete features', points: '1 per tile at game end' },
+      { category: 'Fields', points: '3 per completed city touching field' },
+    ],
+    tips: [
+      'Don\'t commit all meeples early - keep options open',
+      'Fields are powerful but lock meeples until game end',
+      'Sometimes blocking opponents is worth more than building',
+      'Try to sneak meeples into opponents\' features by connecting',
+    ],
+  },
+  '7-wonders': {
+    quickStart: [
+      'Draft cards over 3 ages - pick one, pass the rest',
+      'Build structures or wonder stages with resources',
+      'Military conflicts happen at end of each age',
+      'Most victory points after Age III wins!',
+    ],
+    overview:
+      '7 Wonders is a card drafting game where players lead ancient civilizations. Over three ages, simultaneously draft cards to build your city, construct wonder stages, and amass victory points through multiple paths: military, science, commerce, and more.',
+    setup: [
+      'Each player receives a wonder board (random or draft)',
+      'Separate cards by age (I, II, III) and shuffle each',
+      'Deal 7 Age I cards to each player',
+      'Place 3 coins on each wonder board',
+    ],
+    turnStructure: [
+      {
+        title: 'Choose Card',
+        description:
+          'Simultaneously, each player selects one card from their hand and places it face-down.',
+      },
+      {
+        title: 'Reveal and Resolve',
+        description:
+          'All players reveal chosen cards simultaneously. Build the structure (pay resource cost), build wonder stage (tuck card), or discard for 3 coins.',
+      },
+      {
+        title: 'Pass Remaining Cards',
+        description:
+          'Pass remaining hand to neighbor (left in Ages I/III, right in Age II). Repeat until 6 cards played, discard the 7th.',
+      },
+    ],
+    scoring: [
+      { category: 'Military tokens', points: 'Sum of all tokens (+/-)' },
+      { category: 'Treasury', points: '1 VP per 3 coins' },
+      { category: 'Wonder stages', points: 'As printed (2-7 VP)' },
+      { category: 'Blue buildings', points: '2-8 VP each' },
+      { category: 'Yellow buildings', points: 'Various bonuses' },
+      { category: 'Green (science)', points: 'Sets + matching symbols²' },
+      { category: 'Purple (guilds)', points: 'Based on neighbors/self' },
+    ],
+    tips: [
+      'Science is powerful but risky - need sets and matches',
+      'Watch what neighbors need - deny key resources',
+      'Military: stay slightly ahead, don\'t over-invest',
+      'Free building chains (symbol matching) save resources',
+    ],
+  },
 }
 
 // Default content for games without specific rules
@@ -356,13 +537,9 @@ const defaultRulesContent = {
 
 export default async function RulesPage({ params }: RulesPageProps) {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
-  if (!game) {
-    notFound()
-  }
-
-  if (!game.has_rules) {
+  if (!game || !game.has_rules) {
     notFound()
   }
 
