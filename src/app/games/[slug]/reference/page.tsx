@@ -330,6 +330,172 @@ const referenceContent: Record<string, {
     ],
     endGame: 'After Age III military. Sum all victory points. Most points wins.',
   },
+  dominion: {
+    turnSummary: [
+      { phase: 'Action Phase', action: 'Play 1 Action card (more with +Actions)' },
+      { phase: 'Buy Phase', action: 'Play Treasures, buy 1 card (more with +Buys)' },
+      { phase: 'Cleanup', action: 'Discard everything, draw 5 new cards' },
+    ],
+    keyRules: [
+      { rule: 'Starting deck', detail: '7 Copper, 3 Estate = 10 cards' },
+      { rule: '+Actions', detail: 'Lets you play additional Action cards' },
+      { rule: '+Cards', detail: 'Draw more cards from your deck' },
+      { rule: '+Buys', detail: 'Lets you buy multiple cards' },
+      { rule: 'Trash', detail: 'Remove cards permanently from your deck' },
+    ],
+    costs: [
+      { item: 'Copper', cost: '0 (value 1)' },
+      { item: 'Silver', cost: '3 (value 2)' },
+      { item: 'Gold', cost: '6 (value 3)' },
+      { item: 'Estate', cost: '2 (1 VP)' },
+      { item: 'Duchy', cost: '5 (3 VP)' },
+      { item: 'Province', cost: '8 (6 VP)' },
+    ],
+    quickReminders: [
+      'Bought cards go to discard, not hand',
+      'Shuffle discard when deck is empty',
+      'Victory cards are dead draws mid-game',
+      'Game ends when Provinces or 3 piles empty',
+    ],
+    endGame: 'Province pile empty OR any 3 supply piles empty. Count all VP in deck.',
+  },
+  'king-of-tokyo': {
+    turnSummary: [
+      { phase: '1. Roll', action: 'Roll 6 dice, reroll up to 2 more times' },
+      { phase: '2. Resolve', action: 'Apply all dice results' },
+      { phase: '3. Enter Tokyo', action: 'If empty and you rolled claws, enter' },
+      { phase: '4. Buy', action: 'Spend energy on Power cards' },
+    ],
+    keyRules: [
+      { rule: 'In Tokyo', detail: 'Attack ALL others, cannot heal, +2 VP per turn' },
+      { rule: 'Yield', detail: 'When hit while in Tokyo, may leave (attacker enters)' },
+      { rule: 'Elimination', detail: '0 health = out of the game' },
+      { rule: 'Sweep', detail: 'Pay 2 energy to discard all 3 face-up cards, reveal new' },
+    ],
+    costs: [
+      { item: 'Claw', cost: '1 damage per claw' },
+      { item: 'Heart', cost: 'Heal 1 (not in Tokyo)' },
+      { item: 'Lightning', cost: '1 energy per lightning' },
+      { item: '3 matching numbers', cost: 'That many VP' },
+      { item: 'Extra matching die', cost: '+1 VP each' },
+    ],
+    quickReminders: [
+      'First to Tokyo gets 1 VP for entering',
+      'Start of turn in Tokyo = 2 VP',
+      'Cannot heal inside Tokyo',
+      'Power cards stay unless discarded',
+    ],
+    endGame: 'First to 20 VP wins, OR last monster standing.',
+  },
+  'sushi-go': {
+    turnSummary: [
+      { phase: '1. Pick', action: 'Choose 1 card from hand, place face-down' },
+      { phase: '2. Reveal', action: 'All flip cards simultaneously' },
+      { phase: '3. Pass', action: 'Pass remaining hand to the left' },
+      { phase: 'Repeat', action: 'Continue until all cards played' },
+    ],
+    keyRules: [
+      { rule: 'Chopsticks', detail: 'Say "Sushi Go!" to swap for 2 cards later' },
+      { rule: 'Wasabi', detail: 'Next nigiri played on it is tripled' },
+      { rule: 'Pudding', detail: 'Keep until game end, scored after round 3' },
+      { rule: 'Rounds', detail: 'Play 3 rounds, reshuffle between rounds' },
+    ],
+    costs: [
+      { item: 'Tempura', cost: '5 pts per pair (0 for 1)' },
+      { item: 'Sashimi', cost: '10 pts per set of 3 (0 for 1-2)' },
+      { item: 'Dumplings', cost: '1/3/6/10/15 for 1-5+' },
+      { item: 'Maki (most/2nd)', cost: '6/3 VP' },
+      { item: 'Nigiri (egg/salmon/squid)', cost: '1/2/3 VP' },
+    ],
+    quickReminders: [
+      'Pudding: most = +6, least = -6 at game end',
+      'Chopsticks: put back in hand after using',
+      'Maki: count icons, not cards',
+      'Wasabi + Squid = 9 points!',
+    ],
+    endGame: 'After 3 rounds. Score puddings, highest total wins.',
+  },
+  'love-letter': {
+    turnSummary: [
+      { phase: '1. Draw', action: 'Draw 1 card (now have 2)' },
+      { phase: '2. Play', action: 'Play 1 card and resolve its effect' },
+    ],
+    keyRules: [
+      { rule: 'Protection', detail: 'Handmaid makes you immune until your next turn' },
+      { rule: 'Forced play', detail: 'Countess MUST be played if you have King or Prince' },
+      { rule: 'Princess', detail: 'If discarded for any reason, you are eliminated' },
+      { rule: 'Compare ties', detail: 'On Baron tie, neither player is eliminated' },
+    ],
+    costs: [
+      { item: 'Guard (1)', cost: 'Guess hand, eliminate if correct' },
+      { item: 'Priest (2)', cost: 'Look at opponent hand' },
+      { item: 'Baron (3)', cost: 'Compare hands, lower loses' },
+      { item: 'Handmaid (4)', cost: 'Protection until next turn' },
+      { item: 'Prince (5)', cost: 'Target discards hand, draws new' },
+      { item: 'King (6)', cost: 'Trade hands with opponent' },
+    ],
+    quickReminders: [
+      'Cannot guess Guard with Guard',
+      'Handmaid protects but announces weakness',
+      'Track played cards to deduce hands',
+      'If deck runs out, highest card wins',
+    ],
+    endGame: 'One player left OR deck empty (highest card wins round).',
+  },
+  'the-crew': {
+    turnSummary: [
+      { phase: 'Lead', action: 'Leader plays any card' },
+      { phase: 'Follow', action: 'Must follow suit if able' },
+      { phase: 'Win', action: 'Highest card of led suit (or trump) wins' },
+      { phase: 'Next', action: 'Winner leads next trick' },
+    ],
+    keyRules: [
+      { rule: 'Trump', detail: 'Rockets (1-4) always beat non-rockets' },
+      { rule: 'Follow suit', detail: 'Must play same color if possible' },
+      { rule: 'Communication', detail: '1 card face-up + token (highest/lowest/only)' },
+      { rule: 'Tasks', detail: 'Specific player must win specific card' },
+    ],
+    costs: [
+      { item: 'Token on top', cost: 'This is my HIGHEST of this suit' },
+      { item: 'Token on bottom', cost: 'This is my LOWEST of this suit' },
+      { item: 'Token in center', cost: 'This is my ONLY card of this suit' },
+      { item: 'Order token', cost: 'Must complete tasks in this sequence' },
+    ],
+    quickReminders: [
+      'Discuss strategy BEFORE dealing',
+      'Once dealt, only communicate via tokens',
+      'Commander (4 of rockets) leads first',
+      'All tasks must succeed for mission success',
+    ],
+    endGame: 'All tasks completed = win! Any task failed = retry mission.',
+  },
+  cascadia: {
+    turnSummary: [
+      { phase: '1. Draft', action: 'Take 1 tile + paired token (or use nature token)' },
+      { phase: '2. Place tile', action: 'Add tile adjacent to your ecosystem' },
+      { phase: '3. Place wildlife', action: 'Put token on matching habitat (optional)' },
+      { phase: '4. Refill', action: 'Draw new tile + token for display' },
+    ],
+    keyRules: [
+      { rule: 'Nature tokens', detail: 'Take ANY tile with ANY token' },
+      { rule: 'Overpopulation', detail: '4+ same wildlife tokens = refresh all' },
+      { rule: 'Habitat corridors', detail: 'Largest contiguous habitat scores bonus' },
+      { rule: 'Wildlife placement', detail: 'Only on spaces showing that animal' },
+    ],
+    costs: [
+      { item: 'Nature token', cost: 'Free draft OR earn by completing habitat' },
+      { item: 'Habitat corridor', cost: '0/1/2/3/5/8/12/15+ tiles = VP' },
+      { item: 'Wildlife scoring', cost: 'Per scoring card chosen at setup' },
+      { item: 'Leftover nature tokens', cost: '1 VP each' },
+    ],
+    quickReminders: [
+      'Check scoring cards - each game is different',
+      'Larger habitats = bigger bonuses',
+      'Wildlife tokens cannot move once placed',
+      'Nature tokens are flexible - save for key moments',
+    ],
+    endGame: 'All tiles placed (20 turns). Score wildlife + habitats + nature tokens.',
+  },
 }
 
 // Default reference content

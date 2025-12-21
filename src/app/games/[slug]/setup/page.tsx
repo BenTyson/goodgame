@@ -613,6 +613,318 @@ const setupContent: Record<string, {
       'Watch military - losing costs -1 each age',
     ],
   },
+  dominion: {
+    playerSetup: [
+      {
+        title: 'Take starting cards',
+        description: 'Each player takes 7 Copper cards and 3 Estate cards.',
+      },
+      {
+        title: 'Shuffle your deck',
+        description: 'Shuffle your 10 cards and place them face-down as your draw deck.',
+      },
+      {
+        title: 'Draw starting hand',
+        description: 'Draw 5 cards from your deck to form your starting hand.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Set out Treasure cards',
+        description: 'Place Copper (60), Silver (40), and Gold (30) in separate piles.',
+        tip: 'Return unused starting Coppers to the pile.',
+      },
+      {
+        title: 'Set out Victory cards',
+        description: 'For 2 players: 8 of each. For 3-4 players: 12 of each Estate, Duchy, Province.',
+      },
+      {
+        title: 'Set out Curse cards',
+        description: 'Use 10 Curses per player beyond the first (10/20/30 for 2/3/4 players).',
+      },
+      {
+        title: 'Choose 10 Kingdom cards',
+        description: 'Randomly select 10 different Kingdom card piles for this game.',
+        tip: 'Use recommended sets for your first games.',
+      },
+      {
+        title: 'Set Kingdom pile quantities',
+        description: '10 copies of each Kingdom card (12 for Victory Kingdom cards).',
+      },
+      {
+        title: 'Create play area',
+        description: 'Each player needs space for draw deck, discard pile, and cards in play.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Copper cards', quantity: '60' },
+      { name: 'Silver cards', quantity: '40' },
+      { name: 'Gold cards', quantity: '30' },
+      { name: 'Estate cards', quantity: '24' },
+      { name: 'Duchy cards', quantity: '12' },
+      { name: 'Province cards', quantity: '12' },
+      { name: 'Curse cards', quantity: '30' },
+      { name: 'Kingdom card sets', quantity: '25 different' },
+      { name: 'Trash pile card', quantity: '1' },
+    ],
+    firstPlayerRule: 'The player who most recently shuffled a deck of cards goes first (or choose randomly).',
+    quickTips: [
+      'Action, Buy, Cleanup - remember the turn phases',
+      'Treasure cards go in your deck, not in the supply permanently',
+      'Trashing is powerful - smaller decks are faster',
+    ],
+  },
+  'king-of-tokyo': {
+    playerSetup: [
+      {
+        title: 'Choose a monster',
+        description: 'Each player picks a monster and takes the matching figure and monster board.',
+      },
+      {
+        title: 'Set dials',
+        description: 'Set your life dial to 10 hearts and your victory point dial to 0.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Place Tokyo board',
+        description: 'Put the Tokyo board in the center. No one starts in Tokyo.',
+        tip: 'With 5-6 players, use both Tokyo City and Tokyo Bay spaces.',
+      },
+      {
+        title: 'Shuffle Power cards',
+        description: 'Shuffle all Power cards and place the deck face-down.',
+      },
+      {
+        title: 'Reveal 3 Power cards',
+        description: 'Draw and reveal 3 Power cards face-up next to the deck.',
+      },
+      {
+        title: 'Prepare energy cubes',
+        description: 'Place all green energy cubes in a supply pile.',
+      },
+      {
+        title: 'Get dice ready',
+        description: 'Place all 6 black dice where all players can reach them.',
+        tip: 'Green dice are from expansions - don\'t use in base game.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Monster figures', quantity: '6' },
+      { name: 'Monster boards', quantity: '6' },
+      { name: 'Tokyo board', quantity: '1' },
+      { name: 'Black dice', quantity: '6' },
+      { name: 'Green dice (expansion)', quantity: '2' },
+      { name: 'Power cards', quantity: '66' },
+      { name: 'Energy cubes', quantity: '50+' },
+    ],
+    firstPlayerRule: 'The player who most recently saw a monster movie goes first.',
+    quickTips: [
+      'In Tokyo, you deal damage to ALL other players',
+      'You cannot heal while in Tokyo',
+      'Yield when low on health - discretion is valor',
+    ],
+  },
+  'sushi-go': {
+    playerSetup: [
+      {
+        title: 'Determine player count',
+        description: 'Sushi Go! plays 2-5 players. Card deal varies by count.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Shuffle all cards',
+        description: 'Combine and shuffle all 108 cards into one deck.',
+      },
+      {
+        title: 'Deal cards',
+        description: '2 players: 10 cards each. 3 players: 9 cards. 4 players: 8 cards. 5 players: 7 cards.',
+        tip: 'Remaining cards are not used this round.',
+      },
+      {
+        title: 'Prepare scoring',
+        description: 'Get paper and pencil ready for scoring, or use an app.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Tempura cards', quantity: '14' },
+      { name: 'Sashimi cards', quantity: '14' },
+      { name: 'Dumpling cards', quantity: '14' },
+      { name: 'Maki Roll cards (1/2/3)', quantity: '12/8/6' },
+      { name: 'Nigiri cards (egg/salmon/squid)', quantity: '5/10/5' },
+      { name: 'Wasabi cards', quantity: '6' },
+      { name: 'Chopsticks cards', quantity: '4' },
+      { name: 'Pudding cards', quantity: '10' },
+    ],
+    firstPlayerRule: 'All players act simultaneously - no turn order needed!',
+    quickTips: [
+      'Keep puddings for end-game scoring',
+      'Wasabi triples the next nigiri played on it',
+      'Watch what opponents need to deny their sets',
+    ],
+  },
+  'love-letter': {
+    playerSetup: [
+      {
+        title: 'Determine player count',
+        description: 'Love Letter plays 2-6 players. Gameplay adjusts slightly for 2 players.',
+      },
+      {
+        title: 'Take reference cards (optional)',
+        description: 'Each player may take a card reference guide if available.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Shuffle the deck',
+        description: 'Shuffle all 16 cards thoroughly.',
+      },
+      {
+        title: 'Remove hidden card',
+        description: 'Take the top card and set it aside face-down. This card is out of the round.',
+        tip: 'This hidden card creates uncertainty about what\'s in play.',
+      },
+      {
+        title: '2-player variant',
+        description: 'With 2 players only: also remove 3 cards face-up from the deck.',
+      },
+      {
+        title: 'Deal starting hands',
+        description: 'Deal 1 card to each player. This is your starting hand.',
+      },
+      {
+        title: 'Prepare tokens',
+        description: 'Place tokens of affection (red cubes) in the center.',
+        tip: 'Win tokens = 7 (2 players), 5 (3), 4 (4), 3 (5-6).',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Guard cards (1)', quantity: '5' },
+      { name: 'Priest cards (2)', quantity: '2' },
+      { name: 'Baron cards (3)', quantity: '2' },
+      { name: 'Handmaid cards (4)', quantity: '2' },
+      { name: 'Prince cards (5)', quantity: '2' },
+      { name: 'King card (6)', quantity: '1' },
+      { name: 'Countess card (7)', quantity: '1' },
+      { name: 'Princess card (8)', quantity: '1' },
+      { name: 'Tokens of affection', quantity: '13' },
+      { name: 'Reference cards', quantity: '4' },
+    ],
+    firstPlayerRule: 'The player who most recently went on a date goes first.',
+    quickTips: [
+      'Track which cards have been played',
+      'The Princess is worth 8 points but risky to hold',
+      'Handmaid gives you a safe turn but reveals weakness',
+    ],
+  },
+  'the-crew': {
+    playerSetup: [
+      {
+        title: 'Open mission book',
+        description: 'Choose your current mission. Start with Mission 1 for first-time players.',
+      },
+      {
+        title: 'Understand communication limits',
+        description: 'Each player gets ONE communication token for the entire mission.',
+        tip: 'Communication is very limited - plan carefully!',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Separate card types',
+        description: 'There are 4 colored suits (1-9) and rockets (1-4 trump).',
+      },
+      {
+        title: 'Deal all cards',
+        description: 'Shuffle and deal ALL 40 cards evenly to players.',
+        tip: '3 players: 13/13/14 cards. 4 players: 10 each. 5 players: 8 each.',
+      },
+      {
+        title: 'Identify Commander',
+        description: 'Whoever has the 4 of rockets is the Commander and leads the first trick.',
+      },
+      {
+        title: 'Draw task cards',
+        description: 'Check the mission for how many task cards to draw and how to distribute.',
+      },
+      {
+        title: 'Set up task tokens (if needed)',
+        description: 'Some missions use numbered tokens (1-5) or omega tokens for task order.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Large cards (color suits 1-9)', quantity: '36' },
+      { name: 'Large cards (rockets 1-4)', quantity: '4' },
+      { name: 'Task cards', quantity: '36' },
+      { name: 'Communication tokens', quantity: '5' },
+      { name: 'Task tokens (numbered)', quantity: '5' },
+      { name: 'Task token (omega)', quantity: '1' },
+      { name: 'Distress signal token', quantity: '1' },
+      { name: 'Mission logbook', quantity: '1' },
+    ],
+    firstPlayerRule: 'The Commander (holder of the 4 of rockets) leads the first trick.',
+    quickTips: [
+      'Rockets are trump and always win if played',
+      'Communication: place 1 card face-up with token showing highest/lowest/only',
+      'Discuss strategy before dealing, not during play',
+    ],
+  },
+  cascadia: {
+    playerSetup: [
+      {
+        title: 'Take starting tile',
+        description: 'Each player takes 1 random starting habitat tile and places it in front of them.',
+      },
+      {
+        title: 'Take nature tokens',
+        description: 'Each player takes 3 nature tokens (pine cones).',
+        tip: 'Nature tokens let you break the normal drafting rules.',
+      },
+    ],
+    boardSetup: [
+      {
+        title: 'Shuffle habitat tiles',
+        description: 'Shuffle all habitat tiles face-down and stack them.',
+      },
+      {
+        title: 'Create tile display',
+        description: 'Reveal 4 tiles in a row - these are available for drafting.',
+      },
+      {
+        title: 'Prepare wildlife tokens',
+        description: 'Place all wildlife tokens in the cloth bag and mix.',
+      },
+      {
+        title: 'Create token display',
+        description: 'Draw 4 tokens and place one below each tile to form pairs.',
+      },
+      {
+        title: 'Choose scoring cards',
+        description: 'Pick one scoring card for each wildlife type (A, B, C, or D sets).',
+        tip: 'Use all A cards for your first game.',
+      },
+      {
+        title: 'Set aside nature token supply',
+        description: 'Place remaining nature tokens where all can reach.',
+      },
+    ],
+    componentChecklist: [
+      { name: 'Habitat tiles', quantity: '85' },
+      { name: 'Wildlife tokens (5 types)', quantity: '100' },
+      { name: 'Nature tokens', quantity: '25' },
+      { name: 'Wildlife scoring cards', quantity: '20' },
+      { name: 'Starting habitat tiles', quantity: '5' },
+      { name: 'Cloth bag', quantity: '1' },
+      { name: 'Scoring pad', quantity: '1' },
+    ],
+    firstPlayerRule: 'The player who most recently took a hike in nature goes first.',
+    quickTips: [
+      'Study the scoring cards carefully before starting',
+      'Nature tokens give flexibility - use them wisely',
+      'Habitat corridors score big bonuses at game end',
+    ],
+  },
 }
 
 // Default setup content

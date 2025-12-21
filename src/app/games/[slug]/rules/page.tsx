@@ -518,6 +518,286 @@ const rulesContent: Record<string, {
       'Free building chains (symbol matching) save resources',
     ],
   },
+  dominion: {
+    quickStart: [
+      'Start with a deck of 10 cards (7 Copper, 3 Estate)',
+      'Each turn: draw 5 cards, play actions, buy cards',
+      'New cards go to your discard pile, then get shuffled in',
+      'Game ends when 3 piles empty - most VP wins!',
+    ],
+    overview:
+      'Dominion is the original deck-building game. All players start with identical 10-card decks and buy new cards from a shared supply to improve their decks. Actions chain together, treasures fund purchases, and victory cards win the game.',
+    setup: [
+      'Each player starts with 7 Copper and 3 Estate cards, shuffled',
+      'Set out the basic cards: Copper, Silver, Gold, Estate, Duchy, Province, Curse',
+      'Choose 10 Kingdom card piles (random or selected)',
+      'Set out Kingdom cards with appropriate quantities',
+    ],
+    turnStructure: [
+      {
+        title: 'Action Phase',
+        description:
+          'Play one Action card from your hand (unless you have +Actions). Resolve its effects completely. +Actions lets you play more Action cards.',
+      },
+      {
+        title: 'Buy Phase',
+        description:
+          'Play all Treasure cards from your hand. You have 1 Buy (unless you have +Buys). Spend your coins to buy cards costing up to that amount.',
+      },
+      {
+        title: 'Cleanup Phase',
+        description:
+          'Put all cards in play and remaining hand into your discard pile. Draw 5 new cards. If deck is empty, shuffle discard to form new deck.',
+      },
+    ],
+    scoring: [
+      { category: 'Estate', points: '1 VP each' },
+      { category: 'Duchy', points: '3 VP each' },
+      { category: 'Province', points: '6 VP each' },
+      { category: 'Curse', points: '-1 VP each' },
+      { category: 'Kingdom VP cards', points: 'As printed' },
+    ],
+    tips: [
+      'Buy money early, Victory cards late',
+      'Thin your deck - trashing Copper and Estate makes it stronger',
+      "Watch the Province pile - don't get caught unprepared",
+      'Actions that give +Cards and +Actions keep your turn going',
+    ],
+  },
+  'king-of-tokyo': {
+    quickStart: [
+      'Roll 6 dice up to 3 times, keeping what you want',
+      'Deal damage, heal, gain energy, or score victory points',
+      'Enter Tokyo to deal damage to everyone, but you can\'t heal inside',
+      'First to 20 VP wins, or last monster standing!',
+    ],
+    overview:
+      'King of Tokyo is a fast-paced dice game where giant monsters battle to become King of Tokyo. Roll dice for attacks, healing, energy, and points. Enter Tokyo to attack all rivals at once, but beware—you become everyone\'s target.',
+    setup: [
+      'Each player chooses a monster and takes matching figure and board',
+      'Set your life to 10 and victory points to 0',
+      'Shuffle power cards and reveal 3 face-up',
+      'Place Tokyo board in center—no one starts inside',
+    ],
+    turnStructure: [
+      {
+        title: 'Roll Dice (up to 3 times)',
+        description:
+          'Roll all 6 dice. Keep any you want and reroll the rest up to 2 more times. Final results are resolved.',
+      },
+      {
+        title: 'Resolve Dice',
+        description:
+          'Claws = deal damage. Hearts = heal (not in Tokyo). Lightning = gain energy. Numbers = 3 matching = that many VP, +1 per extra.',
+      },
+      {
+        title: 'Buy Power Cards',
+        description:
+          'Spend energy to buy face-up power cards or pay 2 energy to sweep all 3 and reveal new ones.',
+      },
+    ],
+    scoring: [
+      { category: '3 of a kind (1s)', points: '1 VP' },
+      { category: '3 of a kind (2s)', points: '2 VP' },
+      { category: '3 of a kind (3s)', points: '3 VP' },
+      { category: 'Extra matching die', points: '+1 VP each' },
+      { category: 'Enter Tokyo', points: '1 VP' },
+      { category: 'Start turn in Tokyo', points: '2 VP' },
+    ],
+    tips: [
+      'Know when to yield Tokyo—low health means get out',
+      'Energy is powerful but don\'t hoard it forever',
+      'Target weak monsters to eliminate competition',
+      'Some power cards are game-changing—prioritize key ones',
+    ],
+  },
+  'sushi-go': {
+    quickStart: [
+      'Pick one card from your hand and pass the rest',
+      'Reveal chosen cards simultaneously',
+      'Score different sushi for different point values',
+      'After 3 rounds, highest score wins!',
+    ],
+    overview:
+      'Sushi Go! is a lightning-fast card drafting game with adorable art. Pick cards to build the best sushi combinations, from maki rolls for majority bonuses to puddings that score at game end. Quick to learn, endlessly replayable.',
+    setup: [
+      'Shuffle all cards together',
+      'Deal cards based on player count (10/9/8/7 for 2/3/4/5 players)',
+      'Keep score with pen and paper or app',
+      'Play 3 rounds total',
+    ],
+    turnStructure: [
+      {
+        title: 'Pick a Card',
+        description:
+          'Simultaneously, everyone picks one card from their hand and places it face-down in front of them.',
+      },
+      {
+        title: 'Reveal Cards',
+        description:
+          'All players flip their chosen card face-up. Cards stay in front of you for scoring at round end.',
+      },
+      {
+        title: 'Pass Hands',
+        description:
+          'Pass remaining cards to the player on your left. Take the hand from your right. Repeat until all cards played.',
+      },
+    ],
+    scoring: [
+      { category: 'Tempura (pair)', points: '5 VP per pair' },
+      { category: 'Sashimi (3 of a kind)', points: '10 VP per set' },
+      { category: 'Dumpling', points: '1/3/6/10/15 for 1-5+' },
+      { category: 'Maki Rolls', points: 'Most: 6 VP, 2nd: 3 VP' },
+      { category: 'Nigiri', points: '1/2/3 VP (egg/salmon/squid)' },
+      { category: 'Wasabi + Nigiri', points: 'Triple the nigiri!' },
+      { category: 'Pudding (game end)', points: 'Most: +6, Least: -6' },
+    ],
+    tips: [
+      'Pudding matters! Don\'t get stuck with the least',
+      'Wasabi is worthless without nigiri to put on it',
+      'Watch what others collect to deny sets or compete for maki',
+      'Chopsticks let you grab 2 cards in one turn—powerful!',
+    ],
+  },
+  'love-letter': {
+    quickStart: [
+      'Draw a card, play a card, use its power',
+      'Eliminate other players or have highest card when deck runs out',
+      'Win tokens of affection to win the game',
+      'Just 16 cards—pure deduction!',
+    ],
+    overview:
+      'Love Letter is a micro game of risk and deduction. With only 16 cards, players draw and play to eliminate rivals while protecting their own hand. The highest-numbered card still in play wins the round. Simple rules, deep bluffing.',
+    setup: [
+      'Shuffle all 16 cards',
+      'Remove top card face-down (hidden from all players)',
+      'In 2-player game, also remove 3 cards face-up',
+      'Deal 1 card to each player—this is your starting hand',
+    ],
+    turnStructure: [
+      {
+        title: 'Draw a Card',
+        description:
+          'Draw the top card of the deck. You now have 2 cards in hand.',
+      },
+      {
+        title: 'Play a Card',
+        description:
+          'Choose one of your 2 cards to play face-up in front of you. Resolve its power.',
+      },
+      {
+        title: 'Apply Card Effect',
+        description:
+          'Guard: guess opponent\'s card. Priest: look at hand. Baron: compare, lower eliminated. Prince: discard hand. King: swap hands. Countess: must play if with King/Prince. Princess: if played/discarded, eliminated.',
+      },
+    ],
+    scoring: [
+      { category: 'Guard (1) x5', points: 'Guess hand, eliminate if correct' },
+      { category: 'Priest (2) x2', points: 'Look at opponent\'s hand' },
+      { category: 'Baron (3) x2', points: 'Compare hands, lower loses' },
+      { category: 'Handmaid (4) x2', points: 'Protected until your next turn' },
+      { category: 'Prince (5) x2', points: 'Force player to discard hand' },
+      { category: 'King (6) x1', points: 'Trade hands with opponent' },
+      { category: 'Countess (7) x1', points: 'Must play if with King/Prince' },
+      { category: 'Princess (8) x1', points: 'If discarded, eliminated' },
+    ],
+    tips: [
+      'Track what\'s been played to narrow down possibilities',
+      'Guards are most common—save them for good guesses',
+      'Handmaid protects you but wastes a turn',
+      'The Princess is safest early, most dangerous late',
+    ],
+  },
+  'the-crew': {
+    quickStart: [
+      'Complete missions by winning tricks with specific cards',
+      'Follow standard trick-taking rules (follow suit, highest wins)',
+      'Communication is limited—use one card clue per round',
+      'Complete all missions to win the scenario!',
+    ],
+    overview:
+      'The Crew is a cooperative trick-taking game where players work together to complete missions—specific cards that must be won by specific players. Communication is severely limited, making each hand a puzzle to solve together.',
+    setup: [
+      'Deal all 40 cards evenly to players',
+      'Check mission book for current mission\'s task cards',
+      'Distribute task cards as described in mission',
+      'Commander (4 of rockets) goes first',
+    ],
+    turnStructure: [
+      {
+        title: 'Lead a Card',
+        description:
+          'The trick leader plays any card from their hand. Rockets are trump (always win if played).',
+      },
+      {
+        title: 'Follow Suit',
+        description:
+          'Other players must follow the led suit if possible. If not, may play any card including trump.',
+      },
+      {
+        title: 'Win the Trick',
+        description:
+          'Highest card of led suit wins (or highest trump). Winner takes trick and leads next. Check if any tasks were completed.',
+      },
+    ],
+    scoring: [
+      { category: 'Complete all tasks', points: 'Mission success!' },
+      { category: 'Fail any task', points: 'Mission failed—retry' },
+      { category: 'Communication', points: '1 clue per person (card + token)' },
+      { category: 'Task tokens', points: 'Order constraints (1st, 2nd, etc.)' },
+    ],
+    tips: [
+      'Play long suits early to let teammates void suits',
+      'Your communication token is precious—time it well',
+      'Sometimes the task holder should NOT win their task early',
+      'Watch for impossible missions—better to fail fast',
+    ],
+  },
+  cascadia: {
+    quickStart: [
+      'Draft a habitat tile and wildlife token pair each turn',
+      'Place tiles to expand your ecosystem',
+      'Place wildlife to score patterns specific to each animal',
+      'Highest combined score wins!',
+    ],
+    overview:
+      'Cascadia is a puzzly tile-laying game about creating ecosystems. Draft paired tiles and tokens to build your landscape, then score points for matching habitats and wildlife patterns. Relaxing yet strategic, with gorgeous Pacific Northwest theming.',
+    setup: [
+      'Create 4 face-up tile + token pairs in the center',
+      'Give each player a starting habitat tile',
+      'Place wildlife scoring cards (one per animal type)',
+      'Each player gets 3 nature tokens',
+    ],
+    turnStructure: [
+      {
+        title: 'Select Tile + Token',
+        description:
+          'Choose one tile-token pair from the center. May spend a nature token to take any tile with any token instead.',
+      },
+      {
+        title: 'Place Tile',
+        description:
+          'Add the tile adjacent to your existing tiles. Habitats don\'t need to match, but matching creates corridors for bonuses.',
+      },
+      {
+        title: 'Place Wildlife (Optional)',
+        description:
+          'Place your wildlife token on a matching habitat symbol. Each tile can hold one wildlife token. Cannot move once placed.',
+      },
+    ],
+    scoring: [
+      { category: 'Wildlife patterns', points: 'Per wildlife scoring card' },
+      { category: 'Largest habitat corridor', points: 'Bonus per habitat type' },
+      { category: 'Nature tokens remaining', points: '1 VP each' },
+      { category: 'Bonus tiles (mountains)', points: 'As printed' },
+    ],
+    tips: [
+      'Check wildlife scoring cards carefully—each game uses different ones',
+      'Build large habitat corridors for significant bonuses',
+      'Nature tokens give flexibility—don\'t spend carelessly',
+      'Plan for multiple animals, not just one',
+    ],
+  },
 }
 
 // Default content for games without specific rules
