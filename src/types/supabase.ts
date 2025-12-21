@@ -58,6 +58,89 @@ export type Database = {
           },
         ]
       }
+      award_categories: {
+        Row: {
+          award_id: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          award_id?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          award_id?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "award_categories_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      awards: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          established_year: number | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          organization: string | null
+          short_name: string | null
+          slug: string
+          website_url: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          established_year?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          organization?: string | null
+          short_name?: string | null
+          slug: string
+          website_url?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          established_year?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          organization?: string | null
+          short_name?: string | null
+          slug?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -183,6 +266,61 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      game_awards: {
+        Row: {
+          award_id: string | null
+          category_id: string | null
+          created_at: string | null
+          game_id: string | null
+          id: string
+          notes: string | null
+          result: string | null
+          year: number
+        }
+        Insert: {
+          award_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          notes?: string | null
+          result?: string | null
+          year: number
+        }
+        Update: {
+          award_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          notes?: string | null
+          result?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_awards_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_awards_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "award_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_awards_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       game_categories: {
         Row: {
