@@ -35,21 +35,26 @@
 - [x] Theme toggle in header (sun/moon icons)
 - [x] Full rules/setup/reference content for all 16 games
 
-### Next Up: Board Game Awards Feature
-**Plan file**: `/Users/bentyson/.claude/plans/curried-humming-ripple.md`
+### Recently Completed: Board Game Awards Database
+- [x] Created `00007_awards_schema.sql` - awards, award_categories, game_awards tables
+- [x] Created `00008_seed_awards.sql` - 6 major awards + categories
+- [x] Linked 5 existing games to their awards (Cascadia, Azul, Codenames, Wingspan, The Crew)
+- [x] Types regenerated with new tables
 
-1. Create `00007_awards_schema.sql` - awards, award_categories, game_awards tables
-2. Create `00008_seed_awards.sql` - 6 major awards + winners 2015-2024
-3. Link existing games to their awards (Cascadia, Azul, Codenames, Wingspan, The Crew)
-4. (Future) Build /awards pages and UI components
+**Awards in database:**
+- Spiel des Jahres (Game of the Year) - 1978
+- Kennerspiel des Jahres (Expert Game) - 2011
+- Kinderspiel des Jahres (Children's Game) - 1989
+- Golden Geek Awards (BGG community) - 2006
+- Dice Tower Awards - 2007
+- As d'Or (France) - 1988
 
-**Awards to track:**
-- Spiel des Jahres (Game of the Year)
-- Kennerspiel des Jahres (Expert Game)
-- Kinderspiel des Jahres (Children's Game)
-- Golden Geek Awards (BGG community)
-- Dice Tower Awards
-- As d'Or (France)
+### Next Up: Awards UI
+1. Add query functions to `src/lib/supabase/queries.ts`
+2. Create `/awards` page - Browse all awards
+3. Create `/awards/[slug]` page - Award detail with winners by year
+4. Add `AwardBadge` component for game cards
+5. Show awards on game hub pages
 
 ---
 
@@ -62,7 +67,8 @@ supabase/migrations/
 ├── 00004_seed_games.sql          # First 6 games
 ├── 00005_more_pilot_games.sql    # Splendor, Pandemic, Carcassonne, 7 Wonders
 ├── 00006_tier1_gateway_games.sql # Dominion, King of Tokyo, Sushi Go, Love Letter, The Crew, Cascadia
-└── (next) 00007_awards_schema.sql
+├── 00007_awards_schema.sql       # Awards tables (awards, award_categories, game_awards)
+└── 00008_seed_awards.sql         # 6 awards + categories + links to existing games
 ```
 
 ## Key Commands
