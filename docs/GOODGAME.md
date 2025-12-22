@@ -1,10 +1,14 @@
-# GOOD GAME - Session Start Document
+# GOOD GAME - Original Planning Document
 
-> **Last Updated**: 2025-12-14
-> **Current Phase**: Queued
-> **Project Repo**: Not yet created
+> **⚠️ HISTORICAL DOCUMENT** - This was the original planning document from Dec 14, 2025.
+> Many decisions have changed (e.g., stack is now Next.js + Railway, not Astro + Cloudflare).
+> **For current status, see `/docs/session-start/`**
+
+> **Last Updated**: 2025-12-14 (archived)
+> **Current Phase**: See CURRENT-STATUS.md
+> **Project Repo**: https://github.com/BenTyson/goodgame
 > **Project Name**: Good Game
-> **Tagline**: "GG" (working title)
+> **Production**: https://goodgame-production.up.railway.app
 
 ---
 

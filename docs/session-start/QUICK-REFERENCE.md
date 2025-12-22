@@ -60,7 +60,7 @@ src/types/database.ts          # Convenience types (GameRow, GameInsert, etc.)
 src/data/mock-games.ts         # Mock data: games, categories, collections, images
 src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/seo/                   # JSON-LD structured data components
-supabase/migrations/           # Database schema (3 files)
+supabase/migrations/           # Database schema (8 files)
 next.config.ts                 # Remote image patterns (cf.geekdo-images.com)
 ```
 
@@ -73,6 +73,9 @@ GameInsert       // For inserting new games
 Category         // Category type
 Collection       // Collection type
 GameImage        // Game image type
+Award            // Award organization type
+AwardCategory    // Award category type
+GameAward        // Game-award link type
 ```
 
 ### Helper Functions (in mock-games.ts)

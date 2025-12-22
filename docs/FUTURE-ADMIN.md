@@ -216,9 +216,12 @@ async function fetchBGGGame(bggId: number) {
 
 ---
 
-## Immediate Next Steps
+## Current Status (Dec 2025)
 
-1. **Now**: Add 4 remaining pilot games manually (Splendor, Pandemic, Carcassonne, 7 Wonders)
-2. **This Week**: Set up Notion board for tracking 50 target games
-3. **Next Sprint**: Build simple admin view in app
-4. **Later**: BGG API integration for auto-fetching data
+**16 games now in database** - All pilot games and Tier 1 gateway games complete.
+
+## Future Steps
+
+1. **When hitting 30+ games**: Consider Notion board for tracking game pipeline
+2. **When hitting 50+ games**: Build simple `/admin` route with Supabase Auth
+3. **Later**: BGG API integration for auto-fetching metadata

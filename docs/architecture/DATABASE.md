@@ -20,6 +20,9 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 - **game_images** - Multiple images per game
 - **score_sheet_configs** - PDF generation configuration per game
 - **affiliate_links** - Centralized affiliate link management
+- **awards** - Board game awards (Spiel des Jahres, Golden Geek, etc.)
+- **award_categories** - Categories within each award
+- **game_awards** - Links games to awards they've won
 
 ## Entity Relationship Diagram
 
@@ -35,6 +38,14 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 ┌─────────────┐       ┌──────────────────┐             │
 │ collections │◄──────│ collection_games │─────────────┤
 └─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│   awards    │◄──────│   game_awards    │─────────────┤
+└─────────────┘       └──────────────────┘             │
+      │                                                │
+┌─────────────┐                                        │
+│award_categ. │                                        │
+└─────────────┘                                        │
                                                        │
                       ┌──────────────────┐             │
                       │   game_images    │◄────────────┤
@@ -58,6 +69,11 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 1. `00001_initial_schema.sql` - Core tables, indexes, RLS, full-text search
 2. `00002_seed_data.sql` - Categories and mechanics seed data
 3. `00003_game_images.sql` - Game images table
+4. `00004_seed_games.sql` - First 6 games (Catan, Wingspan, Ticket to Ride, Azul, Codenames, Terraforming Mars)
+5. `00005_more_pilot_games.sql` - Splendor, Pandemic, Carcassonne, 7 Wonders
+6. `00006_tier1_gateway_games.sql` - Dominion, King of Tokyo, Sushi Go, Love Letter, The Crew, Cascadia
+7. `00007_awards_schema.sql` - Awards tables (awards, award_categories, game_awards)
+8. `00008_seed_awards.sql` - 6 awards + categories + links to existing games
 
 ## Tables
 
@@ -204,6 +220,49 @@ Centralized affiliate link management.
 | label | VARCHAR(100) | Button text |
 | is_primary | BOOLEAN | Primary buy button |
 | display_order | SMALLINT | Sort order |
+
+### awards
+Board game awards and organizations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(100) | URL identifier (unique) |
+| name | VARCHAR(255) | Full award name |
+| short_name | VARCHAR(50) | Abbreviation (SdJ, KdJ, etc.) |
+| country | VARCHAR(50) | Country of origin |
+| organization | VARCHAR(255) | Awarding organization |
+| description | TEXT | Award description |
+| website_url | VARCHAR(500) | Official website |
+| logo_url | VARCHAR(500) | Award logo |
+| established_year | SMALLINT | Year award started |
+| is_active | BOOLEAN | Still being awarded |
+| display_order | SMALLINT | Sort order |
+
+### award_categories
+Categories within each award (e.g., Game of Year, Expert Game).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| award_id | UUID | Foreign key to awards |
+| slug | VARCHAR(100) | URL identifier |
+| name | VARCHAR(255) | Category name |
+| description | TEXT | Category description |
+| display_order | SMALLINT | Sort order |
+
+### game_awards
+Links games to awards they've won.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| game_id | UUID | Foreign key to games |
+| award_id | UUID | Foreign key to awards |
+| category_id | UUID | Foreign key to award_categories |
+| year | SMALLINT | Year won |
+| result | VARCHAR(20) | 'winner', 'nominee', 'recommended' |
+| notes | TEXT | Additional notes |
 
 ## Junction Tables
 
