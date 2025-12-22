@@ -37,6 +37,18 @@ export type GameImage = Database['public']['Tables']['game_images']['Row']
 export type GameImageInsert = Database['public']['Tables']['game_images']['Insert']
 export type GameImageUpdate = Database['public']['Tables']['game_images']['Update']
 
+export type Award = Database['public']['Tables']['awards']['Row']
+export type AwardInsert = Database['public']['Tables']['awards']['Insert']
+export type AwardUpdate = Database['public']['Tables']['awards']['Update']
+
+export type AwardCategory = Database['public']['Tables']['award_categories']['Row']
+export type AwardCategoryInsert = Database['public']['Tables']['award_categories']['Insert']
+export type AwardCategoryUpdate = Database['public']['Tables']['award_categories']['Update']
+
+export type GameAward = Database['public']['Tables']['game_awards']['Row']
+export type GameAwardInsert = Database['public']['Tables']['game_awards']['Insert']
+export type GameAwardUpdate = Database['public']['Tables']['game_awards']['Update']
+
 // Game type without generated columns (useful for mock data)
 export type GameRow = Omit<Game, 'fts'>
 

@@ -18,9 +18,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ImageGallery, RelatedGames } from '@/components/games'
+import { ImageGallery, RelatedGames, AwardBadgeList } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
-import { getGameWithDetails, getRelatedGames, getAllGameSlugs } from '@/lib/supabase/queries'
+import { getGameWithDetails, getRelatedGames, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface GamePageProps {
@@ -101,7 +101,10 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: game.name, href: `/games/${game.slug}` },
   ]
 
-  const relatedGames = await getRelatedGames(game.slug)
+  const [relatedGames, gameAwards] = await Promise.all([
+    getRelatedGames(game.slug),
+    getGameAwards(game.id),
+  ])
 
   return (
     <>
@@ -235,6 +238,18 @@ export default async function GamePage({ params }: GamePageProps) {
                   {game.publisher}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Awards */}
+          {gameAwards.length > 0 && (
+            <div className="mt-6">
+              <p className="text-sm font-medium text-foreground mb-2">Awards</p>
+              <AwardBadgeList
+                awards={gameAwards}
+                variant="compact"
+                limit={4}
+              />
             </div>
           )}
 

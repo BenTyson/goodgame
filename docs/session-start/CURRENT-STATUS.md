@@ -1,11 +1,12 @@
 # Current Status
 
-> Last Updated: 2025-12-21
+> Last Updated: 2025-12-22
 
 ## Phase: 5 - Production Ready (Live!)
 
 ### What's Live
 - **16 games** with full content (Rules, Setup, Reference, Score Sheets)
+- **6 major awards** with full UI (browse, detail pages, badges)
 - **Dark mode** with theme toggle
 - **Production**: https://goodgame-production.up.railway.app
 
@@ -29,32 +30,29 @@
 | 15 | The Crew | X | X | X | - |
 | 16 | Cascadia | X | X | X | X |
 
-### Recently Completed (Dec 21)
-- [x] Added 10 more games (Splendor, Pandemic, Carcassonne, 7 Wonders, Dominion, King of Tokyo, Sushi Go, Love Letter, The Crew, Cascadia)
-- [x] Dark mode with warm charcoal palette
-- [x] Theme toggle in header (sun/moon icons)
-- [x] Full rules/setup/reference content for all 16 games
+### Recently Completed (Dec 22): Awards UI
+- [x] Added award query functions to `src/lib/supabase/queries.ts`
+- [x] Created `/awards` page - Browse all awards with German/International sections
+- [x] Created `/awards/[slug]` page - Award detail with winners grouped by year
+- [x] Created `AwardBadge` and `AwardBadgeList` components with tier-based styling
+- [x] Awards display on game hub pages (linked to 5 games)
+- [x] Added "Awards" link to main navigation
+- [x] Updated sitemap with award pages
 
-### Recently Completed: Board Game Awards Database
-- [x] Created `00007_awards_schema.sql` - awards, award_categories, game_awards tables
-- [x] Created `00008_seed_awards.sql` - 6 major awards + categories
-- [x] Linked 5 existing games to their awards (Cascadia, Azul, Codenames, Wingspan, The Crew)
-- [x] Types regenerated with new tables
+### Awards in Database
+| Award | Short | Country | Winners in DB |
+|-------|-------|---------|---------------|
+| Spiel des Jahres | SdJ | Germany | 3 (Cascadia, Azul, Codenames) |
+| Kennerspiel des Jahres | KdJ | Germany | 2 (Wingspan, The Crew) |
+| Kinderspiel des Jahres | KindSdJ | Germany | 0 |
+| Golden Geek Awards | Golden Geek | USA | 4 |
+| Dice Tower Awards | Dice Tower | USA | 3 |
+| As d'Or | As d'Or | France | 2 |
 
-**Awards in database:**
-- Spiel des Jahres (Game of the Year) - 1978
-- Kennerspiel des Jahres (Expert Game) - 2011
-- Kinderspiel des Jahres (Children's Game) - 1989
-- Golden Geek Awards (BGG community) - 2006
-- Dice Tower Awards - 2007
-- As d'Or (France) - 1988
-
-### Next Up: Awards UI
-1. Add query functions to `src/lib/supabase/queries.ts`
-2. Create `/awards` page - Browse all awards
-3. Create `/awards/[slug]` page - Award detail with winners by year
-4. Add `AwardBadge` component for game cards
-5. Show awards on game hub pages
+### Next Up
+- Add more award-winning games to database
+- Consider adding "nominee" results to awards
+- SEO optimization for award pages
 
 ---
 

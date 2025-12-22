@@ -3,6 +3,16 @@ import { mockGames, mockCategories, mockCollections } from '@/data/mock-games'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodgame.guide'
 
+// Award slugs (static list matching seed data)
+const awardSlugs = [
+  'spiel-des-jahres',
+  'kennerspiel-des-jahres',
+  'kinderspiel-des-jahres',
+  'golden-geek',
+  'dice-tower',
+  'as-dor',
+]
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
 
@@ -19,6 +29,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/awards`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
     {
       url: `${SITE_URL}/rules`,
@@ -114,6 +130,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     }))
 
+  // Award pages
+  const awardPages: MetadataRoute.Sitemap = awardSlugs.map((slug) => ({
+    url: `${SITE_URL}/awards/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
   return [
     ...staticPages,
     ...gamePages,
@@ -123,5 +147,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...referencePages,
     ...categoryPages,
     ...collectionPages,
+    ...awardPages,
   ]
 }

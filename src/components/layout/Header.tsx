@@ -13,6 +13,7 @@ import { ThemeToggle } from './ThemeToggle'
 
 const navigation = [
   { name: 'Games', href: '/games' },
+  { name: 'Awards', href: '/awards' },
   { name: 'Score Sheets', href: '/score-sheets' },
   { name: 'Rules', href: '/rules' },
   { name: 'Categories', href: '/categories' },
