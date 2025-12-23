@@ -1,4 +1,4 @@
-# Good Game - Quick Start
+# Board Nomads - Quick Start
 
 > Read this first. Get productive in 2 minutes.
 
@@ -16,32 +16,52 @@ A board game reference site with 4 pillars:
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 14+ (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Database | Supabase (PostgreSQL) |
+| Storage | Supabase Storage (images) |
+| Auth | Supabase Auth (Google OAuth) |
 | Hosting | Railway |
+| Domain | boardnomads.com |
 | UI | Tailwind CSS 4 + shadcn/ui |
 | PDF | jsPDF (client-side) |
-| Theme | Light mode only (teal primary) |
 
 ## Key Commands
 
 ```bash
 npm run dev          # Start dev server (port 3399)
 npm run build        # Production build
-npm run lint         # ESLint
+supabase db push     # Push migrations to Supabase
 ```
 
-## Important Files
+## Project Structure
 
-| File | Purpose |
-|------|---------|
-| `src/app/games/[slug]/page.tsx` | Game hub template (with ImageGallery) |
-| `src/components/score-sheet/` | PDF generation |
-| `src/components/games/ImageGallery.tsx` | Photo gallery with lightbox |
-| `src/lib/supabase/` | Database clients |
-| `src/data/mock-games.ts` | Mock data with images |
-| `supabase/migrations/` | DB schema (3 files) |
-| `next.config.ts` | Image remote patterns |
+```
+src/
+├── app/
+│   ├── admin/           # Admin panel (protected)
+│   │   ├── (dashboard)/ # Auth-protected routes
+│   │   └── login/       # Public login page
+│   ├── api/
+│   │   ├── admin/upload/ # Image upload API
+│   │   └── cron/        # BGG import + AI generation
+│   ├── auth/callback/   # OAuth callback
+│   └── games/[slug]/    # Game pages
+├── components/
+│   ├── admin/           # Admin components
+│   ├── games/           # Game display components
+│   └── ui/              # shadcn/ui components
+├── lib/
+│   ├── ai/              # Claude API + prompts
+│   ├── bgg/             # BGG scraper
+│   └── supabase/        # DB clients + queries
+└── types/               # TypeScript types
+```
+
+## Admin Access
+
+1. Go to `/admin`
+2. Login with Google (email must be in `ADMIN_EMAILS` env var)
+3. Edit games, upload images, manage content
 
 ## Current Phase
 
