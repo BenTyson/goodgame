@@ -823,7 +823,8 @@ export default async function RulesPage({ params }: RulesPageProps) {
     notFound()
   }
 
-  const content = rulesContent[game.slug] || defaultRulesContent
+  // Prefer database content, fall back to hardcoded content
+  const content = (game.rules_content as typeof defaultRulesContent) || rulesContent[game.slug] || defaultRulesContent
 
   const breadcrumbs = [
     { name: 'Home', href: '/' },

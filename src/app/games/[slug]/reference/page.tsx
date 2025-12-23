@@ -521,7 +521,8 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
     notFound()
   }
 
-  const content = referenceContent[game.slug] || defaultReferenceContent
+  // Prefer database content, fall back to hardcoded content
+  const content = (game.reference_content as typeof defaultReferenceContent) || referenceContent[game.slug] || defaultReferenceContent
 
   return (
     <div className="container py-8 md:py-12">

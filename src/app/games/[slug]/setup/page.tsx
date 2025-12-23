@@ -951,7 +951,8 @@ export default async function SetupPage({ params }: SetupPageProps) {
     notFound()
   }
 
-  const content = setupContent[game.slug] || defaultSetupContent
+  // Prefer database content, fall back to hardcoded content
+  const content = (game.setup_content as typeof defaultSetupContent) || setupContent[game.slug] || defaultSetupContent
 
   return (
     <div className="container py-8 md:py-12">

@@ -49,6 +49,64 @@ export type GameAward = Database['public']['Tables']['game_awards']['Row']
 export type GameAwardInsert = Database['public']['Tables']['game_awards']['Insert']
 export type GameAwardUpdate = Database['public']['Tables']['game_awards']['Update']
 
+export type GameFamily = Database['public']['Tables']['game_families']['Row']
+export type GameFamilyInsert = Database['public']['Tables']['game_families']['Insert']
+export type GameFamilyUpdate = Database['public']['Tables']['game_families']['Update']
+
+export type GameRelation = Database['public']['Tables']['game_relations']['Row']
+export type GameRelationInsert = Database['public']['Tables']['game_relations']['Insert']
+export type GameRelationUpdate = Database['public']['Tables']['game_relations']['Update']
+
+export type ImportQueue = Database['public']['Tables']['import_queue']['Row']
+export type ImportQueueInsert = Database['public']['Tables']['import_queue']['Insert']
+export type ImportQueueUpdate = Database['public']['Tables']['import_queue']['Update']
+
+export type ContentGenerationLog = Database['public']['Tables']['content_generation_log']['Row']
+export type ContentGenerationLogInsert = Database['public']['Tables']['content_generation_log']['Insert']
+export type ContentGenerationLogUpdate = Database['public']['Tables']['content_generation_log']['Update']
+
+// Content types for JSONB columns
+export interface RulesContent {
+  quickStart: string[]
+  overview: string
+  setup: string[]
+  turnStructure: { title: string; description: string }[]
+  scoring: { category: string; points: string }[]
+  tips: string[]
+}
+
+export interface SetupContent {
+  playerSetup: { title: string; description: string; tip?: string }[]
+  boardSetup: { title: string; description: string; tip?: string }[]
+  componentChecklist: { name: string; quantity: string }[]
+  firstPlayerRule: string
+  quickTips: string[]
+}
+
+export interface ReferenceContent {
+  turnSummary: { phase: string; action: string }[]
+  keyRules: { rule: string; detail: string }[]
+  costs: { item: string; cost: string }[]
+  quickReminders: string[]
+  endGame: string
+}
+
+// Content status enum
+export type ContentStatus = 'none' | 'importing' | 'draft' | 'review' | 'published'
+
+// Import queue status enum
+export type ImportStatus = 'pending' | 'importing' | 'imported' | 'failed' | 'skipped'
+
+// Game relation types
+export type RelationType =
+  | 'expansion_of'
+  | 'base_game_of'
+  | 'sequel_to'
+  | 'prequel_to'
+  | 'reimplementation_of'
+  | 'spin_off_of'
+  | 'standalone_in_series'
+
 // Game type without generated columns (useful for mock data)
 export type GameRow = Omit<Game, 'fts'>
 

@@ -23,8 +23,8 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Good Game - Board Game Rules, Score Sheets & Reference',
-    template: '%s | Good Game',
+    default: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
+    template: '%s | Board Nomads',
   },
   description:
     'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards for your favorite board games.',
@@ -35,22 +35,22 @@ export const metadata: Metadata = {
     'board game reference',
     'printable score sheets',
   ],
-  authors: [{ name: 'Good Game' }],
-  creator: 'Good Game',
+  authors: [{ name: 'Board Nomads' }],
+  creator: 'Board Nomads',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3399'
   ),
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'Good Game',
-    title: 'Good Game - Board Game Rules, Score Sheets & Reference',
+    siteName: 'Board Nomads',
+    title: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
     description:
       'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Good Game - Board Game Rules, Score Sheets & Reference',
+    title: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
     description:
       'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards.',
   },
