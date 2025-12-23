@@ -16,11 +16,14 @@ export async function GET(request: NextRequest) {
   const errorDescription = requestUrl.searchParams.get('error_description')
   const next = requestUrl.searchParams.get('next') || '/admin'
 
+  // Use env var for base URL (request.url returns localhost behind proxies)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
+
   // Handle OAuth errors
   if (error) {
     console.error('Auth error:', error, errorDescription)
     return NextResponse.redirect(
-      new URL(`/admin/login?error=${encodeURIComponent(errorDescription || error)}`, request.url)
+      new URL(`/admin/login?error=${encodeURIComponent(errorDescription || error)}`, baseUrl)
     )
   }
 
@@ -53,15 +56,15 @@ export async function GET(request: NextRequest) {
 
     if (!exchangeError) {
       // Successful auth - redirect to intended destination
-      return NextResponse.redirect(new URL(next, requestUrl.origin))
+      return NextResponse.redirect(new URL(next, baseUrl))
     }
 
     console.error('Code exchange error:', exchangeError)
     return NextResponse.redirect(
-      new URL(`/admin/login?error=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+      new URL(`/admin/login?error=${encodeURIComponent(exchangeError.message)}`, baseUrl)
     )
   }
 
   // No code provided
-  return NextResponse.redirect(new URL('/admin/login?error=no_code', requestUrl.origin))
+  return NextResponse.redirect(new URL('/admin/login?error=no_code', baseUrl))
 }
