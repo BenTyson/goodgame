@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { LayoutDashboard, Gamepad2, ListTodo, ArrowLeft } from 'lucide-react'
+import { LogoutButton } from '@/components/admin/LogoutButton'
 import type { Database } from '@/types/supabase'
 
 const adminNav = [
@@ -45,7 +46,7 @@ export default async function AdminLayout({
 
   // Check if user is authenticated and is an admin
   if (!user || !isAdmin(user.email)) {
-    redirect('/')
+    redirect('/admin/login')
   }
 
   return (
@@ -64,8 +65,11 @@ export default async function AdminLayout({
             <span className="text-muted-foreground">/</span>
             <span className="font-semibold">Admin</span>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {user.email}
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {user.email}
+            </span>
+            <LogoutButton />
           </div>
         </div>
       </header>
