@@ -1,6 +1,6 @@
 /**
  * Supabase Auth Callback
- * Handles the redirect from Supabase after email magic link click
+ * Handles redirects from Supabase after OAuth or magic link
  */
 
 import { createServerClient } from '@supabase/ssr'
@@ -12,7 +12,17 @@ import type { Database } from '@/types/supabase'
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const error = requestUrl.searchParams.get('error')
+  const errorDescription = requestUrl.searchParams.get('error_description')
   const next = requestUrl.searchParams.get('next') || '/admin'
+
+  // Handle OAuth errors
+  if (error) {
+    console.error('Auth error:', error, errorDescription)
+    return NextResponse.redirect(
+      new URL(`/admin/login?error=${encodeURIComponent(errorDescription || error)}`, request.url)
+    )
+  }
 
   if (code) {
     const cookieStore = await cookies()
@@ -26,21 +36,32 @@ export async function GET(request: NextRequest) {
             return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            } catch (error) {
+              // Handle cookie errors in edge cases
+              console.error('Cookie error:', error)
+            }
           },
         },
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) {
-      return NextResponse.redirect(new URL(next, request.url))
+    if (!exchangeError) {
+      // Successful auth - redirect to intended destination
+      return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
+
+    console.error('Code exchange error:', exchangeError)
+    return NextResponse.redirect(
+      new URL(`/admin/login?error=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+    )
   }
 
-  // Auth failed, redirect to login with error
-  return NextResponse.redirect(new URL('/admin/login?error=auth_failed', request.url))
+  // No code provided
+  return NextResponse.redirect(new URL('/admin/login?error=no_code', requestUrl.origin))
 }
