@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, X, Star, GripVertical, Loader2, ImageIcon } from 'lucide-react'
+import { Upload, X, Star, Loader2, ImageIcon } from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { GameImage } from '@/types/database'
 
@@ -18,6 +18,7 @@ interface ImageUploadProps {
 export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,54 +26,23 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   )
 
   const uploadFile = async (file: File): Promise<GameImage | null> => {
-    const fileExt = file.name.split('.').pop()?.toLowerCase()
-    const fileName = `${gameSlug}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('gameId', gameId)
+    formData.append('gameSlug', gameSlug)
 
-    const { error: uploadError } = await supabase.storage
-      .from('game-images')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData
+    })
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      return null
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Upload failed')
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('game-images')
-      .getPublicUrl(fileName)
-
-    // Create database record
-    const newImage: Omit<GameImage, 'id' | 'created_at' | 'updated_at'> = {
-      game_id: gameId,
-      url: publicUrl,
-      storage_path: fileName,
-      image_type: 'gallery',
-      is_primary: images.length === 0, // First image is primary by default
-      display_order: images.length,
-      alt_text: null,
-      caption: null,
-      width: null,
-      height: null,
-      file_size: file.size
-    }
-
-    const { data, error } = await supabase
-      .from('game_images')
-      .insert(newImage)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Database error:', error)
-      // Try to delete uploaded file
-      await supabase.storage.from('game-images').remove([fileName])
-      return null
-    }
-
-    return data
+    const data = await response.json()
+    return data.image
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,16 +50,21 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     if (!files || files.length === 0) return
 
     setUploading(true)
+    setError(null)
     const newImages: GameImage[] = []
 
-    for (const file of Array.from(files)) {
-      const image = await uploadFile(file)
-      if (image) {
-        newImages.push(image)
+    try {
+      for (const file of Array.from(files)) {
+        const image = await uploadFile(file)
+        if (image) {
+          newImages.push(image)
+        }
       }
+      onImagesChange([...images, ...newImages])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
     }
 
-    onImagesChange([...images, ...newImages])
     setUploading(false)
     e.target.value = '' // Reset input
   }
@@ -104,16 +79,21 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     if (files.length === 0) return
 
     setUploading(true)
+    setError(null)
     const newImages: GameImage[] = []
 
-    for (const file of files) {
-      const image = await uploadFile(file)
-      if (image) {
-        newImages.push(image)
+    try {
+      for (const file of files) {
+        const image = await uploadFile(file)
+        if (image) {
+          newImages.push(image)
+        }
       }
+      onImagesChange([...images, ...newImages])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
     }
 
-    onImagesChange([...images, ...newImages])
     setUploading(false)
   }, [images, onImagesChange, gameId, gameSlug])
 
@@ -147,27 +127,37 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   }
 
   const deleteImage = async (image: GameImage) => {
-    // Delete from storage
-    if (image.storage_path) {
-      await supabase.storage.from('game-images').remove([image.storage_path])
+    try {
+      const response = await fetch('/api/admin/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageId: image.id,
+          storagePath: image.storage_path
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Delete failed')
+      }
+
+      // Update local state
+      const remaining = images.filter(img => img.id !== image.id)
+
+      // If deleted image was primary and there are remaining images, make first one primary
+      if (image.is_primary && remaining.length > 0) {
+        remaining[0].is_primary = true
+        await supabase
+          .from('game_images')
+          .update({ is_primary: true })
+          .eq('id', remaining[0].id)
+      }
+
+      onImagesChange(remaining)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed')
     }
-
-    // Delete from database
-    await supabase.from('game_images').delete().eq('id', image.id)
-
-    // Update local state
-    const remaining = images.filter(img => img.id !== image.id)
-
-    // If deleted image was primary and there are remaining images, make first one primary
-    if (image.is_primary && remaining.length > 0) {
-      remaining[0].is_primary = true
-      await supabase
-        .from('game_images')
-        .update({ is_primary: true })
-        .eq('id', remaining[0].id)
-    }
-
-    onImagesChange(remaining)
   }
 
   const primaryImage = images.find(img => img.is_primary)
@@ -175,6 +165,13 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
 
   return (
     <div className="space-y-6">
+      {/* Error message */}
+      {error && (
+        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Upload Zone */}
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
