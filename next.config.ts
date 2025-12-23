@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'cf.geekdo-images.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'jnaibnwxpweahpawxycf.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
 };
