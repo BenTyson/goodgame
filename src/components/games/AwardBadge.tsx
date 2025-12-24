@@ -23,39 +23,39 @@ const awardIcons: Record<string, React.ReactNode> = {
   'as-dor': <Globe className="h-4 w-4" />,
 }
 
-// Award tier styling - light bg, bold text, colored border
+// Award tier styling - outline only, no fill
 const awardTiers: Record<string, { bg: string; text: string; border: string }> = {
   // German awards - gold tier
   'spiel-des-jahres': {
-    bg: 'bg-amber-50 dark:bg-amber-950',
-    text: 'text-amber-700 font-semibold dark:text-amber-400',
-    border: 'border-amber-500 dark:border-amber-600',
+    bg: 'bg-transparent',
+    text: 'text-amber-600 font-semibold dark:text-amber-400',
+    border: 'border-amber-500 dark:border-amber-500',
   },
   'kennerspiel-des-jahres': {
-    bg: 'bg-slate-50 dark:bg-slate-900',
-    text: 'text-slate-700 font-semibold dark:text-slate-300',
-    border: 'border-slate-500 dark:border-slate-500',
+    bg: 'bg-transparent',
+    text: 'text-slate-600 font-semibold dark:text-slate-300',
+    border: 'border-slate-400 dark:border-slate-500',
   },
   'kinderspiel-des-jahres': {
-    bg: 'bg-blue-50 dark:bg-blue-950',
-    text: 'text-blue-700 font-semibold dark:text-blue-400',
-    border: 'border-blue-500 dark:border-blue-600',
+    bg: 'bg-transparent',
+    text: 'text-blue-600 font-semibold dark:text-blue-400',
+    border: 'border-blue-500 dark:border-blue-500',
   },
   // International awards
   'golden-geek': {
-    bg: 'bg-purple-50 dark:bg-purple-950',
-    text: 'text-purple-700 font-semibold dark:text-purple-400',
-    border: 'border-purple-500 dark:border-purple-600',
+    bg: 'bg-transparent',
+    text: 'text-purple-600 font-semibold dark:text-purple-400',
+    border: 'border-purple-500 dark:border-purple-500',
   },
   'dice-tower': {
-    bg: 'bg-emerald-50 dark:bg-emerald-950',
-    text: 'text-emerald-700 font-semibold dark:text-emerald-400',
-    border: 'border-emerald-500 dark:border-emerald-600',
+    bg: 'bg-transparent',
+    text: 'text-emerald-600 font-semibold dark:text-emerald-400',
+    border: 'border-emerald-500 dark:border-emerald-500',
   },
   'as-dor': {
-    bg: 'bg-rose-50 dark:bg-rose-950',
-    text: 'text-rose-700 font-semibold dark:text-rose-400',
-    border: 'border-rose-500 dark:border-rose-600',
+    bg: 'bg-transparent',
+    text: 'text-rose-600 font-semibold dark:text-rose-400',
+    border: 'border-rose-500 dark:border-rose-500',
   },
 }
 
