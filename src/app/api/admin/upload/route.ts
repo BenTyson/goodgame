@@ -108,10 +108,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: dbError.message }, { status: 500 })
     }
 
+    // If this is the first/primary image, sync to games table
+    if (isPrimary) {
+      await adminClient
+        .from('games')
+        .update({
+          box_image_url: publicUrl,
+          hero_image_url: publicUrl,
+          thumbnail_url: publicUrl,
+        })
+        .eq('id', gameId)
+    }
+
     return NextResponse.json({ image: imageRecord })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+  }
+}
+
+// Set primary image and sync to games table
+export async function PATCH(request: NextRequest) {
+  // Check admin auth
+  if (!await isAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { gameId, imageId, imageUrl } = await request.json()
+
+    if (!gameId || !imageId || !imageUrl) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const adminClient = createAdminClient()
+
+    // Clear all primary flags for this game
+    await adminClient
+      .from('game_images')
+      .update({ is_primary: false })
+      .eq('game_id', gameId)
+
+    // Set the new primary
+    await adminClient
+      .from('game_images')
+      .update({ is_primary: true })
+      .eq('id', imageId)
+
+    // Sync to games table
+    const { error: gameError } = await adminClient
+      .from('games')
+      .update({
+        box_image_url: imageUrl,
+        hero_image_url: imageUrl,
+        thumbnail_url: imageUrl,
+      })
+      .eq('id', gameId)
+
+    if (gameError) {
+      console.error('Error updating games table:', gameError)
+      return NextResponse.json({ error: gameError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Set primary error:', error)
+    return NextResponse.json({ error: 'Failed to set primary image' }, { status: 500 })
   }
 }
 

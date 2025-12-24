@@ -60,6 +60,8 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           newImages.push(image)
         }
       }
+
+      // The API handles setting is_primary and syncing to games table for first image
       onImagesChange([...images, ...newImages])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
@@ -89,13 +91,15 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           newImages.push(image)
         }
       }
+
+      // The API handles setting is_primary and syncing to games table for first image
       onImagesChange([...images, ...newImages])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     }
 
     setUploading(false)
-  }, [images, onImagesChange, gameId, gameSlug])
+  }, [images, onImagesChange])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -107,23 +111,37 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   }
 
   const setPrimaryImage = async (imageId: string) => {
-    // Update in database
-    await supabase
-      .from('game_images')
-      .update({ is_primary: false })
-      .eq('game_id', gameId)
+    const selectedImage = images.find(img => img.id === imageId)
+    if (!selectedImage) return
 
-    await supabase
-      .from('game_images')
-      .update({ is_primary: true })
-      .eq('id', imageId)
+    setError(null)
 
-    // Update local state
-    const updated = images.map(img => ({
-      ...img,
-      is_primary: img.id === imageId
-    }))
-    onImagesChange(updated)
+    try {
+      // Use API endpoint which has service role access
+      const response = await fetch('/api/admin/upload', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId,
+          imageId,
+          imageUrl: selectedImage.url
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to set primary image')
+      }
+
+      // Update local state
+      const updated = images.map(img => ({
+        ...img,
+        is_primary: img.id === imageId
+      }))
+      onImagesChange(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set primary image')
+    }
   }
 
   const deleteImage = async (image: GameImage) => {

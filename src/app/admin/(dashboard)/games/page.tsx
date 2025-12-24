@@ -1,16 +1,30 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Eye, Pencil } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  ExternalLink,
+  Eye,
+  Pencil,
+  Users,
+  Scale,
+  CheckCircle2,
+  FileEdit,
+  Clock,
+  Search,
+  Filter,
+  Gamepad2
+} from 'lucide-react'
 
-async function getGames(filter?: string) {
+async function getGames(filter?: string, search?: string) {
   const supabase = await createClient()
 
   let query = supabase
     .from('games')
-    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max')
-    .order('created_at', { ascending: false })
+    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max, thumbnail_url, tagline')
+    .order('name', { ascending: true })
 
   if (filter === 'published') {
     query = query.eq('is_published', true)
@@ -18,6 +32,10 @@ async function getGames(filter?: string) {
     query = query.eq('is_published', false).eq('content_status', 'draft')
   } else if (filter === 'pending') {
     query = query.eq('is_published', false).eq('content_status', 'none')
+  }
+
+  if (search) {
+    query = query.ilike('name', `%${search}%`)
   }
 
   const { data: games } = await query.limit(100)
@@ -28,140 +46,206 @@ async function getGames(filter?: string) {
 export default async function AdminGamesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; q?: string }>
 }) {
-  const { filter } = await searchParams
-  const games = await getGames(filter)
+  const { filter, q } = await searchParams
+  const games = await getGames(filter, q)
 
   const filters = [
-    { label: 'All', value: undefined },
-    { label: 'Published', value: 'published' },
-    { label: 'Draft', value: 'draft' },
-    { label: 'Pending', value: 'pending' },
+    { label: 'All', value: undefined, icon: Gamepad2, count: null },
+    { label: 'Published', value: 'published', icon: CheckCircle2, color: 'text-green-500' },
+    { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500' },
+    { label: 'Pending', value: 'pending', icon: Clock, color: 'text-gray-500' },
   ]
+
+  const getStatusBadge = (game: typeof games[0]) => {
+    if (game.is_published) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-green-600 text-white">
+          <CheckCircle2 className="h-3 w-3" />
+          Published
+        </span>
+      )
+    }
+    if (game.content_status === 'draft') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-yellow-500 text-white">
+          <FileEdit className="h-3 w-3" />
+          Draft
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+        <Clock className="h-3 w-3" />
+        {game.content_status || 'No content'}
+      </span>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Games</h1>
-          <p className="text-muted-foreground">Manage game content and publishing</p>
+          <h1 className="text-3xl font-bold tracking-tight">Games</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage game content, images, and publishing status
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold">{games.length}</div>
+          <div className="text-sm text-muted-foreground">
+            {filter ? `${filter} games` : 'total games'}
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        {filters.map((f) => (
-          <Link
-            key={f.label}
-            href={f.value ? `/admin/games?filter=${f.value}` : '/admin/games'}
-          >
-            <Button
-              variant={filter === f.value || (!filter && !f.value) ? 'default' : 'outline'}
-              size="sm"
-            >
-              {f.label}
-            </Button>
-          </Link>
+      {/* Filters & Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex gap-2 flex-wrap">
+          {filters.map((f) => {
+            const isActive = filter === f.value || (!filter && !f.value)
+            return (
+              <Link
+                key={f.label}
+                href={f.value ? `/admin/games?filter=${f.value}${q ? `&q=${q}` : ''}` : `/admin/games${q ? `?q=${q}` : ''}`}
+              >
+                <Button
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-1.5"
+                >
+                  {f.icon && <f.icon className={`h-3.5 w-3.5 ${!isActive && f.color ? f.color : ''}`} />}
+                  {f.label}
+                </Button>
+              </Link>
+            )
+          })}
+        </div>
+        <form className="flex-1 max-w-sm" action="/admin/games" method="get">
+          {filter && <input type="hidden" name="filter" value={filter} />}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              name="q"
+              placeholder="Search games..."
+              defaultValue={q}
+              className="pl-9"
+            />
+          </div>
+        </form>
+      </div>
+
+      {/* Games Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {games.map((game) => (
+          <Card key={game.id} className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group">
+            {/* Image */}
+            <Link href={`/admin/games/${game.id}`}>
+              <div className="relative h-40 bg-muted">
+                {game.thumbnail_url ? (
+                  <Image
+                    src={game.thumbnail_url}
+                    alt={game.name}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Gamepad2 className="h-12 w-12 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="absolute top-2 right-2">
+                  {getStatusBadge(game)}
+                </div>
+              </div>
+            </Link>
+
+            {/* Content */}
+            <CardContent className="p-4">
+              <Link href={`/admin/games/${game.id}`}>
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1">
+                  {game.name}
+                </h3>
+              </Link>
+              {game.tagline && (
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {game.tagline}
+                </p>
+              )}
+
+              {/* Meta */}
+              <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{game.player_count_min}-{game.player_count_max}</span>
+                </div>
+                {game.weight && (
+                  <div className="flex items-center gap-1">
+                    <Scale className="h-3.5 w-3.5" />
+                    <span>{game.weight.toFixed(1)}</span>
+                  </div>
+                )}
+                {game.bgg_id && (
+                  <a
+                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:text-primary"
+                  >
+                    <span>BGG</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                {game.is_published && (
+                  <a
+                    href={`/games/${game.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Eye className="h-3.5 w-3.5" />
+                      View
+                    </Button>
+                  </a>
+                )}
+                <Link href={`/admin/games/${game.id}`} className="ml-auto">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Games Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Games ({games.length})</CardTitle>
-          <CardDescription>
-            {filter === 'published' && 'Games live on the site'}
-            {filter === 'draft' && 'Games with AI content ready for review'}
-            {filter === 'pending' && 'Games waiting for content generation'}
-            {!filter && 'All games in the database'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase bg-muted/50">
-                <tr>
-                  <th className="px-4 py-3 text-left">Game</th>
-                  <th className="px-4 py-3 text-left">Players</th>
-                  <th className="px-4 py-3 text-left">Weight</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">BGG</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {games.map((game) => (
-                  <tr key={game.id} className="border-b">
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium">{game.name}</p>
-                        <p className="text-xs text-muted-foreground">{game.slug}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {game.player_count_min}-{game.player_count_max}
-                    </td>
-                    <td className="px-4 py-3">
-                      {game.weight?.toFixed(1) || '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          game.is_published
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : game.content_status === 'draft'
-                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                        }`}
-                      >
-                        {game.is_published ? 'Published' : game.content_status || 'none'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {game.bgg_id ? (
-                        <a
-                          href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center gap-1"
-                        >
-                          {game.bgg_id}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {game.is_published && (
-                          <Link href={`/games/${game.slug}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        )}
-                        <Link href={`/admin/games/${game.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {games.length === 0 && (
-            <p className="text-center py-8 text-muted-foreground">
-              No games found
+      {/* Empty State */}
+      {games.length === 0 && (
+        <Card className="p-12">
+          <div className="text-center">
+            <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/50" />
+            <h3 className="mt-4 text-lg font-semibold">No games found</h3>
+            <p className="text-muted-foreground mt-1">
+              {q ? `No games matching "${q}"` : 'Try adjusting your filters'}
             </p>
-          )}
-        </CardContent>
-      </Card>
+            {(filter || q) && (
+              <Link href="/admin/games">
+                <Button variant="outline" className="mt-4">
+                  Clear filters
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

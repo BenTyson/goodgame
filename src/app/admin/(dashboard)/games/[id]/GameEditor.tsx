@@ -12,7 +12,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { ArrowLeft, Save, Eye, Loader2, ExternalLink } from 'lucide-react'
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  Loader2,
+  ExternalLink,
+  CheckCircle2,
+  Info,
+  ImageIcon,
+  FileText,
+  Settings,
+  Users,
+  Clock,
+  Scale,
+  Calendar,
+  Building2,
+  Pencil,
+  Hash
+} from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { Game, GameImage, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
 
@@ -114,30 +132,43 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/games">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">{game.name}</h1>
-            <p className="text-muted-foreground">{game.slug}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <Link href="/admin/games" className="self-start">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Games
+          </Button>
+        </Link>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">{game.name}</h1>
+            {game.is_published && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-600 text-white">
+                <CheckCircle2 className="h-3 w-3" />
+                Published
+              </span>
+            )}
           </div>
+          <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           {game.is_published && (
             <Link href={`/games/${game.slug}`} target="_blank">
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-2" />
-                View Live
+              <Button variant="outline" size="sm" className="gap-2">
+                <Eye className="h-4 w-4" />
+                <span className="hidden sm:inline">View Live</span>
               </Button>
             </Link>
           )}
-          <Button onClick={saveGame} disabled={saving}>
+          <Button
+            onClick={saveGame}
+            disabled={saving}
+            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
             {saving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
@@ -147,38 +178,63 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
       </div>
 
       {/* Editor Tabs */}
-      <Tabs defaultValue="details" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="images">Images</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="publishing">Publishing</TabsTrigger>
+      <Tabs defaultValue="details" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="details" className="gap-2">
+            <Info className="h-4 w-4 hidden sm:block" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="images" className="gap-2">
+            <ImageIcon className="h-4 w-4 hidden sm:block" />
+            Images
+          </TabsTrigger>
+          <TabsTrigger value="content" className="gap-2">
+            <FileText className="h-4 w-4 hidden sm:block" />
+            Content
+          </TabsTrigger>
+          <TabsTrigger value="publishing" className="gap-2">
+            <Settings className="h-4 w-4 hidden sm:block" />
+            Publishing
+          </TabsTrigger>
         </TabsList>
 
         {/* Details Tab */}
-        <TabsContent value="details" className="space-y-4">
+        <TabsContent value="details" className="space-y-6">
+          {/* Identity */}
           <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Core game details</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Pencil className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Identity</CardTitle>
+                  <CardDescription>Name, slug, and description</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">Game Name</Label>
                   <Input
                     id="name"
                     value={game.name}
                     onChange={(e) => updateField('name', e.target.value)}
+                    placeholder="e.g., Catan"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="slug">Slug</Label>
-                  <Input
-                    id="slug"
-                    value={game.slug}
-                    onChange={(e) => updateField('slug', e.target.value)}
-                  />
+                  <Label htmlFor="slug">URL Slug</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/games/</span>
+                    <Input
+                      id="slug"
+                      value={game.slug}
+                      onChange={(e) => updateField('slug', e.target.value)}
+                      className="pl-16"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -188,62 +244,123 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                   id="tagline"
                   value={game.tagline || ''}
                   onChange={(e) => updateField('tagline', e.target.value)}
-                  placeholder="A short catchy description"
+                  placeholder="A short catchy description that appears on cards"
                 />
+                <p className="text-xs text-muted-foreground">Keep it under 100 characters</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Full Description</Label>
                 <Textarea
                   id="description"
                   value={game.description || ''}
                   onChange={(e) => updateField('description', e.target.value)}
                   rows={4}
+                  placeholder="Detailed description of the game..."
                 />
               </div>
+            </CardContent>
+          </Card>
 
+          {/* Player & Time */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Players & Time</CardTitle>
+                  <CardDescription>Player count and play time ranges</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="player_min">Min Players</Label>
+                  <Label htmlFor="player_min" className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    Min Players
+                  </Label>
                   <Input
                     id="player_min"
                     type="number"
+                    min="1"
                     value={game.player_count_min}
                     onChange={(e) => updateField('player_count_min', parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="player_max">Max Players</Label>
+                  <Label htmlFor="player_max" className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    Max Players
+                  </Label>
                   <Input
                     id="player_max"
                     type="number"
+                    min="1"
                     value={game.player_count_max}
                     onChange={(e) => updateField('player_count_max', parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time_min">Min Time (min)</Label>
-                  <Input
-                    id="time_min"
-                    type="number"
-                    value={game.play_time_min || ''}
-                    onChange={(e) => updateField('play_time_min', parseInt(e.target.value) || null)}
-                  />
+                  <Label htmlFor="time_min" className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    Min Time
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="time_min"
+                      type="number"
+                      min="1"
+                      value={game.play_time_min || ''}
+                      onChange={(e) => updateField('play_time_min', parseInt(e.target.value) || null)}
+                      className="pr-12"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">min</span>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time_max">Max Time (min)</Label>
-                  <Input
-                    id="time_max"
-                    type="number"
-                    value={game.play_time_max || ''}
-                    onChange={(e) => updateField('play_time_max', parseInt(e.target.value) || null)}
-                  />
+                  <Label htmlFor="time_max" className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    Max Time
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="time_max"
+                      type="number"
+                      min="1"
+                      value={game.play_time_max || ''}
+                      onChange={(e) => updateField('play_time_max', parseInt(e.target.value) || null)}
+                      className="pr-12"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">min</span>
+                  </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          {/* Metadata */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Hash className="h-4 w-4 text-purple-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Metadata</CardTitle>
+                  <CardDescription>Complexity, age, year, and external links</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (1-5)</Label>
+                  <Label htmlFor="weight" className="flex items-center gap-1.5">
+                    <Scale className="h-3.5 w-3.5 text-muted-foreground" />
+                    Weight
+                  </Label>
                   <Input
                     id="weight"
                     type="number"
@@ -252,24 +369,35 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     max="5"
                     value={game.weight || ''}
                     onChange={(e) => updateField('weight', parseFloat(e.target.value) || null)}
+                    placeholder="1.0 - 5.0"
                   />
+                  <p className="text-xs text-muted-foreground">1 = Light, 5 = Heavy</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="min_age">Min Age</Label>
-                  <Input
-                    id="min_age"
-                    type="number"
-                    value={game.min_age || ''}
-                    onChange={(e) => updateField('min_age', parseInt(e.target.value) || null)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="min_age"
+                      type="number"
+                      min="1"
+                      value={game.min_age || ''}
+                      onChange={(e) => updateField('min_age', parseInt(e.target.value) || null)}
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+</span>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="year">Year Published</Label>
+                  <Label htmlFor="year" className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    Year
+                  </Label>
                   <Input
                     id="year"
                     type="number"
                     value={game.year_published || ''}
                     onChange={(e) => updateField('year_published', parseInt(e.target.value) || null)}
+                    placeholder="2024"
                   />
                 </div>
                 <div className="space-y-2">
@@ -287,7 +415,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Button variant="outline" size="icon">
+                        <Button variant="outline" size="icon" className="shrink-0">
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                       </a>
@@ -296,35 +424,49 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="publisher">Publisher</Label>
-                <Input
-                  id="publisher"
-                  value={game.publisher || ''}
-                  onChange={(e) => updateField('publisher', e.target.value)}
-                />
-              </div>
+              <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="publisher" className="flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    Publisher
+                  </Label>
+                  <Input
+                    id="publisher"
+                    value={game.publisher || ''}
+                    onChange={(e) => updateField('publisher', e.target.value)}
+                    placeholder="e.g., Catan Studio"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="designers">Designers (comma-separated)</Label>
-                <Input
-                  id="designers"
-                  value={game.designers?.join(', ') || ''}
-                  onChange={(e) => updateField('designers', e.target.value.split(',').map(d => d.trim()).filter(Boolean))}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="designers">Designers</Label>
+                  <Input
+                    id="designers"
+                    value={game.designers?.join(', ') || ''}
+                    onChange={(e) => updateField('designers', e.target.value.split(',').map(d => d.trim()).filter(Boolean))}
+                    placeholder="Comma-separated names"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Images Tab */}
-        <TabsContent value="images" className="space-y-4">
+        <TabsContent value="images" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Game Images</CardTitle>
-              <CardDescription>
-                Upload and manage images. The primary image is used on cards and as the hero.
-              </CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <ImageIcon className="h-4 w-4 text-green-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Game Images</CardTitle>
+                  <CardDescription>
+                    Upload cover art and gallery images. The primary image appears on cards and as the hero.
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ImageUpload
@@ -341,11 +483,18 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </TabsContent>
 
         {/* Content Tab */}
-        <TabsContent value="content" className="space-y-4">
+        <TabsContent value="content" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Rules Content</CardTitle>
-              <CardDescription>Quick start guide and rules overview</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-orange-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Rules Content</CardTitle>
+                  <CardDescription>Quick start guide and rules overview for players</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -357,11 +506,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     overview: e.target.value
                   })}
                   rows={3}
+                  placeholder="A brief overview of the game and what makes it fun..."
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Quick Start (one per line)</Label>
+                <Label>Quick Start Steps</Label>
                 <Textarea
                   value={rulesContent.quickStart?.join('\n') || ''}
                   onChange={(e) => updateField('rules_content', {
@@ -369,12 +519,13 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     quickStart: e.target.value.split('\n').filter(Boolean)
                   })}
                   rows={4}
-                  placeholder="Step 1&#10;Step 2&#10;Step 3"
+                  placeholder="Step 1: Set up the board&#10;Step 2: Deal starting cards&#10;Step 3: Choose first player"
                 />
+                <p className="text-xs text-muted-foreground">One step per line</p>
               </div>
 
               <div className="space-y-2">
-                <Label>Tips (one per line)</Label>
+                <Label>Strategy Tips</Label>
                 <Textarea
                   value={rulesContent.tips?.join('\n') || ''}
                   onChange={(e) => updateField('rules_content', {
@@ -382,15 +533,24 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     tips: e.target.value.split('\n').filter(Boolean)
                   })}
                   rows={4}
+                  placeholder="Focus on resource management early&#10;Don't neglect defense"
                 />
+                <p className="text-xs text-muted-foreground">One tip per line</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Setup Content</CardTitle>
-              <CardDescription>Setup instructions and component list</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-cyan-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Setup Content</CardTitle>
+                  <CardDescription>Setup instructions and component checklist</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -401,11 +561,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     ...setupContent,
                     firstPlayerRule: e.target.value
                   })}
+                  placeholder="e.g., The player who most recently traveled goes first"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Quick Tips (one per line)</Label>
+                <Label>Setup Tips</Label>
                 <Textarea
                   value={setupContent.quickTips?.join('\n') || ''}
                   onChange={(e) => updateField('setup_content', {
@@ -413,19 +574,28 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     quickTips: e.target.value.split('\n').filter(Boolean)
                   })}
                   rows={4}
+                  placeholder="Tip 1&#10;Tip 2&#10;Tip 3"
                 />
+                <p className="text-xs text-muted-foreground">One tip per line</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Reference Content</CardTitle>
-              <CardDescription>Quick reference and end game conditions</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-pink-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Reference Content</CardTitle>
+                  <CardDescription>Quick reference card and end game conditions</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>End Game</Label>
+                <Label>End Game Condition</Label>
                 <Textarea
                   value={referenceContent.endGame}
                   onChange={(e) => updateField('reference_content', {
@@ -433,11 +603,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     endGame: e.target.value
                   })}
                   rows={2}
+                  placeholder="The game ends when a player reaches 10 victory points..."
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Quick Reminders (one per line)</Label>
+                <Label>Quick Reminders</Label>
                 <Textarea
                   value={referenceContent.quickReminders?.join('\n') || ''}
                   onChange={(e) => updateField('reference_content', {
@@ -445,23 +616,32 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     quickReminders: e.target.value.split('\n').filter(Boolean)
                   })}
                   rows={4}
+                  placeholder="Draw a card at the end of your turn&#10;You can only build on your turn"
                 />
+                <p className="text-xs text-muted-foreground">One reminder per line</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Publishing Tab */}
-        <TabsContent value="publishing" className="space-y-4">
+        <TabsContent value="publishing" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Publishing Settings</CardTitle>
-              <CardDescription>Control visibility and status</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Visibility Settings</CardTitle>
+                  <CardDescription>Control where this game appears on the site</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label>Published</Label>
+                  <Label className="text-base">Published</Label>
                   <p className="text-sm text-muted-foreground">
                     Make this game visible on the public site
                   </p>
@@ -472,9 +652,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label>Featured</Label>
+                  <Label className="text-base">Featured</Label>
                   <p className="text-sm text-muted-foreground">
                     Show on homepage and featured sections
                   </p>
@@ -484,31 +664,59 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                   onCheckedChange={(checked) => updateField('is_featured', checked)}
                 />
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Content Status</CardTitle>
+                  <CardDescription>Track the content pipeline stage</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Content Status</Label>
+                <Label>Current Status</Label>
                 <select
                   value={game.content_status || 'none'}
                   onChange={(e) => updateField('content_status', e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
-                  <option value="none">None</option>
-                  <option value="importing">Importing</option>
-                  <option value="draft">Draft</option>
-                  <option value="review">Review</option>
-                  <option value="published">Published</option>
+                  <option value="none">None - No content yet</option>
+                  <option value="importing">Importing - Fetching from BGG</option>
+                  <option value="draft">Draft - AI content generated</option>
+                  <option value="review">Review - Ready for human review</option>
+                  <option value="published">Published - Content finalized</option>
                 </select>
               </div>
 
               <div className="pt-4 border-t">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Created:</span>{' '}
-                    {game.created_at ? new Date(game.created_at).toLocaleDateString() : 'N/A'}
+                <h4 className="text-sm font-medium mb-3">Timestamps</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Created</p>
+                    <p className="font-medium mt-1">
+                      {game.created_at ? new Date(game.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      }) : 'N/A'}
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Updated:</span>{' '}
-                    {game.updated_at ? new Date(game.updated_at).toLocaleDateString() : 'N/A'}
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Updated</p>
+                    <p className="font-medium mt-1">
+                      {game.updated_at ? new Date(game.updated_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      }) : 'N/A'}
+                    </p>
                   </div>
                 </div>
               </div>

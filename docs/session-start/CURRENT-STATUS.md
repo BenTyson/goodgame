@@ -11,6 +11,13 @@
 - **Image uploads** via Supabase Storage
 - **Content pipeline** (BGG scraper + AI generation ready)
 - **Production**: https://boardnomads.com
+- **Staging**: https://goodgame-staging-staging.up.railway.app
+
+### Branch Strategy
+| Branch | Deploys To | Purpose |
+|--------|------------|---------|
+| `develop` | Staging | Default working branch |
+| `main` | Production | PRs only, never direct push |
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -58,6 +65,18 @@ CRON_SECRET
 ANTHROPIC_API_KEY
 ```
 
+### Railway (Staging)
+```
+NEXT_PUBLIC_SUPABASE_URL    # Same as production
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SITE_URL=https://goodgame-staging-staging.up.railway.app
+NEXT_PUBLIC_SITE_NAME=Good Game (Staging)
+ADMIN_EMAILS
+CRON_SECRET
+ANTHROPIC_API_KEY
+```
+
 ---
 
 ## Database Migrations
@@ -89,10 +108,21 @@ supabase/migrations/
 npm run dev              # http://localhost:3399
 npm run build            # Production build
 supabase db push         # Push migrations
-git push origin main     # Deploy to Railway
+
+# Git workflow (always work on develop)
+git checkout develop
+git push origin develop  # Deploys to staging
+
+# Deploy to production (via PR)
+# Go to: https://github.com/BenTyson/goodgame/compare/main...develop
 
 # Regenerate types after schema changes
 supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+
+# Railway CLI
+railway environment staging && railway service goodgame-staging   # Switch to staging
+railway environment production && railway service goodgame        # Switch to production
+railway logs                                                      # View logs
 ```
 
 ---
@@ -142,11 +172,16 @@ supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supa
 ### Supabase Auth
 - Google provider enabled
 - Site URL: `https://boardnomads.com`
-- Redirect URLs include localhost + production
+- Redirect URLs include:
+  - `http://localhost:3399/**` (dev)
+  - `https://boardnomads.com/**` (production)
+  - `https://goodgame-staging-staging.up.railway.app/**` (staging)
 
 ---
 
 ## Next Steps
+- Configure branch triggers in Railway dashboard (staging → develop, production → main)
+- Add staging URL to Supabase Auth redirect URLs
 - Upload images for all 16 games via admin
 - Set up cron-job.org to trigger import/generate APIs
 - Add more games via BGG import queue
