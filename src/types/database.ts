@@ -65,6 +65,14 @@ export type ContentGenerationLog = Database['public']['Tables']['content_generat
 export type ContentGenerationLogInsert = Database['public']['Tables']['content_generation_log']['Insert']
 export type ContentGenerationLogUpdate = Database['public']['Tables']['content_generation_log']['Update']
 
+export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
+export type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert']
+export type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update']
+
+export type UserGame = Database['public']['Tables']['user_games']['Row']
+export type UserGameInsert = Database['public']['Tables']['user_games']['Insert']
+export type UserGameUpdate = Database['public']['Tables']['user_games']['Update']
+
 // Content types for JSONB columns
 export interface RulesContent {
   quickStart: string[]
@@ -127,4 +135,16 @@ export type CategoryWithGames = Category & {
 
 export type CollectionWithGames = Collection & {
   games?: (Game & { note?: string })[]
+}
+
+// Shelf status enum
+export type ShelfStatus = 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
+
+// Extended user types
+export type UserGameWithGame = UserGame & {
+  game: Game
+}
+
+export type UserProfileWithGames = UserProfile & {
+  games?: UserGameWithGame[]
 }

@@ -2,12 +2,29 @@
  * BoardGameGeek API Client
  * Fetches game data from BGG's XML API v2
  * Rate limited to 1 request/second
+ *
+ * Requires BGG_API_TOKEN environment variable for authentication.
+ * Register at: https://boardgamegeek.com/applications
  */
 
 import { parseStringPromise } from 'xml2js'
 
 // BGG API base URL
 const BGG_API_BASE = 'https://boardgamegeek.com/xmlapi2'
+
+/**
+ * Get BGG API headers with authorization
+ */
+function getBGGHeaders(): HeadersInit {
+  const token = process.env.BGG_API_TOKEN
+  if (!token) {
+    console.warn('BGG_API_TOKEN not set - API calls will fail')
+    return {}
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+  }
+}
 
 // Rate limiting - track last request time
 let lastRequestTime = 0
@@ -146,7 +163,7 @@ export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
   const url = `${BGG_API_BASE}/thing?id=${bggId}&stats=1`
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { headers: getBGGHeaders() })
 
     if (!response.ok) {
       console.error(`BGG API error: ${response.status} ${response.statusText}`)
@@ -245,7 +262,7 @@ export async function fetchBGGGames(bggIds: number[]): Promise<Map<number, BGGRa
     const url = `${BGG_API_BASE}/thing?id=${batch.join(',')}&stats=1`
 
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { headers: getBGGHeaders() })
 
       if (!response.ok) {
         console.error(`BGG API error: ${response.status}`)
@@ -344,7 +361,7 @@ export async function searchBGGGames(
   const url = `${BGG_API_BASE}/search?query=${encodeURIComponent(query)}&type=boardgame${exact ? '&exact=1' : ''}`
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { headers: getBGGHeaders() })
 
     if (!response.ok) {
       console.error(`BGG search error: ${response.status}`)

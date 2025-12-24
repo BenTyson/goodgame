@@ -20,7 +20,7 @@
 | Game metadata | Supabase database | Queryable, filterable |
 | Game content | TypeScript objects (inline) | Simpler than MDX, works with mock data |
 | Score sheet config | Supabase database | Dynamic, per-game customization |
-| User accounts | None for MVP | Keep it simple, add later if needed |
+| User accounts | Google OAuth + shelf feature | Track owned/wanted games with ratings |
 | Local dev port | 3399 | User preference |
 | Image storage | Supabase Storage (planned) | Currently using BGG URLs for development |
 | Remote images | BoardGameGeek CDN | `cf.geekdo-images.com` configured in next.config.ts |
@@ -69,10 +69,10 @@
 
 ## What NOT to Build (MVP)
 
-- User accounts / authentication
+- ~~User accounts / authentication~~ ✅ Built
 - Community features (comments, forums)
-- Game ratings / reviews
+- ~~Game ratings / reviews~~ ✅ Built (personal ratings on shelf)
 - Mobile app
-- BGG data scraping
+- ~~BGG data scraping~~ ✅ Built (import pipeline)
 - Premium/paid tier
 - Dark mode theme

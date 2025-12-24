@@ -23,6 +23,8 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 - **awards** - Board game awards (Spiel des Jahres, Golden Geek, etc.)
 - **award_categories** - Categories within each award
 - **game_awards** - Links games to awards they've won
+- **user_profiles** - User profile data (linked to Supabase auth)
+- **user_games** - User's game shelf/collection tracking
 
 ## Entity Relationship Diagram
 
@@ -83,6 +85,9 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 15. `00015_game_images_storage.sql` - Supabase Storage bucket setup
 16. `00016_game_images_rls.sql` - RLS policies for game_images
 17. `00017_cleanup_placeholder_images.sql` - Remove old BGG placeholders
+18. `00018_queue_bgg_top100.sql` - Queue BGG Top 100 games for import
+19. `00019_seo_collections.sql` - SEO-optimized collection pages
+20. `00020_user_profiles_and_shelf.sql` - User profiles and game shelf
 
 ## Tables
 
@@ -329,6 +334,36 @@ Relationships between games (expansions, sequels, etc.).
 | source_game_id | UUID | FK to games |
 | target_game_id | UUID | FK to games |
 | relation_type | VARCHAR(30) | expansion_of, sequel_to, reimplementation_of, etc. |
+
+### user_profiles
+User profile data linked to Supabase auth.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key (references auth.users) |
+| display_name | VARCHAR(100) | User display name |
+| avatar_url | VARCHAR(500) | Profile image URL |
+| role | VARCHAR(20) | 'user' or 'admin' |
+| shelf_visibility | VARCHAR(20) | 'private' or 'public' |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### user_games
+User's game shelf/collection tracking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| game_id | UUID | FK to games |
+| status | shelf_status | owned, want_to_buy, want_to_play, previously_owned, wishlist |
+| rating | SMALLINT | User rating (1-10) |
+| notes | TEXT | Personal notes |
+| acquired_date | DATE | When acquired |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraint**: One entry per user per game (user_id, game_id)
 
 ## Junction Tables
 

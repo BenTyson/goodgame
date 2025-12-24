@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-23
+> Last Updated: 2025-12-24
 
-## Phase: 7 - Infrastructure Complete
+## Phase: 8 - User Features
 
 ### What's Live
 - **16 games** with full content (Rules, Setup, Reference, Score Sheets)
@@ -11,6 +11,8 @@
 - **Image uploads** via Supabase Storage
 - **Content pipeline** (BGG scraper + AI generation ready)
 - **Separate databases** for staging and production
+- **User authentication** with Google OAuth
+- **Your Shelf** feature - track games you own/want
 
 ### Environments
 
@@ -25,6 +27,22 @@
 |--------|------------|----------|
 | `develop` | Staging | `ndskcbuzsmrzgnvdbofd` |
 | `main` | Production | `jnaibnwxpweahpawxycf` |
+
+### User Auth & Shelf
+| Feature | Status |
+|---------|--------|
+| Google OAuth login | ✅ |
+| User profile auto-creation | ✅ |
+| Add games to shelf | ✅ |
+| Shelf statuses (owned, want to buy, want to play, wishlist, previously owned) | ✅ |
+| Game ratings (1-10) | ✅ |
+| Shelf filtering & sorting | ✅ |
+| Profile settings page | ✅ |
+
+**Routes:**
+- `/login` - User login page
+- `/shelf` - Your game collection
+- `/settings` - Profile settings
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -46,6 +64,8 @@
 | Import Cron API | ✅ | `/api/cron/import-bgg` |
 | Generate Cron API | ✅ | `/api/cron/generate-content` |
 | Image Upload API | ✅ | `/api/admin/upload` |
+
+**Note:** BGG API requires registration and Bearer token. Register at https://boardgamegeek.com/applications
 
 ---
 
@@ -75,6 +95,12 @@ SUPABASE_SERVICE_ROLE_KEY=...
 NEXT_PUBLIC_SITE_URL=http://localhost:3399
 NEXT_PUBLIC_SITE_NAME=Board Nomads
 ADMIN_EMAILS=your-email@gmail.com
+
+# BGG API (register at https://boardgamegeek.com/applications)
+BGG_API_TOKEN=your-bgg-token
+
+# Cron job authentication
+CRON_SECRET=your-cron-secret
 ```
 
 ### Railway Staging
@@ -112,7 +138,10 @@ supabase/migrations/
 ├── 00014_complete_game_content.sql  # All 16 games content
 ├── 00015_game_images_storage.sql    # Supabase Storage bucket
 ├── 00016_game_images_rls.sql        # RLS for game_images
-└── 00017_cleanup_placeholder_images.sql # Remove old BGG placeholders
+├── 00017_cleanup_placeholder_images.sql # Remove old BGG placeholders
+├── 00018_queue_bgg_top100.sql       # Queue BGG Top 100 games
+├── 00019_seo_collections.sql        # SEO collection pages
+└── 00020_user_profiles_and_shelf.sql # User auth + shelf feature
 ```
 
 ---
@@ -160,6 +189,18 @@ railway logs                                                      # View logs
 | `src/components/admin/ImageUpload.tsx` | Image upload component |
 | `src/app/api/admin/upload/route.ts` | Image upload API |
 
+### User Auth & Shelf
+| File | Purpose |
+|------|---------|
+| `src/lib/auth/AuthContext.tsx` | React auth context provider |
+| `src/lib/supabase/user-queries.ts` | Shelf CRUD operations |
+| `src/components/auth/UserMenu.tsx` | Header user dropdown |
+| `src/components/shelf/AddToShelfButton.tsx` | Add game to shelf |
+| `src/components/shelf/RatingInput.tsx` | 1-10 star rating |
+| `src/app/login/page.tsx` | Login page |
+| `src/app/shelf/page.tsx` | Shelf page |
+| `src/app/settings/page.tsx` | Profile settings |
+
 ### Content Pipeline
 | File | Purpose |
 |------|---------|
@@ -206,3 +247,5 @@ railway logs                                                      # View logs
 - Upload images for all 16 games via admin
 - Set up cron-job.org to trigger import/generate APIs
 - Add more games via BGG import queue
+- Push user auth migration to production when ready
+- Add public shelf viewing (currently private only)

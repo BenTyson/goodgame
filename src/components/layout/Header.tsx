@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchDialog } from '@/components/search'
 import { ThemeToggle } from './ThemeToggle'
+import { UserMenu } from '@/components/auth/UserMenu'
 
 const navigation = [
   { name: 'Games', href: '/games' },
@@ -100,6 +101,9 @@ export function Header() {
 
           {/* Theme toggle */}
           <ThemeToggle />
+
+          {/* User menu */}
+          <UserMenu />
 
           {/* Mobile menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>

@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ImageGallery, RelatedGames, AwardBadgeList } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
+import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
 import { getGameWithDetails, getRelatedGames, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
@@ -254,11 +255,12 @@ export default async function GamePage({ params }: GamePageProps) {
           )}
 
           {/* Buy buttons */}
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <BuyButtons
               amazonAsin={game.amazon_asin}
               gameSlug={game.slug}
             />
+            <AddToShelfButton gameId={game.id} />
           </div>
         </div>
       </div>

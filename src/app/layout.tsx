@@ -4,6 +4,7 @@ import { Inter, Outfit } from 'next/font/google'
 import './globals.css'
 
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
+import { AuthProvider } from '@/lib/auth/AuthContext'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo'
@@ -96,11 +97,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <AuthProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
