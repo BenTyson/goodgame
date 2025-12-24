@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import {
   Users,
   Clock,
@@ -18,10 +19,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ImageGallery, RelatedGames, AwardBadgeList } from '@/components/games'
+import { ImageGallery, RelatedGamesAsync, RelatedGamesSkeleton, AwardBadgeList } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
-import { getGameWithDetails, getRelatedGames, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
+import { getGameWithDetails, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface GamePageProps {
@@ -102,10 +103,7 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: game.name, href: `/games/${game.slug}` },
   ]
 
-  const [relatedGames, gameAwards] = await Promise.all([
-    getRelatedGames(game.slug),
-    getGameAwards(game.id),
-  ])
+  const gameAwards = await getGameAwards(game.id)
 
   return (
     <>
@@ -338,12 +336,10 @@ export default async function GamePage({ params }: GamePageProps) {
       )}
 
       {/* Related games */}
-      {relatedGames.length > 0 && (
-        <>
-          <Separator className="my-10" />
-          <RelatedGames games={relatedGames} />
-        </>
-      )}
+      <Separator className="my-10" />
+      <Suspense fallback={<RelatedGamesSkeleton />}>
+        <RelatedGamesAsync gameSlug={game.slug} />
+      </Suspense>
       </div>
     </>
   )
