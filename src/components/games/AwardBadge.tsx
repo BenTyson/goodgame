@@ -23,39 +23,39 @@ const awardIcons: Record<string, React.ReactNode> = {
   'as-dor': <Globe className="h-4 w-4" />,
 }
 
-// Award tier styling with high contrast colors
+// Award tier styling - dark bg with light text (badge style)
 const awardTiers: Record<string, { bg: string; text: string; border: string }> = {
   // German awards - gold tier
   'spiel-des-jahres': {
-    bg: 'bg-amber-50 dark:bg-amber-950',
-    text: 'text-amber-900 dark:text-amber-300',
-    border: 'border-amber-400 dark:border-amber-700',
+    bg: 'bg-amber-600 dark:bg-amber-700',
+    text: 'text-white dark:text-amber-100',
+    border: 'border-amber-700 dark:border-amber-600',
   },
   'kennerspiel-des-jahres': {
-    bg: 'bg-slate-50 dark:bg-slate-900',
-    text: 'text-slate-900 dark:text-slate-200',
-    border: 'border-slate-400 dark:border-slate-600',
+    bg: 'bg-slate-600 dark:bg-slate-700',
+    text: 'text-white dark:text-slate-100',
+    border: 'border-slate-700 dark:border-slate-600',
   },
   'kinderspiel-des-jahres': {
-    bg: 'bg-blue-50 dark:bg-blue-950',
-    text: 'text-blue-900 dark:text-blue-300',
-    border: 'border-blue-400 dark:border-blue-700',
+    bg: 'bg-blue-600 dark:bg-blue-700',
+    text: 'text-white dark:text-blue-100',
+    border: 'border-blue-700 dark:border-blue-600',
   },
   // International awards
   'golden-geek': {
-    bg: 'bg-purple-50 dark:bg-purple-950',
-    text: 'text-purple-900 dark:text-purple-300',
-    border: 'border-purple-400 dark:border-purple-700',
+    bg: 'bg-purple-600 dark:bg-purple-700',
+    text: 'text-white dark:text-purple-100',
+    border: 'border-purple-700 dark:border-purple-600',
   },
   'dice-tower': {
-    bg: 'bg-emerald-50 dark:bg-emerald-950',
-    text: 'text-emerald-900 dark:text-emerald-300',
-    border: 'border-emerald-400 dark:border-emerald-700',
+    bg: 'bg-emerald-600 dark:bg-emerald-700',
+    text: 'text-white dark:text-emerald-100',
+    border: 'border-emerald-700 dark:border-emerald-600',
   },
   'as-dor': {
-    bg: 'bg-rose-50 dark:bg-rose-950',
-    text: 'text-rose-900 dark:text-rose-300',
-    border: 'border-rose-400 dark:border-rose-700',
+    bg: 'bg-rose-600 dark:bg-rose-700',
+    text: 'text-white dark:text-rose-100',
+    border: 'border-rose-700 dark:border-rose-600',
   },
 }
 
