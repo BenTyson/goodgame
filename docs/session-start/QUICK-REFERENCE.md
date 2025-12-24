@@ -1,5 +1,13 @@
 # Quick Reference
 
+## Environments
+
+| Environment | URL | Database |
+|-------------|-----|----------|
+| Local | http://localhost:3399 | Staging |
+| Staging | https://goodgame-staging-staging.up.railway.app | Staging |
+| Production | https://boardnomads.com | Production |
+
 ## Commands
 
 ```bash
@@ -8,12 +16,33 @@ npm run dev                    # Start dev server (port 3399)
 npm run build                  # Production build
 npm run lint                   # ESLint check
 
-# Supabase
-supabase login                 # Login to Supabase CLI
-supabase link --project-ref jnaibnwxpweahpawxycf  # Link project
-supabase db push               # Push migrations to remote
-supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+# Git (always work on develop)
+git checkout develop           # Switch to develop
+git push origin develop        # Deploy to staging
+
+# Supabase (linked to staging by default)
+npx supabase db push           # Push migrations to staging
+
+# Push to production database
+npx supabase link --project-ref jnaibnwxpweahpawxycf
+npx supabase db push
+npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back
+
+# Regenerate types
+npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types/supabase.ts
+
+# Railway
+railway environment staging && railway service goodgame-staging
+railway environment production && railway service goodgame
+railway logs
 ```
+
+## Supabase Projects
+
+| Project | Ref ID | Used By |
+|---------|--------|---------|
+| **Staging** | `ndskcbuzsmrzgnvdbofd` | localhost + Railway staging |
+| **Production** | `jnaibnwxpweahpawxycf` | Railway production |
 
 ## File Locations
 
@@ -35,6 +64,11 @@ src/app/
 ├── collections/
 │   ├── page.tsx              # Collections listing
 │   └── [slug]/page.tsx       # Collection detail
+├── admin/                     # Admin panel
+│   ├── login/page.tsx
+│   └── (dashboard)/
+│       ├── page.tsx          # Dashboard
+│       └── games/            # Game management
 ├── score-sheets/page.tsx
 ├── rules/page.tsx
 ├── sitemap.ts                 # Dynamic sitemap
@@ -47,6 +81,7 @@ src/components/
 ├── ui/                        # shadcn/ui (don't edit directly)
 ├── layout/                    # Header, Footer, ThemeProvider
 ├── games/                     # GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
+├── admin/                     # ImageUpload, ContentEditor
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
@@ -57,11 +92,11 @@ src/components/
 ```
 src/types/supabase.ts          # Auto-generated from Supabase schema
 src/types/database.ts          # Convenience types (GameRow, GameInsert, etc.)
-src/data/mock-games.ts         # Mock data: games, categories, collections, images
 src/lib/supabase/              # Database clients (client.ts, server.ts)
+src/lib/bgg/                   # BGG API client and importer
+src/lib/ai/                    # Claude AI content generator
 src/lib/seo/                   # JSON-LD structured data components
-supabase/migrations/           # Database schema (8 files)
-next.config.ts                 # Remote image patterns (cf.geekdo-images.com)
+supabase/migrations/           # Database schema (17 files)
 ```
 
 ### Type Definitions
@@ -78,24 +113,20 @@ AwardCategory    // Award category type
 GameAward        // Game-award link type
 ```
 
-### Helper Functions (in mock-games.ts)
-```typescript
-getGameImages(gameSlug)        // Get images for a game
-getGameCoverImage(gameSlug)    // Get primary cover image
-getCollectionGames(collSlug)   // Get games in a collection
-getGameCollections(gameSlug)   // Get collections containing a game
-getRelatedGames(gameSlug, limit)  // Get related games by category/complexity/player count
-```
+## Environment Variables
 
-### SEO Components (in src/lib/seo/)
-```typescript
-GameJsonLd          // Game schema for game hub pages
-HowToJsonLd         // HowTo schema for rules pages
-ItemListJsonLd      // ItemList for game listings
-CollectionJsonLd    // Collection schema for collections
-BreadcrumbJsonLd    // Breadcrumb navigation schema
-OrganizationJsonLd  // Site-wide organization info
-WebSiteJsonLd       // Site-wide website info with search
+```env
+# Staging Supabase (localhost + staging)
+NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+# Site
+NEXT_PUBLIC_SITE_URL=http://localhost:3399
+NEXT_PUBLIC_SITE_NAME=Board Nomads
+
+# Admin
+ADMIN_EMAILS=your-email@gmail.com
 ```
 
 ## Naming Conventions
@@ -108,28 +139,6 @@ WebSiteJsonLd       // Site-wide website info with search
 | Database | snake_case | `game_categories` |
 | CSS classes | kebab-case | `.game-card-header` |
 
-## Environment Variables
-
-```env
-# Client-side (exposed to browser)
-NEXT_PUBLIC_SUPABASE_URL=https://jnaibnwxpweahpawxycf.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-NEXT_PUBLIC_SITE_URL=http://localhost:3399
-NEXT_PUBLIC_SITE_NAME=Good Game
-
-# Server-side only
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-## Supabase
-
-**Project ID**: `jnaibnwxpweahpawxycf`
-
-```bash
-# After schema changes, regenerate types:
-supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
-```
-
 ## Design System
 
 - **Primary**: Teal `oklch(0.55 0.15 195)`
@@ -139,6 +148,9 @@ supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supa
 
 ## URLs
 
-- Local dev: http://localhost:3399
-- Supabase Dashboard: https://supabase.com/dashboard/project/jnaibnwxpweahpawxycf
-- Railway Dashboard: https://railway.app/dashboard
+- **Local**: http://localhost:3399
+- **Staging**: https://goodgame-staging-staging.up.railway.app
+- **Production**: https://boardnomads.com
+- **Staging Supabase**: https://supabase.com/dashboard/project/ndskcbuzsmrzgnvdbofd
+- **Production Supabase**: https://supabase.com/dashboard/project/jnaibnwxpweahpawxycf
+- **Railway**: https://railway.app/dashboard

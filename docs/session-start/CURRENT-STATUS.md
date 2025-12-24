@@ -2,7 +2,7 @@
 
 > Last Updated: 2025-12-23
 
-## Phase: 6 - Admin System Complete
+## Phase: 7 - Infrastructure Complete
 
 ### What's Live
 - **16 games** with full content (Rules, Setup, Reference, Score Sheets)
@@ -10,14 +10,21 @@
 - **Admin panel** at `/admin` with Google OAuth
 - **Image uploads** via Supabase Storage
 - **Content pipeline** (BGG scraper + AI generation ready)
-- **Production**: https://boardnomads.com
-- **Staging**: https://goodgame-staging-staging.up.railway.app
+- **Separate databases** for staging and production
+
+### Environments
+
+| Environment | URL | Database |
+|-------------|-----|----------|
+| **Local** | http://localhost:3399 | Staging Supabase |
+| **Staging** | https://goodgame-staging-staging.up.railway.app | Staging Supabase |
+| **Production** | https://boardnomads.com | Production Supabase |
 
 ### Branch Strategy
-| Branch | Deploys To | Purpose |
-|--------|------------|---------|
-| `develop` | Staging | Default working branch |
-| `main` | Production | PRs only, never direct push |
+| Branch | Deploys To | Database |
+|--------|------------|----------|
+| `develop` | Staging | `ndskcbuzsmrzgnvdbofd` |
+| `main` | Production | `jnaibnwxpweahpawxycf` |
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -42,39 +49,46 @@
 
 ---
 
+## Supabase Projects
+
+### Staging (`ndskcbuzsmrzgnvdbofd`)
+- **Used by**: localhost + Railway staging
+- **Purpose**: Safe testing, can reset data
+- **URL**: https://ndskcbuzsmrzgnvdbofd.supabase.co
+
+### Production (`jnaibnwxpweahpawxycf`)
+- **Used by**: Railway production only
+- **Purpose**: Live user data, protected
+- **URL**: https://jnaibnwxpweahpawxycf.supabase.co
+
+---
+
 ## Environment Variables
 
 ### Local (`.env.local`)
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://jnaibnwxpweahpawxycf.supabase.co
+# Staging Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+
 NEXT_PUBLIC_SITE_URL=http://localhost:3399
 NEXT_PUBLIC_SITE_NAME=Board Nomads
 ADMIN_EMAILS=your-email@gmail.com
 ```
 
-### Railway (Production)
+### Railway Staging
 ```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-NEXT_PUBLIC_SITE_URL=https://boardnomads.com
-ADMIN_EMAILS
-CRON_SECRET
-ANTHROPIC_API_KEY
-```
-
-### Railway (Staging)
-```
-NEXT_PUBLIC_SUPABASE_URL    # Same as production
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
 NEXT_PUBLIC_SITE_URL=https://goodgame-staging-staging.up.railway.app
 NEXT_PUBLIC_SITE_NAME=Good Game (Staging)
-ADMIN_EMAILS
-CRON_SECRET
-ANTHROPIC_API_KEY
+```
+
+### Railway Production
+```
+NEXT_PUBLIC_SUPABASE_URL=https://jnaibnwxpweahpawxycf.supabase.co
+NEXT_PUBLIC_SITE_URL=https://boardnomads.com
+NEXT_PUBLIC_SITE_NAME=Good Game
 ```
 
 ---
@@ -107,7 +121,14 @@ supabase/migrations/
 ```bash
 npm run dev              # http://localhost:3399
 npm run build            # Production build
-supabase db push         # Push migrations
+
+# Database migrations
+npx supabase db push     # Push to staging (default linked)
+
+# Push to production (when needed)
+npx supabase link --project-ref jnaibnwxpweahpawxycf
+npx supabase db push
+npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back
 
 # Git workflow (always work on develop)
 git checkout develop
@@ -117,7 +138,7 @@ git push origin develop  # Deploys to staging
 # Go to: https://github.com/BenTyson/goodgame/compare/main...develop
 
 # Regenerate types after schema changes
-supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types/supabase.ts
 
 # Railway CLI
 railway environment staging && railway service goodgame-staging   # Switch to staging
@@ -152,7 +173,7 @@ railway logs                                                      # View logs
 
 ## Supabase Storage
 
-**Bucket**: `game-images`
+**Bucket**: `game-images` (exists in both staging and production)
 - Public read access
 - Authenticated upload/delete
 - Path: `{game-slug}/{timestamp}-{random}.{ext}`
@@ -165,23 +186,23 @@ railway logs                                                      # View logs
 ### Google Cloud Console
 - OAuth 2.0 Client ID configured
 - Authorized redirect URIs:
-  - `https://jnaibnwxpweahpawxycf.supabase.co/auth/v1/callback`
-  - `http://localhost:3399/auth/callback` (dev)
-  - `https://boardnomads.com/auth/callback` (prod)
+  - `https://ndskcbuzsmrzgnvdbofd.supabase.co/auth/v1/callback` (staging)
+  - `https://jnaibnwxpweahpawxycf.supabase.co/auth/v1/callback` (production)
 
-### Supabase Auth
-- Google provider enabled
+### Staging Supabase Auth
+- Site URL: `https://goodgame-staging-staging.up.railway.app`
+- Redirect URLs:
+  - `http://localhost:3399/**`
+  - `https://goodgame-staging-staging.up.railway.app/**`
+
+### Production Supabase Auth
 - Site URL: `https://boardnomads.com`
-- Redirect URLs include:
-  - `http://localhost:3399/**` (dev)
-  - `https://boardnomads.com/**` (production)
-  - `https://goodgame-staging-staging.up.railway.app/**` (staging)
+- Redirect URLs:
+  - `https://boardnomads.com/**`
 
 ---
 
 ## Next Steps
-- Configure branch triggers in Railway dashboard (staging → develop, production → main)
-- Add staging URL to Supabase Auth redirect URLs
 - Upload images for all 16 games via admin
 - Set up cron-job.org to trigger import/generate APIs
 - Add more games via BGG import queue

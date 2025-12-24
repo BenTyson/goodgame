@@ -1,11 +1,34 @@
 # Deployment Guide
 
-## Environments
+## Environment Overview
 
-| Environment | Branch | URL | Purpose |
-|-------------|--------|-----|---------|
-| **Production** | `main` | https://boardnomads.com | Live site |
-| **Staging** | `develop` | https://goodgame-staging-staging.up.railway.app | Testing & preview |
+| Environment | Branch | URL | Database |
+|-------------|--------|-----|----------|
+| **Local** | `develop` | http://localhost:3399 | Staging Supabase |
+| **Staging** | `develop` | https://goodgame-staging-staging.up.railway.app | Staging Supabase |
+| **Production** | `main` | https://boardnomads.com | Production Supabase |
+
+## Database Separation
+
+Local and staging share a database, production is isolated:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   STAGING SUPABASE                       │
+│              ndskcbuzsmrzgnvdbofd.supabase.co           │
+│                                                          │
+│   Used by: localhost + Railway staging                   │
+│   Purpose: Safe testing, can reset data                  │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                  PRODUCTION SUPABASE                     │
+│              jnaibnwxpweahpawxycf.supabase.co           │
+│                                                          │
+│   Used by: Railway production only                       │
+│   Purpose: Live user data, protected                     │
+└─────────────────────────────────────────────────────────┘
+```
 
 ## Branch Strategy
 
@@ -22,6 +45,8 @@ main ─────────────────────────
 1. **Never push directly to `main`** - Always use PRs
 2. **`develop` is the default working branch** - All work happens here
 3. **PRs are for controlled deployments** - Review before going live
+
+---
 
 ## Daily Workflow
 
@@ -65,6 +90,8 @@ git push origin main
 git checkout develop
 ```
 
+---
+
 ## Railway Configuration
 
 ### Project: Good Game
@@ -73,11 +100,13 @@ git checkout develop
 - Service: `goodgame`
 - Domain: boardnomads.com
 - Branch trigger: `main`
+- Database: Production Supabase
 
 **Staging Environment:**
 - Service: `goodgame-staging`
 - Domain: goodgame-staging-staging.up.railway.app
 - Branch trigger: `develop`
+- Database: Staging Supabase
 
 ### Manual Deployment
 
@@ -103,36 +132,107 @@ railway environment staging && railway service goodgame-staging && railway logs
 railway environment production && railway service goodgame && railway logs
 ```
 
+---
+
 ## Environment Variables
 
-Both environments share the same Supabase project. Key differences:
+### Local (`.env.local`)
 
-| Variable | Production | Staging |
-|----------|------------|---------|
-| `NEXT_PUBLIC_SITE_NAME` | Good Game | Good Game (Staging) |
-| `NEXT_PUBLIC_SITE_URL` | https://boardnomads.com | https://goodgame-staging-staging.up.railway.app |
+```bash
+# Staging Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<staging-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<staging-service-role-key>
+
+# Site
+NEXT_PUBLIC_SITE_URL=http://localhost:3399
+NEXT_PUBLIC_SITE_NAME=Board Nomads
+
+# Admin
+ADMIN_EMAILS=your-email@gmail.com
+```
+
+### Railway Staging
+
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | https://ndskcbuzsmrzgnvdbofd.supabase.co |
+| `NEXT_PUBLIC_SITE_URL` | https://goodgame-staging-staging.up.railway.app |
+| `NEXT_PUBLIC_SITE_NAME` | Good Game (Staging) |
+
+### Railway Production
+
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | https://jnaibnwxpweahpawxycf.supabase.co |
+| `NEXT_PUBLIC_SITE_URL` | https://boardnomads.com |
+| `NEXT_PUBLIC_SITE_NAME` | Good Game |
+
+---
 
 ## Supabase Configuration
 
-**Important:** Add the staging URL to Supabase Auth redirect URLs:
+### Staging Supabase (`ndskcbuzsmrzgnvdbofd`)
 
-1. Go to Supabase Dashboard → Authentication → URL Configuration
-2. Add to "Redirect URLs":
-   - `https://goodgame-staging-staging.up.railway.app/**`
+**Authentication → URL Configuration:**
+- Site URL: `https://goodgame-staging-staging.up.railway.app`
+- Redirect URLs:
+  - `http://localhost:3399/**`
+  - `https://goodgame-staging-staging.up.railway.app/**`
+
+**Google OAuth Callback:**
+```
+https://ndskcbuzsmrzgnvdbofd.supabase.co/auth/v1/callback
+```
+
+### Production Supabase (`jnaibnwxpweahpawxycf`)
+
+**Authentication → URL Configuration:**
+- Site URL: `https://boardnomads.com`
+- Redirect URLs:
+  - `https://boardnomads.com/**`
+
+**Google OAuth Callback:**
+```
+https://jnaibnwxpweahpawxycf.supabase.co/auth/v1/callback
+```
+
+---
+
+## Database Migrations
+
+When adding new migrations:
+
+```bash
+# Push to staging database (linked by default)
+npx supabase db push
+
+# To push to production, temporarily re-link:
+npx supabase link --project-ref jnaibnwxpweahpawxycf
+npx supabase db push
+npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back to staging
+```
+
+---
 
 ## Troubleshooting
 
 ### Staging not deploying
 
-Check that the GitHub repo is connected and branch trigger is set to `develop`:
 1. Go to Railway Dashboard → Good Game project
 2. Click on staging environment
 3. Click on goodgame-staging service
 4. Go to Settings → Source
-5. Set "Branch" to `develop`
+5. Verify "Branch" is set to `develop`
 
-### OAuth not working on staging
+### OAuth not working
 
-Add staging URL to:
-1. Supabase Auth redirect URLs (see above)
-2. Google OAuth Console authorized redirect URIs
+Check redirect URLs in:
+1. Supabase Auth settings (see above)
+2. Google Cloud Console → OAuth 2.0 Client → Authorized redirect URIs
+
+### Database connection issues
+
+Verify environment variables match the correct Supabase project:
+- Staging/Local → `ndskcbuzsmrzgnvdbofd`
+- Production → `jnaibnwxpweahpawxycf`
