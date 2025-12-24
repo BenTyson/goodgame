@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Filter, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -33,11 +34,40 @@ export function GameFilters({
   mechanics,
   className,
 }: GameFiltersProps) {
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
-  const [selectedMechanics, setSelectedMechanics] = React.useState<string[]>([])
-  const [playerCount, setPlayerCount] = React.useState<[number, number]>([1, 8])
-  const [playTime, setPlayTime] = React.useState<[number, number]>([0, 180])
-  const [weight, setWeight] = React.useState<[number, number]>([1, 5])
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Read filter values from URL
+  const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
+  const selectedMechanics = searchParams.get('mechanics')?.split(',').filter(Boolean) || []
+
+  const playerCountMin = parseInt(searchParams.get('players_min') || '1')
+  const playerCountMax = parseInt(searchParams.get('players_max') || '8')
+  const playerCount: [number, number] = [playerCountMin, playerCountMax]
+
+  const playTimeMin = parseInt(searchParams.get('time_min') || '0')
+  const playTimeMax = parseInt(searchParams.get('time_max') || '180')
+  const playTime: [number, number] = [playTimeMin, playTimeMax]
+
+  const weightMin = parseFloat(searchParams.get('weight_min') || '1')
+  const weightMax = parseFloat(searchParams.get('weight_max') || '5')
+  const weight: [number, number] = [weightMin, weightMax]
+
+  // Update URL with new filters
+  const updateFilters = React.useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        params.delete(key)
+      } else {
+        params.set(key, value)
+      }
+    })
+
+    const queryString = params.toString()
+    router.push(queryString ? `/games?${queryString}` : '/games', { scroll: false })
+  }, [router, searchParams])
 
   const activeFilterCount =
     selectedCategories.length +
@@ -47,27 +77,51 @@ export function GameFilters({
     (weight[0] !== 1 || weight[1] !== 5 ? 1 : 0)
 
   const clearAllFilters = () => {
-    setSelectedCategories([])
-    setSelectedMechanics([])
-    setPlayerCount([1, 8])
-    setPlayTime([0, 180])
-    setWeight([1, 5])
+    router.push('/games', { scroll: false })
   }
 
   const toggleCategory = (slug: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(slug)
-        ? prev.filter((s) => s !== slug)
-        : [...prev, slug]
-    )
+    const newCategories = selectedCategories.includes(slug)
+      ? selectedCategories.filter((s) => s !== slug)
+      : [...selectedCategories, slug]
+
+    updateFilters({
+      categories: newCategories.length > 0 ? newCategories.join(',') : null
+    })
   }
 
   const toggleMechanic = (slug: string) => {
-    setSelectedMechanics((prev) =>
-      prev.includes(slug)
-        ? prev.filter((s) => s !== slug)
-        : [...prev, slug]
-    )
+    const newMechanics = selectedMechanics.includes(slug)
+      ? selectedMechanics.filter((s) => s !== slug)
+      : [...selectedMechanics, slug]
+
+    updateFilters({
+      mechanics: newMechanics.length > 0 ? newMechanics.join(',') : null
+    })
+  }
+
+  const handlePlayerCountChange = (value: number[]) => {
+    const [min, max] = value as [number, number]
+    updateFilters({
+      players_min: min !== 1 ? String(min) : null,
+      players_max: max !== 8 ? String(max) : null,
+    })
+  }
+
+  const handlePlayTimeChange = (value: number[]) => {
+    const [min, max] = value as [number, number]
+    updateFilters({
+      time_min: min !== 0 ? String(min) : null,
+      time_max: max !== 180 ? String(max) : null,
+    })
+  }
+
+  const handleWeightChange = (value: number[]) => {
+    const [min, max] = value as [number, number]
+    updateFilters({
+      weight_min: min !== 1 ? String(min) : null,
+      weight_max: max !== 5 ? String(max) : null,
+    })
   }
 
   const filterContent = (
@@ -168,7 +222,7 @@ export function GameFilters({
         </div>
         <Slider
           value={playerCount}
-          onValueChange={(value) => setPlayerCount(value as [number, number])}
+          onValueCommit={handlePlayerCountChange}
           min={1}
           max={8}
           step={1}
@@ -188,7 +242,7 @@ export function GameFilters({
         </div>
         <Slider
           value={playTime}
-          onValueChange={(value) => setPlayTime(value as [number, number])}
+          onValueCommit={handlePlayTimeChange}
           min={0}
           max={180}
           step={15}
@@ -208,7 +262,7 @@ export function GameFilters({
         </div>
         <Slider
           value={weight}
-          onValueChange={(value) => setWeight(value as [number, number])}
+          onValueCommit={handleWeightChange}
           min={1}
           max={5}
           step={0.5}

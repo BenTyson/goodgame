@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Content generation error:', error)
     return errorResponse(
       error instanceof Error ? error.message : 'Generation failed'
     )
@@ -102,7 +101,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Stats error:', error)
     return errorResponse(
       error instanceof Error ? error.message : 'Stats check failed'
     )

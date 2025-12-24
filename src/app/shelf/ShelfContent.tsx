@@ -78,8 +78,8 @@ export function ShelfContent({ initialData, profile }: ShelfContentProps) {
           item.id === id ? { ...item, rating } : item
         )
       )
-    } catch (error) {
-      console.error('Error updating rating:', error)
+    } catch {
+      // Silently handle error
     }
   }
 
@@ -91,8 +91,8 @@ export function ShelfContent({ initialData, profile }: ShelfContentProps) {
           item.id === id ? { ...item, status } : item
         )
       )
-    } catch (error) {
-      console.error('Error updating status:', error)
+    } catch {
+      // Silently handle error
     }
   }
 
@@ -100,8 +100,8 @@ export function ShelfContent({ initialData, profile }: ShelfContentProps) {
     try {
       await removeFromShelf(id)
       setShelfItems(items => items.filter(item => item.id !== id))
-    } catch (error) {
-      console.error('Error removing from shelf:', error)
+    } catch {
+      // Silently handle error
     }
   }
 

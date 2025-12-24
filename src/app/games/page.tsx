@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 
 import { GameGrid } from '@/components/games'
 import { GameFilters } from '@/components/games/GameFilters'
-import { getGames, getCategories } from '@/lib/supabase/queries'
+import { getFilteredGames, getCategories } from '@/lib/supabase/queries'
 import { ItemListJsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
@@ -24,9 +24,43 @@ const mockMechanics = [
   { id: '8', slug: 'trading', name: 'Trading' },
 ]
 
-export default async function GamesPage() {
+interface GamesPageProps {
+  searchParams: Promise<{
+    categories?: string
+    mechanics?: string
+    players_min?: string
+    players_max?: string
+    time_min?: string
+    time_max?: string
+    weight_min?: string
+    weight_max?: string
+  }>
+}
+
+export default async function GamesPage({ searchParams }: GamesPageProps) {
+  const params = await searchParams
+
+  // Parse filter parameters
+  const filters = {
+    categories: params.categories?.split(',').filter(Boolean) || [],
+    playersMin: params.players_min ? parseInt(params.players_min) : undefined,
+    playersMax: params.players_max ? parseInt(params.players_max) : undefined,
+    timeMin: params.time_min ? parseInt(params.time_min) : undefined,
+    timeMax: params.time_max ? parseInt(params.time_max) : undefined,
+    weightMin: params.weight_min ? parseFloat(params.weight_min) : undefined,
+    weightMax: params.weight_max ? parseFloat(params.weight_max) : undefined,
+  }
+
+  const hasFilters = filters.categories.length > 0 ||
+    filters.playersMin !== undefined ||
+    filters.playersMax !== undefined ||
+    filters.timeMin !== undefined ||
+    filters.timeMax !== undefined ||
+    filters.weightMin !== undefined ||
+    filters.weightMax !== undefined
+
   const [games, categories] = await Promise.all([
-    getGames(),
+    getFilteredGames(filters),
     getCategories()
   ])
 
@@ -44,7 +78,7 @@ export default async function GamesPage() {
           All Games
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Browse our collection of {games.length} board games with rules,
+          Browse our collection of board games with rules,
           score sheets, and reference materials.
         </p>
       </div>
@@ -65,11 +99,19 @@ export default async function GamesPage() {
         <main className="flex-1">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {games.length} games
+              {hasFilters ? `${games.length} games match your filters` : `Showing all ${games.length} games`}
             </p>
           </div>
 
-          <GameGrid games={games} columns={3} />
+          {games.length > 0 ? (
+            <GameGrid games={games} columns={3} />
+          ) : (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <p className="text-muted-foreground">
+                No games match your filters. Try adjusting your criteria.
+              </p>
+            </div>
+          )}
         </main>
       </div>
       </div>

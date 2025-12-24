@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('BGG import error:', error)
     return errorResponse(
       error instanceof Error ? error.message : 'Import failed'
     )
@@ -84,7 +83,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Queue status error:', error)
     return errorResponse(
       error instanceof Error ? error.message : 'Status check failed'
     )

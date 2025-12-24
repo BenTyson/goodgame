@@ -45,14 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Failsafe timeout - never stay loading for more than 2 seconds
     const timeout = setTimeout(() => {
-      console.log('Auth timeout triggered')
       setIsLoading(false)
     }, 2000)
 
     // Get initial session
-    console.log('Getting initial session...')
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      console.log('Initial session result:', session?.user?.email, 'error:', error)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user)
 
@@ -67,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(existingProfile)
         } else {
           // Profile doesn't exist - create it
-          console.log('Creating missing user profile...')
           const { data: newProfile } = await supabase
             .from('user_profiles')
             .insert({
@@ -90,8 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email)
-
         if (event === 'INITIAL_SESSION') {
           // Initial session is handled by getSession above
           return
@@ -126,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } else if (event === 'SIGNED_OUT') {
-          console.log('SIGNED_OUT event received')
           setUser(null)
           setProfile(null)
         }

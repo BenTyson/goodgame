@@ -1,20 +1,44 @@
 import { MetadataRoute } from 'next'
-import { mockGames, mockCategories, mockCollections } from '@/data/mock-games'
+import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from '@/types/supabase'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodgame.guide'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://boardnomads.com'
 
-// Award slugs (static list matching seed data)
-const awardSlugs = [
-  'spiel-des-jahres',
-  'kennerspiel-des-jahres',
-  'kinderspiel-des-jahres',
-  'golden-geek',
-  'dice-tower',
-  'as-dor',
-]
+// Static client for sitemap generation (no cookies needed)
+function createStaticClient() {
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const supabase = createStaticClient()
   const now = new Date()
+
+  // Fetch all data in parallel
+  const [
+    { data: games },
+    { data: categories },
+    { data: collections },
+    { data: awards }
+  ] = await Promise.all([
+    supabase
+      .from('games')
+      .select('slug, updated_at, has_rules, has_score_sheet, has_setup_guide, has_reference')
+      .eq('is_published', true),
+    supabase
+      .from('categories')
+      .select('slug, updated_at'),
+    supabase
+      .from('collections')
+      .select('slug, updated_at')
+      .eq('is_published', true),
+    supabase
+      .from('awards')
+      .select('slug')
+      .eq('is_active', true)
+  ])
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -63,18 +87,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ]
 
   // Game hub pages
-  const gamePages: MetadataRoute.Sitemap = mockGames
-    .filter((game) => game.is_published)
-    .map((game) => ({
-      url: `${SITE_URL}/games/${game.slug}`,
-      lastModified: game.updated_at ? new Date(game.updated_at) : now,
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
-    }))
+  const gamePages: MetadataRoute.Sitemap = (games || []).map((game) => ({
+    url: `${SITE_URL}/games/${game.slug}`,
+    lastModified: game.updated_at ? new Date(game.updated_at) : now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }))
 
   // Game rules pages
-  const rulesPages: MetadataRoute.Sitemap = mockGames
-    .filter((game) => game.is_published && game.has_rules)
+  const rulesPages: MetadataRoute.Sitemap = (games || [])
+    .filter((game) => game.has_rules)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/rules`,
       lastModified: game.updated_at ? new Date(game.updated_at) : now,
@@ -83,8 +105,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
 
   // Game score sheet pages
-  const scoreSheetPages: MetadataRoute.Sitemap = mockGames
-    .filter((game) => game.is_published && game.has_score_sheet)
+  const scoreSheetPages: MetadataRoute.Sitemap = (games || [])
+    .filter((game) => game.has_score_sheet)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/score-sheet`,
       lastModified: game.updated_at ? new Date(game.updated_at) : now,
@@ -93,8 +115,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
 
   // Game setup pages
-  const setupPages: MetadataRoute.Sitemap = mockGames
-    .filter((game) => game.is_published && game.has_setup_guide)
+  const setupPages: MetadataRoute.Sitemap = (games || [])
+    .filter((game) => game.has_setup_guide)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/setup`,
       lastModified: game.updated_at ? new Date(game.updated_at) : now,
@@ -103,8 +125,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
 
   // Game reference pages
-  const referencePages: MetadataRoute.Sitemap = mockGames
-    .filter((game) => game.is_published && game.has_reference)
+  const referencePages: MetadataRoute.Sitemap = (games || [])
+    .filter((game) => game.has_reference)
     .map((game) => ({
       url: `${SITE_URL}/games/${game.slug}/reference`,
       lastModified: game.updated_at ? new Date(game.updated_at) : now,
@@ -113,7 +135,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
 
   // Category pages
-  const categoryPages: MetadataRoute.Sitemap = mockCategories.map((category) => ({
+  const categoryPages: MetadataRoute.Sitemap = (categories || []).map((category) => ({
     url: `${SITE_URL}/categories/${category.slug}`,
     lastModified: category.updated_at ? new Date(category.updated_at) : now,
     changeFrequency: 'monthly' as const,
@@ -121,18 +143,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }))
 
   // Collection pages
-  const collectionPages: MetadataRoute.Sitemap = mockCollections
-    .filter((collection) => collection.is_published)
-    .map((collection) => ({
-      url: `${SITE_URL}/collections/${collection.slug}`,
-      lastModified: collection.updated_at ? new Date(collection.updated_at) : now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    }))
+  const collectionPages: MetadataRoute.Sitemap = (collections || []).map((collection) => ({
+    url: `${SITE_URL}/collections/${collection.slug}`,
+    lastModified: collection.updated_at ? new Date(collection.updated_at) : now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
 
   // Award pages
-  const awardPages: MetadataRoute.Sitemap = awardSlugs.map((slug) => ({
-    url: `${SITE_URL}/awards/${slug}`,
+  const awardPages: MetadataRoute.Sitemap = (awards || []).map((award) => ({
+    url: `${SITE_URL}/awards/${award.slug}`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.7,

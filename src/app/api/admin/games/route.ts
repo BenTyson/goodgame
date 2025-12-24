@@ -18,8 +18,8 @@ async function isAdmin(): Promise<boolean> {
 
   if (!user?.email) return false
 
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
-  return adminEmails.includes(user.email)
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
+  return adminEmails.includes(user.email.toLowerCase())
 }
 
 export async function PATCH(request: NextRequest) {
@@ -46,13 +46,11 @@ export async function PATCH(request: NextRequest) {
       .eq('id', gameId)
 
     if (error) {
-      console.error('Error updating game:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Save game error:', error)
+  } catch {
     return NextResponse.json({ error: 'Failed to save game' }, { status: 500 })
   }
 }

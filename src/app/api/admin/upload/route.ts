@@ -18,8 +18,8 @@ async function isAdmin(): Promise<boolean> {
 
   if (!user?.email) return false
 
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
-  return adminEmails.includes(user.email)
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
+  return adminEmails.includes(user.email.toLowerCase())
 }
 
 export async function POST(request: NextRequest) {
@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError)
       return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
@@ -102,7 +101,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error('Database error:', dbError)
       // Try to clean up uploaded file
       await adminClient.storage.from('game-images').remove([fileName])
       return NextResponse.json({ error: dbError.message }, { status: 500 })
@@ -121,8 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ image: imageRecord })
-  } catch (error) {
-    console.error('Upload error:', error)
+  } catch {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }
@@ -166,13 +163,11 @@ export async function PATCH(request: NextRequest) {
       .eq('id', gameId)
 
     if (gameError) {
-      console.error('Error updating games table:', gameError)
       return NextResponse.json({ error: gameError.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Set primary error:', error)
+  } catch {
     return NextResponse.json({ error: 'Failed to set primary image' }, { status: 500 })
   }
 }
@@ -208,8 +203,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Delete error:', error)
+  } catch {
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 }

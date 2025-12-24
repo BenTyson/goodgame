@@ -38,10 +38,111 @@ export async function getGames(options?: {
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching games:', error)
     return []
   }
 
+  return data || []
+}
+
+export interface GameFilters {
+  categories?: string[]
+  playersMin?: number
+  playersMax?: number
+  timeMin?: number
+  timeMax?: number
+  weightMin?: number
+  weightMax?: number
+}
+
+export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
+  const supabase = await createClient()
+
+  // If filtering by categories, we need to join with game_categories
+  if (filters.categories && filters.categories.length > 0) {
+    // First get category IDs
+    const { data: categoryData } = await supabase
+      .from('categories')
+      .select('id')
+      .in('slug', filters.categories)
+
+    if (!categoryData || categoryData.length === 0) {
+      return []
+    }
+
+    const categoryIds = categoryData.map(c => c.id)
+
+    // Get game IDs that belong to these categories
+    const { data: gameCategories } = await supabase
+      .from('game_categories')
+      .select('game_id')
+      .in('category_id', categoryIds)
+
+    if (!gameCategories || gameCategories.length === 0) {
+      return []
+    }
+
+    const gameIds = [...new Set(gameCategories.map(gc => gc.game_id))]
+
+    // Now get the games with additional filters
+    let query = supabase
+      .from('games')
+      .select('*')
+      .eq('is_published', true)
+      .in('id', gameIds)
+      .order('name')
+
+    // Apply numeric filters
+    if (filters.playersMin !== undefined) {
+      query = query.gte('max_players', filters.playersMin)
+    }
+    if (filters.playersMax !== undefined) {
+      query = query.lte('min_players', filters.playersMax)
+    }
+    if (filters.timeMin !== undefined) {
+      query = query.gte('max_play_time', filters.timeMin)
+    }
+    if (filters.timeMax !== undefined && filters.timeMax < 180) {
+      query = query.lte('min_play_time', filters.timeMax)
+    }
+    if (filters.weightMin !== undefined && filters.weightMin > 1) {
+      query = query.gte('complexity', filters.weightMin)
+    }
+    if (filters.weightMax !== undefined && filters.weightMax < 5) {
+      query = query.lte('complexity', filters.weightMax)
+    }
+
+    const { data } = await query
+    return data || []
+  }
+
+  // No category filter - just apply numeric filters
+  let query = supabase
+    .from('games')
+    .select('*')
+    .eq('is_published', true)
+    .order('name')
+
+  // Apply numeric filters
+  if (filters.playersMin !== undefined) {
+    query = query.gte('max_players', filters.playersMin)
+  }
+  if (filters.playersMax !== undefined) {
+    query = query.lte('min_players', filters.playersMax)
+  }
+  if (filters.timeMin !== undefined) {
+    query = query.gte('max_play_time', filters.timeMin)
+  }
+  if (filters.timeMax !== undefined && filters.timeMax < 180) {
+    query = query.lte('min_play_time', filters.timeMax)
+  }
+  if (filters.weightMin !== undefined && filters.weightMin > 1) {
+    query = query.gte('complexity', filters.weightMin)
+  }
+  if (filters.weightMax !== undefined && filters.weightMax < 5) {
+    query = query.lte('complexity', filters.weightMax)
+  }
+
+  const { data } = await query
   return data || []
 }
 
@@ -56,7 +157,6 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching game:', error)
     return null
   }
 
@@ -77,7 +177,6 @@ export async function getGameImages(gameId: string): Promise<GameImage[]> {
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching game images:', error)
     return []
   }
 
@@ -94,7 +193,6 @@ export async function getAffiliateLinks(gameId: string): Promise<AffiliateLink[]
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching affiliate links:', error)
     return []
   }
 
@@ -114,7 +212,6 @@ export async function getCategories(): Promise<Category[]> {
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching categories:', error)
     return []
   }
 
@@ -131,7 +228,6 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     .single()
 
   if (error) {
-    console.error('Error fetching category:', error)
     return null
   }
 
@@ -152,7 +248,6 @@ export async function getGamesByCategory(categorySlug: string): Promise<Game[]> 
     .eq('category_id', category.id)
 
   if (error) {
-    console.error('Error fetching games by category:', error)
     return []
   }
 
@@ -192,7 +287,6 @@ export async function getCollections(options?: {
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching collections:', error)
     return []
   }
 
@@ -210,7 +304,6 @@ export async function getCollectionBySlug(slug: string): Promise<Collection | nu
     .single()
 
   if (error) {
-    console.error('Error fetching collection:', error)
     return null
   }
 
@@ -232,7 +325,6 @@ export async function getGamesInCollection(collectionSlug: string): Promise<(Gam
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching games in collection:', error)
     return []
   }
 
@@ -259,7 +351,6 @@ export async function searchGames(query: string): Promise<Game[]> {
   })
 
   if (error) {
-    console.error('Error searching games:', error)
     return []
   }
 
@@ -290,7 +381,6 @@ export async function getScoreSheetConfig(gameId: string) {
     .order('display_order')
 
   if (fieldsError) {
-    console.error('Error fetching score sheet fields:', fieldsError)
     return { ...config, fields: [] }
   }
 
@@ -310,7 +400,6 @@ export async function getGameCount(): Promise<number> {
     .eq('is_published', true)
 
   if (error) {
-    console.error('Error fetching game count:', error)
     return 0
   }
 
@@ -327,7 +416,6 @@ export async function getAllGameSlugs(): Promise<string[]> {
     .eq('is_published', true)
 
   if (error) {
-    console.error('Error fetching game slugs:', error)
     return []
   }
 
@@ -343,7 +431,6 @@ export async function getAllCategorySlugs(): Promise<string[]> {
     .select('slug')
 
   if (error) {
-    console.error('Error fetching category slugs:', error)
     return []
   }
 
@@ -360,7 +447,6 @@ export async function getAllCollectionSlugs(): Promise<string[]> {
     .eq('is_published', true)
 
   if (error) {
-    console.error('Error fetching collection slugs:', error)
     return []
   }
 
@@ -497,7 +583,6 @@ export async function getAwards(): Promise<Award[]> {
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching awards:', error)
     return []
   }
 
@@ -514,7 +599,6 @@ export async function getAwardBySlug(slug: string): Promise<Award | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching award:', error)
     return null
   }
 
@@ -531,7 +615,6 @@ export async function getAwardCategories(awardId: string): Promise<AwardCategory
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching award categories:', error)
     return []
   }
 
@@ -569,7 +652,6 @@ export async function getGameAwards(gameId: string): Promise<GameAwardWithDetail
     .order('year', { ascending: false })
 
   if (error) {
-    console.error('Error fetching game awards:', error)
     return []
   }
 
@@ -637,7 +719,6 @@ export async function getAwardWinners(awardSlug: string, options?: {
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching award winners:', error)
     return []
   }
 
@@ -662,7 +743,6 @@ export async function getAllAwardSlugs(): Promise<string[]> {
     .eq('is_active', true)
 
   if (error) {
-    console.error('Error fetching award slugs:', error)
     return []
   }
 
