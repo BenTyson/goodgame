@@ -73,13 +73,9 @@ export function AffiliateButton({
     return null
   }
 
-  // Track click (could be enhanced with analytics)
+  // Track click - placeholder for future analytics integration
   const handleClick = () => {
-    // Log affiliate click for analytics
-    if (typeof window !== 'undefined' && gameSlug) {
-      // Could send to analytics service
-      console.log(`Affiliate click: ${provider} for ${gameSlug}`)
-    }
+    // Future: send to analytics service
   }
 
   return (

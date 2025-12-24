@@ -2,7 +2,7 @@
 
 > Last Updated: 2025-12-24
 
-## Phase: 8 - User Features
+## Phase: 9 - Database Normalization
 
 ### What's Live
 - **16 games** with full content (Rules, Setup, Reference, Score Sheets)
@@ -13,6 +13,8 @@
 - **Separate databases** for staging and production
 - **User authentication** with Google OAuth
 - **Your Shelf** feature - track games you own/want
+- **Normalized entities** - Designers, Publishers, Artists as proper tables
+- **Entity pages** - `/designers`, `/publishers` with game listings
 
 ### Environments
 
@@ -141,7 +143,9 @@ supabase/migrations/
 ├── 00017_cleanup_placeholder_images.sql # Remove old BGG placeholders
 ├── 00018_queue_bgg_top100.sql       # Queue BGG Top 100 games
 ├── 00019_seo_collections.sql        # SEO collection pages
-└── 00020_user_profiles_and_shelf.sql # User auth + shelf feature
+├── 00020_user_profiles_and_shelf.sql # User auth + shelf feature
+├── 00021_normalize_entities.sql     # Designers, publishers, artists tables
+└── 00022_migrate_entity_data.sql    # Populate from bgg_raw_data
 ```
 
 ---

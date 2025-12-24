@@ -369,11 +369,8 @@ export async function generateContentForNextGame(): Promise<GenerationStats[] | 
     .single()
 
   if (error || !game) {
-    console.log('No games pending content generation')
     return null
   }
-
-  console.log(`Generating content for: ${game.name}`)
 
   // Mark as generating
   await supabase

@@ -478,7 +478,6 @@ export async function importNextBatch(limit: number = 5): Promise<ImportResult[]
     .limit(limit)
 
   if (queueError || !queue || queue.length === 0) {
-    console.log('No pending imports in queue')
     return []
   }
 

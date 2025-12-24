@@ -113,7 +113,6 @@ export async function generate(
       // Exponential backoff for rate limits
       if (error instanceof Anthropic.RateLimitError) {
         const waitTime = Math.pow(2, attempt) * 1000
-        console.log(`Rate limited, waiting ${waitTime}ms...`)
         await sleep(waitTime)
         continue
       }
