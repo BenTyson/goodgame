@@ -2,12 +2,14 @@
 
 ## Connection Info
 
-**Project ID**: `jnaibnwxpweahpawxycf`
-**Status**: Connected and migrations applied
+| Environment | Project ID | URL |
+|-------------|------------|-----|
+| **Staging** | `ndskcbuzsmrzgnvdbofd` | https://ndskcbuzsmrzgnvdbofd.supabase.co |
+| **Production** | `jnaibnwxpweahpawxycf` | https://jnaibnwxpweahpawxycf.supabase.co |
 
 ```bash
-# Regenerate types after schema changes
-supabase gen types typescript --project-id jnaibnwxpweahpawxycf > src/types/supabase.ts
+# Regenerate types (use linked project - staging by default)
+npx supabase gen types typescript --linked > src/types/supabase.ts
 ```
 
 ## Overview
@@ -16,6 +18,9 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 - **games** - Core game metadata with full-text search
 - **categories** - Game categories (strategy, family, party, etc.)
 - **mechanics** - Game mechanics (deck building, worker placement, etc.)
+- **designers** - Game designers (normalized from TEXT[])
+- **publishers** - Game publishers (normalized from VARCHAR)
+- **artists** - Game artists (normalized)
 - **collections** - Curated game collections
 - **game_images** - Multiple images per game
 - **score_sheet_configs** - PDF generation configuration per game
@@ -35,6 +40,18 @@ The database uses Supabase (PostgreSQL) with the following main entities:
                                                        │
 ┌─────────────┐       ┌──────────────────┐             │
 │  mechanics  │◄──────│  game_mechanics  │─────────────┤
+└─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│  designers  │◄──────│  game_designers  │─────────────┤
+└─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│ publishers  │◄──────│ game_publishers  │─────────────┤
+└─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│   artists   │◄──────│  game_artists    │─────────────┤
 └─────────────┘       └──────────────────┘             │
                                                        │
 ┌─────────────┐       ┌──────────────────┐             │
@@ -88,6 +105,8 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 18. `00018_queue_bgg_top100.sql` - Queue BGG Top 100 games for import
 19. `00019_seo_collections.sql` - SEO-optimized collection pages
 20. `00020_user_profiles_and_shelf.sql` - User profiles and game shelf
+21. `00021_normalize_entities.sql` - Designers, publishers, artists tables + junction tables
+22. `00022_migrate_entity_data.sql` - Populate entities from bgg_raw_data JSONB
 
 ## Tables
 
@@ -158,6 +177,54 @@ Game mechanics for filtering.
 | slug | VARCHAR(50) | URL identifier |
 | name | VARCHAR(100) | Display name |
 | description | TEXT | Mechanic description |
+| bgg_id | INTEGER | BoardGameGeek mechanic ID |
+
+### designers
+Game designers (normalized from TEXT[] on games).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(100) | URL identifier (unique) |
+| name | VARCHAR(255) | Display name |
+| bio | TEXT | Designer biography |
+| photo_url | VARCHAR(500) | Profile photo |
+| website | VARCHAR(500) | Personal website |
+| bgg_id | INTEGER | BGG designer ID |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### publishers
+Game publishers (normalized from VARCHAR on games).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(100) | URL identifier (unique) |
+| name | VARCHAR(255) | Display name |
+| description | TEXT | Publisher description |
+| logo_url | VARCHAR(500) | Company logo |
+| website | VARCHAR(500) | Company website |
+| country | VARCHAR(100) | Country of origin |
+| founded_year | SMALLINT | Year founded |
+| bgg_id | INTEGER | BGG publisher ID |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### artists
+Game artists.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(100) | URL identifier (unique) |
+| name | VARCHAR(255) | Display name |
+| bio | TEXT | Artist biography |
+| photo_url | VARCHAR(500) | Profile photo |
+| website | VARCHAR(500) | Portfolio website |
+| bgg_id | INTEGER | BGG artist ID |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
 
 ### collections
 Curated game lists.
@@ -383,6 +450,36 @@ Many-to-many: games ↔ mechanics
 |--------|------|
 | game_id | UUID |
 | mechanic_id | UUID |
+
+### game_designers
+Many-to-many: games ↔ designers
+
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| designer_id | UUID | FK to designers |
+| is_primary | BOOLEAN | Primary designer |
+| display_order | SMALLINT | Sort order |
+
+### game_publishers
+Many-to-many: games ↔ publishers
+
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| publisher_id | UUID | FK to publishers |
+| is_primary | BOOLEAN | Primary publisher |
+| display_order | SMALLINT | Sort order |
+
+### game_artists
+Many-to-many: games ↔ artists
+
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| artist_id | UUID | FK to artists |
+| is_primary | BOOLEAN | Primary artist |
+| display_order | SMALLINT | Sort order |
 
 ### collection_games
 Many-to-many: collections ↔ games (ordered)

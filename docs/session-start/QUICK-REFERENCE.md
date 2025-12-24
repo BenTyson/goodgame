@@ -64,6 +64,12 @@ src/app/
 ├── collections/
 │   ├── page.tsx              # Collections listing
 │   └── [slug]/page.tsx       # Collection detail
+├── designers/
+│   ├── page.tsx              # Designers listing
+│   └── [slug]/page.tsx       # Designer detail
+├── publishers/
+│   ├── page.tsx              # Publishers listing
+│   └── [slug]/page.tsx       # Publisher detail
 ├── admin/                     # Admin panel
 │   ├── login/page.tsx
 │   └── (dashboard)/
@@ -96,7 +102,7 @@ src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/seo/                   # JSON-LD structured data components
-supabase/migrations/           # Database schema (17 files)
+supabase/migrations/           # Database schema (22 files)
 ```
 
 ### Type Definitions
@@ -111,6 +117,9 @@ GameImage        // Game image type
 Award            // Award organization type
 AwardCategory    // Award category type
 GameAward        // Game-award link type
+Designer         // Designer type
+Publisher        // Publisher type
+Artist           // Artist type
 ```
 
 ## Environment Variables
