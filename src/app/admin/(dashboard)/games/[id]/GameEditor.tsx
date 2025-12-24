@@ -63,43 +63,51 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     // Get primary image URL for hero_image_url
     const primaryImage = images.find(img => img.is_primary)
 
-    const { error } = await supabase
-      .from('games')
-      .update({
-        name: game.name,
-        slug: game.slug,
-        description: game.description,
-        tagline: game.tagline,
-        player_count_min: game.player_count_min,
-        player_count_max: game.player_count_max,
-        play_time_min: game.play_time_min,
-        play_time_max: game.play_time_max,
-        weight: game.weight,
-        min_age: game.min_age,
-        year_published: game.year_published,
-        publisher: game.publisher,
-        designers: game.designers,
-        is_published: game.is_published,
-        is_featured: game.is_featured,
-        content_status: game.content_status,
-        rules_content: game.rules_content,
-        setup_content: game.setup_content,
-        reference_content: game.reference_content,
-        hero_image_url: primaryImage?.url || game.hero_image_url,
-        box_image_url: primaryImage?.url || game.box_image_url,
-        thumbnail_url: primaryImage?.url || game.thumbnail_url,
-        updated_at: new Date().toISOString()
+    try {
+      const response = await fetch('/api/admin/games', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          data: {
+            name: game.name,
+            slug: game.slug,
+            description: game.description,
+            tagline: game.tagline,
+            player_count_min: game.player_count_min,
+            player_count_max: game.player_count_max,
+            play_time_min: game.play_time_min,
+            play_time_max: game.play_time_max,
+            weight: game.weight,
+            min_age: game.min_age,
+            year_published: game.year_published,
+            publisher: game.publisher,
+            designers: game.designers,
+            is_published: game.is_published,
+            is_featured: game.is_featured,
+            content_status: game.content_status,
+            rules_content: game.rules_content,
+            setup_content: game.setup_content,
+            reference_content: game.reference_content,
+            hero_image_url: primaryImage?.url || game.hero_image_url,
+            box_image_url: primaryImage?.url || game.box_image_url,
+            thumbnail_url: primaryImage?.url || game.thumbnail_url,
+          }
+        })
       })
-      .eq('id', game.id)
 
-    setSaving(false)
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Save failed')
+      }
 
-    if (error) {
-      console.error('Save error:', error)
-      alert('Failed to save: ' + error.message)
-    } else {
       setSaved(true)
       router.refresh()
+    } catch (error) {
+      console.error('Save error:', error)
+      alert('Failed to save: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setSaving(false)
     }
   }
 
