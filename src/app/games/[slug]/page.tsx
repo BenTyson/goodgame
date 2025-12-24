@@ -223,20 +223,52 @@ export default async function GamePage({ params }: GamePageProps) {
           </div>
 
           {/* Designer & Publisher */}
-          {(game.designers || game.publisher) && (
+          {(game.designers_list?.length || game.publishers_list?.length || game.designers?.length || game.publisher) && (
             <div className="mt-4 text-sm text-muted-foreground">
-              {game.designers && game.designers.length > 0 && (
+              {/* Use linked designers if available, fall back to text array */}
+              {game.designers_list && game.designers_list.length > 0 ? (
+                <p>
+                  <span className="font-medium text-foreground">Designer:</span>{' '}
+                  {game.designers_list.map((designer, idx) => (
+                    <span key={designer.id}>
+                      <Link
+                        href={`/designers/${designer.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {designer.name}
+                      </Link>
+                      {idx < game.designers_list!.length - 1 && ', '}
+                    </span>
+                  ))}
+                </p>
+              ) : game.designers && game.designers.length > 0 ? (
                 <p>
                   <span className="font-medium text-foreground">Designer:</span>{' '}
                   {game.designers.join(', ')}
                 </p>
-              )}
-              {game.publisher && (
+              ) : null}
+              {/* Use linked publishers if available, fall back to text field */}
+              {game.publishers_list && game.publishers_list.length > 0 ? (
+                <p>
+                  <span className="font-medium text-foreground">Publisher:</span>{' '}
+                  {game.publishers_list.map((publisher, idx) => (
+                    <span key={publisher.id}>
+                      <Link
+                        href={`/publishers/${publisher.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {publisher.name}
+                      </Link>
+                      {idx < game.publishers_list!.length - 1 && ', '}
+                    </span>
+                  ))}
+                </p>
+              ) : game.publisher ? (
                 <p>
                   <span className="font-medium text-foreground">Publisher:</span>{' '}
                   {game.publisher}
                 </p>
-              )}
+              ) : null}
             </div>
           )}
 

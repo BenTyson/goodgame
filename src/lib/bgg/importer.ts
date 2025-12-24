@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { fetchBGGGame, type BGGRawGame } from './client'
 import type { Database } from '@/types/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 type GameInsert = Database['public']['Tables']['games']['Insert']
 type ImportQueueRow = Database['public']['Tables']['import_queue']['Row']
@@ -33,6 +34,205 @@ function generateSlug(name: string): string {
     .replace(/[^a-z0-9]+/g, '-')     // Replace non-alphanumeric with hyphens
     .replace(/^-+|-+$/g, '')         // Trim leading/trailing hyphens
     .replace(/-+/g, '-')             // Collapse multiple hyphens
+}
+
+/**
+ * Upsert a designer and return their ID
+ */
+async function upsertDesigner(
+  supabase: SupabaseClient<Database>,
+  name: string
+): Promise<string | null> {
+  const slug = generateSlug(name)
+
+  // Try to find existing designer
+  const { data: existing } = await supabase
+    .from('designers')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (existing) return existing.id
+
+  // Create new designer
+  const { data: newDesigner, error } = await supabase
+    .from('designers')
+    .insert({ slug, name })
+    .select('id')
+    .single()
+
+  if (error || !newDesigner) return null
+  return newDesigner.id
+}
+
+/**
+ * Upsert a publisher and return their ID
+ */
+async function upsertPublisher(
+  supabase: SupabaseClient<Database>,
+  name: string
+): Promise<string | null> {
+  const slug = generateSlug(name)
+
+  const { data: existing } = await supabase
+    .from('publishers')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (existing) return existing.id
+
+  const { data: newPublisher, error } = await supabase
+    .from('publishers')
+    .insert({ slug, name })
+    .select('id')
+    .single()
+
+  if (error || !newPublisher) return null
+  return newPublisher.id
+}
+
+/**
+ * Upsert an artist and return their ID
+ */
+async function upsertArtist(
+  supabase: SupabaseClient<Database>,
+  name: string
+): Promise<string | null> {
+  const slug = generateSlug(name)
+
+  const { data: existing } = await supabase
+    .from('artists')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (existing) return existing.id
+
+  const { data: newArtist, error } = await supabase
+    .from('artists')
+    .insert({ slug, name })
+    .select('id')
+    .single()
+
+  if (error || !newArtist) return null
+  return newArtist.id
+}
+
+/**
+ * Upsert a mechanic and return their ID
+ */
+async function upsertMechanic(
+  supabase: SupabaseClient<Database>,
+  name: string
+): Promise<string | null> {
+  const slug = generateSlug(name)
+
+  const { data: existing } = await supabase
+    .from('mechanics')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (existing) return existing.id
+
+  const { data: newMechanic, error } = await supabase
+    .from('mechanics')
+    .insert({ slug, name })
+    .select('id')
+    .single()
+
+  if (error || !newMechanic) return null
+  return newMechanic.id
+}
+
+/**
+ * Link a game to its designers
+ */
+async function linkGameDesigners(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  designerNames: string[]
+): Promise<void> {
+  for (const [index, name] of designerNames.entries()) {
+    const designerId = await upsertDesigner(supabase, name)
+    if (designerId) {
+      await supabase
+        .from('game_designers')
+        .upsert({
+          game_id: gameId,
+          designer_id: designerId,
+          is_primary: index === 0,
+          display_order: index
+        })
+    }
+  }
+}
+
+/**
+ * Link a game to its publishers
+ */
+async function linkGamePublishers(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  publisherNames: string[]
+): Promise<void> {
+  for (const [index, name] of publisherNames.entries()) {
+    const publisherId = await upsertPublisher(supabase, name)
+    if (publisherId) {
+      await supabase
+        .from('game_publishers')
+        .upsert({
+          game_id: gameId,
+          publisher_id: publisherId,
+          is_primary: index === 0,
+          display_order: index
+        })
+    }
+  }
+}
+
+/**
+ * Link a game to its artists
+ */
+async function linkGameArtists(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  artistNames: string[]
+): Promise<void> {
+  for (const [index, name] of artistNames.entries()) {
+    const artistId = await upsertArtist(supabase, name)
+    if (artistId) {
+      await supabase
+        .from('game_artists')
+        .upsert({
+          game_id: gameId,
+          artist_id: artistId,
+          display_order: index
+        })
+    }
+  }
+}
+
+/**
+ * Link a game to its mechanics
+ */
+async function linkGameMechanics(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  mechanicNames: string[]
+): Promise<void> {
+  for (const name of mechanicNames) {
+    const mechanicId = await upsertMechanic(supabase, name)
+    if (mechanicId) {
+      await supabase
+        .from('game_mechanics')
+        .upsert({
+          game_id: gameId,
+          mechanic_id: mechanicId
+        })
+    }
+  }
 }
 
 /**
@@ -202,6 +402,20 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
 
   // Link to categories based on BGG categories
   await linkGameToCategories(newGame.id, bggData.categories)
+
+  // Link to designers, publishers, artists, and mechanics
+  if (bggData.designers.length > 0) {
+    await linkGameDesigners(supabase, newGame.id, bggData.designers)
+  }
+  if (bggData.publishers.length > 0) {
+    await linkGamePublishers(supabase, newGame.id, bggData.publishers)
+  }
+  if (bggData.artists.length > 0) {
+    await linkGameArtists(supabase, newGame.id, bggData.artists)
+  }
+  if (bggData.mechanics.length > 0) {
+    await linkGameMechanics(supabase, newGame.id, bggData.mechanics)
+  }
 
   return {
     success: true,

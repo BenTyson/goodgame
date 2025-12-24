@@ -83,6 +83,39 @@ export type Database = {
           },
         ]
       }
+      artists: {
+        Row: {
+          bgg_id: number | null
+          bio: string | null
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bgg_id?: number | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bgg_id?: number | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       award_categories: {
         Row: {
           award_id: string | null
@@ -348,6 +381,75 @@ export type Database = {
           },
         ]
       }
+      designers: {
+        Row: {
+          bgg_id: number | null
+          bio: string | null
+          created_at: string | null
+          id: string
+          name: string
+          photo_url: string | null
+          slug: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bgg_id?: number | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          photo_url?: string | null
+          slug: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bgg_id?: number | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          photo_url?: string | null
+          slug?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      game_artists: {
+        Row: {
+          artist_id: string
+          display_order: number | null
+          game_id: string
+        }
+        Insert: {
+          artist_id: string
+          display_order?: number | null
+          game_id: string
+        }
+        Update: {
+          artist_id?: string
+          display_order?: number | null
+          game_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_artists_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_artists_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_awards: {
         Row: {
           award_id: string | null
@@ -429,6 +531,42 @@ export type Database = {
           },
           {
             foreignKeyName: "game_categories_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_designers: {
+        Row: {
+          designer_id: string
+          display_order: number | null
+          game_id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          designer_id: string
+          display_order?: number | null
+          game_id: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          designer_id?: string
+          display_order?: number | null
+          game_id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_designers_designer_id_fkey"
+            columns: ["designer_id"]
+            isOneToOne: false
+            referencedRelation: "designers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_designers_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
@@ -554,6 +692,42 @@ export type Database = {
             columns: ["mechanic_id"]
             isOneToOne: false
             referencedRelation: "mechanics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_publishers: {
+        Row: {
+          display_order: number | null
+          game_id: string
+          is_primary: boolean | null
+          publisher_id: string
+        }
+        Insert: {
+          display_order?: number | null
+          game_id: string
+          is_primary?: boolean | null
+          publisher_id: string
+        }
+        Update: {
+          display_order?: number | null
+          game_id?: string
+          is_primary?: boolean | null
+          publisher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_publishers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_publishers_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "publishers"
             referencedColumns: ["id"]
           },
         ]
@@ -819,6 +993,7 @@ export type Database = {
       }
       mechanics: {
         Row: {
+          bgg_id: number | null
           created_at: string | null
           description: string | null
           id: string
@@ -827,6 +1002,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bgg_id?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -835,12 +1011,49 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bgg_id?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           name?: string
           slug?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      publishers: {
+        Row: {
+          bgg_id: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bgg_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bgg_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -1106,6 +1319,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      slugify: { Args: { text_input: string }; Returns: string }
     }
     Enums: {
       shelf_status:

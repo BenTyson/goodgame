@@ -1,6 +1,20 @@
 import { createClient } from './server'
 import { createBrowserClient } from '@supabase/ssr'
-import type { Game, Category, Collection, GameImage, AffiliateLink, Award, AwardCategory, GameAward, Database } from '@/types/database'
+import type {
+  Game,
+  Category,
+  Collection,
+  GameImage,
+  AffiliateLink,
+  Award,
+  AwardCategory,
+  GameAward,
+  Designer,
+  Publisher,
+  Artist,
+  Mechanic,
+  Database
+} from '@/types/database'
 
 // Simple client for static generation (no cookies needed)
 function createStaticClient() {
@@ -499,11 +513,47 @@ export async function getGameWithDetails(slug: string) {
     .eq('game_id', game.id)
     .order('display_order')
 
+  // Get designers via junction table
+  const { data: designerLinks } = await supabase
+    .from('game_designers')
+    .select('designer_id, is_primary, display_order, designers(*)')
+    .eq('game_id', game.id)
+    .order('display_order')
+
+  const designers_list = (designerLinks || [])
+    .map(link => link.designers as Designer)
+    .filter(d => d !== null)
+
+  // Get publishers via junction table
+  const { data: publisherLinks } = await supabase
+    .from('game_publishers')
+    .select('publisher_id, is_primary, display_order, publishers(*)')
+    .eq('game_id', game.id)
+    .order('display_order')
+
+  const publishers_list = (publisherLinks || [])
+    .map(link => link.publishers as Publisher)
+    .filter(p => p !== null)
+
+  // Get mechanics via junction table
+  const { data: mechanicLinks } = await supabase
+    .from('game_mechanics')
+    .select('mechanic_id, mechanics(*)')
+    .eq('game_id', game.id)
+
+  const mechanics = (mechanicLinks || [])
+    .map(link => link.mechanics as Mechanic)
+    .filter(m => m !== null)
+    .sort((a, b) => a.name.localeCompare(b.name))
+
   return {
     ...game,
     images: images || [],
     categories: categories || [],
-    affiliate_links: affiliateLinks || []
+    affiliate_links: affiliateLinks || [],
+    designers_list,
+    publishers_list,
+    mechanics
   }
 }
 
@@ -747,4 +797,331 @@ export async function getAllAwardSlugs(): Promise<string[]> {
   }
 
   return data?.map(a => a.slug) || []
+}
+
+// ===========================================
+// DESIGNERS
+// ===========================================
+
+export async function getDesigners(): Promise<Designer[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('designers')
+    .select('*')
+    .order('name')
+
+  if (error) {
+    return []
+  }
+
+  return data || []
+}
+
+export async function getDesignerBySlug(slug: string): Promise<Designer | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('designers')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data
+}
+
+export async function getGamesByDesigner(designerSlug: string): Promise<Game[]> {
+  const supabase = await createClient()
+
+  const designer = await getDesignerBySlug(designerSlug)
+  if (!designer) return []
+
+  const { data, error } = await supabase
+    .from('game_designers')
+    .select('game_id, games(*)')
+    .eq('designer_id', designer.id)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.games as Game)
+    .filter(game => game && game.is_published)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function getGameDesigners(gameId: string): Promise<Designer[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('game_designers')
+    .select('designer_id, display_order, designers(*)')
+    .eq('game_id', gameId)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.designers as Designer)
+    .filter(d => d !== null)
+}
+
+export async function getAllDesignerSlugs(): Promise<string[]> {
+  const supabase = createStaticClient()
+
+  const { data, error } = await supabase
+    .from('designers')
+    .select('slug')
+
+  if (error) {
+    return []
+  }
+
+  return data?.map(d => d.slug) || []
+}
+
+// ===========================================
+// PUBLISHERS
+// ===========================================
+
+export async function getPublishers(): Promise<Publisher[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('publishers')
+    .select('*')
+    .order('name')
+
+  if (error) {
+    return []
+  }
+
+  return data || []
+}
+
+export async function getPublisherBySlug(slug: string): Promise<Publisher | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('publishers')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data
+}
+
+export async function getGamesByPublisher(publisherSlug: string): Promise<Game[]> {
+  const supabase = await createClient()
+
+  const publisher = await getPublisherBySlug(publisherSlug)
+  if (!publisher) return []
+
+  const { data, error } = await supabase
+    .from('game_publishers')
+    .select('game_id, games(*)')
+    .eq('publisher_id', publisher.id)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.games as Game)
+    .filter(game => game && game.is_published)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function getGamePublishers(gameId: string): Promise<Publisher[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('game_publishers')
+    .select('publisher_id, display_order, publishers(*)')
+    .eq('game_id', gameId)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.publishers as Publisher)
+    .filter(p => p !== null)
+}
+
+export async function getAllPublisherSlugs(): Promise<string[]> {
+  const supabase = createStaticClient()
+
+  const { data, error } = await supabase
+    .from('publishers')
+    .select('slug')
+
+  if (error) {
+    return []
+  }
+
+  return data?.map(p => p.slug) || []
+}
+
+// ===========================================
+// ARTISTS
+// ===========================================
+
+export async function getArtists(): Promise<Artist[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .order('name')
+
+  if (error) {
+    return []
+  }
+
+  return data || []
+}
+
+export async function getArtistBySlug(slug: string): Promise<Artist | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data
+}
+
+export async function getGamesByArtist(artistSlug: string): Promise<Game[]> {
+  const supabase = await createClient()
+
+  const artist = await getArtistBySlug(artistSlug)
+  if (!artist) return []
+
+  const { data, error } = await supabase
+    .from('game_artists')
+    .select('game_id, games(*)')
+    .eq('artist_id', artist.id)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.games as Game)
+    .filter(game => game && game.is_published)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function getGameArtists(gameId: string): Promise<Artist[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('game_artists')
+    .select('artist_id, display_order, artists(*)')
+    .eq('game_id', gameId)
+    .order('display_order')
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.artists as Artist)
+    .filter(a => a !== null)
+}
+
+// ===========================================
+// MECHANICS
+// ===========================================
+
+export async function getMechanics(): Promise<Mechanic[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('mechanics')
+    .select('*')
+    .order('name')
+
+  if (error) {
+    return []
+  }
+
+  return data || []
+}
+
+export async function getMechanicBySlug(slug: string): Promise<Mechanic | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('mechanics')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data
+}
+
+export async function getGamesByMechanic(mechanicSlug: string): Promise<Game[]> {
+  const supabase = await createClient()
+
+  const mechanic = await getMechanicBySlug(mechanicSlug)
+  if (!mechanic) return []
+
+  const { data, error } = await supabase
+    .from('game_mechanics')
+    .select('game_id, games(*)')
+    .eq('mechanic_id', mechanic.id)
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.games as Game)
+    .filter(game => game && game.is_published)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function getGameMechanics(gameId: string): Promise<Mechanic[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('game_mechanics')
+    .select('mechanic_id, mechanics(*)')
+    .eq('game_id', gameId)
+
+  if (error) {
+    return []
+  }
+
+  return (data || [])
+    .map(item => item.mechanics as Mechanic)
+    .filter(m => m !== null)
+    .sort((a, b) => a.name.localeCompare(b.name))
 }

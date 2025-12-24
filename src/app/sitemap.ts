@@ -21,7 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { data: games },
     { data: categories },
     { data: collections },
-    { data: awards }
+    { data: awards },
+    { data: designers },
+    { data: publishers }
   ] = await Promise.all([
     supabase
       .from('games')
@@ -37,7 +39,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     supabase
       .from('awards')
       .select('slug')
-      .eq('is_active', true)
+      .eq('is_active', true),
+    supabase
+      .from('designers')
+      .select('slug, updated_at'),
+    supabase
+      .from('publishers')
+      .select('slug, updated_at')
   ])
 
   // Static pages
@@ -80,6 +88,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${SITE_URL}/collections`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/designers`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/publishers`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
@@ -158,6 +178,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
+  // Designer pages
+  const designerPages: MetadataRoute.Sitemap = (designers || []).map((designer) => ({
+    url: `${SITE_URL}/designers/${designer.slug}`,
+    lastModified: designer.updated_at ? new Date(designer.updated_at) : now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }))
+
+  // Publisher pages
+  const publisherPages: MetadataRoute.Sitemap = (publishers || []).map((publisher) => ({
+    url: `${SITE_URL}/publishers/${publisher.slug}`,
+    lastModified: publisher.updated_at ? new Date(publisher.updated_at) : now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }))
+
   return [
     ...staticPages,
     ...gamePages,
@@ -168,5 +204,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryPages,
     ...collectionPages,
     ...awardPages,
+    ...designerPages,
+    ...publisherPages,
   ]
 }
