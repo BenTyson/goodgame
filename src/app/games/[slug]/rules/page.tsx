@@ -37,15 +37,35 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }))
 }
 
-// Placeholder rules content - in production this would come from MDX files
-const rulesContent: Record<string, {
+// Type for AI-generated content
+interface AIRulesContent {
+  quickStart: string[]
+  overview: string
+  coreRules?: { title: string; points: string[] }[]
+  turnStructure: { phase?: string; title?: string; description: string }[]
+  endGame?: string
+  tips: string[]
+}
+
+// Type for legacy hardcoded content
+interface LegacyRulesContent {
   quickStart: string[]
   overview: string
   setup: string[]
   turnStructure: { title: string; description: string }[]
   scoring: { category: string; points: string }[]
   tips: string[]
-}> = {
+}
+
+type RulesContent = AIRulesContent | LegacyRulesContent
+
+// Helper to check if content is AI-generated format
+function isAIContent(content: RulesContent): content is AIRulesContent {
+  return 'coreRules' in content || 'endGame' in content
+}
+
+// Placeholder rules content - in production this would come from MDX files
+const rulesContent: Record<string, LegacyRulesContent> = {
   catan: {
     quickStart: [
       'Roll dice to produce resources based on your settlements',
@@ -801,7 +821,7 @@ const rulesContent: Record<string, {
 }
 
 // Default content for games without specific rules
-const defaultRulesContent = {
+const defaultRulesContent: LegacyRulesContent = {
   quickStart: [
     'Content coming soon!',
     'Check back for the full rules summary',
@@ -824,7 +844,8 @@ export default async function RulesPage({ params }: RulesPageProps) {
   }
 
   // Prefer database content, fall back to hardcoded content
-  const content = (game.rules_content as typeof defaultRulesContent) || rulesContent[game.slug] || defaultRulesContent
+  const content: RulesContent = (game.rules_content as unknown as RulesContent) || rulesContent[game.slug] || defaultRulesContent
+  const isAI = isAIContent(content)
 
   const breadcrumbs = [
     { name: 'Home', href: '/' },
@@ -833,15 +854,23 @@ export default async function RulesPage({ params }: RulesPageProps) {
     { name: 'Rules', href: `/games/${game.slug}/rules` },
   ]
 
-  // Generate HowTo steps from content
-  const howToSteps = [
-    { name: 'Setup', text: content.setup.join(' ') },
-    ...content.turnStructure.map((step) => ({
-      name: step.title,
-      text: step.description,
-    })),
-    { name: 'Scoring', text: content.scoring.map((s) => `${s.category}: ${s.points}`).join('. ') },
-  ]
+  // Generate HowTo steps from content (handle both formats)
+  const howToSteps = isAI
+    ? [
+        ...(content as AIRulesContent).turnStructure.map((step) => ({
+          name: step.phase || step.title || 'Step',
+          text: step.description,
+        })),
+        ...((content as AIRulesContent).endGame ? [{ name: 'End Game', text: (content as AIRulesContent).endGame! }] : []),
+      ]
+    : [
+        { name: 'Setup', text: (content as LegacyRulesContent).setup.join(' ') },
+        ...(content as LegacyRulesContent).turnStructure.map((step) => ({
+          name: step.title || 'Step',
+          text: step.description,
+        })),
+        { name: 'Scoring', text: (content as LegacyRulesContent).scoring.map((s) => `${s.category}: ${s.points}`).join('. ') },
+      ]
 
   return (
     <>
@@ -934,20 +963,45 @@ export default async function RulesPage({ params }: RulesPageProps) {
 
           <Separator />
 
-          {/* Setup */}
-          <div>
-            <h2 className="text-xl font-bold mb-3">Setup</h2>
-            <ol className="space-y-2">
-              {content.setup.map((step, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                    {i + 1}
-                  </span>
-                  <span className="text-muted-foreground">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
+          {/* Setup (legacy) or Core Rules (AI) */}
+          {isAI && (content as AIRulesContent).coreRules ? (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Core Rules</h2>
+              <div className="space-y-4">
+                {(content as AIRulesContent).coreRules!.map((rule, i) => (
+                  <Card key={i}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{rule.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {rule.points.map((point, j) => (
+                          <li key={j} className="flex gap-2">
+                            <span className="text-primary">•</span>
+                            {point}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-xl font-bold mb-3">Setup</h2>
+              <ol className="space-y-2">
+                {(content as LegacyRulesContent).setup.map((step, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      {i + 1}
+                    </span>
+                    <span className="text-muted-foreground">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           <Separator />
 
@@ -962,7 +1016,7 @@ export default async function RulesPage({ params }: RulesPageProps) {
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-sm">
                         {i + 1}
                       </span>
-                      {phase.title}
+                      {'phase' in phase ? phase.phase : phase.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -977,34 +1031,47 @@ export default async function RulesPage({ params }: RulesPageProps) {
 
           <Separator />
 
-          {/* Scoring */}
-          <div>
-            <h2 className="text-xl font-bold mb-4">Scoring</h2>
-            <Card>
-              <CardContent className="pt-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 font-medium">Category</th>
-                      <th className="text-right py-2 font-medium">Points</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {content.scoring.map((item, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="py-2 text-muted-foreground">
-                          {item.category}
-                        </td>
-                        <td className="py-2 text-right font-medium">
-                          {item.points}
-                        </td>
+          {/* Scoring (legacy) or End Game (AI) */}
+          {isAI && (content as AIRulesContent).endGame ? (
+            <div>
+              <h2 className="text-xl font-bold mb-4">End Game & Winning</h2>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-muted-foreground">
+                    {(content as AIRulesContent).endGame}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : !isAI ? (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Scoring</h2>
+              <Card>
+                <CardContent className="pt-4">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 font-medium">Category</th>
+                        <th className="text-right py-2 font-medium">Points</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          </div>
+                    </thead>
+                    <tbody>
+                      {(content as LegacyRulesContent).scoring.map((item, i) => (
+                        <tr key={i} className="border-b last:border-0">
+                          <td className="py-2 text-muted-foreground">
+                            {item.category}
+                          </td>
+                          <td className="py-2 text-right font-medium">
+                            {item.points}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
         </div>
 
         {/* Sidebar */}
