@@ -75,6 +75,10 @@ src/app/
 │   └── (dashboard)/
 │       ├── page.tsx          # Dashboard
 │       └── games/            # Game management
+├── login/page.tsx             # User login
+├── shelf/page.tsx             # User's game collection
+├── settings/page.tsx          # Profile settings
+├── u/[username]/page.tsx      # Public user profiles
 ├── score-sheets/page.tsx
 ├── rules/page.tsx
 ├── sitemap.ts                 # Dynamic sitemap
@@ -88,6 +92,9 @@ src/components/
 ├── layout/                    # Header, Footer, ThemeProvider
 ├── games/                     # GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
 ├── admin/                     # ImageUpload, ContentEditor
+├── auth/                      # UserMenu
+├── shelf/                     # AddToShelfButton, RatingInput
+├── settings/                  # UsernameInput
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
@@ -102,7 +109,8 @@ src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/seo/                   # JSON-LD structured data components
-supabase/migrations/           # Database schema (22 files)
+src/lib/auth/                  # AuthContext provider
+supabase/migrations/           # Database schema (23 files)
 ```
 
 ### Type Definitions
@@ -120,6 +128,10 @@ GameAward        // Game-award link type
 Designer         // Designer type
 Publisher        // Publisher type
 Artist           // Artist type
+UserProfile      // User profile type
+UserGame         // User shelf item type
+ShelfStatus      // 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
+SocialLinks      // Social links interface (bgg_username, twitter_handle, etc.)
 ```
 
 ## Environment Variables

@@ -183,6 +183,18 @@ export type CollectionWithGames = Collection & {
 // Shelf status enum
 export type ShelfStatus = 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
 
+// Profile visibility enum
+export type ProfileVisibility = 'public' | 'private'
+
+// Social links structure for user profiles
+export interface SocialLinks {
+  bgg_username?: string      // BoardGameGeek username
+  twitter_handle?: string    // Twitter/X handle (without @)
+  instagram_handle?: string  // Instagram handle (without @)
+  discord_username?: string  // Discord username
+  website_url?: string       // Personal website URL
+}
+
 // Extended user types
 export type UserGameWithGame = UserGame & {
   game: Game

@@ -2,17 +2,20 @@
 
 > Last Updated: 2025-12-24
 
-## Phase: 9 - Database Normalization
+## Phase: 10 - User Profiles & Social Foundation
 
 ### What's Live
-- **16 games** with full content (Rules, Setup, Reference, Score Sheets)
-- **6 major awards** with full UI
+- **35 games** (16 with full content + 19 BGG top 20 games pending content)
+- **11 major awards** with full UI (American, German, International)
 - **Admin panel** at `/admin` with Google OAuth
 - **Image uploads** via Supabase Storage
 - **Content pipeline** (BGG scraper + AI generation ready)
 - **Separate databases** for staging and production
 - **User authentication** with Google OAuth
-- **Your Shelf** feature - track games you own/want
+- **Your Shelf** feature - track games you own/want (in main nav)
+- **User profiles** - username, bio, location, social links
+- **Public profile pages** at `/u/[username]`
+- **Privacy controls** - profile/shelf visibility (both default to public)
 - **Normalized entities** - Designers, Publishers, Artists as proper tables
 - **Entity pages** - `/designers`, `/publishers` with game listings
 
@@ -40,11 +43,17 @@
 | Game ratings (1-10) | ✅ |
 | Shelf filtering & sorting | ✅ |
 | Profile settings page | ✅ |
+| Unique usernames (@username) | ✅ |
+| Bio, location fields | ✅ |
+| Social links (BGG, Twitter, Instagram, Discord, Website) | ✅ |
+| Public profile pages | ✅ |
+| Profile/shelf visibility controls | ✅ |
 
 **Routes:**
 - `/login` - User login page
 - `/shelf` - Your game collection
-- `/settings` - Profile settings
+- `/settings` - Profile settings (username, bio, location, social links, privacy)
+- `/u/[username]` - Public user profile page
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -145,7 +154,10 @@ supabase/migrations/
 ├── 00019_seo_collections.sql        # SEO collection pages
 ├── 00020_user_profiles_and_shelf.sql # User auth + shelf feature
 ├── 00021_normalize_entities.sql     # Designers, publishers, artists tables
-└── 00022_migrate_entity_data.sql    # Populate from bgg_raw_data
+├── 00022_migrate_entity_data.sql    # Populate from bgg_raw_data
+├── 00023_user_profile_enhancements.sql # Username, bio, social links, visibility
+├── 00024_add_awards_and_reorder.sql # 5 more awards (American/German/International)
+└── 00025_bgg_top20_games.sql        # 19 BGG top 20 games
 ```
 
 ---
@@ -197,13 +209,15 @@ railway logs                                                      # View logs
 | File | Purpose |
 |------|---------|
 | `src/lib/auth/AuthContext.tsx` | React auth context provider |
-| `src/lib/supabase/user-queries.ts` | Shelf CRUD operations |
+| `src/lib/supabase/user-queries.ts` | Shelf + profile CRUD operations |
 | `src/components/auth/UserMenu.tsx` | Header user dropdown |
 | `src/components/shelf/AddToShelfButton.tsx` | Add game to shelf |
 | `src/components/shelf/RatingInput.tsx` | 1-10 star rating |
+| `src/components/settings/UsernameInput.tsx` | Username input with availability check |
 | `src/app/login/page.tsx` | Login page |
 | `src/app/shelf/page.tsx` | Shelf page |
 | `src/app/settings/page.tsx` | Profile settings |
+| `src/app/u/[username]/page.tsx` | Public profile page |
 
 ### Content Pipeline
 | File | Purpose |
@@ -248,8 +262,8 @@ railway logs                                                      # View logs
 ---
 
 ## Next Steps
-- Upload images for all 16 games via admin
+- Upload images for all games via admin
+- Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
-- Add more games via BGG import queue
-- Push user auth migration to production when ready
-- Add public shelf viewing (currently private only)
+- Push latest migrations (00024, 00025) to production when ready
+- Build out social features (following, friends, activity feed)

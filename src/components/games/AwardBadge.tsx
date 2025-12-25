@@ -21,6 +21,11 @@ const awardIcons: Record<string, React.ReactNode> = {
   'golden-geek': <Star className="h-4 w-4" />,
   'dice-tower': <Award className="h-4 w-4" />,
   'as-dor': <Globe className="h-4 w-4" />,
+  'american-tabletop': <Trophy className="h-4 w-4" />,
+  'origins-awards': <Award className="h-4 w-4" />,
+  'mensa-select': <Star className="h-4 w-4" />,
+  'deutscher-spiele-preis': <Trophy className="h-4 w-4" />,
+  'international-gamers-award': <Globe className="h-4 w-4" />,
 }
 
 // Award tier styling - outline only, no fill
@@ -56,6 +61,33 @@ const awardTiers: Record<string, { bg: string; text: string; border: string }> =
     bg: 'bg-transparent',
     text: 'text-rose-600 font-semibold dark:text-rose-400',
     border: 'border-rose-500 dark:border-rose-500',
+  },
+  // American awards
+  'american-tabletop': {
+    bg: 'bg-transparent',
+    text: 'text-red-600 font-semibold dark:text-red-400',
+    border: 'border-red-500 dark:border-red-500',
+  },
+  'origins-awards': {
+    bg: 'bg-transparent',
+    text: 'text-orange-600 font-semibold dark:text-orange-400',
+    border: 'border-orange-500 dark:border-orange-500',
+  },
+  'mensa-select': {
+    bg: 'bg-transparent',
+    text: 'text-yellow-600 font-semibold dark:text-yellow-500',
+    border: 'border-yellow-500 dark:border-yellow-500',
+  },
+  // Additional German/International
+  'deutscher-spiele-preis': {
+    bg: 'bg-transparent',
+    text: 'text-amber-700 font-semibold dark:text-amber-300',
+    border: 'border-amber-600 dark:border-amber-400',
+  },
+  'international-gamers-award': {
+    bg: 'bg-transparent',
+    text: 'text-teal-600 font-semibold dark:text-teal-400',
+    border: 'border-teal-500 dark:border-teal-500',
   },
 }
 

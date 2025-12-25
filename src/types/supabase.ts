@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1232,30 +1207,45 @@ export type Database = {
       user_profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string | null
           display_name: string | null
           id: string
+          location: string | null
+          profile_visibility: string | null
           role: string | null
           shelf_visibility: string | null
+          social_links: Json | null
           updated_at: string | null
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id: string
+          location?: string | null
+          profile_visibility?: string | null
           role?: string | null
           shelf_visibility?: string | null
+          social_links?: Json | null
           updated_at?: string | null
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string
+          location?: string | null
+          profile_visibility?: string | null
           role?: string | null
           shelf_visibility?: string | null
+          social_links?: Json | null
           updated_at?: string | null
+          username?: string | null
         }
         Relationships: []
       }
@@ -1453,9 +1443,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       shelf_status: [

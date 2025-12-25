@@ -19,6 +19,7 @@ const navigation = [
   { name: 'Rules', href: '/rules' },
   { name: 'Categories', href: '/categories' },
   { name: 'Collections', href: '/collections' },
+  { name: 'Shelf', href: '/shelf' },
 ]
 
 export function Header() {

@@ -1,6 +1,6 @@
 'use client'
 
-import { User, LogOut, Library, Settings } from 'lucide-react'
+import { User, LogOut, Library, Settings, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -48,11 +48,19 @@ export function UserMenu() {
           <div className="flex flex-col">
             <span>{profile?.display_name || 'User'}</span>
             <span className="text-xs text-muted-foreground font-normal">
-              {user.email}
+              {profile?.username ? `@${profile.username}` : user.email}
             </span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {profile?.username && (
+          <DropdownMenuItem asChild>
+            <Link href={`/u/${profile.username}`} className="cursor-pointer">
+              <UserCircle className="mr-2 h-4 w-4" />
+              View Profile
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/shelf" className="cursor-pointer">
             <Library className="mr-2 h-4 w-4" />
@@ -62,7 +70,7 @@ export function UserMenu() {
         <DropdownMenuItem asChild>
           <Link href="/settings" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
-            Settings
+            Profile
           </Link>
         </DropdownMenuItem>
         {isAdmin && (

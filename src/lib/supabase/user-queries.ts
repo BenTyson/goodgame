@@ -198,3 +198,92 @@ export async function updateUserProfile(
   if (error) throw error
   return result
 }
+
+// =====================================================
+// PUBLIC PROFILE QUERIES
+// =====================================================
+
+/**
+ * Check if a username is available
+ * Returns true if available, false if taken
+ */
+export async function checkUsernameAvailable(username: string): Promise<boolean> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('username', username.toLowerCase())
+    .maybeSingle()
+
+  if (error) throw error
+  return data === null
+}
+
+/**
+ * Get a user profile by username (for public profile pages)
+ * Returns null if not found or profile is private
+ */
+export async function getUserByUsername(username: string): Promise<UserProfile | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('username', username.toLowerCase())
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+/**
+ * Get a user's public shelf (for public profile pages)
+ * Only returns data if both profile and shelf are public
+ */
+export async function getPublicShelf(userId: string): Promise<UserGameWithGame[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_games')
+    .select(`
+      *,
+      game:games(*)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data || []) as UserGameWithGame[]
+}
+
+/**
+ * Get public shelf stats for a user
+ */
+export async function getPublicShelfStats(userId: string): Promise<{
+  total: number
+  owned: number
+  want_to_buy: number
+  want_to_play: number
+  wishlist: number
+  previously_owned: number
+} | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_games')
+    .select('status')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  if (!data || data.length === 0) return null
+
+  return {
+    total: data.length,
+    owned: data.filter(g => g.status === 'owned').length,
+    want_to_buy: data.filter(g => g.status === 'want_to_buy').length,
+    want_to_play: data.filter(g => g.status === 'want_to_play').length,
+    wishlist: data.filter(g => g.status === 'wishlist').length,
+    previously_owned: data.filter(g => g.status === 'previously_owned').length,
+  }
+}

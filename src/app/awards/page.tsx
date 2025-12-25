@@ -20,6 +20,11 @@ const awardIcons: Record<string, React.ReactNode> = {
   'golden-geek': <Star className="h-8 w-8" />,
   'dice-tower': <Award className="h-8 w-8" />,
   'as-dor': <Globe className="h-8 w-8" />,
+  'american-tabletop': <Trophy className="h-8 w-8" />,
+  'origins-awards': <Award className="h-8 w-8" />,
+  'mensa-select': <Star className="h-8 w-8" />,
+  'deutscher-spiele-preis': <Trophy className="h-8 w-8" />,
+  'international-gamers-award': <Globe className="h-8 w-8" />,
 }
 
 // Country flag emojis
@@ -27,6 +32,7 @@ const countryFlags: Record<string, string> = {
   'Germany': '🇩🇪',
   'USA': '🇺🇸',
   'France': '🇫🇷',
+  'International': '🌍',
 }
 
 export default async function AwardsPage() {
@@ -43,9 +49,10 @@ export default async function AwardsPage() {
     })
   )
 
-  // Split into tiers based on display_order
+  // Split into regions: American first, then German, then Other International
+  const americanAwards = awardsWithCounts.filter(a => a.country === 'USA')
   const germanAwards = awardsWithCounts.filter(a => a.country === 'Germany')
-  const internationalAwards = awardsWithCounts.filter(a => a.country !== 'Germany')
+  const otherAwards = awardsWithCounts.filter(a => a.country !== 'USA' && a.country !== 'Germany')
 
   return (
     <div className="container py-8 md:py-12">
@@ -75,16 +82,15 @@ export default async function AwardsPage() {
         </p>
       </div>
 
-      {/* German Awards - Tier 1 */}
-      {germanAwards.length > 0 && (
+      {/* American Awards */}
+      {americanAwards.length > 0 && (
         <div className="mb-12">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span>🇩🇪</span>
-            German Awards
-            <Badge variant="secondary">Most Prestigious</Badge>
+            <span>🇺🇸</span>
+            American Awards
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {germanAwards.map((award) => {
+            {americanAwards.map((award) => {
               const icon = awardIcons[award.slug] || <Trophy className="h-8 w-8" />
 
               return (
@@ -93,12 +99,12 @@ export default async function AwardsPage() {
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-xl">{award.name}</CardTitle>
+                          <CardTitle className="text-lg">{award.name}</CardTitle>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {award.short_name} &bull; Est. {award.established_year}
+                            {award.organization} &bull; Est. {award.established_year}
                           </p>
                         </div>
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                           <span className="text-primary">{icon}</span>
                         </div>
                       </div>
@@ -121,15 +127,61 @@ export default async function AwardsPage() {
         </div>
       )}
 
-      {/* International Awards */}
-      {internationalAwards.length > 0 && (
+      {/* German Awards */}
+      {germanAwards.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>🇩🇪</span>
+            German Awards
+            <Badge variant="secondary">Most Prestigious</Badge>
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {germanAwards.map((award) => {
+              const icon = awardIcons[award.slug] || <Trophy className="h-8 w-8" />
+
+              return (
+                <Link key={award.slug} href={`/awards/${award.slug}`}>
+                  <Card className="h-full transition-all hover:shadow-md hover:border-primary/30">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{award.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {award.short_name} &bull; Est. {award.established_year}
+                          </p>
+                        </div>
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                          <span className="text-primary">{icon}</span>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {award.description}
+                      </p>
+                      {award.winnerCount > 0 && (
+                        <Badge variant="outline">
+                          {award.winnerCount} winner{award.winnerCount !== 1 ? 's' : ''} in our database
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Other International Awards */}
+      {otherAwards.length > 0 && (
         <div>
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
             International Awards
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {internationalAwards.map((award) => {
+            {otherAwards.map((award) => {
               const icon = awardIcons[award.slug] || <Award className="h-8 w-8" />
               const flag = countryFlags[award.country || ''] || ''
 

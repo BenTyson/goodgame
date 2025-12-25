@@ -26,6 +26,11 @@ const awardIcons: Record<string, React.ReactNode> = {
   'golden-geek': <Star className="h-6 w-6" />,
   'dice-tower': <Award className="h-6 w-6" />,
   'as-dor': <Globe className="h-6 w-6" />,
+  'american-tabletop': <Trophy className="h-6 w-6" />,
+  'origins-awards': <Award className="h-6 w-6" />,
+  'mensa-select': <Star className="h-6 w-6" />,
+  'deutscher-spiele-preis': <Trophy className="h-6 w-6" />,
+  'international-gamers-award': <Globe className="h-6 w-6" />,
 }
 
 // Country flags
@@ -33,6 +38,7 @@ const countryFlags: Record<string, string> = {
   'Germany': '🇩🇪',
   'USA': '🇺🇸',
   'France': '🇫🇷',
+  'International': '🌍',
 }
 
 export async function generateMetadata({
