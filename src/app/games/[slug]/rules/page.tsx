@@ -43,6 +43,7 @@ interface AIRulesContent {
   overview: string
   coreRules?: { title: string; points: string[] }[]
   turnStructure: { phase?: string; title?: string; description: string }[]
+  scoring?: { category: string; points: string }[]
   endGame?: string
   tips: string[]
 }
@@ -1031,19 +1032,8 @@ export default async function RulesPage({ params }: RulesPageProps) {
 
           <Separator />
 
-          {/* Scoring (legacy) or End Game (AI) */}
-          {isAI && (content as AIRulesContent).endGame ? (
-            <div>
-              <h2 className="text-xl font-bold mb-4">End Game & Winning</h2>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-muted-foreground">
-                    {(content as AIRulesContent).endGame}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          ) : !isAI ? (
+          {/* Scoring - both AI and legacy have this */}
+          {(isAI ? (content as AIRulesContent).scoring : (content as LegacyRulesContent).scoring) && (
             <div>
               <h2 className="text-xl font-bold mb-4">Scoring</h2>
               <Card>
@@ -1056,7 +1046,10 @@ export default async function RulesPage({ params }: RulesPageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {(content as LegacyRulesContent).scoring.map((item, i) => (
+                      {(isAI
+                        ? (content as AIRulesContent).scoring
+                        : (content as LegacyRulesContent).scoring
+                      )?.map((item, i) => (
                         <tr key={i} className="border-b last:border-0">
                           <td className="py-2 text-muted-foreground">
                             {item.category}
@@ -1071,7 +1064,24 @@ export default async function RulesPage({ params }: RulesPageProps) {
                 </CardContent>
               </Card>
             </div>
-          ) : null}
+          )}
+
+          {/* End Game - AI content only */}
+          {isAI && (content as AIRulesContent).endGame && (
+            <>
+              <Separator />
+              <div>
+                <h2 className="text-xl font-bold mb-4">End Game & Winning</h2>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-muted-foreground">
+                      {(content as AIRulesContent).endGame}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Sidebar */}

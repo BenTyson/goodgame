@@ -94,6 +94,12 @@ Return a JSON object with this exact structure:
       "description": "What happens in this phase"
     }
   ],
+  "scoring": [
+    {
+      "category": "What scores points",
+      "points": "How many points"
+    }
+  ],
   "endGame": "How the game ends and who wins",
   "tips": [
     "3-4 beginner-friendly strategy tips",
@@ -101,7 +107,7 @@ Return a JSON object with this exact structure:
   ]
 }
 
-Make coreRules have 3-5 categories covering the main rules. Keep turnStructure to the essential phases (3-5 max).`
+Make coreRules have 3-5 categories covering the main rules. Keep turnStructure to the essential phases (3-5 max). Make scoring have 5-8 categories covering the main ways to earn points.`
 }
 
 /**
