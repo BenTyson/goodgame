@@ -3,7 +3,7 @@
  * Orchestrates content generation for games
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { generateJSON, type GenerationResult } from './claude'
 import {
   SYSTEM_PROMPT,
@@ -43,7 +43,7 @@ async function logGeneration(
   generatedContent: unknown,
   errorMessage?: string
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   await supabase.from('content_generation_log').insert({
     game_id: gameId,
@@ -66,7 +66,7 @@ async function logGeneration(
 export async function generateRulesContent(
   gameId: string
 ): Promise<GenerationStats> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get game data
   const { data: game, error: gameError } = await supabase
@@ -155,7 +155,7 @@ export async function generateRulesContent(
 export async function generateSetupContent(
   gameId: string
 ): Promise<GenerationStats> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: game, error: gameError } = await supabase
     .from('games')
@@ -241,7 +241,7 @@ export async function generateSetupContent(
 export async function generateReferenceContent(
   gameId: string
 ): Promise<GenerationStats> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: game, error: gameError } = await supabase
     .from('games')
@@ -335,7 +335,7 @@ export async function generateAllContent(
   results.push(await generateReferenceContent(gameId))
 
   // Update content status
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const allSuccess = results.every(r => r.success)
 
   await supabase
@@ -355,7 +355,7 @@ export async function generateAllContent(
  * Picks the highest priority game with content_status = 'none'
  */
 export async function generateContentForNextGame(): Promise<GenerationStats[] | null> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Find next game needing content
   const { data: game, error } = await supabase
@@ -393,7 +393,7 @@ export async function getGenerationStats(): Promise<{
   totalCost: number
   totalTokens: number
 }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('content_generation_log')
