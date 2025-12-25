@@ -205,6 +205,59 @@ Focus on the most-referenced information. Actions should cover 4-8 main actions.
 }
 
 /**
+ * Generate score sheet content prompt
+ */
+export function getScoreSheetPrompt(game: GameRow): string {
+  return `Create a score sheet configuration for this board game. This will be used to generate an interactive/printable score tracker.
+
+${buildGameContext(game)}
+
+Return a JSON object with this exact structure:
+{
+  "config": {
+    "layout_type": "standard",
+    "orientation": "portrait",
+    "show_total_row": true,
+    "color_scheme": "default"
+  },
+  "fields": [
+    {
+      "name": "field_identifier",
+      "label": "Display Label (include point value if fixed, e.g., 'Cities (2 pts each)')",
+      "field_type": "number",
+      "section": "Section Name (optional grouping)",
+      "description": "Brief hint about how to score this category",
+      "is_negative": false,
+      "min_value": 0,
+      "max_value": null
+    }
+  ],
+  "instructions": [
+    "Brief instruction about how to use this score sheet",
+    "Any special scoring rules to remember"
+  ],
+  "tiebreaker": "How to resolve ties (if applicable)"
+}
+
+Field types:
+- "number" for point values (most common)
+- "checkbox" for yes/no bonuses (like "Longest Road" - worth fixed points)
+
+Section names help group related scoring categories. Common sections:
+- "Base Points", "Bonuses", "Penalties", "End Game", etc.
+
+Important rules:
+- Set "is_negative": true for penalty fields (incomplete tickets, floor penalties, etc.)
+- Include ALL scoring categories from the game - be comprehensive
+- Order fields in the typical end-game scoring sequence
+- Make labels clear and include point values where applicable (e.g., "Settlements (1 pt each)")
+- Use snake_case for field names (e.g., "victory_cards", "completed_routes")
+- Set reasonable max_value if there's a game limit (e.g., max 5 settlements)
+
+Include 5-15 scoring fields covering all ways to earn/lose points. Group related fields with the same section name.`
+}
+
+/**
  * Get all prompts for a game
  */
 export function getAllPrompts(game: GameRow) {
@@ -212,5 +265,6 @@ export function getAllPrompts(game: GameRow) {
     rules: getRulesPrompt(game),
     setup: getSetupPrompt(game),
     reference: getReferencePrompt(game),
+    scoreSheet: getScoreSheetPrompt(game),
   }
 }

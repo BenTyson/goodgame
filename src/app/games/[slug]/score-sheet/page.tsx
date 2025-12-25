@@ -5,7 +5,31 @@ import { ArrowLeft, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ScoreSheetGenerator } from '@/components/score-sheet'
-import { mockGames } from '@/data/mock-games'
+import { getGameBySlug, getAllGameSlugs, getScoreSheetConfig } from '@/lib/supabase/queries'
+
+// Transform database config to component-expected format
+function transformScoreSheetConfig(config: Awaited<ReturnType<typeof getScoreSheetConfig>>) {
+  if (!config) return null
+
+  // Parse custom_styles if it's a string (JSON)
+  let customStyles: { instructions?: string[]; tiebreaker?: string | null } | null = null
+  if (config.custom_styles) {
+    if (typeof config.custom_styles === 'string') {
+      try {
+        customStyles = JSON.parse(config.custom_styles)
+      } catch {
+        customStyles = null
+      }
+    } else if (typeof config.custom_styles === 'object') {
+      customStyles = config.custom_styles as { instructions?: string[]; tiebreaker?: string | null }
+    }
+  }
+
+  return {
+    ...config,
+    custom_styles: customStyles,
+  }
+}
 
 interface ScoreSheetPageProps {
   params: Promise<{ slug: string }>
@@ -15,7 +39,7 @@ export async function generateMetadata({
   params,
 }: ScoreSheetPageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
   if (!game) {
     return {
@@ -30,16 +54,13 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return mockGames
-    .filter((game) => game.has_score_sheet)
-    .map((game) => ({
-      slug: game.slug,
-    }))
+  const slugs = await getAllGameSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 export default async function ScoreSheetPage({ params }: ScoreSheetPageProps) {
   const { slug } = await params
-  const game = mockGames.find((g) => g.slug === slug)
+  const game = await getGameBySlug(slug)
 
   if (!game) {
     notFound()
@@ -48,6 +69,10 @@ export default async function ScoreSheetPage({ params }: ScoreSheetPageProps) {
   if (!game.has_score_sheet) {
     notFound()
   }
+
+  // Fetch score sheet config from database and transform to expected format
+  const rawConfig = await getScoreSheetConfig(game.id)
+  const scoreSheetConfig = transformScoreSheetConfig(rawConfig)
 
   return (
     <div className="container py-8 md:py-12">
@@ -92,8 +117,9 @@ export default async function ScoreSheetPage({ params }: ScoreSheetPageProps) {
       {/* Score Sheet Generator */}
       <ScoreSheetGenerator
         game={game}
-        minPlayers={game.player_count_min}
-        maxPlayers={Math.min(game.player_count_max, 6)}
+        minPlayers={game.player_count_min || 2}
+        maxPlayers={Math.min(game.player_count_max || 6, 6)}
+        scoreSheetConfig={scoreSheetConfig}
       />
     </div>
   )

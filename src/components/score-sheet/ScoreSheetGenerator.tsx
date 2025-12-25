@@ -13,6 +13,43 @@ interface ScoreField {
   name: string
   label: string
   type: 'number' | 'checkbox' | 'text'
+  isNegative?: boolean
+}
+
+// Database config type from getScoreSheetConfig - flexible to match Supabase types
+interface ScoreSheetConfig {
+  id: string
+  game_id: string | null
+  layout_type: string | null
+  orientation: string | null
+  show_total_row: boolean | null
+  color_scheme: string | null
+  player_min: number | null
+  player_max: number | null
+  custom_styles?: {
+    instructions?: string[]
+    tiebreaker?: string | null
+  } | null
+  fields: {
+    id: string
+    config_id: string | null
+    name: string | null
+    label: string | null
+    field_type: string | null
+    section?: string | null
+    description?: string | null
+    display_order: number
+    min_value?: number | null
+    max_value?: number | null
+    is_required?: boolean | null
+    per_player?: boolean | null
+    placeholder?: string | null
+    // Additional DB fields we don't use
+    calculation_formula?: string | null
+    default_value?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+  }[]
 }
 
 interface ScoreSheetGeneratorProps {
@@ -20,6 +57,7 @@ interface ScoreSheetGeneratorProps {
   fields?: ScoreField[]
   minPlayers?: number
   maxPlayers?: number
+  scoreSheetConfig?: ScoreSheetConfig | null
 }
 
 // Default fields based on game
@@ -88,23 +126,51 @@ const defaultFields: ScoreField[] = [
   { name: 'bonus', label: 'Bonus Points', type: 'number' },
 ]
 
+// Convert database fields to ScoreField format
+function convertDbFieldsToScoreFields(config: ScoreSheetConfig): ScoreField[] {
+  return config.fields
+    .filter((field) => field.name && field.label) // Filter out fields without name/label
+    .map((field) => ({
+      name: field.name!,
+      label: field.label!,
+      type: (field.field_type || 'number') as 'number' | 'checkbox' | 'text',
+      // Fields with (-) placeholder are negative (penalties)
+      isNegative: field.placeholder === '(-)',
+    }))
+}
+
 export function ScoreSheetGenerator({
   game,
   fields,
   minPlayers = 2,
   maxPlayers = 6,
+  scoreSheetConfig,
 }: ScoreSheetGeneratorProps) {
-  const scoreFields = fields || defaultFieldsByGame[game.slug] || defaultFields
+  // Use database config fields if available, otherwise fallback to hardcoded
+  const scoreFields = React.useMemo(() => {
+    if (scoreSheetConfig?.fields && scoreSheetConfig.fields.length > 0) {
+      return convertDbFieldsToScoreFields(scoreSheetConfig)
+    }
+    return fields || defaultFieldsByGame[game.slug] || defaultFields
+  }, [scoreSheetConfig, fields, game.slug])
+
+  // Use config player limits if available
+  const effectiveMinPlayers = scoreSheetConfig?.player_min ?? minPlayers
+  const effectiveMaxPlayers = scoreSheetConfig?.player_max ?? maxPlayers
+
+  // Get instructions and tiebreaker from config
+  const instructions = scoreSheetConfig?.custom_styles?.instructions || []
+  const tiebreaker = scoreSheetConfig?.custom_styles?.tiebreaker || null
   const [playerCount, setPlayerCount] = React.useState(
-    Math.min(game.player_count_max || 4, maxPlayers)
+    Math.min(game.player_count_max || 4, effectiveMaxPlayers)
   )
   const [playerNames, setPlayerNames] = React.useState<string[]>(
-    Array(maxPlayers).fill('').map((_, i) => `Player ${i + 1}`)
+    Array(effectiveMaxPlayers).fill('').map((_, i) => `Player ${i + 1}`)
   )
   const [scores, setScores] = React.useState<Record<string, number[]>>(() => {
     const initial: Record<string, number[]> = {}
     scoreFields.forEach((field) => {
-      initial[field.name] = Array(maxPlayers).fill(0)
+      initial[field.name] = Array(effectiveMaxPlayers).fill(0)
     })
     return initial
   })
@@ -125,8 +191,8 @@ export function ScoreSheetGenerator({
   const calculateTotal = (playerIndex: number) => {
     return scoreFields.reduce((sum, field) => {
       const value = scores[field.name]?.[playerIndex] || 0
-      // Handle penalty fields (those with "-" in the label)
-      if (field.label.includes('(-)') || field.label.includes('Penalties')) {
+      // Handle penalty/negative fields
+      if (field.isNegative || field.label.includes('(-)') || field.label.includes('Penalties')) {
         return sum - Math.abs(value)
       }
       return sum + value
@@ -222,8 +288,8 @@ export function ScoreSheetGenerator({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPlayerCount((p) => Math.max(minPlayers, p - 1))}
-              disabled={playerCount <= minPlayers}
+              onClick={() => setPlayerCount((p) => Math.max(effectiveMinPlayers, p - 1))}
+              disabled={playerCount <= effectiveMinPlayers}
             >
               <Minus className="h-4 w-4" />
             </Button>
@@ -233,8 +299,8 @@ export function ScoreSheetGenerator({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPlayerCount((p) => Math.min(maxPlayers, p + 1))}
-              disabled={playerCount >= maxPlayers}
+              onClick={() => setPlayerCount((p) => Math.min(effectiveMaxPlayers, p + 1))}
+              disabled={playerCount >= effectiveMaxPlayers}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -320,6 +386,30 @@ export function ScoreSheetGenerator({
           </div>
         </CardContent>
       </Card>
+
+      {/* Instructions and Tiebreaker */}
+      {(instructions.length > 0 || tiebreaker) && (
+        <Card className="print:shadow-none print:border-0">
+          <CardContent className="pt-6">
+            {instructions.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">Scoring Instructions</h4>
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                  {instructions.map((instruction, i) => (
+                    <li key={i}>{instruction}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {tiebreaker && (
+              <div>
+                <h4 className="font-semibold mb-1">Tiebreaker</h4>
+                <p className="text-sm text-muted-foreground">{tiebreaker}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 print:hidden">

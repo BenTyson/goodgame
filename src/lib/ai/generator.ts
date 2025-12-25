@@ -11,10 +11,33 @@ import {
   getRulesPrompt,
   getSetupPrompt,
   getReferencePrompt,
+  getScoreSheetPrompt,
 } from './prompts'
 import type { RulesContent, SetupContent, ReferenceContent } from '@/types/database'
 
-export type ContentType = 'rules' | 'setup' | 'reference' | 'all'
+export type ContentType = 'rules' | 'setup' | 'reference' | 'score_sheet' | 'all'
+
+// Type for AI-generated score sheet content
+interface ScoreSheetGeneratedContent {
+  config: {
+    layout_type: string
+    orientation: string
+    show_total_row: boolean
+    color_scheme: string
+  }
+  fields: {
+    name: string
+    label: string
+    field_type: string
+    section?: string
+    description?: string
+    is_negative?: boolean
+    min_value?: number
+    max_value?: number | null
+  }[]
+  instructions: string[]
+  tiebreaker: string
+}
 
 export interface GenerationStats {
   gameId: string
@@ -322,6 +345,144 @@ export async function generateReferenceContent(
 }
 
 /**
+ * Generate score sheet content for a game
+ */
+export async function generateScoreSheetContent(
+  gameId: string
+): Promise<GenerationStats> {
+  const supabase = createAdminClient()
+
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .select('*')
+    .eq('id', gameId)
+    .single()
+
+  if (gameError || !game) {
+    throw new Error(`Game not found: ${gameId}`)
+  }
+
+  const startTime = Date.now()
+
+  try {
+    const prompt = getScoreSheetPrompt(game)
+    const result = await generateJSON<ScoreSheetGeneratedContent>(SYSTEM_PROMPT, prompt)
+
+    // Delete existing score sheet config and fields for this game
+    const { data: existingConfig } = await supabase
+      .from('score_sheet_configs')
+      .select('id')
+      .eq('game_id', gameId)
+      .single()
+
+    if (existingConfig) {
+      await supabase.from('score_sheet_fields').delete().eq('config_id', existingConfig.id)
+      await supabase.from('score_sheet_configs').delete().eq('id', existingConfig.id)
+    }
+
+    // Insert new score sheet config
+    const { data: newConfig, error: configError } = await supabase
+      .from('score_sheet_configs')
+      .insert({
+        game_id: gameId,
+        layout_type: result.data.config.layout_type || 'standard',
+        orientation: result.data.config.orientation || 'portrait',
+        show_total_row: result.data.config.show_total_row ?? true,
+        color_scheme: result.data.config.color_scheme || 'default',
+        player_min: game.player_count_min || 2,
+        player_max: Math.min(game.player_count_max || 6, 6),
+        custom_styles: {
+          instructions: result.data.instructions || [],
+          tiebreaker: result.data.tiebreaker || null,
+        },
+      })
+      .select()
+      .single()
+
+    if (configError || !newConfig) {
+      throw new Error(`Failed to create score sheet config: ${configError?.message}`)
+    }
+
+    // Insert score sheet fields
+    const fieldsToInsert = result.data.fields.map((field, index) => ({
+      config_id: newConfig.id,
+      name: field.name,
+      label: field.label,
+      field_type: field.field_type || 'number',
+      section: field.section || null,
+      description: field.description || null,
+      display_order: index,
+      min_value: field.min_value ?? 0,
+      max_value: field.max_value ?? null,
+      is_required: false,
+      per_player: true,
+      // Store is_negative in description if true (for backward compat with existing component)
+      placeholder: field.is_negative ? '(-)' : null,
+    }))
+
+    await supabase.from('score_sheet_fields').insert(fieldsToInsert)
+
+    // Update game to mark score sheet as available
+    await supabase
+      .from('games')
+      .update({ has_score_sheet: true })
+      .eq('id', gameId)
+
+    await logGeneration(
+      gameId,
+      'score_sheet',
+      result.meta.model,
+      'success',
+      result.meta.tokensInput,
+      result.meta.tokensOutput,
+      result.meta.costUsd,
+      result.meta.durationMs,
+      result.data
+    )
+
+    return {
+      gameId,
+      gameName: game.name,
+      contentType: 'score_sheet',
+      success: true,
+      tokensInput: result.meta.tokensInput,
+      tokensOutput: result.meta.tokensOutput,
+      costUsd: result.meta.costUsd,
+      durationMs: result.meta.durationMs,
+    }
+
+  } catch (error) {
+    const durationMs = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    await logGeneration(
+      gameId,
+      'score_sheet',
+      'claude-3-haiku-20240307',
+      'failed',
+      0,
+      0,
+      0,
+      durationMs,
+      null,
+      errorMessage
+    )
+
+    return {
+      gameId,
+      gameName: game.name,
+      contentType: 'score_sheet',
+      success: false,
+      tokensInput: 0,
+      tokensOutput: 0,
+      costUsd: 0,
+      durationMs,
+      error: errorMessage,
+    }
+  }
+}
+
+/**
  * Generate all content for a game
  */
 export async function generateAllContent(
@@ -329,10 +490,11 @@ export async function generateAllContent(
 ): Promise<GenerationStats[]> {
   const results: GenerationStats[] = []
 
-  // Generate all three content types
+  // Generate all four content types
   results.push(await generateRulesContent(gameId))
   results.push(await generateSetupContent(gameId))
   results.push(await generateReferenceContent(gameId))
+  results.push(await generateScoreSheetContent(gameId))
 
   // Update content status
   const supabase = createAdminClient()
