@@ -36,14 +36,34 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }))
 }
 
-// Reference content for each game
-const referenceContent: Record<string, {
+// Type for AI-generated content
+interface AIReferenceContent {
+  turnSummary: string[]
+  actions: { name: string; cost: string; effect: string; limit: string }[]
+  symbols: { symbol: string; meaning: string }[]
+  scoring: { category: string; points: string; notes: string }[]
+  importantNumbers: { what: string; value: string; context: string }[]
+  reminders: string[]
+}
+
+// Type for legacy hardcoded content
+interface LegacyReferenceContent {
   turnSummary: { phase: string; action: string }[]
   keyRules: { rule: string; detail: string }[]
   costs: { item: string; cost: string }[]
   quickReminders: string[]
   endGame: string
-}> = {
+}
+
+type ReferenceContent = AIReferenceContent | LegacyReferenceContent
+
+// Helper to check if content is AI-generated format
+function isAIContent(content: ReferenceContent): content is AIReferenceContent {
+  return 'actions' in content || 'symbols' in content || 'importantNumbers' in content
+}
+
+// Reference content for each game
+const referenceContent: Record<string, LegacyReferenceContent> = {
   catan: {
     turnSummary: [
       { phase: '1. Roll Dice', action: 'All players collect resources from hexes matching the number.' },
@@ -499,7 +519,7 @@ const referenceContent: Record<string, {
 }
 
 // Default reference content
-const defaultReferenceContent = {
+const defaultReferenceContent: LegacyReferenceContent = {
   turnSummary: [
     { phase: 'Your Turn', action: 'See rulebook for turn structure.' },
   ],
@@ -522,7 +542,8 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
   }
 
   // Prefer database content, fall back to hardcoded content
-  const content = (game.reference_content as typeof defaultReferenceContent) || referenceContent[game.slug] || defaultReferenceContent
+  const content: ReferenceContent = (game.reference_content as unknown as ReferenceContent) || referenceContent[game.slug] || defaultReferenceContent
+  const isAI = isAIContent(content)
 
   return (
     <div className="container py-8 md:py-12">
@@ -590,40 +611,59 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {content.turnSummary.map((item, i) => (
-                <div key={i} className="text-sm">
-                  <span className="font-medium text-primary">
-                    {item.phase}:
-                  </span>{' '}
-                  <span className="text-muted-foreground print:text-gray-600">
-                    {item.action}
-                  </span>
-                </div>
-              ))}
+              {isAI ? (
+                (content as AIReferenceContent).turnSummary.map((item, i) => (
+                  <div key={i} className="text-sm text-muted-foreground print:text-gray-600">
+                    • {item}
+                  </div>
+                ))
+              ) : (
+                (content as LegacyReferenceContent).turnSummary.map((item, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium text-primary">
+                      {item.phase}:
+                    </span>{' '}
+                    <span className="text-muted-foreground print:text-gray-600">
+                      {item.action}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Key Rules */}
+        {/* Key Rules / Actions */}
         <Card className="print:break-inside-avoid print:shadow-none print:border">
           <CardHeader className="pb-2 print:pb-1">
             <CardTitle className="text-base flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white text-xs font-bold">
                 2
               </span>
-              Key Rules
+              {isAI ? 'Actions' : 'Key Rules'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {content.keyRules.map((item, i) => (
-                <div key={i} className="text-sm">
-                  <span className="font-medium">{item.rule}:</span>{' '}
-                  <span className="text-muted-foreground print:text-gray-600">
-                    {item.detail}
-                  </span>
-                </div>
-              ))}
+              {isAI ? (
+                (content as AIReferenceContent).actions.map((item, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium">{item.name}:</span>{' '}
+                    <span className="text-muted-foreground print:text-gray-600">
+                      {item.effect} ({item.cost})
+                    </span>
+                  </div>
+                ))
+              ) : (
+                (content as LegacyReferenceContent).keyRules.map((item, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium">{item.rule}:</span>{' '}
+                    <span className="text-muted-foreground print:text-gray-600">
+                      {item.detail}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -635,55 +675,94 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
               <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white text-xs font-bold">
                 3
               </span>
-              Costs & Points
+              {isAI ? 'Scoring' : 'Costs & Points'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <table className="w-full text-sm">
               <tbody>
-                {content.costs.map((item, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="py-1">{item.item}</td>
-                    <td className="py-1 text-right font-medium text-muted-foreground print:text-gray-600">
-                      {item.cost}
-                    </td>
-                  </tr>
-                ))}
+                {isAI ? (
+                  (content as AIReferenceContent).scoring.map((item, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-1">{item.category}</td>
+                      <td className="py-1 text-right font-medium text-muted-foreground print:text-gray-600">
+                        {item.points}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  (content as LegacyReferenceContent).costs.map((item, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-1">{item.item}</td>
+                      <td className="py-1 text-right font-medium text-muted-foreground print:text-gray-600">
+                        {item.cost}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </CardContent>
         </Card>
 
-        {/* Quick Reminders + End Game */}
+        {/* Quick Reminders + End Game / Important Numbers */}
         <Card className="print:break-inside-avoid print:shadow-none print:border">
           <CardHeader className="pb-2 print:pb-1">
             <CardTitle className="text-base flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white text-xs font-bold">
                 4
               </span>
-              Remember
+              {isAI ? 'Key Numbers & Reminders' : 'Remember'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ul className="space-y-1 text-sm">
-              {content.quickReminders.map((reminder, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary">•</span>
+            {isAI ? (
+              <>
+                {(content as AIReferenceContent).importantNumbers && (
+                  <div className="space-y-1 text-sm">
+                    {(content as AIReferenceContent).importantNumbers.map((item, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span className="text-muted-foreground">{item.what}</span>
+                        <span className="font-medium">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Separator className="print:hidden" />
+                <ul className="space-y-1 text-sm">
+                  {(content as AIReferenceContent).reminders.map((reminder, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span className="text-muted-foreground print:text-gray-600">
+                        {reminder}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <ul className="space-y-1 text-sm">
+                  {(content as LegacyReferenceContent).quickReminders.map((reminder, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span className="text-muted-foreground print:text-gray-600">
+                        {reminder}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Separator className="print:hidden" />
+                <div className="text-sm">
+                  <span className="font-medium text-primary">
+                    End Game:
+                  </span>{' '}
                   <span className="text-muted-foreground print:text-gray-600">
-                    {reminder}
+                    {(content as LegacyReferenceContent).endGame}
                   </span>
-                </li>
-              ))}
-            </ul>
-            <Separator className="print:hidden" />
-            <div className="text-sm">
-              <span className="font-medium text-primary">
-                End Game:
-              </span>{' '}
-              <span className="text-muted-foreground print:text-gray-600">
-                {content.endGame}
-              </span>
-            </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

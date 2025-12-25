@@ -36,14 +36,35 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }))
 }
 
-// Setup content for each game
-const setupContent: Record<string, {
+// Type for AI-generated content
+interface AISetupContent {
+  overview: string
+  beforeYouStart: string[]
+  components: { name: string; quantity: string; description: string }[]
+  steps: { step: number; title: string; instruction: string; tip?: string }[]
+  playerSetup: { description: string; items: string[] }
+  firstPlayer: string
+  commonMistakes: string[]
+}
+
+// Type for legacy hardcoded content
+interface LegacySetupContent {
   playerSetup: { title: string; description: string; tip?: string }[]
   boardSetup: { title: string; description: string; tip?: string }[]
   componentChecklist: { name: string; quantity: string }[]
   firstPlayerRule: string
   quickTips: string[]
-}> = {
+}
+
+type SetupContent = AISetupContent | LegacySetupContent
+
+// Helper to check if content is AI-generated format
+function isAIContent(content: SetupContent): content is AISetupContent {
+  return 'steps' in content || 'beforeYouStart' in content
+}
+
+// Setup content for each game
+const setupContent: Record<string, LegacySetupContent> = {
   catan: {
     playerSetup: [
       {
@@ -928,7 +949,7 @@ const setupContent: Record<string, {
 }
 
 // Default setup content
-const defaultSetupContent = {
+const defaultSetupContent: LegacySetupContent = {
   playerSetup: [
     { title: 'Choose colors', description: 'Each player selects their color and takes matching pieces.' },
     { title: 'Deal starting cards', description: 'See rulebook for player-specific setup.' },
@@ -952,7 +973,23 @@ export default async function SetupPage({ params }: SetupPageProps) {
   }
 
   // Prefer database content, fall back to hardcoded content
-  const content = (game.setup_content as typeof defaultSetupContent) || setupContent[game.slug] || defaultSetupContent
+  const content: SetupContent = (game.setup_content as unknown as SetupContent) || setupContent[game.slug] || defaultSetupContent
+  const isAI = isAIContent(content)
+
+  // Get component list based on content type
+  const componentList = isAI
+    ? (content as AISetupContent).components.map(c => ({ name: c.name, quantity: c.quantity }))
+    : (content as LegacySetupContent).componentChecklist
+
+  // Get tips based on content type
+  const tips = isAI
+    ? (content as AISetupContent).commonMistakes
+    : (content as LegacySetupContent).quickTips
+
+  // Get first player rule
+  const firstPlayerRule = isAI
+    ? (content as AISetupContent).firstPlayer
+    : (content as LegacySetupContent).firstPlayerRule
 
   return (
     <div className="container py-8 md:py-12">
@@ -988,7 +1025,7 @@ export default async function SetupPage({ params }: SetupPageProps) {
               {game.name} Setup Guide
             </h1>
             <p className="text-muted-foreground">
-              Step-by-step checklist to get playing quickly
+              {isAI ? (content as AISetupContent).overview : 'Step-by-step checklist to get playing quickly'}
             </p>
           </div>
         </div>
@@ -1011,12 +1048,90 @@ export default async function SetupPage({ params }: SetupPageProps) {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Interactive Setup Checklists */}
-          <SetupChecklist
-            playerSetup={content.playerSetup}
-            boardSetup={content.boardSetup}
-            firstPlayerRule={content.firstPlayerRule}
-          />
+          {/* AI Content - Before You Start */}
+          {isAI && (content as AISetupContent).beforeYouStart && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-lg">Before You Start</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {(content as AISetupContent).beforeYouStart.map((item, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-primary">•</span>
+                      <span className="text-muted-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Setup Steps */}
+          {isAI ? (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Setup Steps</h2>
+              <div className="space-y-4">
+                {(content as AISetupContent).steps.map((step, i) => (
+                  <Card key={i}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                          {step.step}
+                        </span>
+                        {step.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{step.instruction}</p>
+                      {step.tip && (
+                        <p className="text-sm text-primary mt-2">💡 {step.tip}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Player Setup */}
+              {(content as AISetupContent).playerSetup && (
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold mb-4">Player Setup</h2>
+                  <Card>
+                    <CardContent className="pt-4">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {(content as AISetupContent).playerSetup.description}
+                      </p>
+                      <ul className="space-y-1">
+                        {(content as AISetupContent).playerSetup.items.map((item, i) => (
+                          <li key={i} className="flex gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* First Player */}
+              <div className="mt-8">
+                <h2 className="text-xl font-bold mb-4">First Player</h2>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground">{firstPlayerRule}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          ) : (
+            /* Legacy content - Interactive Setup Checklists */
+            <SetupChecklist
+              playerSetup={(content as LegacySetupContent).playerSetup}
+              boardSetup={(content as LegacySetupContent).boardSetup}
+              firstPlayerRule={(content as LegacySetupContent).firstPlayerRule}
+            />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -1031,7 +1146,7 @@ export default async function SetupPage({ params }: SetupPageProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm">
-                {content.componentChecklist.map((item, i) => (
+                {componentList.map((item, i) => (
                   <li key={i} className="flex justify-between">
                     <span className="text-muted-foreground">{item.name}</span>
                     <span className="font-medium">{item.quantity}</span>
@@ -1041,14 +1156,14 @@ export default async function SetupPage({ params }: SetupPageProps) {
             </CardContent>
           </Card>
 
-          {/* Quick Tips */}
+          {/* Quick Tips / Common Mistakes */}
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-              <CardTitle className="text-lg">Quick Tips</CardTitle>
+              <CardTitle className="text-lg">{isAI ? 'Common Mistakes' : 'Quick Tips'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                {content.quickTips.map((tip, i) => (
+                {tips.map((tip, i) => (
                   <li key={i} className="flex gap-2">
                     <span className="text-primary">•</span>
                     {tip}
