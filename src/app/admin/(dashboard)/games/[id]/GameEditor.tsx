@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/admin/ImageUpload'
+import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
 import {
   ArrowLeft,
   Save,
@@ -29,7 +30,8 @@ import {
   Calendar,
   Building2,
   Pencil,
-  Hash
+  Hash,
+  Link2
 } from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { Game, GameImage, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
@@ -187,7 +189,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
       {/* Editor Tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -199,6 +201,10 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TabsTrigger value="content" className="gap-2">
             <FileText className="h-4 w-4 hidden sm:block" />
             Content
+          </TabsTrigger>
+          <TabsTrigger value="relationships" className="gap-2">
+            <Link2 className="h-4 w-4 hidden sm:block" />
+            Relations
           </TabsTrigger>
           <TabsTrigger value="publishing" className="gap-2">
             <Settings className="h-4 w-4 hidden sm:block" />
@@ -630,6 +636,14 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Relationships Tab */}
+        <TabsContent value="relationships" className="space-y-6">
+          <GameRelationsEditor
+            game={game}
+            onFamilyChange={(familyId) => updateField('family_id', familyId)}
+          />
         </TabsContent>
 
         {/* Publishing Tab */}
