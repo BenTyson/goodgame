@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-24
+> Last Updated: 2025-12-25
 
-## Phase: 10 - User Profiles & Social Foundation
+## Phase: 11 - Game Families & Relationships
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -18,6 +18,9 @@
 - **Privacy controls** - profile/shelf visibility (both default to public)
 - **Normalized entities** - Designers, Publishers, Artists as proper tables
 - **Entity pages** - `/designers`, `/publishers` with game listings
+- **Game Families** - Series groupings (Catan, Pandemic, etc.) with public pages
+- **Game Relations** - Expansions, sequels, reimplementations linked between games
+- **Auto-import** - Families and expansion relations from BGG during import
 
 ### Environments
 
@@ -62,10 +65,27 @@
 | Magic link email login | ✅ |
 | Games list with filters | ✅ |
 | Game editor (metadata, content) | ✅ |
+| Game relationships tab | ✅ |
 | Image upload + gallery management | ✅ |
 | Set primary/cover image | ✅ |
 | Import queue management | ✅ |
+| Family manager | ✅ |
 | Dashboard with stats | ✅ |
+
+### Game Families & Relations
+| Feature | Status |
+|---------|--------|
+| Family list page (`/families`) | ✅ |
+| Family detail page (`/families/[slug]`) | ✅ |
+| Family badge on game pages | ✅ |
+| Games grouped by relation type on family page | ✅ |
+| Admin family manager (`/admin/families`) | ✅ |
+| Admin family editor (create/edit/delete) | ✅ |
+| Game editor relationships tab | ✅ |
+| BGG import auto-creates families | ✅ |
+| BGG import auto-creates expansion relations | ✅ |
+
+**Relation Types:** expansion_of, base_game_of, sequel_to, prequel_to, reimplementation_of, spin_off_of, standalone_in_series
 
 ### Content Pipeline
 | Component | Status | Location |
@@ -223,10 +243,25 @@ railway logs                                                      # View logs
 | File | Purpose |
 |------|---------|
 | `src/lib/bgg/client.ts` | BGG XML API client |
-| `src/lib/bgg/importer.ts` | Import games from BGG |
+| `src/lib/bgg/importer.ts` | Import games from BGG (includes families + relations) |
 | `src/lib/ai/claude.ts` | Claude API client |
 | `src/lib/ai/generator.ts` | Generate game content |
 | `src/lib/ai/prompts.ts` | AI prompts for content |
+
+### Game Families
+| File | Purpose |
+|------|---------|
+| `src/app/families/page.tsx` | Family list page |
+| `src/app/families/[slug]/page.tsx` | Family detail with grouped games |
+| `src/components/games/FamilyBadge.tsx` | Badge on game pages |
+| `src/components/families/FamilyCard.tsx` | Card for listings |
+| `src/app/admin/(dashboard)/families/page.tsx` | Admin family list |
+| `src/app/admin/(dashboard)/families/[id]/page.tsx` | Admin family editor |
+| `src/components/admin/FamilyEditor.tsx` | Family form component |
+| `src/components/admin/GameRelationsEditor.tsx` | Relations tab in game editor |
+| `src/components/admin/GamePicker.tsx` | Searchable game selector |
+| `src/app/api/admin/families/route.ts` | Family CRUD API |
+| `src/app/api/admin/game-relations/route.ts` | Relations CRUD API |
 
 ---
 
@@ -265,5 +300,6 @@ railway logs                                                      # View logs
 - Upload images for all games via admin
 - Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
-- Push latest migrations (00024, 00025) to production when ready
+- Push latest migrations to production when ready
+- Import more games to populate families and relations
 - Build out social features (following, friends, activity feed)

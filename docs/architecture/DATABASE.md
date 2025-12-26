@@ -22,6 +22,8 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 - **publishers** - Game publishers (normalized from VARCHAR)
 - **artists** - Game artists (normalized)
 - **collections** - Curated game collections
+- **game_families** - Game series (Catan, Pandemic, etc.)
+- **game_relations** - Relationships between games (expansions, sequels)
 - **game_images** - Multiple images per game
 - **score_sheet_configs** - PDF generation configuration per game
 - **affiliate_links** - Centralized affiliate link management
@@ -65,6 +67,14 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 ┌─────────────┐                                        │
 │award_categ. │                                        │
 └─────────────┘                                        │
+                                                       │
+┌─────────────┐                                        │
+│game_families│◄───────────────────────────────────────┤ (family_id)
+└─────────────┘                                        │
+                                                       │
+┌──────────────────────────────────────────────────────┤
+│                  game_relations                      │ (source → target)
+└──────────────────────────────────────────────────────┘
                                                        │
                       ┌──────────────────┐             │
                       │   game_images    │◄────────────┤
@@ -141,6 +151,7 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | thumbnail_url | VARCHAR(500) | Thumbnail image |
 | meta_title | VARCHAR(70) | SEO title |
 | meta_description | VARCHAR(160) | SEO description |
+| family_id | UUID | FK to game_families (optional) |
 | is_published | BOOLEAN | Published status |
 | is_featured | BOOLEAN | Featured on homepage |
 | rules_content | JSONB | Rules content (quickStart, overview, tips, etc.) |
@@ -382,7 +393,7 @@ AI content generation tracking.
 | created_at | TIMESTAMPTZ | Generation timestamp |
 
 ### game_families
-Game series/family groupings.
+Game series/family groupings (e.g., Catan, Pandemic, Ticket to Ride).
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -390,17 +401,45 @@ Game series/family groupings.
 | slug | VARCHAR(100) | URL identifier (unique) |
 | name | VARCHAR(255) | Family name |
 | description | TEXT | Family description |
-| bgg_family_id | INTEGER | BGG family ID |
+| hero_image_url | VARCHAR(500) | Banner image for family page |
+| bgg_family_id | INTEGER | BGG family ID (for import matching) |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Notes:**
+- Games link to families via `games.family_id`
+- Auto-created during BGG import from "Game:" and "Series:" family types
+- Public pages at `/families` and `/families/[slug]`
+- Admin management at `/admin/families`
 
 ### game_relations
-Relationships between games (expansions, sequels, etc.).
+Explicit relationships between games (expansions, sequels, etc.).
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | UUID | Primary key |
-| source_game_id | UUID | FK to games |
-| target_game_id | UUID | FK to games |
-| relation_type | VARCHAR(30) | expansion_of, sequel_to, reimplementation_of, etc. |
+| source_game_id | UUID | FK to games (the game with the relation) |
+| target_game_id | UUID | FK to games (the related game) |
+| relation_type | VARCHAR(30) | See relation types below |
+| display_order | SMALLINT | Sort order |
+| notes | TEXT | Optional notes |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+
+**Relation Types:**
+| Type | Example |
+|------|---------|
+| `expansion_of` | Catan: Seafarers → Catan |
+| `base_game_of` | Catan → Catan: Seafarers |
+| `sequel_to` | Pandemic Legacy S2 → S1 |
+| `prequel_to` | Jaws of the Lion → Gloomhaven |
+| `reimplementation_of` | Brass: Birmingham → Brass |
+| `spin_off_of` | Dune: Uprising → Dune: Imperium |
+| `standalone_in_series` | Frosthaven (standalone in Gloomhaven series) |
+
+**Notes:**
+- Store relations in one direction only (expansion → base)
+- Query bidirectionally and display inverse labels
+- Auto-created during BGG import for expansions
 
 ### user_profiles
 User profile data linked to Supabase auth.
