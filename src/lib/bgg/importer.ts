@@ -7,9 +7,40 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchBGGGame, type BGGRawGame } from './client'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { RelationType } from '@/types/database'
 
 type GameInsert = Database['public']['Tables']['games']['Insert']
 type ImportQueueRow = Database['public']['Tables']['import_queue']['Row']
+
+/**
+ * BGG Family types we care about for game series
+ * BGG has many family types (themes, components, etc) - we only want game series
+ */
+const SERIES_FAMILY_PREFIXES = [
+  'Game:',      // e.g., "Game: Catan", "Game: Pandemic"
+  'Series:',    // e.g., "Series: Ticket to Ride"
+]
+
+/**
+ * Check if a BGG family represents a game series (not a theme/mechanism/etc)
+ */
+function isGameSeriesFamily(familyName: string): boolean {
+  return SERIES_FAMILY_PREFIXES.some(prefix => familyName.startsWith(prefix))
+}
+
+/**
+ * Clean BGG family name to our format
+ * "Game: Catan" -> "Catan"
+ * "Series: Ticket to Ride" -> "Ticket to Ride"
+ */
+function cleanFamilyName(familyName: string): string {
+  for (const prefix of SERIES_FAMILY_PREFIXES) {
+    if (familyName.startsWith(prefix)) {
+      return familyName.substring(prefix.length).trim()
+    }
+  }
+  return familyName
+}
 
 /**
  * Result of an import operation
@@ -144,6 +175,171 @@ async function upsertMechanic(
 
   if (error || !newMechanic) return null
   return newMechanic.id
+}
+
+/**
+ * Upsert a game family based on BGG family data and return the ID
+ * Only creates families for game series (not themes, mechanisms, etc.)
+ */
+async function upsertGameFamily(
+  supabase: SupabaseClient<Database>,
+  bggFamilyId: number,
+  bggFamilyName: string
+): Promise<string | null> {
+  // Only process game series families
+  if (!isGameSeriesFamily(bggFamilyName)) {
+    return null
+  }
+
+  const cleanName = cleanFamilyName(bggFamilyName)
+  const slug = generateSlug(cleanName)
+
+  // Try to find by BGG family ID first (most reliable)
+  const { data: existingById } = await supabase
+    .from('game_families')
+    .select('id')
+    .eq('bgg_family_id', bggFamilyId)
+    .single()
+
+  if (existingById) return existingById.id
+
+  // Fall back to slug match
+  const { data: existingBySlug } = await supabase
+    .from('game_families')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (existingBySlug) {
+    // Update with BGG ID for future matching
+    await supabase
+      .from('game_families')
+      .update({ bgg_family_id: bggFamilyId })
+      .eq('id', existingBySlug.id)
+    return existingBySlug.id
+  }
+
+  // Create new family
+  const { data: newFamily, error } = await supabase
+    .from('game_families')
+    .insert({
+      slug,
+      name: cleanName,
+      bgg_family_id: bggFamilyId,
+    })
+    .select('id')
+    .single()
+
+  if (error || !newFamily) {
+    console.error(`Failed to create family "${cleanName}":`, error?.message)
+    return null
+  }
+
+  return newFamily.id
+}
+
+/**
+ * Link a game to its family based on BGG family data
+ * Picks the first game series family from BGG
+ */
+async function linkGameFamily(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  bggFamilies: { id: number; name: string }[]
+): Promise<void> {
+  // Find the first game series family
+  const seriesFamily = bggFamilies.find(f => isGameSeriesFamily(f.name))
+
+  if (!seriesFamily) return
+
+  const familyId = await upsertGameFamily(supabase, seriesFamily.id, seriesFamily.name)
+
+  if (familyId) {
+    await supabase
+      .from('games')
+      .update({ family_id: familyId })
+      .eq('id', gameId)
+  }
+}
+
+/**
+ * Create expansion relation if the base game exists in our database
+ */
+async function linkExpansionRelation(
+  supabase: SupabaseClient<Database>,
+  expansionGameId: string,
+  baseGameBggId: number
+): Promise<void> {
+  // Find the base game by BGG ID
+  const { data: baseGame } = await supabase
+    .from('games')
+    .select('id')
+    .eq('bgg_id', baseGameBggId)
+    .single()
+
+  if (!baseGame) {
+    // Base game not in our DB yet - relation will be created when it's imported
+    return
+  }
+
+  // Check if relation already exists
+  const { data: existing } = await supabase
+    .from('game_relations')
+    .select('id')
+    .eq('source_game_id', expansionGameId)
+    .eq('target_game_id', baseGame.id)
+    .single()
+
+  if (existing) return
+
+  // Create expansion_of relation
+  await supabase
+    .from('game_relations')
+    .insert({
+      source_game_id: expansionGameId,
+      target_game_id: baseGame.id,
+      relation_type: 'expansion_of' as RelationType,
+    })
+}
+
+/**
+ * Create relations for a base game's expansions that already exist in our DB
+ */
+async function linkBaseGameExpansions(
+  supabase: SupabaseClient<Database>,
+  baseGameId: string,
+  expansionBggIds: number[]
+): Promise<void> {
+  if (expansionBggIds.length === 0) return
+
+  // Find expansions that exist in our DB
+  const { data: expansions } = await supabase
+    .from('games')
+    .select('id, bgg_id')
+    .in('bgg_id', expansionBggIds)
+
+  if (!expansions || expansions.length === 0) return
+
+  for (const expansion of expansions) {
+    // Check if relation already exists (expansion -> base)
+    const { data: existing } = await supabase
+      .from('game_relations')
+      .select('id')
+      .eq('source_game_id', expansion.id)
+      .eq('target_game_id', baseGameId)
+      .single()
+
+    if (existing) continue
+
+    // Create expansion_of relation (expansion is source, base is target)
+    await supabase
+      .from('game_relations')
+      .insert({
+        source_game_id: expansion.id,
+        target_game_id: baseGameId,
+        relation_type: 'expansion_of' as RelationType,
+      })
+  }
 }
 
 /**
@@ -415,6 +611,23 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
   }
   if (bggData.mechanics.length > 0) {
     await linkGameMechanics(supabase, newGame.id, bggData.mechanics)
+  }
+
+  // Link to game family (series) if applicable
+  if (bggData.families.length > 0) {
+    await linkGameFamily(supabase, newGame.id, bggData.families)
+  }
+
+  // Create expansion relations
+  // If this game is an expansion, link to base game
+  if (bggData.expandsGame) {
+    await linkExpansionRelation(supabase, newGame.id, bggData.expandsGame.id)
+  }
+
+  // If this is a base game, link any existing expansions in our DB
+  if (bggData.expansions.length > 0) {
+    const expansionBggIds = bggData.expansions.map(e => e.id)
+    await linkBaseGameExpansions(supabase, newGame.id, expansionBggIds)
   }
 
   return {
