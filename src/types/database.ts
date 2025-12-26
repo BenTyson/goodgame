@@ -203,3 +203,55 @@ export type UserGameWithGame = UserGame & {
 export type UserProfileWithGames = UserProfile & {
   games?: UserGameWithGame[]
 }
+
+// ===========================================
+// GAME FAMILIES & RELATIONS
+// ===========================================
+
+// Extended relation types with game data
+export type GameRelationWithTarget = GameRelation & {
+  target_game: Game
+}
+
+export type GameRelationWithSource = GameRelation & {
+  source_game: Game
+}
+
+export type GameFamilyWithGames = GameFamily & {
+  games: Game[]
+  game_count?: number
+}
+
+// Display labels for relation types
+export const RELATION_TYPE_LABELS: Record<RelationType, string> = {
+  'expansion_of': 'Expansion of',
+  'base_game_of': 'Base game for',
+  'sequel_to': 'Sequel to',
+  'prequel_to': 'Prequel to',
+  'reimplementation_of': 'Reimplementation of',
+  'spin_off_of': 'Spin-off of',
+  'standalone_in_series': 'Standalone in series'
+}
+
+// User-friendly labels for display (e.g., "This game has expansions:")
+export const RELATION_TYPE_GROUP_LABELS: Record<RelationType, string> = {
+  'expansion_of': 'Expansions',
+  'base_game_of': 'Base Game',
+  'sequel_to': 'Sequels',
+  'prequel_to': 'Prequels',
+  'reimplementation_of': 'Reimplementations',
+  'spin_off_of': 'Spin-offs',
+  'standalone_in_series': 'Related Games'
+}
+
+// Inverse mapping for bidirectional display
+// When viewing Game A, if B is "expansion_of" A, then A should show B as its "expansion"
+export const INVERSE_RELATIONS: Record<RelationType, RelationType> = {
+  'expansion_of': 'base_game_of',
+  'base_game_of': 'expansion_of',
+  'sequel_to': 'prequel_to',
+  'prequel_to': 'sequel_to',
+  'reimplementation_of': 'reimplementation_of', // symmetric
+  'spin_off_of': 'spin_off_of', // no clear inverse
+  'standalone_in_series': 'standalone_in_series' // symmetric
+}

@@ -19,10 +19,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ImageGallery, RelatedGamesAsync, RelatedGamesSkeleton, AwardBadgeList } from '@/components/games'
+import { ImageGallery, RelatedGamesAsync, RelatedGamesSkeleton, AwardBadgeList, FamilyBadge } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
-import { getGameWithDetails, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
+import { getGameWithDetails, getAllGameSlugs, getGameAwards, getGameFamily } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 
 interface GamePageProps {
@@ -103,7 +103,10 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: game.name, href: `/games/${game.slug}` },
   ]
 
-  const gameAwards = await getGameAwards(game.id)
+  const [gameAwards, gameFamily] = await Promise.all([
+    getGameAwards(game.id),
+    getGameFamily(game.id)
+  ])
 
   return (
     <>
@@ -281,6 +284,13 @@ export default async function GamePage({ params }: GamePageProps) {
                 variant="compact"
                 limit={4}
               />
+            </div>
+          )}
+
+          {/* Game Family */}
+          {gameFamily && (
+            <div className="mt-6">
+              <FamilyBadge family={gameFamily} />
             </div>
           )}
 
