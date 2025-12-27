@@ -42,87 +42,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchProfile])
 
+  // Helper to fetch or create user profile
+  const fetchOrCreateProfile = useCallback(async (authUser: User) => {
+    // Try to get existing profile
+    const { data: existingProfile, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single()
+
+    if (existingProfile) {
+      setProfile(existingProfile)
+      return
+    }
+
+    // Profile doesn't exist - create it
+    // (This is a fallback; the database trigger should create it on signup)
+    if (error?.code === 'PGRST116') {
+      const { data: newProfile } = await supabase
+        .from('user_profiles')
+        .insert({
+          id: authUser.id,
+          display_name: authUser.user_metadata?.full_name ||
+                       authUser.user_metadata?.name ||
+                       authUser.email?.split('@')[0] || 'User',
+          avatar_url: authUser.user_metadata?.avatar_url || null,
+        })
+        .select()
+        .single()
+      setProfile(newProfile)
+    }
+  }, [])
+
   useEffect(() => {
-    // Failsafe timeout - never stay loading for more than 2 seconds
+    // Failsafe timeout - never stay loading for more than 3 seconds
     const timeout = setTimeout(() => {
       setIsLoading(false)
-    }, 2000)
+    }, 3000)
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user)
-
-        // Try to get profile, create if doesn't exist
-        const { data: existingProfile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-
-        if (existingProfile) {
-          setProfile(existingProfile)
-        } else {
-          // Profile doesn't exist - create it
-          const { data: newProfile } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: session.user.id,
-              display_name: session.user.user_metadata?.full_name ||
-                           session.user.user_metadata?.name ||
-                           session.user.email?.split('@')[0] || 'User',
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-            })
-            .select()
-            .single()
-          setProfile(newProfile)
-        }
-        setIsLoading(false)
-      } else {
-        setIsLoading(false)
-      }
-    })
-
-    // Listen for auth changes
+    // Use onAuthStateChange as the single source of truth for auth state
+    // This handles INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, and SIGNED_OUT
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'INITIAL_SESSION') {
-          // Initial session is handled by getSession above
-          return
-        }
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            // Try to get profile, create if doesn't exist
-            const { data: existingProfile } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
-
-            if (existingProfile) {
-              setProfile(existingProfile)
-            } else {
-              // Profile doesn't exist - create it
-              const { data: newProfile } = await supabase
-                .from('user_profiles')
-                .insert({
-                  id: session.user.id,
-                  display_name: session.user.user_metadata?.full_name ||
-                               session.user.user_metadata?.name ||
-                               session.user.email?.split('@')[0] || 'User',
-                  avatar_url: session.user.user_metadata?.avatar_url || null,
-                })
-                .select()
-                .single()
-              setProfile(newProfile)
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
+        // For any event with a valid session, update user state
+        if (session?.user) {
+          setUser(session.user)
+          await fetchOrCreateProfile(session.user)
+        } else {
           setUser(null)
           setProfile(null)
         }
+
+        // Always clear loading state after processing
+        setIsLoading(false)
       }
     )
 
@@ -130,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchOrCreateProfile])
 
   async function signInWithGoogle(redirectTo?: string) {
     const callbackUrl = new URL('/auth/callback', window.location.origin)

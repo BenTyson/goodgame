@@ -26,6 +26,11 @@ export function Header() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
 
+  // Don't render the main header on admin pages (admin has its own header)
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
+
   // Cmd+K keyboard shortcut
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
