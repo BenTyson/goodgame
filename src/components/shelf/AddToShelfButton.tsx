@@ -28,21 +28,30 @@ interface AddToShelfButtonProps {
 }
 
 export function AddToShelfButton({ gameId, variant = 'default' }: AddToShelfButtonProps) {
-  const { user, signInWithGoogle } = useAuth()
+  const { user, isLoading: isAuthLoading, signInWithGoogle } = useAuth()
   const [shelfEntry, setShelfEntry] = useState<UserGame | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isFetching, setIsFetching] = useState(true)
+  const [isFetching, setIsFetching] = useState(false)
+  const [hasFetched, setHasFetched] = useState(false)
 
   useEffect(() => {
-    if (user) {
+    // Don't fetch until auth is resolved
+    if (isAuthLoading) return
+
+    if (user && !hasFetched) {
       setIsFetching(true)
       getUserGameStatus(user.id, gameId)
         .then(setShelfEntry)
-        .finally(() => setIsFetching(false))
-    } else {
-      setIsFetching(false)
+        .finally(() => {
+          setIsFetching(false)
+          setHasFetched(true)
+        })
+    } else if (!user) {
+      // No user - reset state
+      setShelfEntry(null)
+      setHasFetched(false)
     }
-  }, [user, gameId])
+  }, [user, gameId, isAuthLoading, hasFetched])
 
   const handleAdd = async (status: ShelfStatus) => {
     if (!user) {
@@ -83,8 +92,8 @@ export function AddToShelfButton({ gameId, variant = 'default' }: AddToShelfButt
     ? SHELF_STATUSES.find(s => s.value === shelfEntry.status)
     : null
 
-  // Show loading state while fetching initial status
-  if (user && isFetching) {
+  // Show loading state while auth is loading or fetching initial status
+  if (isAuthLoading || (user && isFetching)) {
     return (
       <Button
         variant="outline"
