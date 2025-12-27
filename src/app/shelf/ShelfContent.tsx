@@ -12,9 +12,6 @@ import {
   ShoppingCart,
   Dices,
   ArchiveX,
-  Users,
-  Clock,
-  Brain,
   LucideIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -249,36 +246,6 @@ export function ShelfContent({ initialData, profile }: ShelfContentProps) {
                   <h3 className="font-semibold leading-tight group-hover:text-primary transition-colors line-clamp-1">
                     {game?.name}
                   </h3>
-
-                  {/* Game stats */}
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    {game?.player_count_min && (
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        <span>
-                          {game.player_count_min === game.player_count_max
-                            ? game.player_count_min
-                            : `${game.player_count_min}-${game.player_count_max}`}
-                        </span>
-                      </div>
-                    )}
-                    {game?.play_time_min && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {game.play_time_min === game.play_time_max
-                            ? `${game.play_time_min}m`
-                            : `${game.play_time_min}-${game.play_time_max}m`}
-                        </span>
-                      </div>
-                    )}
-                    {game?.weight && (
-                      <div className="flex items-center gap-1">
-                        <Brain className="h-3 w-3" />
-                        <span>{game.weight.toFixed(1)}</span>
-                      </div>
-                    )}
-                  </div>
 
                   {/* Rating */}
                   <div className="mt-3" onClick={(e) => e.stopPropagation()}>
