@@ -248,7 +248,11 @@ export function ShelfContent({ initialData, profile }: ShelfContentProps) {
                   </h3>
 
                   {/* Rating */}
-                  <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="mt-3 relative z-10"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
                     <RatingInput
                       value={item.rating}
                       onChange={(rating) => handleUpdateRating(item.id, rating)}

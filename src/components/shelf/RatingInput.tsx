@@ -37,9 +37,13 @@ export function RatingInput({
           key={rating}
           type="button"
           disabled={readonly}
-          onClick={() => handleClick(rating)}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleClick(rating)
+          }}
           className={cn(
-            'transition-transform',
+            'transition-transform p-0.5',
             !readonly && 'hover:scale-110 cursor-pointer',
             readonly && 'cursor-default'
           )}
