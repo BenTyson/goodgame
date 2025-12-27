@@ -10,7 +10,7 @@ import {
   Trash2,
   Package,
   ShoppingCart,
-  Gamepad2,
+  Dices,
   ArchiveX,
   Users,
   Clock,
@@ -36,7 +36,7 @@ import type { UserGameWithGame, UserProfile, ShelfStatus } from '@/types/databas
 const STATUS_CONFIG: Record<ShelfStatus, { label: string; icon: LucideIcon; color: string }> = {
   owned: { label: 'Owned', icon: Package, color: 'bg-green-100 text-green-800' },
   want_to_buy: { label: 'Want to Buy', icon: ShoppingCart, color: 'bg-blue-100 text-blue-800' },
-  want_to_play: { label: 'Want to Play', icon: Gamepad2, color: 'bg-purple-100 text-purple-800' },
+  want_to_play: { label: 'Want to Play', icon: Dices, color: 'bg-purple-100 text-purple-800' },
   wishlist: { label: 'Wishlist', icon: Star, color: 'bg-yellow-100 text-yellow-800' },
   previously_owned: { label: 'Previously Owned', icon: ArchiveX, color: 'bg-gray-100 text-gray-800' },
 }
