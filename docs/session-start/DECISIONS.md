@@ -55,6 +55,7 @@
 | Print styles | Required | Score sheets must print clean |
 | Search | Cmd+K command palette | Modern, fast |
 | Main navigation | Games, Publishers, Awards, Categories, Collections, Shelf | Streamlined, no redundant links |
+| Emoji usage | **Never use emoji** in UI | User preference, prefer clean Lucide icons |
 
 ### Design History
 - ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
@@ -62,6 +63,7 @@
 - ~~Gamepad2 icon~~ - Replaced with Dices (video game controller inappropriate for board games)
 - ~~Rules/Score Sheets in nav~~ - Removed (redundant, just filtered game lists; pages kept for SEO)
 - ~~Publisher initials with rainbow colors~~ - Changed to muted grays (less harsh on eyes)
+- ~~Emoji in shelf dropdown/keytags~~ - Replaced with Lucide icons (cleaner, more professional)
 
 ## Images
 

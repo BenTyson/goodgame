@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Check, ChevronDown } from 'lucide-react'
+import { Plus, Check, ChevronDown, Package, ShoppingCart, Gamepad2, Star, ArchiveX, LucideIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,12 +14,12 @@ import {
 import { getUserGameStatus, addToShelf, removeFromShelf } from '@/lib/supabase/user-queries'
 import type { ShelfStatus, UserGame } from '@/types/database'
 
-const SHELF_STATUSES: { value: ShelfStatus; label: string; icon: string }[] = [
-  { value: 'owned', label: 'Owned', icon: '📦' },
-  { value: 'want_to_buy', label: 'Want to Buy', icon: '🛒' },
-  { value: 'want_to_play', label: 'Want to Play', icon: '🎯' },
-  { value: 'wishlist', label: 'Wishlist', icon: '⭐' },
-  { value: 'previously_owned', label: 'Previously Owned', icon: '📤' },
+const SHELF_STATUSES: { value: ShelfStatus; label: string; icon: LucideIcon }[] = [
+  { value: 'owned', label: 'Owned', icon: Package },
+  { value: 'want_to_buy', label: 'Want to Buy', icon: ShoppingCart },
+  { value: 'want_to_play', label: 'Want to Play', icon: Gamepad2 },
+  { value: 'wishlist', label: 'Wishlist', icon: Star },
+  { value: 'previously_owned', label: 'Previously Owned', icon: ArchiveX },
 ]
 
 interface AddToShelfButtonProps {
@@ -123,7 +123,7 @@ export function AddToShelfButton({ gameId, variant = 'default' }: AddToShelfButt
             onClick={() => handleAdd(status.value)}
             className="cursor-pointer"
           >
-            <span className="mr-2">{status.icon}</span>
+            <status.icon className="mr-2 h-4 w-4" />
             {status.label}
             {shelfEntry?.status === status.value && (
               <Check className="ml-auto h-4 w-4" />
