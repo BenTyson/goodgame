@@ -50,13 +50,18 @@
 | Primary color | **Fresh teal** (`oklch(0.55 0.15 195)`) | Modern, energetic, approachable |
 | Background | Clean white | Lets content shine, professional |
 | Color palette | **Monochromatic teal** | Unified look, no rainbow of colors |
+| Logo icon | **Dices** (lucide-react) | Board game appropriate (not video game controller) |
 | Mobile-first | Yes | Game night use case |
 | Print styles | Required | Score sheets must print clean |
 | Search | Cmd+K command palette | Modern, fast |
+| Main navigation | Games, Publishers, Awards, Categories, Collections, Shelf | Streamlined, no redundant links |
 
 ### Design History
 - ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
 - ~~Rainbow content type colors~~ - Removed (visual chaos, replaced with unified teal)
+- ~~Gamepad2 icon~~ - Replaced with Dices (video game controller inappropriate for board games)
+- ~~Rules/Score Sheets in nav~~ - Removed (redundant, just filtered game lists; pages kept for SEO)
+- ~~Publisher initials with rainbow colors~~ - Changed to muted grays (less harsh on eyes)
 
 ## Images
 

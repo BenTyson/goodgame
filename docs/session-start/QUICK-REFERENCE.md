@@ -74,7 +74,10 @@ src/app/
 │   ├── login/page.tsx
 │   └── (dashboard)/
 │       ├── page.tsx          # Dashboard
-│       └── games/            # Game management
+│       ├── games/            # Game management
+│       ├── families/         # Family management
+│       ├── publishers/       # Publisher management
+│       └── queue/            # Import queue
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
 ├── settings/page.tsx          # Profile settings
@@ -91,7 +94,9 @@ src/components/
 ├── ui/                        # shadcn/ui (don't edit directly)
 ├── layout/                    # Header, Footer, ThemeProvider
 ├── games/                     # GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
-├── admin/                     # ImageUpload, ContentEditor
+├── families/                  # FamilyCard, FamilyBadge
+├── publishers/                # PublisherCard
+├── admin/                     # ImageUpload, LogoUpload, ContentEditor, FamilyEditor, PublisherEditor
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput

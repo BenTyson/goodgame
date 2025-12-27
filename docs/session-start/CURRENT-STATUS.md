@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-25
+> Last Updated: 2025-12-26
 
-## Phase: 11 - Game Families & Relationships
+## Phase: 12 - Publisher Management & Homepage Polish
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -21,6 +21,10 @@
 - **Game Families** - Series groupings (Catan, Pandemic, etc.) with public pages
 - **Game Relations** - Expansions, sequels, reimplementations linked between games
 - **Auto-import** - Families and expansion relations from BGG during import
+- **Publisher Admin** - Full CRUD with logo upload at `/admin/publishers`
+- **Publisher Filters** - A-Z alphabetical, category type, and sort options on `/publishers`
+- **Featured Game** - Homepage section with hero image and game details
+- **Streamlined Nav** - Removed redundant Rules/Score Sheets links (pages still exist for SEO)
 
 ### Environments
 
@@ -70,6 +74,8 @@
 | Set primary/cover image | ✅ |
 | Import queue management | ✅ |
 | Family manager | ✅ |
+| Publisher manager | ✅ |
+| Publisher logo upload | ✅ |
 | Dashboard with stats | ✅ |
 
 ### Game Families & Relations
@@ -86,6 +92,20 @@
 | BGG import auto-creates expansion relations | ✅ |
 
 **Relation Types:** expansion_of, base_game_of, sequel_to, prequel_to, reimplementation_of, spin_off_of, standalone_in_series
+
+### Publishers
+| Feature | Status |
+|---------|--------|
+| Publisher list page (`/publishers`) | ✅ |
+| Publisher detail page (`/publishers/[slug]`) | ✅ |
+| Alphabetical filter (A-Z) | ✅ |
+| Category type filter | ✅ |
+| Sort options (name, game count) | ✅ |
+| Category badges on cards | ✅ |
+| Admin publisher manager (`/admin/publishers`) | ✅ |
+| Admin logo upload | ✅ |
+
+**Storage:** `publisher-logos` bucket in Supabase Storage
 
 ### Content Pipeline
 | Component | Status | Location |
@@ -263,6 +283,20 @@ railway logs                                                      # View logs
 | `src/app/api/admin/families/route.ts` | Family CRUD API |
 | `src/app/api/admin/game-relations/route.ts` | Relations CRUD API |
 
+### Publishers
+| File | Purpose |
+|------|---------|
+| `src/app/publishers/page.tsx` | Publisher list page |
+| `src/app/publishers/PublishersList.tsx` | Filters + grid (client component) |
+| `src/app/publishers/[slug]/page.tsx` | Publisher detail page |
+| `src/components/publishers/PublisherCard.tsx` | Publisher card with category badges |
+| `src/app/admin/(dashboard)/publishers/page.tsx` | Admin publisher list |
+| `src/app/admin/(dashboard)/publishers/[id]/page.tsx` | Admin publisher editor |
+| `src/components/admin/PublisherEditor.tsx` | Publisher form component |
+| `src/components/admin/LogoUpload.tsx` | Logo upload component |
+| `src/app/api/admin/publishers/route.ts` | Publisher CRUD API |
+| `src/app/api/admin/publisher-logo/route.ts` | Logo upload API |
+
 ---
 
 ## Supabase Storage
@@ -271,6 +305,12 @@ railway logs                                                      # View logs
 - Public read access
 - Authenticated upload/delete
 - Path: `{game-slug}/{timestamp}-{random}.{ext}`
+- Max 5MB, JPG/PNG/WebP/GIF
+
+**Bucket**: `publisher-logos` (exists in both staging and production)
+- Public read access
+- Authenticated upload/delete
+- Path: `{publisher-slug}/{timestamp}.{ext}`
 - Max 5MB, JPG/PNG/WebP/GIF
 
 ---
