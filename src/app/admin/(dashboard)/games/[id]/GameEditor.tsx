@@ -709,7 +709,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="text-base">🔥 Trending Now</Label>
+                  <Label className="text-base">Trending Now</Label>
                   <p className="text-sm text-muted-foreground">
                     Currently popular and generating buzz
                   </p>
@@ -722,7 +722,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
               <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="text-base">⭐ Top Rated</Label>
+                  <Label className="text-base">Top Rated</Label>
                   <p className="text-sm text-muted-foreground">
                     Highest rated games in our collection
                   </p>
@@ -735,7 +735,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
               <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="text-base">💎 Staff Pick</Label>
+                  <Label className="text-base">Staff Pick</Label>
                   <p className="text-sm text-muted-foreground">
                     Personally recommended by our team
                   </p>
@@ -748,7 +748,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
               <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="text-base">🎯 Hidden Gem</Label>
+                  <Label className="text-base">Hidden Gem</Label>
                   <p className="text-sm text-muted-foreground">
                     Underrated games worth discovering
                   </p>
@@ -761,7 +761,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
               <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="text-base">✨ New Release</Label>
+                  <Label className="text-base">New Release</Label>
                   <p className="text-sm text-muted-foreground">
                     Recently released games
                   </p>
