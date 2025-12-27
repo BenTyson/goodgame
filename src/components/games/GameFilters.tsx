@@ -41,17 +41,37 @@ export function GameFilters({
   const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
   const selectedMechanics = searchParams.get('mechanics')?.split(',').filter(Boolean) || []
 
-  const playerCountMin = parseInt(searchParams.get('players_min') || '1')
-  const playerCountMax = parseInt(searchParams.get('players_max') || '8')
-  const playerCount: [number, number] = [playerCountMin, playerCountMax]
+  // Parse URL params for initial/committed values
+  const playerCountFromUrl: [number, number] = [
+    parseInt(searchParams.get('players_min') || '1'),
+    parseInt(searchParams.get('players_max') || '8')
+  ]
+  const playTimeFromUrl: [number, number] = [
+    parseInt(searchParams.get('time_min') || '0'),
+    parseInt(searchParams.get('time_max') || '180')
+  ]
+  const weightFromUrl: [number, number] = [
+    parseFloat(searchParams.get('weight_min') || '1'),
+    parseFloat(searchParams.get('weight_max') || '5')
+  ]
 
-  const playTimeMin = parseInt(searchParams.get('time_min') || '0')
-  const playTimeMax = parseInt(searchParams.get('time_max') || '180')
-  const playTime: [number, number] = [playTimeMin, playTimeMax]
+  // Local state for sliders (allows visual feedback during dragging)
+  const [playerCount, setPlayerCount] = React.useState<[number, number]>(playerCountFromUrl)
+  const [playTime, setPlayTime] = React.useState<[number, number]>(playTimeFromUrl)
+  const [weight, setWeight] = React.useState<[number, number]>(weightFromUrl)
 
-  const weightMin = parseFloat(searchParams.get('weight_min') || '1')
-  const weightMax = parseFloat(searchParams.get('weight_max') || '5')
-  const weight: [number, number] = [weightMin, weightMax]
+  // Sync local state when URL changes (e.g., clear all filters)
+  React.useEffect(() => {
+    setPlayerCount(playerCountFromUrl)
+  }, [playerCountFromUrl[0], playerCountFromUrl[1]])
+
+  React.useEffect(() => {
+    setPlayTime(playTimeFromUrl)
+  }, [playTimeFromUrl[0], playTimeFromUrl[1]])
+
+  React.useEffect(() => {
+    setWeight(weightFromUrl)
+  }, [weightFromUrl[0], weightFromUrl[1]])
 
   // Update URL with new filters
   const updateFilters = React.useCallback((updates: Record<string, string | null>) => {
@@ -66,8 +86,10 @@ export function GameFilters({
     })
 
     const queryString = params.toString()
-    router.push(queryString ? `/games?${queryString}` : '/games', { scroll: false })
-  }, [router, searchParams])
+    const newUrl = queryString ? `/games?${queryString}` : '/games'
+    console.log('Updating filters, new URL:', newUrl) // Debug
+    window.location.href = newUrl // Force full page reload to ensure server re-renders
+  }, [searchParams])
 
   const activeFilterCount =
     selectedCategories.length +
@@ -100,7 +122,7 @@ export function GameFilters({
     })
   }
 
-  const handlePlayerCountChange = (value: number[]) => {
+  const handlePlayerCountCommit = (value: number[]) => {
     const [min, max] = value as [number, number]
     updateFilters({
       players_min: min !== 1 ? String(min) : null,
@@ -108,7 +130,7 @@ export function GameFilters({
     })
   }
 
-  const handlePlayTimeChange = (value: number[]) => {
+  const handlePlayTimeCommit = (value: number[]) => {
     const [min, max] = value as [number, number]
     updateFilters({
       time_min: min !== 0 ? String(min) : null,
@@ -116,7 +138,7 @@ export function GameFilters({
     })
   }
 
-  const handleWeightChange = (value: number[]) => {
+  const handleWeightCommit = (value: number[]) => {
     const [min, max] = value as [number, number]
     updateFilters({
       weight_min: min !== 1 ? String(min) : null,
@@ -222,7 +244,8 @@ export function GameFilters({
         </div>
         <Slider
           value={playerCount}
-          onValueCommit={handlePlayerCountChange}
+          onValueChange={(v) => setPlayerCount(v as [number, number])}
+          onValueCommit={handlePlayerCountCommit}
           min={1}
           max={8}
           step={1}
@@ -242,7 +265,8 @@ export function GameFilters({
         </div>
         <Slider
           value={playTime}
-          onValueCommit={handlePlayTimeChange}
+          onValueChange={(v) => setPlayTime(v as [number, number])}
+          onValueCommit={handlePlayTimeCommit}
           min={0}
           max={180}
           step={15}
@@ -262,7 +286,8 @@ export function GameFilters({
         </div>
         <Slider
           value={weight}
-          onValueCommit={handleWeightChange}
+          onValueChange={(v) => setWeight(v as [number, number])}
+          onValueCommit={handleWeightCommit}
           min={1}
           max={5}
           step={0.5}

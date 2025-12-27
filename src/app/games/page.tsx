@@ -6,6 +6,8 @@ import { GameFilters } from '@/components/games/GameFilters'
 import { getFilteredGames, getCategories } from '@/lib/supabase/queries'
 import { ItemListJsonLd } from '@/lib/seo'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'All Games',
   description:
@@ -40,6 +42,9 @@ interface GamesPageProps {
 export default async function GamesPage({ searchParams }: GamesPageProps) {
   const params = await searchParams
 
+  // Debug: log received params
+  console.log('Server received params:', params)
+
   // Parse filter parameters
   const filters = {
     categories: params.categories?.split(',').filter(Boolean) || [],
@@ -50,6 +55,9 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
     weightMin: params.weight_min ? parseFloat(params.weight_min) : undefined,
     weightMax: params.weight_max ? parseFloat(params.weight_max) : undefined,
   }
+
+  // Debug: log parsed filters
+  console.log('Parsed filters:', filters)
 
   const hasFilters = filters.categories.length > 0 ||
     filters.playersMin !== undefined ||

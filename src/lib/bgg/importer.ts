@@ -505,8 +505,10 @@ export function transformBGGToGame(bgg: BGGRawGame): GameInsert {
     bgg_id: bgg.id,
     tagline: cleanDescription(bgg.description).substring(0, 200),
     description: bgg.description,
-    box_image_url: bgg.image || bgg.thumbnail || '/images/games/placeholder.jpg',
-    thumbnail_url: bgg.thumbnail || null,
+    // NOTE: Not importing BGG images - they don't work reliably with Next.js image optimization
+    // Images should be uploaded manually via admin panel
+    box_image_url: null,
+    thumbnail_url: null,
     player_count_min: bgg.minPlayers,
     player_count_max: bgg.maxPlayers,
     play_time_min: bgg.minPlayTime,
@@ -768,12 +770,11 @@ export async function syncGameWithBGG(gameId: string): Promise<ImportResult> {
     }
   }
 
-  // Update only BGG-sourced fields (not our content or settings)
+  // Update only BGG-sourced fields (not our content, settings, or images)
+  // NOTE: Not syncing BGG images - they don't work reliably with Next.js image optimization
   const { error: updateError } = await supabase
     .from('games')
     .update({
-      box_image_url: bggData.image || bggData.thumbnail,
-      thumbnail_url: bggData.thumbnail,
       weight: bggData.weight,
       bgg_raw_data: JSON.parse(JSON.stringify(bggData)),
       bgg_last_synced: new Date().toISOString(),

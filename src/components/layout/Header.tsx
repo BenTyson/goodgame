@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Gamepad2, Menu, Search } from 'lucide-react'
+import { Dices, Menu, Search } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -14,9 +14,8 @@ import { UserMenu } from '@/components/auth/UserMenu'
 
 const navigation = [
   { name: 'Games', href: '/games' },
+  { name: 'Publishers', href: '/publishers' },
   { name: 'Awards', href: '/awards' },
-  { name: 'Score Sheets', href: '/score-sheets' },
-  { name: 'Rules', href: '/rules' },
   { name: 'Categories', href: '/categories' },
   { name: 'Collections', href: '/collections' },
   { name: 'Shelf', href: '/shelf' },
@@ -49,7 +48,7 @@ export function Header() {
         {/* Logo with hover effect */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
-            <Gamepad2 className="h-5 w-5" />
+            <Dices className="h-5 w-5" />
           </div>
           <span className="text-xl font-bold tracking-tight">
             Board Nomads

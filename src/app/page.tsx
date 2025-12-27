@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ArrowRight,
   BookOpen,
@@ -10,12 +11,16 @@ import {
   PartyPopper,
   Handshake,
   User2,
+  Clock,
+  Star,
+  Sparkles,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { GameGrid } from '@/components/games'
-import { getFeaturedGames, getCategories } from '@/lib/supabase/queries'
+import { getFeaturedGames, getFeaturedGame, getCategories } from '@/lib/supabase/queries'
 
 const contentTypes = [
   {
@@ -53,8 +58,11 @@ const categoryIcons: Record<string, React.ElementType> = {
 }
 
 export default async function HomePage() {
-  const featuredGames = await getFeaturedGames(6)
-  const categories = await getCategories()
+  const [featuredGames, featuredGame, categories] = await Promise.all([
+    getFeaturedGames(6),
+    getFeaturedGame(),
+    getCategories()
+  ])
   const primaryCategories = categories.filter((cat) => cat.is_primary)
 
   return (
@@ -75,31 +83,28 @@ export default async function HomePage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              Game Night Made Easy
+              For the Obsessed
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Beautiful Board Game{' '}
+              The{' '}
               <span className="text-primary relative">
-                Reference Tools
+                Board Game Guide
                 <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent rounded-full" />
               </span>
             </h1>
 
             <p className="mt-8 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed">
-              Rules summaries, printable score sheets, setup guides, and quick
-              reference cards for your favorite board games. Get to the fun faster.
+              Publishers, designers, awards, mechanics—plus rules and score sheets.
+              Built for collectors and enthusiasts.
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <div className="mt-10">
               <Button size="lg" className="group" asChild>
                 <Link href="/games">
                   Browse Games
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/score-sheets">Score Sheets</Link>
               </Button>
             </div>
           </div>
@@ -137,8 +142,142 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Featured Game Section */}
+      {featuredGame && (
+        <section className="relative overflow-hidden border-y">
+          {/* Background Image */}
+          <div className="absolute inset-0">
+            {featuredGame.hero_image_url || featuredGame.box_image_url ? (
+              <Image
+                src={featuredGame.hero_image_url || featuredGame.box_image_url || ''}
+                alt={featuredGame.name}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5" />
+            )}
+            {/* Gradient overlays - balanced for readability and image visibility */}
+            <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-background/40" />
+          </div>
+
+          <div className="container relative py-16 md:py-24">
+            <div className="max-w-2xl">
+              {/* Featured Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/60 text-primary text-sm font-medium mb-6 backdrop-blur-sm border border-primary/20">
+                <Sparkles className="h-4 w-4" />
+                Featured Game
+              </div>
+
+              {/* Game Title */}
+              <h2 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl drop-shadow-sm">
+                {featuredGame.name}
+              </h2>
+
+              {/* Tagline */}
+              {featuredGame.tagline && (
+                <p className="mt-4 text-xl text-muted-foreground drop-shadow-sm">
+                  {featuredGame.tagline}
+                </p>
+              )}
+
+              {/* Stats Row */}
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/70 backdrop-blur-sm border text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {featuredGame.player_count_min === featuredGame.player_count_max
+                      ? featuredGame.player_count_min
+                      : `${featuredGame.player_count_min}-${featuredGame.player_count_max}`} players
+                  </span>
+                </div>
+                {featuredGame.play_time_min && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/70 backdrop-blur-sm border text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {featuredGame.play_time_min === featuredGame.play_time_max
+                        ? `${featuredGame.play_time_min} min`
+                        : `${featuredGame.play_time_min}-${featuredGame.play_time_max} min`}
+                    </span>
+                  </div>
+                )}
+                {featuredGame.weight && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-background/70 backdrop-blur-sm border text-sm">
+                    <Brain className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{featuredGame.weight.toFixed(1)} / 5</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Categories */}
+              {featuredGame.categories && featuredGame.categories.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {featuredGame.categories.slice(0, 3).map((category) => (
+                    <Badge key={category.slug} variant="secondary" className="backdrop-blur-sm bg-background/60">
+                      {category.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Publisher */}
+              {featuredGame.publishers_list && featuredGame.publishers_list.length > 0 && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Published by{' '}
+                  <Link
+                    href={`/publishers/${featuredGame.publishers_list[0].slug}`}
+                    className="font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {featuredGame.publishers_list[0].name}
+                  </Link>
+                </p>
+              )}
+
+              {/* Available Resources */}
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                {featuredGame.has_rules && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    Rules
+                  </div>
+                )}
+                {featuredGame.has_score_sheet && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
+                    <FileText className="h-3.5 w-3.5" />
+                    Score Sheet
+                  </div>
+                )}
+                {featuredGame.has_setup_guide && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
+                    <ListChecks className="h-3.5 w-3.5" />
+                    Setup Guide
+                  </div>
+                )}
+                {featuredGame.has_reference && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
+                    <Bookmark className="h-3.5 w-3.5" />
+                    Reference
+                  </div>
+                )}
+              </div>
+
+              {/* CTA */}
+              <div className="mt-8">
+                <Button size="lg" className="group" asChild>
+                  <Link href={`/games/${featuredGame.slug}`}>
+                    Explore {featuredGame.name}
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Featured Games Section */}
-      <section className="border-y bg-muted/50">
+      <section className="border-b bg-muted/50">
         <div className="container py-16 md:py-24">
           <div className="flex items-center justify-between">
             <div>
@@ -213,11 +352,11 @@ export default async function HomePage() {
         <div className="container py-16 md:py-24 relative">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Ready to Play?
+              Start Exploring
             </h2>
             <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
-              Search our library of games to find rules, score sheets, and
-              reference cards. Game night made easy.
+              Browse our growing library of games, publishers, and awards.
+              Your next obsession is waiting.
             </p>
             <div className="mt-8">
               <Button size="lg" className="group" asChild>

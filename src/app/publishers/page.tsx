@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
-import { getPublishers } from '@/lib/supabase/queries'
-import { Card, CardContent } from '@/components/ui/card'
+import { getPublishersWithGameCounts } from '@/lib/supabase/queries'
+import { PublishersList } from './PublishersList'
 
 export const metadata: Metadata = {
   title: 'Board Game Publishers',
@@ -9,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 export default async function PublishersPage() {
-  const publishers = await getPublishers()
+  const publishers = await getPublishersWithGameCounts()
 
   return (
     <div className="container py-8 md:py-12">
@@ -18,30 +17,11 @@ export default async function PublishersPage() {
           Board Game Publishers
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Browse board games by publisher
+          Discover games from leading board game publishers
         </p>
       </div>
 
-      {publishers.length === 0 ? (
-        <p className="text-muted-foreground">No publishers found.</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {publishers.map((publisher) => (
-            <Link key={publisher.id} href={`/publishers/${publisher.slug}`}>
-              <Card className="h-full transition-colors hover:bg-accent">
-                <CardContent className="p-4">
-                  <h2 className="font-medium">{publisher.name}</h2>
-                  {publisher.description && (
-                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                      {publisher.description}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+      <PublishersList publishers={publishers} />
     </div>
   )
 }

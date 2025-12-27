@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Gamepad2,
+  Dices,
   BookOpen,
   FileText,
   Grid3X3,
@@ -103,7 +103,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   value={`game ${game.name} ${game.tagline || ''}`}
                   onSelect={() => runCommand(() => router.push(`/games/${game.slug}`))}
                 >
-                  <Gamepad2 className="mr-2 h-4 w-4 text-primary" />
+                  <Dices className="mr-2 h-4 w-4 text-primary" />
                   <span>{game.name}</span>
                   {game.tagline && (
                     <span className="ml-2 text-muted-foreground text-xs truncate">
@@ -200,7 +200,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 value="all games browse"
                 onSelect={() => runCommand(() => router.push('/games'))}
               >
-                <Gamepad2 className="mr-2 h-4 w-4 text-primary" />
+                <Dices className="mr-2 h-4 w-4 text-primary" />
                 <span>All Games</span>
               </CommandItem>
               <CommandItem

@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { Gamepad2 } from 'lucide-react'
+import { Dices } from 'lucide-react'
 
 const footerLinks = {
   games: [
     { name: 'All Games', href: '/games' },
-    { name: 'Score Sheets', href: '/score-sheets' },
-    { name: 'Rules', href: '/rules' },
+    { name: 'Publishers', href: '/publishers' },
+    { name: 'Awards', href: '/awards' },
   ],
   categories: [
     { name: 'Strategy', href: '/categories/strategy' },
@@ -36,7 +36,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
-                <Gamepad2 className="h-5 w-5" />
+                <Dices className="h-5 w-5" />
               </div>
               <span className="text-xl font-bold tracking-tight">
                 Board Nomads

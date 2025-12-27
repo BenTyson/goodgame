@@ -13,6 +13,7 @@ import {
   FileText,
   ListChecks,
   Bookmark,
+  Building2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
 import { getGameWithDetails, getAllGameSlugs, getGameAwards, getGameFamily } from '@/lib/supabase/queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
+import { getInitials, getInitialsColor } from '@/components/publishers'
 
 interface GamePageProps {
   params: Promise<{ slug: string }>
@@ -348,6 +350,82 @@ export default async function GamePage({ params }: GamePageProps) {
             <p className="text-muted-foreground leading-relaxed max-w-3xl">
               {game.description}
             </p>
+          </div>
+        </>
+      )}
+
+      {/* About the Publisher */}
+      {game.publishers_list && game.publishers_list.length > 0 && (
+        <>
+          <Separator className="my-10" />
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight mb-6">
+              About the Publisher
+            </h2>
+            {game.publishers_list.slice(0, 1).map((publisher) => {
+              const initials = getInitials(publisher.name)
+              const colorClass = getInitialsColor(publisher.name)
+              return (
+                <div key={publisher.id} className="flex flex-col sm:flex-row gap-6">
+                  {/* Publisher Logo/Initials */}
+                  <div className="shrink-0">
+                    {publisher.logo_url ? (
+                      <Image
+                        src={publisher.logo_url}
+                        alt={publisher.name}
+                        width={80}
+                        height={80}
+                        className="rounded-xl object-contain"
+                      />
+                    ) : (
+                      <div className={`flex h-20 w-20 items-center justify-center rounded-xl ${colorClass} text-white font-bold text-2xl`}>
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Publisher Info */}
+                  <div className="flex-1">
+                    <Link
+                      href={`/publishers/${publisher.slug}`}
+                      className="text-xl font-semibold hover:text-primary transition-colors"
+                    >
+                      {publisher.name}
+                    </Link>
+                    {publisher.description ? (
+                      <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
+                        {publisher.description}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
+                        {publisher.name} is a board game publisher known for creating engaging tabletop experiences. Visit their website to explore their full catalog of games.
+                      </p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/publishers/${publisher.slug}`} className="gap-2">
+                          <Building2 className="h-4 w-4" />
+                          View All Games
+                        </Link>
+                      </Button>
+                      {publisher.website && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={publisher.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="gap-2"
+                          >
+                            Visit Website
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </>
       )}
