@@ -87,6 +87,11 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             designers: game.designers,
             is_published: game.is_published,
             is_featured: game.is_featured,
+            is_trending: game.is_trending,
+            is_top_rated: game.is_top_rated,
+            is_staff_pick: game.is_staff_pick,
+            is_hidden_gem: game.is_hidden_gem,
+            is_new_release: game.is_new_release,
             content_status: game.content_status,
             rules_content: game.rules_content,
             setup_content: game.setup_content,
@@ -684,6 +689,86 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 <Switch
                   checked={game.is_featured || false}
                   onCheckedChange={(checked) => updateField('is_featured', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Hash className="h-4 w-4 text-purple-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Collection Tags</CardTitle>
+                  <CardDescription>Tag games for homepage collections and discovery</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base">🔥 Trending Now</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Currently popular and generating buzz
+                  </p>
+                </div>
+                <Switch
+                  checked={game.is_trending || false}
+                  onCheckedChange={(checked) => updateField('is_trending', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base">⭐ Top Rated</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Highest rated games in our collection
+                  </p>
+                </div>
+                <Switch
+                  checked={game.is_top_rated || false}
+                  onCheckedChange={(checked) => updateField('is_top_rated', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base">💎 Staff Pick</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Personally recommended by our team
+                  </p>
+                </div>
+                <Switch
+                  checked={game.is_staff_pick || false}
+                  onCheckedChange={(checked) => updateField('is_staff_pick', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base">🎯 Hidden Gem</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Underrated games worth discovering
+                  </p>
+                </div>
+                <Switch
+                  checked={game.is_hidden_gem || false}
+                  onCheckedChange={(checked) => updateField('is_hidden_gem', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base">✨ New Release</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Recently released games
+                  </p>
+                </div>
+                <Switch
+                  checked={game.is_new_release || false}
+                  onCheckedChange={(checked) => updateField('is_new_release', checked)}
                 />
               </div>
             </CardContent>

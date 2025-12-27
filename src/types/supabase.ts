@@ -777,7 +777,12 @@ export type Database = {
           hero_image_url: string | null
           id: string
           is_featured: boolean | null
+          is_hidden_gem: boolean | null
+          is_new_release: boolean | null
           is_published: boolean | null
+          is_staff_pick: boolean | null
+          is_top_rated: boolean | null
+          is_trending: boolean | null
           meta_description: string | null
           meta_title: string | null
           min_age: number | null
@@ -823,7 +828,12 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           is_featured?: boolean | null
+          is_hidden_gem?: boolean | null
+          is_new_release?: boolean | null
           is_published?: boolean | null
+          is_staff_pick?: boolean | null
+          is_top_rated?: boolean | null
+          is_trending?: boolean | null
           meta_description?: string | null
           meta_title?: string | null
           min_age?: number | null
@@ -869,7 +879,12 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           is_featured?: boolean | null
+          is_hidden_gem?: boolean | null
+          is_new_release?: boolean | null
           is_published?: boolean | null
+          is_staff_pick?: boolean | null
+          is_top_rated?: boolean | null
+          is_trending?: boolean | null
           meta_description?: string | null
           meta_title?: string | null
           min_age?: number | null
@@ -1280,7 +1295,12 @@ export type Database = {
           hero_image_url: string | null
           id: string
           is_featured: boolean | null
+          is_hidden_gem: boolean | null
+          is_new_release: boolean | null
           is_published: boolean | null
+          is_staff_pick: boolean | null
+          is_top_rated: boolean | null
+          is_trending: boolean | null
           meta_description: string | null
           meta_title: string | null
           min_age: number | null
