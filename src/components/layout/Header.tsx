@@ -26,11 +26,6 @@ export function Header() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
 
-  // Don't render the main header on admin pages (admin has its own header)
-  if (pathname?.startsWith('/admin')) {
-    return null
-  }
-
   // Cmd+K keyboard shortcut
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -43,6 +38,12 @@ export function Header() {
     document.addEventListener('keydown', down)
     return () => document.removeEventListener('keydown', down)
   }, [])
+
+  // Don't render the main header on admin pages (admin has its own header)
+  // Must be after all hooks to follow Rules of Hooks
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
