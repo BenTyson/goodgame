@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, RefreshCw } from 'lucide-react'
 import { getQueueSummary } from '@/lib/bgg/seed-queue'
 
 async function getQueueItems(filter?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   let query = supabase
     .from('import_queue')

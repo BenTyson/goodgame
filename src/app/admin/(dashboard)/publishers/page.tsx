@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +18,7 @@ import {
 import { getInitials, getInitialsColor } from '@/components/publishers/utils'
 
 async function getPublishers(filter?: string, search?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get publishers with game counts via junction table
   const { data: publishers } = await supabase

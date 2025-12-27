@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { GameEditor } from './GameEditor'
 
 async function getGameWithImages(id: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: game, error } = await supabase
     .from('games')

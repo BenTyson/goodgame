@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getQueueStats } from '@/lib/bgg'
@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 async function getGameStats() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get total counts by status
   const { data: games } = await supabase
@@ -37,7 +37,7 @@ async function getGameStats() {
 }
 
 async function getRecentGames() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: games } = await supabase
     .from('games')

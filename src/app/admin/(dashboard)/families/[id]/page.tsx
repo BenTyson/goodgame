@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { FamilyEditor } from '@/components/admin/FamilyEditor'
 import type { GameFamily, Game } from '@/types/database'
 
@@ -13,7 +13,7 @@ async function getFamily(id: string): Promise<(GameFamily & { games: Game[] }) |
     return null
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: family, error } = await supabase
     .from('game_families')

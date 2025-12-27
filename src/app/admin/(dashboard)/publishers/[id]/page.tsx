@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { PublisherEditor } from '@/components/admin/PublisherEditor'
 import type { Publisher, Game } from '@/types/database'
 
@@ -13,7 +13,7 @@ async function getPublisher(id: string): Promise<(Publisher & { games: Game[] })
     return null
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: publisher, error } = await supabase
     .from('publishers')

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 async function getGames(filter?: string, search?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   let query = supabase
     .from('games')

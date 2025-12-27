@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database'
 
+/**
+ * Creates a Supabase client for server-side use with user context (respects RLS)
+ * Use this for regular user-facing pages
+ */
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -26,5 +31,17 @@ export async function createClient() {
         },
       },
     }
+  )
+}
+
+/**
+ * Creates a Supabase client with service role key (bypasses RLS)
+ * Use this ONLY for admin operations that need to see/modify all data
+ * Never expose this client to the browser!
+ */
+export function createAdminClient() {
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }

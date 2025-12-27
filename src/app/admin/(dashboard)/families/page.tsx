@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 async function getFamilies(search?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   let query = supabase
     .from('game_families')
