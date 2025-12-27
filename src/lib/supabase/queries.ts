@@ -259,6 +259,7 @@ export async function getGameImages(gameId: string): Promise<GameImage[]> {
     .from('game_images')
     .select('*')
     .eq('game_id', gameId)
+    .order('is_primary', { ascending: false })
     .order('display_order')
 
   if (error) {
@@ -557,11 +558,12 @@ export async function getGameWithDetails(slug: string) {
     return null
   }
 
-  // Get images
+  // Get images (primary first, then by display order)
   const { data: images } = await supabase
     .from('game_images')
     .select('*')
     .eq('game_id', game.id)
+    .order('is_primary', { ascending: false })
     .order('display_order')
 
   // Get categories via junction table
