@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-26
+> Last Updated: 2025-12-27
 
-## Phase: 12 - Publisher Management & Homepage Polish
+## Phase: 13 - Shelf Polish & Game Keytags
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -13,6 +13,7 @@
 - **Separate databases** for staging and production
 - **User authentication** with Google OAuth
 - **Your Shelf** feature - track games you own/want (in main nav)
+- **Shelf v2 UI** - Card grid layout with tab filters and clickable ratings
 - **User profiles** - username, bio, location, social links
 - **Public profile pages** at `/u/[username]`
 - **Privacy controls** - profile/shelf visibility (both default to public)
@@ -25,6 +26,7 @@
 - **Publisher Filters** - A-Z alphabetical, category type, and sort options on `/publishers`
 - **Featured Game** - Homepage section with hero image and game details
 - **Streamlined Nav** - Removed redundant Rules/Score Sheets links (pages still exist for SEO)
+- **Game Keytags** - Trending, Top Rated, Staff Pick, Hidden Gem, New Release (admin toggles)
 
 ### Environments
 
@@ -48,7 +50,9 @@
 | Add games to shelf | ✅ |
 | Shelf statuses (owned, want to buy, want to play, wishlist, previously owned) | ✅ |
 | Game ratings (1-10) | ✅ |
-| Shelf filtering & sorting | ✅ |
+| Shelf tab filters (by status) | ✅ |
+| Shelf card grid layout (4 cols) | ✅ |
+| Shelf sorting (added, name, rating) | ✅ |
 | Profile settings page | ✅ |
 | Unique usernames (@username) | ✅ |
 | Bio, location fields | ✅ |
@@ -56,9 +60,16 @@
 | Public profile pages | ✅ |
 | Profile/shelf visibility controls | ✅ |
 
+**Shelf Status Icons (Lucide):**
+- Owned: `Package`
+- Want to Buy: `ShoppingCart`
+- Want to Play: `Dices`
+- Wishlist: `Star`
+- Previously Owned: `ArchiveX`
+
 **Routes:**
 - `/login` - User login page
-- `/shelf` - Your game collection
+- `/shelf` - Your game collection (card grid with tab filters)
 - `/settings` - Profile settings (username, bio, location, social links, privacy)
 - `/u/[username]` - Public user profile page
 
@@ -69,6 +80,7 @@
 | Magic link email login | ✅ |
 | Games list with filters | ✅ |
 | Game editor (metadata, content) | ✅ |
+| Game keytag toggles (Publishing tab) | ✅ |
 | Game relationships tab | ✅ |
 | Image upload + gallery management | ✅ |
 | Set primary/cover image | ✅ |
@@ -77,6 +89,13 @@
 | Publisher manager | ✅ |
 | Publisher logo upload | ✅ |
 | Dashboard with stats | ✅ |
+
+**Game Keytags (boolean flags for homepage collections):**
+- `is_trending` - Trending Now
+- `is_top_rated` - Top Rated
+- `is_staff_pick` - Staff Pick
+- `is_hidden_gem` - Hidden Gem
+- `is_new_release` - New Release
 
 ### Game Families & Relations
 | Feature | Status |
@@ -197,7 +216,9 @@ supabase/migrations/
 ├── 00022_migrate_entity_data.sql    # Populate from bgg_raw_data
 ├── 00023_user_profile_enhancements.sql # Username, bio, social links, visibility
 ├── 00024_add_awards_and_reorder.sql # 5 more awards (American/German/International)
-└── 00025_bgg_top20_games.sql        # 19 BGG top 20 games
+├── 00025_bgg_top20_games.sql        # 19 BGG top 20 games
+├── 00026_populate_publishers_from_text.sql # Populate publishers from text fields
+└── 00027_game_keytags.sql           # Keytag booleans for homepage collections
 ```
 
 ---
