@@ -37,6 +37,7 @@ interface ProfileShelfGridProps {
   isOwnProfile: boolean
   showShelf: boolean
   showViewFullButton?: boolean
+  username?: string
 }
 
 const statusConfig = {
@@ -55,6 +56,7 @@ export function ProfileShelfGrid({
   isOwnProfile,
   showShelf,
   showViewFullButton = false,
+  username,
 }: ProfileShelfGridProps) {
   const [filter, setFilter] = useState<StatusFilter>('all')
 
@@ -102,7 +104,7 @@ export function ProfileShelfGrid({
           <Package className="h-5 w-5 text-muted-foreground" />
           Game Shelf
         </h2>
-        {shelfStats && shelfStats.total > 0 && (
+        {shelfStats && shelfStats.total > 0 && isOwnProfile && (
           <Button variant={showViewFullButton ? 'outline' : 'ghost'} size="sm" asChild>
             <Link href="/shelf">View Full Shelf</Link>
           </Button>
