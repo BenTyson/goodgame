@@ -16,7 +16,7 @@ A board game reference site with 4 pillars:
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 15+ (App Router) |
 | Database | Supabase (PostgreSQL) |
 | Storage | Supabase Storage (images) |
 | Auth | Supabase Auth (Google OAuth) |

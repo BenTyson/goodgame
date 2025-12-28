@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/supabase'
+import { validateImageFile, getExtensionForMimeType } from '@/lib/upload/validation'
+import { randomBytes } from 'crypto'
+import { ApiErrors } from '@/lib/api/errors'
 
 // Create admin client with service role for storage operations
 function createAdminClient() {
@@ -22,7 +25,7 @@ async function getUser() {
 export async function POST(request: NextRequest) {
   const user = await getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
@@ -31,33 +34,29 @@ export async function POST(request: NextRequest) {
     const imageType = formData.get('imageType') as 'header' | 'avatar'
 
     if (!file || !imageType) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return ApiErrors.validation('Missing required fields')
     }
 
     if (!['header', 'avatar'].includes(imageType)) {
-      return NextResponse.json({ error: 'Invalid image type' }, { status: 400 })
+      return ApiErrors.validation('Invalid image type')
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF' }, { status: 400 })
-    }
+    // Convert file to buffer first for validation
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 5MB)' }, { status: 400 })
+    // Validate file with magic byte check
+    const validation = validateImageFile(buffer, file.type)
+    if (!validation.valid) {
+      return ApiErrors.validation(validation.error || 'Invalid file')
     }
 
     const adminClient = createAdminClient()
 
-    // Generate unique filename: {userId}/{imageType}/{timestamp}.{ext}
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const fileName = `${user.id}/${imageType}/${Date.now()}.${fileExt}`
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    // Generate secure filename: {userId}/{imageType}/{timestamp}-{random}.{ext}
+    const ext = getExtensionForMimeType(validation.detectedType!)
+    const randomPart = randomBytes(8).toString('hex')
+    const fileName = `${user.id}/${imageType}/${Date.now()}-${randomPart}.${ext}`
 
     // Get current image URL to delete old file
     const dbColumn = imageType === 'header' ? 'header_image_url' : 'custom_avatar_url'
@@ -67,17 +66,17 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Upload to storage
+    // Upload to storage using detected content type
     const { error: uploadError } = await adminClient.storage
       .from('user-profiles')
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType: validation.detectedType!,
         cacheControl: '3600',
         upsert: false
       })
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
+      return ApiErrors.upload(uploadError, { route: 'POST /api/user/profile-image', userId: user.id })
     }
 
     // Get public URL
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       // Clean up uploaded file on failure
       await adminClient.storage.from('user-profiles').remove([fileName])
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return ApiErrors.database(updateError, { route: 'POST /api/user/profile-image', userId: user.id })
     }
 
     // Delete old image from storage if it existed
@@ -113,8 +112,8 @@ export async function POST(request: NextRequest) {
       url: publicUrl,
       imageType
     })
-  } catch {
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'POST /api/user/profile-image' })
   }
 }
 
@@ -122,14 +121,14 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const user = await getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { imageType } = await request.json()
 
     if (!imageType || !['header', 'avatar'].includes(imageType)) {
-      return NextResponse.json({ error: 'Invalid image type' }, { status: 400 })
+      return ApiErrors.validation('Invalid image type')
     }
 
     const adminClient = createAdminClient()
@@ -162,12 +161,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', user.id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'DELETE /api/user/profile-image', userId: user.id })
     }
 
     return NextResponse.json({ success: true, imageType })
-  } catch {
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'DELETE /api/user/profile-image' })
   }
 }
 

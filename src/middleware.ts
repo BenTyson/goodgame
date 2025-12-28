@@ -2,6 +2,15 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Security headers to apply to all responses
+const securityHeaders = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-DNS-Prefetch-Control': 'on',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -33,6 +42,11 @@ export async function middleware(request: NextRequest) {
 
   // Add pathname to headers for server components
   supabaseResponse.headers.set('x-pathname', request.nextUrl.pathname)
+
+  // Apply security headers (after supabase auth to ensure they're on the final response)
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    supabaseResponse.headers.set(key, value)
+  })
 
   return supabaseResponse
 }

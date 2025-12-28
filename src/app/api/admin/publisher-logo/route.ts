@@ -1,31 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { Database } from '@/types/supabase'
-
-// Create admin client with service role for storage operations
-function createAdminClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-// Verify user is admin
-async function isAdmin(): Promise<boolean> {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user?.email) return false
-
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
-  return adminEmails.includes(user.email.toLowerCase())
-}
+import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
+import { validateImageFile, generateSecureFilename } from '@/lib/upload/validation'
+import { ApiErrors } from '@/lib/api/errors'
+import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 // Upload a publisher logo
 export async function POST(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.FILE_UPLOAD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
@@ -35,29 +20,23 @@ export async function POST(request: NextRequest) {
     const publisherSlug = formData.get('publisherSlug') as string
 
     if (!file || !publisherId || !publisherSlug) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return ApiErrors.validation('Missing required fields')
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF, SVG' }, { status: 400 })
-    }
+    // Convert file to buffer first for validation
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 5MB)' }, { status: 400 })
+    // Validate file with magic byte check (SVG not allowed - security risk)
+    const validation = validateImageFile(buffer, file.type)
+    if (!validation.valid) {
+      return ApiErrors.validation(validation.error || 'Invalid file')
     }
 
     const adminClient = createAdminClient()
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop()?.toLowerCase()
-    const fileName = `${publisherSlug}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    // Generate secure filename using detected type
+    const fileName = generateSecureFilename(publisherSlug, validation.detectedType!)
 
     // First, get old logo to delete if exists
     const { data: existingPublisher } = await adminClient
@@ -66,17 +45,17 @@ export async function POST(request: NextRequest) {
       .eq('id', publisherId)
       .single()
 
-    // Upload to storage
+    // Upload to storage using detected content type
     const { error: uploadError } = await adminClient.storage
       .from('publisher-logos')
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType: validation.detectedType!,
         cacheControl: '3600',
         upsert: false
       })
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
+      return ApiErrors.upload(uploadError, { route: 'POST /api/admin/publisher-logo' })
     }
 
     // Get public URL
@@ -96,7 +75,7 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       // Clean up uploaded file on failure
       await adminClient.storage.from('publisher-logos').remove([fileName])
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return ApiErrors.database(updateError, { route: 'POST /api/admin/publisher-logo' })
     }
 
     // Delete old logo from storage if it existed
@@ -111,22 +90,25 @@ export async function POST(request: NextRequest) {
       url: publicUrl,
       storagePath: fileName
     })
-  } catch {
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'POST /api/admin/publisher-logo' })
   }
 }
 
 // Delete a publisher logo
 export async function DELETE(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { publisherId, storagePath } = await request.json()
 
     if (!publisherId) {
-      return NextResponse.json({ error: 'Missing publisherId' }, { status: 400 })
+      return ApiErrors.validation('Missing publisherId')
     }
 
     const adminClient = createAdminClient()
@@ -160,12 +142,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', publisherId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'DELETE /api/admin/publisher-logo' })
     }
 
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'DELETE /api/admin/publisher-logo' })
   }
 }
 

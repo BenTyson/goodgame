@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { LogoUpload } from './LogoUpload'
 import { getInitials, getInitialsColor } from '@/components/publishers/utils'
+import { generateSlug } from '@/lib/utils/slug'
 import type { Publisher, Game } from '@/types/database'
 
 interface PublisherEditorProps {
@@ -65,14 +66,6 @@ export function PublisherEditor({ publisher: initialPublisher, isNew = false }: 
     value: (typeof publisher)[K]
   ) => {
     setPublisher((prev) => ({ ...prev, [field]: value }))
-  }
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
   }
 
   const handleNameChange = (name: string) => {

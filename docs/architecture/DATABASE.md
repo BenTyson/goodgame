@@ -117,6 +117,18 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 20. `00020_user_profiles_and_shelf.sql` - User profiles and game shelf
 21. `00021_normalize_entities.sql` - Designers, publishers, artists tables + junction tables
 22. `00022_migrate_entity_data.sql` - Populate entities from bgg_raw_data JSONB
+23. `00023_user_profile_enhancements.sql` - Username, bio, social links, visibility settings
+24. `00024_add_awards_and_reorder.sql` - 5 more awards (American/German/International)
+25. `00025_bgg_top20_games.sql` - 19 BGG top 20 games
+26. `00026_populate_publishers_from_text.sql` - Populate publishers from text fields
+27. `00027_game_keytags.sql` - Keytag booleans (is_trending, is_top_rated, etc.)
+28. `00028_user_top_games.sql` - User top 10 games ranking
+29. `00029_profile_enhancements.sql` - Header image, custom avatar, last_active_at
+30. `00030_user_follows.sql` - Following system
+31. `00031_user_activities.sql` - Activity feed
+32. `00032_user_notifications.sql` - Notifications with trigger
+33. `00033_game_reviews.sql` - Review columns on user_games
+34. `00034_add_review_activity_type.sql` - Review activity type
 
 ## Tables
 
@@ -448,14 +460,22 @@ User profile data linked to Supabase auth.
 |--------|------|-------------|
 | id | UUID | Primary key (references auth.users) |
 | display_name | VARCHAR(100) | User display name |
-| avatar_url | VARCHAR(500) | Profile image URL |
+| username | VARCHAR(30) | Unique @username |
+| avatar_url | VARCHAR(500) | Google OAuth profile image |
+| custom_avatar_url | VARCHAR(500) | Custom uploaded avatar (overrides avatar_url) |
+| header_image_url | VARCHAR(500) | Profile banner image |
+| bio | TEXT | User biography |
+| location | VARCHAR(100) | User location |
+| social_links | JSONB | Social links (bgg_username, twitter_handle, etc.) |
 | role | VARCHAR(20) | 'user' or 'admin' |
 | shelf_visibility | VARCHAR(20) | 'private' or 'public' |
+| profile_visibility | VARCHAR(20) | 'private' or 'public' |
+| last_active_at | TIMESTAMPTZ | Last activity timestamp |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
 ### user_games
-User's game shelf/collection tracking.
+User's game shelf/collection tracking with optional reviews.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -465,11 +485,68 @@ User's game shelf/collection tracking.
 | status | shelf_status | owned, want_to_buy, want_to_play, previously_owned, wishlist |
 | rating | SMALLINT | User rating (1-10) |
 | notes | TEXT | Personal notes |
+| review_title | VARCHAR(200) | Review title |
+| review_text | TEXT | Review content |
+| review_created_at | TIMESTAMPTZ | When review was written |
+| review_updated_at | TIMESTAMPTZ | When review was last edited |
 | acquired_date | DATE | When acquired |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
 **Unique constraint**: One entry per user per game (user_id, game_id)
+
+### user_top_games
+User's top 10 favorite games ranking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| game_id | UUID | FK to games |
+| rank | SMALLINT | Position in top 10 (1-10) |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraints**: (user_id, game_id), (user_id, rank)
+
+### user_follows
+Following relationships between users.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| follower_id | UUID | FK to user_profiles (user doing the following) |
+| following_id | UUID | FK to user_profiles (user being followed) |
+| created_at | TIMESTAMPTZ | When follow occurred |
+
+**Unique constraint**: (follower_id, following_id)
+
+### user_activities
+Activity feed entries for social features.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| activity_type | VARCHAR(30) | follow, shelf_add, shelf_update, rating, top_games_update, review |
+| target_user_id | UUID | FK to user_profiles (for follow activities) |
+| target_game_id | UUID | FK to games (for game-related activities) |
+| metadata | JSONB | Additional activity data |
+| created_at | TIMESTAMPTZ | When activity occurred |
+
+### user_notifications
+User notification system.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles (notification recipient) |
+| notification_type | VARCHAR(30) | new_follower, rating, etc. |
+| from_user_id | UUID | FK to user_profiles (who triggered it) |
+| game_id | UUID | FK to games (if game-related) |
+| message | TEXT | Notification message |
+| is_read | BOOLEAN | Whether notification has been read |
+| created_at | TIMESTAMPTZ | When notification was created |
 
 ## Junction Tables
 

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from './server'
 import type { Database } from '@/types/database'
 
 /**
@@ -19,4 +20,18 @@ export function createAdminClient() {
       persistSession: false,
     },
   })
+}
+
+/**
+ * Check if the current user is an admin
+ * Checks user email against ADMIN_EMAILS environment variable
+ */
+export async function isAdmin(): Promise<boolean> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user?.email) return false
+
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
+  return adminEmails.includes(user.email.toLowerCase())
 }

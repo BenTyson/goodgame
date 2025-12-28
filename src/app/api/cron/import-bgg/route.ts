@@ -18,10 +18,15 @@ import { NextRequest } from 'next/server'
 import { verifyCronAuth, unauthorizedResponse, jsonResponse, errorResponse } from '@/lib/api/auth'
 import { importNextBatch, getQueueStats } from '@/lib/bgg'
 import { seedFromAwards, seedFromBGGTop } from '@/lib/bgg/seed-queue'
+import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 export const maxDuration = 60 // Allow up to 60 seconds for rate-limited BGG fetches
 
 export async function POST(request: NextRequest) {
+  // Rate limit to prevent duplicate cron runs
+  const rateLimited = applyRateLimit(request, RateLimits.CRON)
+  if (rateLimited) return rateLimited
+
   // Verify authentication
   if (!verifyCronAuth(request)) {
     return unauthorizedResponse()

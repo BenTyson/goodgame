@@ -1,41 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { Database } from '@/types/supabase'
-
-// Create admin client with service role for database operations
-function createAdminClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-// Verify user is admin
-async function isAdmin(): Promise<boolean> {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user?.email) return false
-
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
-  return adminEmails.includes(user.email.toLowerCase())
-}
+import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
+import { ApiErrors } from '@/lib/api/errors'
+import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 // Create a new publisher
 export async function POST(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { name, slug, description, website, logo_url } = await request.json()
 
     if (!name || !slug) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, slug' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required fields: name, slug')
     }
 
     const adminClient = createAdminClient()
@@ -48,10 +29,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'A publisher with this slug already exists' },
-        { status: 400 }
-      )
+      return ApiErrors.conflict('A publisher with this slug already exists')
     }
 
     const { data: publisher, error } = await adminClient
@@ -67,29 +45,29 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'POST /api/admin/publishers' })
     }
 
     return NextResponse.json({ publisher })
-  } catch {
-    return NextResponse.json({ error: 'Failed to create publisher' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'POST /api/admin/publishers' })
   }
 }
 
 // Update a publisher
 export async function PATCH(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { publisherId, data } = await request.json()
 
     if (!publisherId || !data) {
-      return NextResponse.json(
-        { error: 'Missing required fields: publisherId, data' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required fields: publisherId, data')
     }
 
     const adminClient = createAdminClient()
@@ -104,10 +82,7 @@ export async function PATCH(request: NextRequest) {
         .single()
 
       if (existing) {
-        return NextResponse.json(
-          { error: 'A publisher with this slug already exists' },
-          { status: 400 }
-        )
+        return ApiErrors.conflict('A publisher with this slug already exists')
       }
     }
 
@@ -122,29 +97,29 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'PATCH /api/admin/publishers' })
     }
 
     return NextResponse.json({ publisher })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update publisher' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'PATCH /api/admin/publishers' })
   }
 }
 
 // Delete a publisher
 export async function DELETE(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { publisherId, logoStoragePath } = await request.json()
 
     if (!publisherId) {
-      return NextResponse.json(
-        { error: 'Missing required field: publisherId' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required field: publisherId')
     }
 
     const adminClient = createAdminClient()
@@ -161,11 +136,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', publisherId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'DELETE /api/admin/publishers' })
     }
 
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete publisher' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'DELETE /api/admin/publishers' })
   }
 }

@@ -17,12 +17,42 @@ function isAdminEmail(email: string | undefined): boolean {
   return adminEmails.includes(email.toLowerCase())
 }
 
+// Validate redirect path to prevent open redirect attacks
+function getSafeRedirectPath(next: string | null): string {
+  if (!next) return '/'
+
+  // Must start with exactly one forward slash (not //)
+  // This prevents protocol-relative URLs like //evil.com
+  if (!next.startsWith('/') || next.startsWith('//')) {
+    return '/'
+  }
+
+  // Reject any URL with a protocol (http:, https:, javascript:, etc.)
+  if (next.includes(':')) {
+    return '/'
+  }
+
+  // Reject URLs with encoded characters that could bypass checks
+  // (e.g., %2F%2F for //)
+  try {
+    const decoded = decodeURIComponent(next)
+    if (decoded.startsWith('//') || decoded.includes(':')) {
+      return '/'
+    }
+  } catch {
+    // If decoding fails, reject the URL
+    return '/'
+  }
+
+  return next
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
-  const next = requestUrl.searchParams.get('next') || '/'
+  const next = getSafeRedirectPath(requestUrl.searchParams.get('next'))
 
   // Use env var for base URL (request.url returns localhost behind proxies)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin

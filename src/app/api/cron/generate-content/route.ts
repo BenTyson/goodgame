@@ -20,10 +20,15 @@ import {
   generateAllContent,
   getGenerationStats,
 } from '@/lib/ai'
+import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 export const maxDuration = 120 // Allow up to 2 minutes for AI generation
 
 export async function POST(request: NextRequest) {
+  // Rate limit to prevent duplicate cron runs
+  const rateLimited = applyRateLimit(request, RateLimits.CRON)
+  if (rateLimited) return rateLimited
+
   // Verify authentication
   if (!verifyCronAuth(request)) {
     return unauthorizedResponse()

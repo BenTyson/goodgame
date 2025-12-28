@@ -1,48 +1,26 @@
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { Database } from '@/types/supabase'
-
-// Create admin client with service role for database operations
-function createAdminClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-// Verify user is admin
-async function isAdmin(): Promise<boolean> {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user?.email) return false
-
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
-  return adminEmails.includes(user.email.toLowerCase())
-}
+import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
+import { ApiErrors } from '@/lib/api/errors'
+import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 // Create a new game relation
 export async function POST(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { sourceGameId, targetGameId, relationType } = await request.json()
 
     if (!sourceGameId || !targetGameId || !relationType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: sourceGameId, targetGameId, relationType' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required fields: sourceGameId, targetGameId, relationType')
     }
 
     if (sourceGameId === targetGameId) {
-      return NextResponse.json(
-        { error: 'Cannot create a relation to the same game' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Cannot create a relation to the same game')
     }
 
     const adminClient = createAdminClient()
@@ -56,10 +34,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'A relation between these games already exists' },
-        { status: 400 }
-      )
+      return ApiErrors.conflict('A relation between these games already exists')
     }
 
     const { data: relation, error } = await adminClient
@@ -73,29 +48,29 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'POST /api/admin/game-relations' })
     }
 
     return NextResponse.json({ relation })
-  } catch {
-    return NextResponse.json({ error: 'Failed to create relation' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'POST /api/admin/game-relations' })
   }
 }
 
 // Delete a game relation
 export async function DELETE(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { relationId } = await request.json()
 
     if (!relationId) {
-      return NextResponse.json(
-        { error: 'Missing required field: relationId' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required field: relationId')
     }
 
     const adminClient = createAdminClient()
@@ -106,29 +81,29 @@ export async function DELETE(request: NextRequest) {
       .eq('id', relationId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'DELETE /api/admin/game-relations' })
     }
 
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete relation' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'DELETE /api/admin/game-relations' })
   }
 }
 
 // Update a game relation
 export async function PATCH(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
   if (!await isAdmin()) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return ApiErrors.unauthorized()
   }
 
   try {
     const { relationId, relationType } = await request.json()
 
     if (!relationId || !relationType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: relationId, relationType' },
-        { status: 400 }
-      )
+      return ApiErrors.validation('Missing required fields: relationId, relationType')
     }
 
     const adminClient = createAdminClient()
@@ -141,11 +116,11 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return ApiErrors.database(error, { route: 'PATCH /api/admin/game-relations' })
     }
 
     return NextResponse.json({ relation })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update relation' }, { status: 500 })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'PATCH /api/admin/game-relations' })
   }
 }

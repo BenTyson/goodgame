@@ -1,8 +1,54 @@
 # Current Status
 
-> Last Updated: 2025-12-28 (Profile V2 UI Redesign)
+> Last Updated: 2025-12-28 (Security Audit & Code Cleanup)
 
 ## Phase: 16 - Social Features (COMPLETE)
+
+### Security & Maintenance (2025-12-28)
+- Fixed open redirect vulnerability in auth callback
+- Added timing-safe CRON_SECRET comparison
+- Added magic byte validation for file uploads (prevents MIME spoofing)
+- Removed SVG upload support (XSS risk)
+- Created secure file upload utility (`src/lib/upload/validation.ts`)
+- Updated `.env.example` with all required variables
+- Fixed site URL inconsistency (robots.ts used wrong domain)
+- Updated DATABASE.md with missing tables and migrations
+- Deleted outdated GOODGAME.md planning document
+
+### Code Organization (2025-12-28)
+- Extracted shared `generateSlug()` utility to `src/lib/utils/slug.ts`
+- Consolidated admin auth (`createAdminClient`, `isAdmin`) in `src/lib/supabase/admin.ts`
+- Updated all 6 admin API routes to use shared admin utilities
+- Split `queries.ts` (1,609 lines) into focused modules:
+  - `game-queries.ts` - Games, search, filters, score sheets, stats
+  - `category-queries.ts` - Categories, mechanics
+  - `collection-queries.ts` - Collections
+  - `award-queries.ts` - Awards, award categories, game awards
+  - `entity-queries.ts` - Designers, publishers, artists
+  - `family-queries.ts` - Game families, game relations
+- Split `user-queries.ts` (739 lines) into focused modules:
+  - `user-queries.ts` - Core profile, shelf, top games (re-exports others)
+  - `social-queries.ts` - Follow/unfollow, followers/following
+  - `review-queries.ts` - Game reviews, aggregate ratings
+- Added security headers to middleware:
+  - X-Frame-Options: DENY (clickjacking protection)
+  - X-Content-Type-Options: nosniff (MIME sniffing protection)
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Permissions-Policy: camera=(), microphone=(), geolocation=()
+- Created centralized constants file (`src/lib/config/constants.ts`)
+  - Filter defaults, pagination sizes, upload limits, BGG API settings
+- Consolidated social media icons to `src/components/icons/social.tsx`
+  - Shared XIcon, InstagramIcon, DiscordIcon, BGGIcon components
+- Created API error utilities (`src/lib/api/errors.ts`)
+  - Sanitized error responses (no internal details leaked to clients)
+  - Server-side error logging with context
+  - Updated all 9 API routes to use sanitized errors
+- Extracted BGG category mapping to `src/lib/config/bgg-mappings.ts`
+- Added rate limiting (`src/lib/api/rate-limit.ts`)
+  - Admin APIs: 60 requests/minute
+  - File uploads: 20 requests/minute
+  - Cron endpoints: 1 request/minute (prevent duplicate runs)
+  - Returns 429 with Retry-After headers when limited
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -38,19 +84,14 @@
 - **Notifications** - Bell icon in header, new follower notifications
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 
-### Environments
+### Environments & Branches
 
-| Environment | URL | Database |
-|-------------|-----|----------|
-| **Local** | http://localhost:3399 | Staging Supabase |
-| **Staging** | https://goodgame-staging-staging.up.railway.app | Staging Supabase |
-| **Production** | https://boardnomads.com | Production Supabase |
+See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 
-### Branch Strategy
-| Branch | Deploys To | Database |
-|--------|------------|----------|
-| `develop` | Staging | `ndskcbuzsmrzgnvdbofd` |
-| `main` | Production | `jnaibnwxpweahpawxycf` |
+| Branch | Deploys To |
+|--------|------------|
+| `develop` | Staging |
+| `main` | Production |
 
 ### User Auth & Shelf
 | Feature | Status |
@@ -209,37 +250,11 @@
 
 ## Environment Variables
 
-### Local (`.env.local`)
-```
-# Staging Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+See `.env.example` for required variables and `QUICK-REFERENCE.md` for quick setup.
 
-NEXT_PUBLIC_SITE_URL=http://localhost:3399
-NEXT_PUBLIC_SITE_NAME=Board Nomads
-ADMIN_EMAILS=your-email@gmail.com
-
-# BGG API (register at https://boardgamegeek.com/applications)
-BGG_API_TOKEN=your-bgg-token
-
-# Cron job authentication
-CRON_SECRET=your-cron-secret
-```
-
-### Railway Staging
-```
-NEXT_PUBLIC_SUPABASE_URL=https://ndskcbuzsmrzgnvdbofd.supabase.co
-NEXT_PUBLIC_SITE_URL=https://goodgame-staging-staging.up.railway.app
-NEXT_PUBLIC_SITE_NAME=Good Game (Staging)
-```
-
-### Railway Production
-```
-NEXT_PUBLIC_SUPABASE_URL=https://jnaibnwxpweahpawxycf.supabase.co
-NEXT_PUBLIC_SITE_URL=https://boardnomads.com
-NEXT_PUBLIC_SITE_NAME=Good Game
-```
+**Key difference between environments:**
+- Staging uses Supabase project `ndskcbuzsmrzgnvdbofd`
+- Production uses Supabase project `jnaibnwxpweahpawxycf`
 
 ---
 
@@ -284,34 +299,16 @@ supabase/migrations/
 
 ---
 
-## Key Commands
+## Quick Commands
+
+See `QUICK-REFERENCE.md` for full command reference.
+
 ```bash
-npm run dev              # http://localhost:3399
-npm run build            # Production build
-
-# Database migrations
-npx supabase db push     # Push to staging (default linked)
-
-# Push to production (when needed)
-npx supabase link --project-ref jnaibnwxpweahpawxycf
-npx supabase db push
-npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back
-
-# Git workflow (always work on develop)
-git checkout develop
-git push origin develop  # Deploys to staging
-
-# Deploy to production (via PR)
-# Go to: https://github.com/BenTyson/goodgame/compare/main...develop
-
-# Regenerate types after schema changes
-npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types/supabase.ts
-
-# Railway CLI
-railway environment staging && railway service goodgame-staging   # Switch to staging
-railway environment production && railway service goodgame        # Switch to production
-railway logs                                                      # View logs
+npm run dev              # Start local dev
+git push origin develop  # Deploy to staging
 ```
+
+**Deploy to Production**: Create PR from develop → main at GitHub
 
 ---
 
@@ -364,6 +361,17 @@ railway logs                                                      # View logs
 | `src/app/feed/page.tsx` | Activity feed page |
 | `src/app/u/[username]/followers/page.tsx` | Followers list page |
 | `src/app/u/[username]/following/page.tsx` | Following list page |
+
+### API & Security
+| File | Purpose |
+|------|---------|
+| `src/lib/api/errors.ts` | Sanitized API error responses |
+| `src/lib/api/rate-limit.ts` | In-memory rate limiter |
+| `src/lib/api/auth.ts` | Cron auth verification |
+| `src/lib/config/constants.ts` | Centralized magic numbers |
+| `src/lib/config/bgg-mappings.ts` | BGG category to slug mappings |
+| `src/lib/upload/validation.ts` | File upload validation (magic bytes) |
+| `src/components/icons/social.tsx` | Social media icon components |
 
 ### Content Pipeline
 | File | Purpose |

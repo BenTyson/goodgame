@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { GamePicker } from './GamePicker'
+import { generateSlug } from '@/lib/utils/slug'
 import type { Database } from '@/types/supabase'
 import type { Game, GameFamily } from '@/types/database'
 
@@ -85,14 +86,6 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     value: (typeof family)[K]
   ) => {
     setFamily((prev) => ({ ...prev, [field]: value }))
-  }
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
   }
 
   const handleNameChange = (name: string) => {

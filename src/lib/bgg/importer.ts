@@ -5,6 +5,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { fetchBGGGame, type BGGRawGame } from './client'
+import { generateSlug } from '@/lib/utils/slug'
+import { BGG_CATEGORY_MAP } from '@/lib/config/bgg-mappings'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -52,19 +54,6 @@ export interface ImportResult {
   error?: string
   bggId: number
   name?: string
-}
-
-/**
- * Generate a URL-safe slug from a game name
- */
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/['']/g, '')           // Remove apostrophes
-    .replace(/[&]/g, 'and')          // Replace & with 'and'
-    .replace(/[^a-z0-9]+/g, '-')     // Replace non-alphanumeric with hyphens
-    .replace(/^-+|-+$/g, '')         // Trim leading/trailing hyphens
-    .replace(/-+/g, '-')             // Collapse multiple hyphens
 }
 
 /**
@@ -454,44 +443,7 @@ function cleanDescription(description: string): string {
   return cleaned
 }
 
-/**
- * Map BGG categories to our category slugs
- */
-const BGG_CATEGORY_MAP: Record<string, string> = {
-  // Strategy
-  'Abstract Strategy': 'strategy',
-  'Economic': 'strategy',
-  'City Building': 'strategy',
-  'Territory Building': 'strategy',
-
-  // Family
-  'Family Game': 'family-games',
-  "Children's Game": 'family-games',
-  'Party Game': 'party-games',
-
-  // Thematic
-  'Adventure': 'thematic',
-  'Horror': 'thematic',
-  'Fantasy': 'thematic',
-  'Science Fiction': 'thematic',
-  'Exploration': 'thematic',
-
-  // Card Games
-  'Card Game': 'card-games',
-  'Collectible Components': 'card-games',
-
-  // Cooperative
-  'Cooperative': 'cooperative',
-  'Solo / Solitaire Game': 'cooperative',
-
-  // Word/Trivia
-  'Word Game': 'word-games',
-  'Trivia': 'word-games',
-  'Deduction': 'word-games',
-
-  // Dice
-  'Dice': 'dice-games',
-}
+// BGG category mappings are defined in @/lib/config/bgg-mappings.ts
 
 /**
  * Transform BGG raw data to our game insert format
