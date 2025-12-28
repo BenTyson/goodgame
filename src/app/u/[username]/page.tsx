@@ -85,34 +85,63 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Fetch shelf data if it should be shown
   let shelfData = null
   let shelfStats = null
+  let profileStats = null
 
   if (showShelf) {
+    // Fetch games with player count info for stats
     const { data: games } = await supabase
       .from('user_games')
       .select(`
         *,
-        game:games(id, name, slug, box_image_url)
+        game:games(id, name, slug, box_image_url, player_count_min, player_count_max)
       `)
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
-      .limit(12)
 
-    shelfData = games
+    // Get games for display (limited to 12)
+    shelfData = games?.slice(0, 12) || null
 
-    // Get shelf stats
-    const { data: allGames } = await supabase
-      .from('user_games')
-      .select('status')
-      .eq('user_id', profile.id)
-
-    if (allGames) {
+    // Calculate shelf stats
+    if (games && games.length > 0) {
       shelfStats = {
-        total: allGames.length,
-        owned: allGames.filter(g => g.status === 'owned').length,
-        want_to_buy: allGames.filter(g => g.status === 'want_to_buy').length,
-        want_to_play: allGames.filter(g => g.status === 'want_to_play').length,
-        wishlist: allGames.filter(g => g.status === 'wishlist').length,
-        previously_owned: allGames.filter(g => g.status === 'previously_owned').length,
+        total: games.length,
+        owned: games.filter(g => g.status === 'owned').length,
+        want_to_buy: games.filter(g => g.status === 'want_to_buy').length,
+        want_to_play: games.filter(g => g.status === 'want_to_play').length,
+        wishlist: games.filter(g => g.status === 'wishlist').length,
+        previously_owned: games.filter(g => g.status === 'previously_owned').length,
+      }
+
+      // Calculate enhanced profile stats
+      const ratedGames = games.filter(g => g.rating !== null)
+      const totalRated = ratedGames.length
+      const averageRating = totalRated > 0
+        ? ratedGames.reduce((sum, g) => sum + (g.rating || 0), 0) / totalRated
+        : null
+
+      // Player count breakdown
+      const playerRanges = [
+        { range: 'Solo', min: 1, max: 1 },
+        { range: '2 Players', min: 2, max: 2 },
+        { range: '3-4 Players', min: 3, max: 4 },
+        { range: '5+ Players', min: 5, max: 99 },
+      ]
+      const playerCountBreakdown = playerRanges.map(({ range, min, max }) => ({
+        range,
+        count: games.filter(g => {
+          const gameMin = g.game?.player_count_min || 0
+          const gameMax = g.game?.player_count_max || 0
+          // Game supports this range if it overlaps
+          return gameMin <= max && gameMax >= min
+        }).length,
+      })).filter(p => p.count > 0)
+
+      profileStats = {
+        totalGames: games.length,
+        totalRated,
+        averageRating,
+        categoryBreakdown: [] as { name: string; count: number }[], // TODO: Add category stats later
+        playerCountBreakdown,
       }
     }
   }
@@ -127,6 +156,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       topGames={topGames}
       shelfData={shelfData}
       shelfStats={shelfStats}
+      profileStats={profileStats}
       showShelf={showShelf}
       isOwnProfile={isOwnProfile}
     />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin } from 'lucide-react'
+import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { updateUserProfile } from '@/lib/supabase/user-queries'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { UsernameInput } from '@/components/settings/UsernameInput'
+import { ProfileImageUpload } from '@/components/settings/ProfileImageUpload'
 import type { UserProfile, SocialLinks, Json } from '@/types/database'
 
 interface SettingsContentProps {
@@ -20,6 +21,10 @@ interface SettingsContentProps {
 
 export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
   const { refreshProfile } = useAuth()
+
+  // Profile images
+  const [headerImageUrl, setHeaderImageUrl] = useState(profile?.header_image_url || null)
+  const [customAvatarUrl, setCustomAvatarUrl] = useState(profile?.custom_avatar_url || null)
 
   // Profile fields
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
@@ -97,6 +102,54 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
       </div>
 
       <div className="space-y-6">
+        {/* Profile Images Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Profile Images
+            </CardTitle>
+            <CardDescription>
+              Customize your profile with a header banner and avatar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ProfileImageUpload
+              imageType="header"
+              currentUrl={headerImageUrl}
+              onImageChange={(url) => {
+                setHeaderImageUrl(url)
+                refreshProfile()
+              }}
+              placeholder="A banner image displayed at the top of your profile"
+            />
+
+            <div className="border-t pt-6">
+              <ProfileImageUpload
+                imageType="avatar"
+                currentUrl={customAvatarUrl}
+                onImageChange={(url) => {
+                  setCustomAvatarUrl(url)
+                  refreshProfile()
+                }}
+                placeholder={profile?.avatar_url ? "Upload a custom avatar to replace your Google profile picture" : "Upload an avatar image"}
+              />
+              {profile?.avatar_url && !customAvatarUrl && (
+                <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Currently using your Google profile picture
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Profile Card */}
         <Card>
           <CardHeader>
@@ -139,22 +192,6 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
               onChange={setUsername}
               onValidChange={setUsernameValid}
             />
-
-            {profile?.avatar_url && (
-              <div className="space-y-2">
-                <Label>Avatar</Label>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={profile.avatar_url}
-                    alt=""
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Avatar is synced from your Google account
-                  </p>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>

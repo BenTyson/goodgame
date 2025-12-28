@@ -36,6 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(data)
   }, [])
 
+  // Update last_active_at timestamp
+  const updateLastActive = useCallback(async (userId: string) => {
+    await supabase
+      .from('user_profiles')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('id', userId)
+  }, [])
+
   const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id)
@@ -88,6 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(session.user)
           await fetchOrCreateProfile(session.user)
+          // Update last active timestamp on sign in
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            updateLastActive(session.user.id)
+          }
         } else {
           setUser(null)
           setProfile(null)
@@ -102,7 +114,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [fetchOrCreateProfile])
+  }, [fetchOrCreateProfile, updateLastActive])
+
+  // Update last active periodically while user is logged in
+  useEffect(() => {
+    if (!user) return
+
+    // Update every 5 minutes while active
+    const interval = setInterval(() => {
+      updateLastActive(user.id)
+    }, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [user, updateLastActive])
 
   async function signInWithGoogle(redirectTo?: string) {
     const callbackUrl = new URL('/auth/callback', window.location.origin)

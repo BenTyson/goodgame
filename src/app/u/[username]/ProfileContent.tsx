@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TopGamesDisplay } from '@/components/profile/TopGamesDisplay'
+import { ProfileStats } from '@/components/profile/ProfileStats'
 import type { UserProfile, SocialLinks, Game } from '@/types/database'
 import type { TopGameWithDetails } from '@/lib/supabase/user-queries'
 
@@ -42,12 +43,21 @@ interface ShelfStats {
   previously_owned: number
 }
 
+interface ProfileStatsData {
+  totalGames: number
+  totalRated: number
+  averageRating: number | null
+  categoryBreakdown: { name: string; count: number }[]
+  playerCountBreakdown: { range: string; count: number }[]
+}
+
 interface ProfileContentProps {
   profile: UserProfile
   socialLinks: SocialLinks
   topGames: TopGameWithDetails[] | null
   shelfData: ShelfGame[] | null
   shelfStats: ShelfStats | null
+  profileStats: ProfileStatsData | null
   showShelf: boolean
   isOwnProfile: boolean
 }
@@ -60,12 +70,29 @@ const statusConfig = {
   previously_owned: { label: 'Previously Owned', icon: Archive, color: 'text-gray-600' },
 }
 
+function formatLastActive(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export function ProfileContent({
   profile,
   socialLinks,
   topGames,
   shelfData,
   shelfStats,
+  profileStats,
   showShelf,
   isOwnProfile,
 }: ProfileContentProps) {
@@ -84,19 +111,36 @@ export function ProfileContent({
     socialLinks.discord_username ||
     socialLinks.website_url
 
+  // Use custom avatar if available, otherwise fall back to OAuth avatar
+  const avatarUrl = profile.custom_avatar_url || profile.avatar_url
+
   return (
     <div className="container max-w-4xl py-8">
       {/* Profile Header */}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
+      <Card className="mb-8 overflow-hidden">
+        {/* Header Banner */}
+        {profile.header_image_url && (
+          <div className="relative h-32 sm:h-48 w-full">
+            <Image
+              src={profile.header_image_url}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 896px"
+              priority
+            />
+          </div>
+        )}
+
+        <CardContent className={profile.header_image_url ? 'pt-0 -mt-12 sm:-mt-16 relative' : 'pt-6'}>
           <div className="flex flex-col sm:flex-row gap-6">
             {/* Avatar */}
             <div className="flex-shrink-0">
-              {profile.avatar_url ? (
+              {avatarUrl ? (
                 <img
-                  src={profile.avatar_url}
+                  src={avatarUrl}
                   alt={displayName}
-                  className="h-24 w-24 sm:h-32 sm:w-32 rounded-full object-cover border-4 border-background shadow-lg"
+                  className={`h-24 w-24 sm:h-32 sm:w-32 rounded-full object-cover border-4 border-background shadow-lg ${profile.header_image_url ? 'ring-4 ring-background' : ''}`}
                 />
               ) : (
                 <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-primary/10 flex items-center justify-center border-4 border-background shadow-lg">
@@ -109,9 +153,33 @@ export function ProfileContent({
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold truncate">
-                    {displayName}
-                  </h1>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-bold truncate">
+                      {displayName}
+                    </h1>
+                    {/* Role badge */}
+                    {profile.role === 'admin' && (
+                      <Badge variant="default" className="bg-primary text-primary-foreground">
+                        Admin
+                      </Badge>
+                    )}
+                    {/* Collection milestone badges */}
+                    {profileStats && profileStats.totalGames >= 100 && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                        Collector 100+
+                      </Badge>
+                    )}
+                    {profileStats && profileStats.totalGames >= 50 && profileStats.totalGames < 100 && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        Collector 50+
+                      </Badge>
+                    )}
+                    {profileStats && profileStats.totalRated >= 25 && (
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                        Rater
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-muted-foreground">@{profile.username}</p>
                 </div>
 
@@ -144,6 +212,12 @@ export function ProfileContent({
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     <span>Joined {memberSince}</span>
+                  </div>
+                )}
+                {profile.last_active_at && (
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span>Active {formatLastActive(profile.last_active_at)}</span>
                   </div>
                 )}
               </div>
@@ -224,6 +298,9 @@ export function ProfileContent({
           userId={profile.id}
         />
       )}
+
+      {/* Collection Insights */}
+      {profileStats && <ProfileStats stats={profileStats} />}
 
       {/* Shelf Section */}
       {showShelf && shelfStats ? (
