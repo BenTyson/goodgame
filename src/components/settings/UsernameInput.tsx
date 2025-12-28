@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Check, X, Loader2, AtSign } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +27,10 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Use ref to avoid infinite loops from callback identity changes
+  const onValidChangeRef = useRef(onValidChange)
+  onValidChangeRef.current = onValidChange
+
   // Validate username format
   const validateFormat = (username: string): string | null => {
     if (!username) return null
@@ -42,29 +46,38 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
     return input.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20)
   }
 
-  // Debounced availability check
+  // Debounced availability check with timeout
   const checkAvailability = useCallback(async (username: string) => {
     // Skip if it's the user's current username
     if (currentUsername && username === currentUsername) {
       setIsAvailable(true)
       setChecking(false)
-      onValidChange?.(true)
+      onValidChangeRef.current?.(true)
       return
     }
 
     try {
-      const available = await checkUsernameAvailable(username)
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      )
+
+      const available = await Promise.race([
+        checkUsernameAvailable(username),
+        timeoutPromise
+      ])
+
       setIsAvailable(available)
       setError(available ? null : 'Username is taken')
-      onValidChange?.(available)
+      onValidChangeRef.current?.(available)
     } catch (err) {
       console.error('Error checking username:', err)
       setError('Error checking availability')
-      onValidChange?.(false)
+      onValidChangeRef.current?.(false)
     } finally {
       setChecking(false)
     }
-  }, [currentUsername, onValidChange])
+  }, [currentUsername])
 
   // Check availability when value changes (debounced)
   useEffect(() => {
@@ -74,7 +87,7 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
       setIsAvailable(null)
       setError(null)
       setChecking(false)
-      onValidChange?.(true) // Empty is valid (optional)
+      onValidChangeRef.current?.(true) // Empty is valid (optional)
       return
     }
 
@@ -82,7 +95,7 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
       setError(formatError)
       setIsAvailable(null)
       setChecking(false)
-      onValidChange?.(false)
+      onValidChangeRef.current?.(false)
       return
     }
 
@@ -95,7 +108,7 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [value, checkAvailability, onValidChange])
+  }, [value, checkAvailability])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatUsername(e.target.value)
