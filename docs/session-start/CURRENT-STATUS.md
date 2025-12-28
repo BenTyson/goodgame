@@ -2,7 +2,7 @@
 
 > Last Updated: 2025-12-27
 
-## Phase: 13 - Shelf Polish & Game Keytags
+## Phase: 14 - User Profile Expansion (Top 10 Games)
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -27,6 +27,7 @@
 - **Featured Game** - Homepage section with hero image and game details
 - **Streamlined Nav** - Removed redundant Rules/Score Sheets links (pages still exist for SEO)
 - **Game Keytags** - Trending, Top Rated, Staff Pick, Hidden Gem, New Release (admin toggles)
+- **Top 10 Games** - Users can curate their all-time favorite games on profiles
 
 ### Environments
 
@@ -59,6 +60,14 @@
 | Social links (BGG, Twitter, Instagram, Discord, Website) | ✅ |
 | Public profile pages | ✅ |
 | Profile/shelf visibility controls | ✅ |
+| Top 10 Games ranking | ✅ |
+| Drag & drop ranking editor | ✅ |
+
+**Top 10 Games:**
+- Curate favorite games (any game in database)
+- Drag & drop reordering in modal editor
+- Podium display (#1-3 large, #4-10 compact)
+- Visibility follows profile settings
 
 **Shelf Status Icons (Lucide):**
 - Owned: `Package`
@@ -218,7 +227,8 @@ supabase/migrations/
 ├── 00024_add_awards_and_reorder.sql # 5 more awards (American/German/International)
 ├── 00025_bgg_top20_games.sql        # 19 BGG top 20 games
 ├── 00026_populate_publishers_from_text.sql # Populate publishers from text fields
-└── 00027_game_keytags.sql           # Keytag booleans for homepage collections
+├── 00027_game_keytags.sql           # Keytag booleans for homepage collections
+└── 00028_user_top_games.sql         # User top 10 games ranking
 ```
 
 ---
@@ -279,6 +289,8 @@ railway logs                                                      # View logs
 | `src/app/shelf/page.tsx` | Shelf page |
 | `src/app/settings/page.tsx` | Profile settings |
 | `src/app/u/[username]/page.tsx` | Public profile page |
+| `src/components/profile/TopGamesDisplay.tsx` | Top 10 games display with podium |
+| `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor modal |
 
 ### Content Pipeline
 | File | Purpose |
