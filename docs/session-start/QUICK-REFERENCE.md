@@ -80,8 +80,9 @@ src/app/
 │       └── queue/            # Import queue
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
-├── settings/page.tsx          # Profile settings
-├── u/[username]/page.tsx      # Public user profiles
+├── settings/page.tsx          # Profile settings (with image uploads)
+├── u/[username]/page.tsx      # Public user profiles (with stats, badges)
+├── api/user/profile-image/    # User profile image upload API
 ├── score-sheets/page.tsx
 ├── rules/page.tsx
 ├── sitemap.ts                 # Dynamic sitemap
@@ -99,7 +100,8 @@ src/components/
 ├── admin/                     # ImageUpload, LogoUpload, ContentEditor, FamilyEditor, PublisherEditor
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
-├── settings/                  # UsernameInput
+├── settings/                  # UsernameInput, ProfileImageUpload
+├── profile/                   # TopGamesDisplay, TopGamesEditor, ProfileStats
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
@@ -115,7 +117,7 @@ src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
-supabase/migrations/           # Database schema (23 files)
+supabase/migrations/           # Database schema (29 files)
 ```
 
 ### Type Definitions
@@ -133,10 +135,12 @@ GameAward        // Game-award link type
 Designer         // Designer type
 Publisher        // Publisher type
 Artist           // Artist type
-UserProfile      // User profile type
+UserProfile      // User profile type (with header_image_url, custom_avatar_url, last_active_at)
 UserGame         // User shelf item type
+UserTopGame      // User's top 10 ranked games
 ShelfStatus      // 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
 SocialLinks      // Social links interface (bgg_username, twitter_handle, etc.)
+TopGameWithDetails // Top game with game details for display
 ```
 
 ## Environment Variables

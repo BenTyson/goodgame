@@ -73,12 +73,15 @@
 | Development images | BoardGameGeek URLs | Real images without hosting cost during dev |
 | Production images | Supabase Storage | Self-hosted, no external dependencies |
 | Image types | cover, hero, gallery, setup, gameplay, components | Categorized for different uses |
+| Profile images | Supabase Storage (`user-profiles` bucket) | Header banners and custom avatars |
 
 ## What NOT to Build (MVP)
 
 - ~~User accounts / authentication~~ ✅ Built
 - Community features (comments, forums)
 - ~~Game ratings / reviews~~ ✅ Built (personal ratings on shelf)
+- ~~User profiles~~ ✅ Built (with header images, avatars, stats, badges)
+- ~~Top 10 rankings~~ ✅ Built (drag & drop editor)
 - Mobile app
 - ~~BGG data scraping~~ ✅ Built (import pipeline)
 - Premium/paid tier
