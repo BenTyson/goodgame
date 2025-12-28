@@ -397,9 +397,24 @@ railway logs                                                      # View logs
 ---
 
 ## Next Steps
+
+### Immediate
+- Push migrations 00028-00029 to production (Top 10 Games + Profile Enhancements)
+- Test profile image uploads on staging
+
+### Content
 - Upload images for all games via admin
 - Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
-- Push latest migrations to production when ready
 - Import more games to populate families and relations
-- Build out social features (following, friends, activity feed)
+
+### Social Features (Phase 16+)
+- Following system (follow other users)
+- Activity feed ("X rated Y", "X added Y to shelf")
+- Notifications
+- Game reviews tied to shelf items
+
+### Future
+- Marketplace (buy/sell/trade)
+- Local discovery (find gamers nearby, game nights)
+- Enhanced profile stats (category breakdown - requires joining game_categories)
