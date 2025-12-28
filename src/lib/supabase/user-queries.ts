@@ -377,6 +377,10 @@ export async function searchGamesForPicker(query: string, limit = 10): Promise<{
     .order('name')
     .limit(limit)
 
-  if (error) throw error
+  if (error) {
+    console.error('searchGamesForPicker error:', error)
+    throw error
+  }
+
   return data || []
 }

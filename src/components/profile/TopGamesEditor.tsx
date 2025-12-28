@@ -111,15 +111,21 @@ export function TopGamesEditor({
       return
     }
 
+    console.log('Searching for:', searchQuery)
+
     const timer = setTimeout(async () => {
       setIsSearching(true)
       try {
+        console.log('Calling searchGamesForPicker...')
         const results = await searchGamesForPicker(searchQuery)
+        console.log('Search results:', results)
         // Filter out games already in slots
         const existingGameIds = slots
           .filter((s) => s.game)
           .map((s) => s.game!.id)
-        setSearchResults(results.filter((r) => !existingGameIds.includes(r.id)))
+        const filtered = results.filter((r) => !existingGameIds.includes(r.id))
+        console.log('Filtered results:', filtered)
+        setSearchResults(filtered)
       } catch (error) {
         console.error('Search error:', error)
       } finally {
