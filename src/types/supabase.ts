@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1168,6 +1193,94 @@ export type Database = {
           },
         ]
       }
+      user_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at: string | null
+          game_id: string | null
+          id: string
+          metadata: Json | null
+          target_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activities_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_games: {
         Row: {
           acquired_date: string | null
@@ -1176,6 +1289,8 @@ export type Database = {
           id: string
           notes: string | null
           rating: number | null
+          review: string | null
+          review_updated_at: string | null
           status: Database["public"]["Enums"]["shelf_status"]
           updated_at: string | null
           user_id: string
@@ -1187,6 +1302,8 @@ export type Database = {
           id?: string
           notes?: string | null
           rating?: number | null
+          review?: string | null
+          review_updated_at?: string | null
           status?: Database["public"]["Enums"]["shelf_status"]
           updated_at?: string | null
           user_id: string
@@ -1198,6 +1315,8 @@ export type Database = {
           id?: string
           notes?: string | null
           rating?: number | null
+          review?: string | null
+          review_updated_at?: string | null
           status?: Database["public"]["Enums"]["shelf_status"]
           updated_at?: string | null
           user_id?: string
@@ -1212,6 +1331,64 @@ export type Database = {
           },
           {
             foreignKeyName: "user_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string | null
+          game_id: string | null
+          id: string
+          is_read: boolean | null
+          metadata: Json | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          metadata?: Json | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          metadata?: Json | null
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
@@ -1383,6 +1560,14 @@ export type Database = {
       slugify: { Args: { text_input: string }; Returns: string }
     }
     Enums: {
+      activity_type:
+        | "follow"
+        | "shelf_add"
+        | "shelf_update"
+        | "rating"
+        | "top_games_update"
+        | "review"
+      notification_type: "new_follower" | "rating"
       shelf_status:
         | "owned"
         | "want_to_buy"
@@ -1514,8 +1699,20 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
+      activity_type: [
+        "follow",
+        "shelf_add",
+        "shelf_update",
+        "rating",
+        "top_games_update",
+        "review",
+      ],
+      notification_type: ["new_follower", "rating"],
       shelf_status: [
         "owned",
         "want_to_buy",

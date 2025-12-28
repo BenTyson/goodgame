@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchDialog } from '@/components/search'
 import { ThemeToggle } from './ThemeToggle'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { NotificationBell } from '@/components/notifications'
 
 const navigation = [
   { name: 'Games', href: '/games' },
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Awards', href: '/awards' },
   { name: 'Categories', href: '/categories' },
   { name: 'Collections', href: '/collections' },
+  { name: 'Feed', href: '/feed' },
   { name: 'Shelf', href: '/shelf' },
 ]
 
@@ -107,6 +109,9 @@ export function Header() {
 
           {/* Theme toggle */}
           <ThemeToggle />
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* User menu */}
           <UserMenu />

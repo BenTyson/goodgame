@@ -12,6 +12,9 @@ import type {
   ShelfStatus,
   UserProfile,
   UserProfileUpdate,
+  UserFollowWithFollower,
+  UserFollowWithFollowing,
+  FollowStats,
 } from '@/types/database'
 
 // =====================================================
@@ -98,6 +101,14 @@ export async function getUserGameStatus(
 export async function addToShelf(data: UserGameInsert): Promise<UserGame> {
   const supabase = createClient()
 
+  // Check if this is an update or new add
+  const { data: existing } = await supabase
+    .from('user_games')
+    .select('status')
+    .eq('user_id', data.user_id)
+    .eq('game_id', data.game_id)
+    .maybeSingle()
+
   const { data: result, error } = await supabase
     .from('user_games')
     .upsert(data, { onConflict: 'user_id,game_id' })
@@ -105,6 +116,18 @@ export async function addToShelf(data: UserGameInsert): Promise<UserGame> {
     .single()
 
   if (error) throw error
+
+  // Create activity (fire and forget)
+  import('./activity-queries').then(({ createShelfActivity }) => {
+    if (existing && existing.status !== data.status) {
+      createShelfActivity(data.user_id, data.game_id, data.status!, true, existing.status as ShelfStatus)
+        .catch(console.error)
+    } else if (!existing) {
+      createShelfActivity(data.user_id, data.game_id, data.status!)
+        .catch(console.error)
+    }
+  })
+
   return result
 }
 
@@ -114,6 +137,13 @@ export async function updateShelfItem(
 ): Promise<UserGame> {
   const supabase = createClient()
 
+  // Get current item to track rating changes
+  const { data: current } = await supabase
+    .from('user_games')
+    .select('user_id, game_id, rating')
+    .eq('id', id)
+    .single()
+
   const { data: result, error } = await supabase
     .from('user_games')
     .update(data)
@@ -122,6 +152,15 @@ export async function updateShelfItem(
     .single()
 
   if (error) throw error
+
+  // Create rating activity if rating changed (and is a new non-null rating)
+  if (data.rating !== undefined && current && data.rating !== current.rating && data.rating !== null) {
+    import('./activity-queries').then(({ createRatingActivity }) => {
+      createRatingActivity(current.user_id, current.game_id, data.rating!)
+        .catch(console.error)
+    })
+  }
+
   return result
 }
 
@@ -332,6 +371,19 @@ export async function getUserTopGames(userId: string): Promise<TopGameWithDetail
 export async function saveUserTopGames(userId: string, gameIds: string[]): Promise<void> {
   const supabase = createClient()
 
+  // Get current rankings to detect changes
+  const { data: current } = await supabase
+    .from('user_top_games')
+    .select('game_id')
+    .eq('user_id', userId)
+
+  const currentIds = new Set(current?.map(g => g.game_id) || [])
+  const newIds = new Set(gameIds)
+
+  const added = gameIds.filter(id => !currentIds.has(id))
+  const removed = [...currentIds].filter(id => !newIds.has(id))
+  const reordered = added.length === 0 && removed.length === 0 && gameIds.length > 0
+
   // Delete all existing rankings for this user
   const { error: deleteError } = await supabase
     .from('user_top_games')
@@ -353,6 +405,14 @@ export async function saveUserTopGames(userId: string, gameIds: string[]): Promi
       .insert(rankings)
 
     if (insertError) throw insertError
+  }
+
+  // Create activity if there were changes
+  if (added.length > 0 || removed.length > 0 || reordered) {
+    import('./activity-queries').then(({ createTopGamesActivity }) => {
+      createTopGamesActivity(userId, { added, removed, reordered })
+        .catch(console.error)
+    })
   }
 }
 
@@ -379,4 +439,301 @@ export async function searchGamesForPicker(query: string, limit = 10): Promise<{
 
   if (error) throw error
   return data || []
+}
+
+// =====================================================
+// USER FOLLOWS (SOCIAL)
+// =====================================================
+
+/**
+ * Follow another user
+ */
+export async function followUser(followerId: string, followingId: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('user_follows')
+    .insert({ follower_id: followerId, following_id: followingId })
+
+  if (error) throw error
+
+  // Create activity (fire and forget - don't block on activity creation)
+  import('./activity-queries').then(({ createFollowActivity }) => {
+    createFollowActivity(followerId, followingId).catch(console.error)
+  })
+}
+
+/**
+ * Unfollow a user
+ */
+export async function unfollowUser(followerId: string, followingId: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('user_follows')
+    .delete()
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+
+  if (error) throw error
+}
+
+/**
+ * Check if current user is following another user
+ */
+export async function checkIsFollowing(followerId: string, followingId: string): Promise<boolean> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_follows')
+    .select('id')
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data !== null
+}
+
+/**
+ * Get followers of a user with profile data
+ */
+export async function getUserFollowers(
+  userId: string,
+  limit = 50,
+  offset = 0
+): Promise<UserFollowWithFollower[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_follows')
+    .select(`
+      *,
+      follower:user_profiles!follower_id(id, username, display_name, avatar_url, custom_avatar_url)
+    `)
+    .eq('following_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return (data || []) as UserFollowWithFollower[]
+}
+
+/**
+ * Get users that a user is following with profile data
+ */
+export async function getUserFollowing(
+  userId: string,
+  limit = 50,
+  offset = 0
+): Promise<UserFollowWithFollowing[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_follows')
+    .select(`
+      *,
+      following:user_profiles!following_id(id, username, display_name, avatar_url, custom_avatar_url)
+    `)
+    .eq('follower_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return (data || []) as UserFollowWithFollowing[]
+}
+
+/**
+ * Get follow stats for a user (counts)
+ */
+export async function getFollowStats(userId: string): Promise<FollowStats> {
+  const supabase = createClient()
+
+  // Use parallel queries for efficiency
+  const [followersResult, followingResult] = await Promise.all([
+    supabase
+      .from('user_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('following_id', userId),
+    supabase
+      .from('user_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('follower_id', userId),
+  ])
+
+  if (followersResult.error) throw followersResult.error
+  if (followingResult.error) throw followingResult.error
+
+  return {
+    followerCount: followersResult.count || 0,
+    followingCount: followingResult.count || 0,
+  }
+}
+
+// =====================================================
+// GAME REVIEWS
+// =====================================================
+
+export interface ReviewWithUser {
+  id: string
+  user_id: string
+  game_id: string
+  rating: number | null
+  review: string
+  review_updated_at: string
+  user: {
+    id: string
+    username: string | null
+    display_name: string | null
+    avatar_url: string | null
+    custom_avatar_url: string | null
+  }
+}
+
+export interface ReviewsResponse {
+  reviews: ReviewWithUser[]
+  hasMore: boolean
+  nextCursor?: string
+}
+
+const REVIEWS_PAGE_SIZE = 10
+
+/**
+ * Get reviews for a game with user profiles (paginated)
+ */
+export async function getGameReviews(
+  gameId: string,
+  cursor?: string,
+  limit = REVIEWS_PAGE_SIZE
+): Promise<ReviewsResponse> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('user_games')
+    .select(`
+      id,
+      user_id,
+      game_id,
+      rating,
+      review,
+      review_updated_at,
+      user:user_profiles!user_id(id, username, display_name, avatar_url, custom_avatar_url)
+    `)
+    .eq('game_id', gameId)
+    .not('review', 'is', null)
+    .order('review_updated_at', { ascending: false })
+    .limit(limit + 1)
+
+  if (cursor) {
+    query = query.lt('review_updated_at', cursor)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+
+  const hasMore = data && data.length > limit
+  const reviews = (data?.slice(0, limit) || []) as ReviewWithUser[]
+  const lastDate = hasMore && reviews.length > 0
+    ? reviews[reviews.length - 1].review_updated_at
+    : null
+  const nextCursor = lastDate ?? undefined
+
+  return {
+    reviews,
+    hasMore,
+    nextCursor,
+  }
+}
+
+/**
+ * Get aggregate rating stats for a game
+ */
+export async function getGameAggregateRating(gameId: string): Promise<{
+  average: number | null
+  count: number
+}> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_games')
+    .select('rating')
+    .eq('game_id', gameId)
+    .not('rating', 'is', null)
+
+  if (error) throw error
+
+  if (!data || data.length === 0) {
+    return { average: null, count: 0 }
+  }
+
+  const ratings = data.map(d => d.rating as number)
+  const sum = ratings.reduce((acc, r) => acc + r, 0)
+  const average = sum / ratings.length
+
+  return {
+    average: Math.round(average * 10) / 10, // Round to 1 decimal
+    count: ratings.length,
+  }
+}
+
+/**
+ * Update a review for a shelf item
+ */
+export async function updateReview(
+  userGameId: string,
+  review: string | null
+): Promise<UserGame> {
+  const supabase = createClient()
+
+  // Get current item to track review changes
+  const { data: current } = await supabase
+    .from('user_games')
+    .select('user_id, game_id, review')
+    .eq('id', userGameId)
+    .single()
+
+  const updateData: UserGameUpdate = {
+    review,
+    review_updated_at: review ? new Date().toISOString() : null,
+  }
+
+  const { data: result, error } = await supabase
+    .from('user_games')
+    .update(updateData)
+    .eq('id', userGameId)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  // Create review activity if this is a new or updated review (not deletion)
+  if (review && current && !current.review) {
+    import('./activity-queries').then(({ createReviewActivity }) => {
+      createReviewActivity(current.user_id, current.game_id)
+        .catch(console.error)
+    })
+  }
+
+  return result
+}
+
+/**
+ * Get user's review for a specific game
+ */
+export async function getUserReviewForGame(
+  userId: string,
+  gameId: string
+): Promise<{ id: string; review: string | null; rating: number | null } | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_games')
+    .select('id, review, rating')
+    .eq('user_id', userId)
+    .eq('game_id', gameId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
 }

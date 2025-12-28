@@ -205,6 +205,74 @@ export type UserProfileWithGames = UserProfile & {
 }
 
 // ===========================================
+// USER FOLLOWS (Social)
+// ===========================================
+
+export type UserFollow = Database['public']['Tables']['user_follows']['Row']
+export type UserFollowInsert = Database['public']['Tables']['user_follows']['Insert']
+
+// Extended types with user data
+export type UserFollowWithFollower = UserFollow & {
+  follower: Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'custom_avatar_url'>
+}
+
+export type UserFollowWithFollowing = UserFollow & {
+  following: Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'custom_avatar_url'>
+}
+
+// Stats type for profile display
+export interface FollowStats {
+  followerCount: number
+  followingCount: number
+}
+
+// ===========================================
+// USER ACTIVITIES (Activity Feed)
+// ===========================================
+
+export type ActivityType = 'follow' | 'shelf_add' | 'shelf_update' | 'rating' | 'top_games_update' | 'review'
+
+export type UserActivity = Database['public']['Tables']['user_activities']['Row']
+export type UserActivityInsert = Database['public']['Tables']['user_activities']['Insert']
+
+// Extended type with user/game relations for display
+export interface ActivityWithDetails extends UserActivity {
+  user: Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'custom_avatar_url'>
+  target_user?: Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'custom_avatar_url'> | null
+  game?: Pick<Game, 'id' | 'name' | 'slug' | 'box_image_url' | 'thumbnail_url'> | null
+}
+
+// Feed response type for pagination
+export interface ActivityFeedResponse {
+  activities: ActivityWithDetails[]
+  hasMore: boolean
+  nextCursor?: string
+}
+
+// ===========================================
+// USER NOTIFICATIONS
+// ===========================================
+
+export type NotificationType = 'new_follower' | 'rating'
+
+export type UserNotification = Database['public']['Tables']['user_notifications']['Row']
+export type UserNotificationInsert = Database['public']['Tables']['user_notifications']['Insert']
+export type UserNotificationUpdate = Database['public']['Tables']['user_notifications']['Update']
+
+// Extended type with actor details for display
+export interface NotificationWithDetails extends UserNotification {
+  actor: Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'custom_avatar_url'> | null
+  game?: Pick<Game, 'id' | 'name' | 'slug' | 'box_image_url' | 'thumbnail_url'> | null
+}
+
+// Response type for pagination
+export interface NotificationsResponse {
+  notifications: NotificationWithDetails[]
+  hasMore: boolean
+  nextCursor?: string
+}
+
+// ===========================================
 // GAME FAMILIES & RELATIONS
 // ===========================================
 

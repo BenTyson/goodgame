@@ -23,7 +23,9 @@ import { Separator } from '@/components/ui/separator'
 import { ImageGallery, RelatedGamesAsync, RelatedGamesSkeleton, AwardBadgeList, FamilyBadge } from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
+import { ReviewSection, AggregateRating } from '@/components/reviews'
 import { getGameWithDetails, getAllGameSlugs, getGameAwards, getGameFamily } from '@/lib/supabase/queries'
+import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 import { getInitials, getInitialsColor } from '@/components/publishers'
 
@@ -105,9 +107,11 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: game.name, href: `/games/${game.slug}` },
   ]
 
-  const [gameAwards, gameFamily] = await Promise.all([
+  const [gameAwards, gameFamily, reviewsData, aggregateRating] = await Promise.all([
     getGameAwards(game.id),
-    getGameFamily(game.id)
+    getGameFamily(game.id),
+    getGameReviews(game.id),
+    getGameAggregateRating(game.id),
   ])
 
   return (
@@ -170,6 +174,16 @@ export default async function GamePage({ params }: GamePageProps) {
 
           {game.tagline && (
             <p className="mt-2 text-xl text-muted-foreground">{game.tagline}</p>
+          )}
+
+          {/* Community Rating */}
+          {aggregateRating.count > 0 && (
+            <div className="mt-4">
+              <AggregateRating
+                average={aggregateRating.average}
+                count={aggregateRating.count}
+              />
+            </div>
           )}
 
           {/* Quick stats */}
@@ -429,6 +443,15 @@ export default async function GamePage({ params }: GamePageProps) {
           </div>
         </>
       )}
+
+      {/* Reviews Section */}
+      <Separator className="my-10" />
+      <ReviewSection
+        gameId={game.id}
+        gameName={game.name}
+        initialReviews={reviewsData.reviews}
+        initialHasMore={reviewsData.hasMore}
+      />
 
       {/* External links */}
       {game.bgg_id && (

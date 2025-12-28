@@ -24,7 +24,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TopGamesDisplay } from '@/components/profile/TopGamesDisplay'
 import { ProfileStats } from '@/components/profile/ProfileStats'
-import type { UserProfile, SocialLinks, Game } from '@/types/database'
+import { FollowButton } from '@/components/profile/FollowButton'
+import { FollowStats } from '@/components/profile/FollowStats'
+import type { UserProfile, SocialLinks, Game, FollowStats as FollowStatsType } from '@/types/database'
 import type { TopGameWithDetails } from '@/lib/supabase/user-queries'
 
 interface ShelfGame {
@@ -60,6 +62,8 @@ interface ProfileContentProps {
   profileStats: ProfileStatsData | null
   showShelf: boolean
   isOwnProfile: boolean
+  followStats: FollowStatsType | null
+  isFollowingUser: boolean
 }
 
 const statusConfig = {
@@ -95,6 +99,8 @@ export function ProfileContent({
   profileStats,
   showShelf,
   isOwnProfile,
+  followStats,
+  isFollowingUser,
 }: ProfileContentProps) {
   const displayName = profile.display_name || profile.username || 'User'
   const memberSince = profile.created_at
@@ -183,14 +189,22 @@ export function ProfileContent({
                   <p className="text-muted-foreground">@{profile.username}</p>
                 </div>
 
-                {isOwnProfile && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/settings">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Edit Profile
-                    </Link>
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {!isOwnProfile && (
+                    <FollowButton
+                      targetUserId={profile.id}
+                      initialIsFollowing={isFollowingUser}
+                    />
+                  )}
+                  {isOwnProfile && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/settings">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Bio */}
@@ -221,6 +235,16 @@ export function ProfileContent({
                   </div>
                 )}
               </div>
+
+              {/* Follow Stats */}
+              {followStats && profile.username && (
+                <FollowStats
+                  username={profile.username}
+                  followerCount={followStats.followerCount}
+                  followingCount={followStats.followingCount}
+                  className="mt-4"
+                />
+              )}
 
               {/* Social Links */}
               {hasSocialLinks && (

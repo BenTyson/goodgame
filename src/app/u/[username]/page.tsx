@@ -2,7 +2,8 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileContent } from './ProfileContent'
-import type { UserProfile, SocialLinks } from '@/types/database'
+import { getFollowStats, checkIsFollowing } from '@/lib/supabase/user-queries'
+import type { UserProfile, SocialLinks, FollowStats } from '@/types/database'
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>
@@ -82,6 +83,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     topGames = topGamesData
   }
 
+  // Fetch follow stats
+  let followStats: FollowStats | null = null
+  let isFollowingUser = false
+
+  if (profile.profile_visibility === 'public' || isOwnProfile) {
+    followStats = await getFollowStats(profile.id)
+
+    // Check if current user is following this profile
+    if (currentUser && !isOwnProfile) {
+      isFollowingUser = await checkIsFollowing(currentUser.id, profile.id)
+    }
+  }
+
   // Fetch shelf data if it should be shown
   let shelfData = null
   let shelfStats = null
@@ -159,6 +173,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       profileStats={profileStats}
       showShelf={showShelf}
       isOwnProfile={isOwnProfile}
+      followStats={followStats}
+      isFollowingUser={isFollowingUser}
     />
   )
 }

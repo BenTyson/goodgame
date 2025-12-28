@@ -1,8 +1,8 @@
 # Current Status
 
-> Last Updated: 2025-12-27
+> Last Updated: 2025-12-27 (Phase 16 Complete)
 
-## Phase: 15 - Profile Enhancements (Images, Stats, Badges)
+## Phase: 16 - Social Features (COMPLETE)
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -33,6 +33,10 @@
 - **Collection Insights** - Stats showing ratings, player count preferences
 - **Last Active** - Shows when user was last active
 - **Profile Badges** - Admin role badge, Collector 50+/100+, Rater badges
+- **Following System** - Follow/unfollow users, followers/following lists
+- **Activity Feed** - See activities from followed users at `/feed`
+- **Notifications** - Bell icon in header, new follower notifications
+- **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 
 ### Environments
 
@@ -73,6 +77,22 @@
 | Last active indicator | ✅ |
 | Profile badges (role, milestones) | ✅ |
 
+### Social Features (Phase 16)
+| Feature | Status |
+|---------|--------|
+| Follow/unfollow users | ✅ |
+| Followers/following lists | ✅ |
+| Follow stats on profiles | ✅ |
+| Activity feed (`/feed`) | ✅ |
+| Activity types (follow, shelf, rating, review, top games) | ✅ |
+| Notification bell in header | ✅ |
+| Unread notification count | ✅ |
+| New follower notifications | ✅ |
+| Mark notifications read | ✅ |
+| Game reviews on shelf items | ✅ |
+| Aggregate ratings on game pages | ✅ |
+| Review section on game pages | ✅ |
+
 **Profile Enhancements:**
 - Header banner image upload (drag & drop)
 - Custom avatar (overrides Google profile picture)
@@ -98,6 +118,9 @@
 - `/shelf` - Your game collection (card grid with tab filters)
 - `/settings` - Profile settings (username, bio, location, social links, privacy)
 - `/u/[username]` - Public user profile page
+- `/u/[username]/followers` - Followers list
+- `/u/[username]/following` - Following list
+- `/feed` - Activity feed (from followed users)
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -246,7 +269,12 @@ supabase/migrations/
 ├── 00026_populate_publishers_from_text.sql # Populate publishers from text fields
 ├── 00027_game_keytags.sql           # Keytag booleans for homepage collections
 ├── 00028_user_top_games.sql         # User top 10 games ranking
-└── 00029_profile_enhancements.sql   # Header image, custom avatar, last_active_at
+├── 00029_profile_enhancements.sql   # Header image, custom avatar, last_active_at
+├── 00030_user_follows.sql           # Following system
+├── 00031_user_activities.sql        # Activity feed
+├── 00032_user_notifications.sql     # Notifications with trigger
+├── 00033_game_reviews.sql           # Review columns on user_games
+└── 00034_add_review_activity_type.sql # Review activity type
 ```
 
 ---
@@ -298,7 +326,7 @@ railway logs                                                      # View logs
 | File | Purpose |
 |------|---------|
 | `src/lib/auth/AuthContext.tsx` | React auth context provider |
-| `src/lib/supabase/user-queries.ts` | Shelf + profile CRUD operations |
+| `src/lib/supabase/user-queries.ts` | Shelf + profile + reviews CRUD |
 | `src/components/auth/UserMenu.tsx` | Header user dropdown |
 | `src/components/shelf/AddToShelfButton.tsx` | Add game to shelf |
 | `src/components/shelf/RatingInput.tsx` | 1-10 star rating |
@@ -312,6 +340,25 @@ railway logs                                                      # View logs
 | `src/components/profile/ProfileStats.tsx` | Collection insights display |
 | `src/components/settings/ProfileImageUpload.tsx` | Header/avatar upload component |
 | `src/app/api/user/profile-image/route.ts` | Profile image upload API |
+
+### Social Features
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/activity-queries.ts` | Activity feed queries |
+| `src/lib/supabase/notification-queries.ts` | Notification queries |
+| `src/components/profile/FollowButton.tsx` | Follow/unfollow button |
+| `src/components/profile/FollowStats.tsx` | Follower/following counts |
+| `src/components/profile/FollowersList.tsx` | Followers/following list |
+| `src/components/feed/ActivityFeed.tsx` | Activity feed with infinite scroll |
+| `src/components/feed/ActivityItem.tsx` | Individual activity card |
+| `src/components/notifications/NotificationBell.tsx` | Bell icon + dropdown |
+| `src/components/reviews/ReviewSection.tsx` | Reviews on game page |
+| `src/components/reviews/ReviewCard.tsx` | Individual review display |
+| `src/components/reviews/ReviewDialog.tsx` | Write/edit review modal |
+| `src/components/reviews/AggregateRating.tsx` | Average rating display |
+| `src/app/feed/page.tsx` | Activity feed page |
+| `src/app/u/[username]/followers/page.tsx` | Followers list page |
+| `src/app/u/[username]/following/page.tsx` | Following list page |
 
 ### Content Pipeline
 | File | Purpose |
@@ -398,23 +445,14 @@ railway logs                                                      # View logs
 
 ## Next Steps
 
-### Immediate
-- Push migrations 00028-00029 to production (Top 10 Games + Profile Enhancements)
-- Test profile image uploads on staging
-
 ### Content
 - Upload images for all games via admin
 - Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
 - Import more games to populate families and relations
 
-### Social Features (Phase 16+)
-- Following system (follow other users)
-- Activity feed ("X rated Y", "X added Y to shelf")
-- Notifications
-- Game reviews tied to shelf items
-
-### Future
+### Phase 17+ - Future Features
 - Marketplace (buy/sell/trade)
 - Local discovery (find gamers nearby, game nights)
-- Enhanced profile stats (category breakdown - requires joining game_categories)
+- Enhanced profile stats (category breakdown)
+- Push to production (merge develop → main)
