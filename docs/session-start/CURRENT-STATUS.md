@@ -2,7 +2,7 @@
 
 > Last Updated: 2025-12-27
 
-## Phase: 14 - User Profile Expansion (Top 10 Games)
+## Phase: 15 - Profile Enhancements (Images, Stats, Badges)
 
 ### What's Live
 - **35 games** (16 with full content + 19 BGG top 20 games pending content)
@@ -28,6 +28,11 @@
 - **Streamlined Nav** - Removed redundant Rules/Score Sheets links (pages still exist for SEO)
 - **Game Keytags** - Trending, Top Rated, Staff Pick, Hidden Gem, New Release (admin toggles)
 - **Top 10 Games** - Users can curate their all-time favorite games on profiles
+- **Profile Header Images** - Custom banner images for profiles
+- **Custom Avatars** - Override Google OAuth avatar with custom upload
+- **Collection Insights** - Stats showing ratings, player count preferences
+- **Last Active** - Shows when user was last active
+- **Profile Badges** - Admin role badge, Collector 50+/100+, Rater badges
 
 ### Environments
 
@@ -62,6 +67,18 @@
 | Profile/shelf visibility controls | ✅ |
 | Top 10 Games ranking | ✅ |
 | Drag & drop ranking editor | ✅ |
+| Profile header/banner image | ✅ |
+| Custom avatar upload | ✅ |
+| Collection insights/stats | ✅ |
+| Last active indicator | ✅ |
+| Profile badges (role, milestones) | ✅ |
+
+**Profile Enhancements:**
+- Header banner image upload (drag & drop)
+- Custom avatar (overrides Google profile picture)
+- Collection insights showing average rating, player count preferences
+- Last active timestamp with relative time display
+- Badges: Admin role, Collector 50+/100+, Rater (25+ ratings)
 
 **Top 10 Games:**
 - Curate favorite games (any game in database)
@@ -228,7 +245,8 @@ supabase/migrations/
 ├── 00025_bgg_top20_games.sql        # 19 BGG top 20 games
 ├── 00026_populate_publishers_from_text.sql # Populate publishers from text fields
 ├── 00027_game_keytags.sql           # Keytag booleans for homepage collections
-└── 00028_user_top_games.sql         # User top 10 games ranking
+├── 00028_user_top_games.sql         # User top 10 games ranking
+└── 00029_profile_enhancements.sql   # Header image, custom avatar, last_active_at
 ```
 
 ---
@@ -291,6 +309,9 @@ railway logs                                                      # View logs
 | `src/app/u/[username]/page.tsx` | Public profile page |
 | `src/components/profile/TopGamesDisplay.tsx` | Top 10 games display with podium |
 | `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor modal |
+| `src/components/profile/ProfileStats.tsx` | Collection insights display |
+| `src/components/settings/ProfileImageUpload.tsx` | Header/avatar upload component |
+| `src/app/api/user/profile-image/route.ts` | Profile image upload API |
 
 ### Content Pipeline
 | File | Purpose |
@@ -344,6 +365,12 @@ railway logs                                                      # View logs
 - Public read access
 - Authenticated upload/delete
 - Path: `{publisher-slug}/{timestamp}.{ext}`
+- Max 5MB, JPG/PNG/WebP/GIF
+
+**Bucket**: `user-profiles` (exists in both staging and production)
+- Public read access
+- Authenticated upload/delete (users can only upload to their own folder)
+- Path: `{user-id}/{type}/{timestamp}.{ext}` (type = header or avatar)
 - Max 5MB, JPG/PNG/WebP/GIF
 
 ---
