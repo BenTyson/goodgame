@@ -64,6 +64,7 @@
 - ~~Rules/Score Sheets in nav~~ - Removed (redundant, just filtered game lists; pages kept for SEO)
 - ~~Publisher initials with rainbow colors~~ - Changed to muted grays (less harsh on eyes)
 - ~~Emoji in shelf dropdown/keytags~~ - Replaced with Lucide icons (cleaner, more professional)
+- ~~Profile header/banner images~~ - Removed in V3 redesign (clean card-based layout, Airbnb-inspired)
 
 ## Images
 
@@ -73,14 +74,14 @@
 | Development images | BoardGameGeek URLs | Real images without hosting cost during dev |
 | Production images | Supabase Storage | Self-hosted, no external dependencies |
 | Image types | cover, hero, gallery, setup, gameplay, components | Categorized for different uses |
-| Profile images | Supabase Storage (`user-profiles` bucket) | Header banners and custom avatars |
+| Profile images | Supabase Storage (`user-profiles` bucket) | Custom avatars |
 
 ## What NOT to Build (MVP)
 
 - ~~User accounts / authentication~~ ✅ Built
 - Community features (comments, forums)
 - ~~Game ratings / reviews~~ ✅ Built (personal ratings on shelf)
-- ~~User profiles~~ ✅ Built (with header images, avatars, stats, badges)
+- ~~User profiles~~ ✅ Built (card-based layout, avatars, stats, badges)
 - ~~Top 10 rankings~~ ✅ Built (drag & drop editor)
 - Mobile app
 - ~~BGG data scraping~~ ✅ Built (import pipeline)

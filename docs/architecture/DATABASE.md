@@ -463,7 +463,7 @@ User profile data linked to Supabase auth.
 | username | VARCHAR(30) | Unique @username |
 | avatar_url | VARCHAR(500) | Google OAuth profile image |
 | custom_avatar_url | VARCHAR(500) | Custom uploaded avatar (overrides avatar_url) |
-| header_image_url | VARCHAR(500) | Profile banner image |
+| header_image_url | VARCHAR(500) | Deprecated (removed in V3 profile redesign) |
 | bio | TEXT | User biography |
 | location | VARCHAR(100) | User location |
 | social_links | JSONB | Social links (bgg_username, twitter_handle, etc.) |

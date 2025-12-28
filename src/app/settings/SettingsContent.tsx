@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, ImageIcon } from 'lucide-react'
+import Link from 'next/link'
+import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, UserCircle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,8 +23,7 @@ interface SettingsContentProps {
 export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
   const { refreshProfile } = useAuth()
 
-  // Profile images
-  const [headerImageUrl, setHeaderImageUrl] = useState(profile?.header_image_url || null)
+  // Profile image
   const [customAvatarUrl, setCustomAvatarUrl] = useState(profile?.custom_avatar_url || null)
 
   // Profile fields
@@ -102,29 +102,19 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
       </div>
 
       <div className="space-y-6">
-        {/* Profile Images Card */}
+        {/* Profile Avatar Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              Profile Images
+              <UserCircle className="h-5 w-5" />
+              Profile Picture
             </CardTitle>
             <CardDescription>
-              Customize your profile with a header banner and avatar
+              Upload a custom avatar for your profile
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <ProfileImageUpload
-              imageType="header"
-              currentUrl={headerImageUrl}
-              onImageChange={(url) => {
-                setHeaderImageUrl(url)
-                refreshProfile()
-              }}
-              placeholder="A banner image displayed at the top of your profile"
-            />
-
-            <div className="border-t pt-6">
+          <CardContent>
+            <div className="max-w-xs">
               <ProfileImageUpload
                 imageType="avatar"
                 currentUrl={customAvatarUrl}
@@ -361,11 +351,19 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
           </CardContent>
         </Card>
 
-        {/* Save Button */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-4">
           <Button onClick={handleSave} disabled={isSaving || !usernameValid}>
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
+          {username && (
+            <Button variant="outline" asChild>
+              <Link href={`/u/${username}`}>
+                View Profile
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
           {message && (
             <p className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-destructive'}`}>
               {message.text}

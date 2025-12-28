@@ -444,3 +444,56 @@ export async function searchGamesForPicker(query: string, limit = 10): Promise<{
   if (error) throw error
   return data || []
 }
+
+// =====================================================
+// MUTUAL GAMES (SOCIAL DISCOVERY)
+// =====================================================
+
+export interface MutualGame {
+  id: string
+  name: string
+  slug: string
+  box_image_url: string | null
+}
+
+/**
+ * Get games that both users have in their shelf
+ * Used for "Games You Both Have" feature on profile pages
+ */
+export async function getMutualGames(
+  userId1: string,
+  userId2: string,
+  limit = 12
+): Promise<MutualGame[]> {
+  const supabase = createClient()
+
+  // Get game IDs from user 1's shelf
+  const { data: user1Games, error: error1 } = await supabase
+    .from('user_games')
+    .select('game_id')
+    .eq('user_id', userId1)
+
+  if (error1) throw error1
+  if (!user1Games || user1Games.length === 0) return []
+
+  const user1GameIds = user1Games.map(g => g.game_id)
+
+  // Get games from user 2's shelf that are also in user 1's shelf
+  const { data: mutualGames, error: error2 } = await supabase
+    .from('user_games')
+    .select(`
+      game:games(id, name, slug, box_image_url)
+    `)
+    .eq('user_id', userId2)
+    .in('game_id', user1GameIds)
+    .limit(limit)
+
+  if (error2) throw error2
+
+  // Extract and dedupe games
+  const games = (mutualGames || [])
+    .map(item => item.game)
+    .filter((game): game is MutualGame => game !== null)
+
+  return games
+}

@@ -169,3 +169,63 @@ export async function getUserReviewForGame(
   if (error) throw error
   return data
 }
+
+// =====================================================
+// USER PROFILE REVIEWS
+// =====================================================
+
+export interface UserReviewWithGame {
+  id: string
+  rating: number | null
+  review: string
+  review_updated_at: string
+  game: {
+    id: string
+    name: string
+    slug: string
+    box_image_url: string | null
+  }
+}
+
+/**
+ * Get all reviews written by a user (for profile page)
+ */
+export async function getUserReviews(
+  userId: string,
+  limit = 10
+): Promise<UserReviewWithGame[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('user_games')
+    .select(`
+      id,
+      rating,
+      review,
+      review_updated_at,
+      game:games(id, name, slug, box_image_url)
+    `)
+    .eq('user_id', userId)
+    .not('review', 'is', null)
+    .order('review_updated_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return (data || []) as UserReviewWithGame[]
+}
+
+/**
+ * Get total review count for a user
+ */
+export async function getUserReviewCount(userId: string): Promise<number> {
+  const supabase = createClient()
+
+  const { count, error } = await supabase
+    .from('user_games')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .not('review', 'is', null)
+
+  if (error) throw error
+  return count || 0
+}

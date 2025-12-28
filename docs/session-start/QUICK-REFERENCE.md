@@ -80,8 +80,8 @@ src/app/
 │       └── queue/            # Import queue
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
-├── settings/page.tsx          # Profile settings (with image uploads)
-├── u/[username]/page.tsx      # Public user profiles (V2 UI: horizontal layout, tooltips)
+├── settings/page.tsx          # Profile settings (avatar upload)
+├── u/[username]/page.tsx      # Public user profiles (V3 UI: card-based, two-column)
 ├── u/[username]/followers/    # Followers list
 ├── u/[username]/following/    # Following list
 ├── feed/page.tsx              # Activity feed from followed users
@@ -104,7 +104,7 @@ src/components/
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
-├── profile/                   # TopGamesDisplay (horizontal), TopGamesEditor, ProfileStats, FollowButton
+├── profile/                   # ProfileIdentityCard, ProfileHeroStats, ProfileShelfGrid, ProfileInsights, ProfileReviews, MutualGamesSection, TopGamesDisplay, TopGamesEditor, FollowButton
 ├── feed/                      # ActivityFeed, ActivityItem
 ├── notifications/             # NotificationBell
 ├── reviews/                   # ReviewSection, ReviewCard, ReviewDialog, AggregateRating
@@ -141,12 +141,14 @@ GameAward        // Game-award link type
 Designer         // Designer type
 Publisher        // Publisher type
 Artist           // Artist type
-UserProfile      // User profile type (with header_image_url, custom_avatar_url, last_active_at)
+UserProfile      // User profile type (with custom_avatar_url, last_active_at)
 UserGame         // User shelf item type
 UserTopGame      // User's top 10 ranked games
 ShelfStatus      // 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
 SocialLinks      // Social links interface (bgg_username, twitter_handle, etc.)
 TopGameWithDetails // Top game with game details for display
+MutualGame       // Game both users have in common
+UserReviewWithGame // User's review with game details for profile display
 UserFollow       // Follow relationship
 FollowStats      // followerCount, followingCount
 ActivityType     // 'follow' | 'shelf_add' | 'shelf_update' | 'rating' | 'top_games_update' | 'review'

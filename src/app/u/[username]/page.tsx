@@ -2,7 +2,8 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileContent } from './ProfileContent'
-import { getFollowStats, checkIsFollowing } from '@/lib/supabase/user-queries'
+import { getFollowStats, checkIsFollowing, getMutualGames } from '@/lib/supabase/user-queries'
+import { getUserReviews, getUserReviewCount } from '@/lib/supabase/review-queries'
 import type { UserProfile, SocialLinks, FollowStats } from '@/types/database'
 
 interface ProfilePageProps {
@@ -163,6 +164,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Parse social links
   const socialLinks = (profile.social_links || {}) as SocialLinks
 
+  // Fetch user reviews (for profile reviews section)
+  const userReviews = await getUserReviews(profile.id, 10)
+  const reviewCount = await getUserReviewCount(profile.id)
+
+  // Fetch mutual games (only if viewing another user's profile and logged in)
+  let mutualGames = null
+  if (currentUser && !isOwnProfile && showShelf) {
+    mutualGames = await getMutualGames(currentUser.id, profile.id, 12)
+  }
+
   return (
     <ProfileContent
       profile={profile}
@@ -175,6 +186,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       isOwnProfile={isOwnProfile}
       followStats={followStats}
       isFollowingUser={isFollowingUser}
+      userReviews={userReviews}
+      reviewCount={reviewCount}
+      mutualGames={mutualGames}
     />
   )
 }

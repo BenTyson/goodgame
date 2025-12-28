@@ -28,10 +28,13 @@ export function TopGamesDisplay({ topGames, isOwner, userId, onUpdate }: TopGame
   if (games.length === 0 && isOwner) {
     return (
       <>
-        <div className="rounded-xl bg-card/50 p-6">
-          <div className="text-center py-4">
-            <Trophy className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-            <h3 className="font-semibold mb-1">Add Your Top Games</h3>
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-muted-foreground" />
+            Top Games
+          </h2>
+          <div className="py-8 text-center rounded-xl border border-dashed">
+            <Trophy className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
               Showcase your all-time favorites
             </p>
@@ -60,23 +63,23 @@ export function TopGamesDisplay({ topGames, isOwner, userId, onUpdate }: TopGame
 
   return (
     <>
-      <div className="rounded-xl bg-card/50 p-4 sm:p-5">
+      <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-muted-foreground" />
             Top {games.length} Games
-          </h3>
+          </h2>
           {isOwner && (
-            <Button variant="ghost" size="sm" onClick={() => setIsEditorOpen(true)} className="h-7 px-2">
-              <Pencil className="h-3.5 w-3.5 mr-1" />
+            <Button variant="ghost" size="sm" onClick={() => setIsEditorOpen(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
               Edit
             </Button>
           )}
         </div>
 
         {/* Horizontal strip of games */}
-        <div className="flex gap-3 overflow-x-auto pt-2 pb-2 pl-2 -mt-2 -mb-2 -ml-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        <div className="flex gap-3 overflow-x-auto py-1 px-1 -mx-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
           {games.map((item) => (
             <GameCard key={item.id} game={item} />
           ))}
@@ -99,19 +102,22 @@ interface GameCardProps {
 }
 
 function GameCard({ game }: GameCardProps) {
+  // Medal colors for top 3 with subtle glow
+  const medalStyles: Record<number, string> = {
+    1: 'ring-2 ring-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.4)]', // Gold
+    2: 'ring-2 ring-gray-300 shadow-[0_0_8px_rgba(209,213,219,0.4)]',   // Silver
+    3: 'ring-2 ring-amber-600 shadow-[0_0_8px_rgba(217,119,6,0.4)]',    // Bronze
+  }
+  const medalStyle = medalStyles[game.position] || ''
+
   return (
     <Link
       href={`/games/${game.game.slug}`}
       className="group flex-shrink-0 w-20 sm:w-24"
     >
-      <div className="relative">
-        {/* Position badge - uses primary color */}
-        <div className="absolute -top-1.5 -left-1.5 z-10 h-5 w-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-sm">
-          {game.position}
-        </div>
-
-        {/* Game image - uniform size */}
-        <div className="relative aspect-square rounded-lg overflow-hidden bg-muted shadow-sm group-hover:shadow-md transition-shadow">
+      {/* Game image - outer wrapper for ring visibility */}
+      <div className={`relative aspect-square rounded-lg ${medalStyle}`}>
+        <div className="absolute inset-0 rounded-lg overflow-hidden bg-muted">
           {game.game.box_image_url || game.game.thumbnail_url ? (
             <Image
               src={game.game.box_image_url || game.game.thumbnail_url || ''}
@@ -130,9 +136,10 @@ function GameCard({ game }: GameCardProps) {
         </div>
       </div>
 
-      {/* Game name */}
-      <p className="mt-1.5 text-xs font-medium text-center truncate group-hover:text-primary transition-colors">
-        {game.game.name}
+      {/* Position + Game name */}
+      <p className="mt-1.5 text-xs text-center truncate text-muted-foreground group-hover:text-foreground transition-colors">
+        <span className="text-muted-foreground/60 mr-0.5">{game.position}.</span>
+        <span className="font-medium">{game.game.name}</span>
       </p>
     </Link>
   )

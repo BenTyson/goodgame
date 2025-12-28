@@ -1,8 +1,33 @@
 # Current Status
 
-> Last Updated: 2025-12-28 (Security Audit & Code Cleanup)
+> Last Updated: 2025-12-28 (Profile V3 Redesign + Settings Cleanup)
 
 ## Phase: 16 - Social Features (COMPLETE)
+
+### Profile V3 Redesign (2025-12-28)
+Modern Airbnb-inspired card-based layout:
+- **Two-column layout**: Sticky identity card on left, scrollable content on right
+- **No banner image**: Clean card-based design
+- **Hero Stats**: Big number cards (Games, Avg Rating, Followers, Reviews)
+- **Section order**: Shelf (top, prominent), Top Games, Stats, Insights, Reviews, Mutual Games
+- **Top 10 Games**: Gold/silver/bronze rings with subtle glow for positions 1-3
+- **New components** (modular architecture):
+  - `ProfileIdentityCard` - Avatar, name, bio, social links, follow button
+  - `ProfileHeroStats` - Big stat cards with achievement badges
+  - `ProfileShelfGrid` - Game collection with filter tabs
+  - `ProfileInsights` - Collection breakdown, player count preferences
+  - `ProfileReviews` - User's written reviews showcase
+  - `MutualGamesSection` - "Games You Both Have" social discovery
+- **New queries**:
+  - `getMutualGames()` - Games both users have in common
+  - `getUserReviews()` - User's reviews for profile display
+  - `getUserReviewCount()` - Total review count
+- **ProfileContent.tsx** refactored from 567 lines to ~145 lines (composition)
+
+### Settings Page Cleanup (2025-12-28)
+- Removed header/banner image upload (profile no longer uses banner)
+- Avatar upload constrained to appropriate size (max-w-xs)
+- Added "View Profile" button for quick navigation back to profile
 
 ### Security & Maintenance (2025-12-28)
 - Fixed open redirect vulnerability in auth callback
@@ -74,7 +99,6 @@
 - **Streamlined Nav** - Removed redundant Rules/Score Sheets links (pages still exist for SEO)
 - **Game Keytags** - Trending, Top Rated, Staff Pick, Hidden Gem, New Release (admin toggles)
 - **Top 10 Games** - Users can curate their all-time favorite games on profiles
-- **Profile Header Images** - Custom banner images for profiles
 - **Custom Avatars** - Override Google OAuth avatar with custom upload
 - **Collection Insights** - Stats showing ratings, player count preferences
 - **Last Active** - Shows when user was last active
@@ -112,7 +136,6 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | Profile/shelf visibility controls | ✅ |
 | Top 10 Games ranking | ✅ |
 | Drag & drop ranking editor | ✅ |
-| Profile header/banner image | ✅ |
 | Custom avatar upload | ✅ |
 | Collection insights/stats | ✅ |
 | Last active indicator | ✅ |
@@ -134,13 +157,14 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | Aggregate ratings on game pages | ✅ |
 | Review section on game pages | ✅ |
 
-**Profile V2 UI (Redesigned):**
-- Modern horizontal layout: avatar + name side-by-side (bottom-aligned)
-- Avatar uses teal primary color for initials (consistent branding)
-- Icon-only social links with tooltips (BGG, X, Instagram, Discord, Website)
-- Stat pills in header (games, avg rating, followers, following)
-- Two-column layout: "My Shelf" grid + Insights sidebar on desktop
-- Header banner image upload (drag & drop)
+**Profile V3 UI (Current):**
+- Two-column layout: sticky identity card on left, scrollable content on right
+- No banner - clean card-based design (Airbnb-inspired)
+- Identity card: large avatar, name/username, bio, location, social icons, follow button
+- Hero stats: big number cards (Games, Avg Rating, Followers, Reviews)
+- Section order: Shelf (prominent), Top Games, Stats, Insights, Reviews, Mutual Games
+- Top 10 games: gold/silver/bronze rings with subtle glow for top 3
+- Mutual games: "Games You Both Have" social discovery feature
 - Custom avatar (overrides Google profile picture)
 - Last active timestamp with relative time display
 - Badges: Admin role, Collector 50+/100+, Rater (25+ ratings)
@@ -328,7 +352,8 @@ git push origin develop  # Deploy to staging
 | File | Purpose |
 |------|---------|
 | `src/lib/auth/AuthContext.tsx` | React auth context provider |
-| `src/lib/supabase/user-queries.ts` | Shelf + profile + reviews CRUD |
+| `src/lib/supabase/user-queries.ts` | Shelf + profile + mutual games CRUD |
+| `src/lib/supabase/review-queries.ts` | Game reviews + user reviews |
 | `src/components/auth/UserMenu.tsx` | Header user dropdown |
 | `src/components/shelf/AddToShelfButton.tsx` | Add game to shelf |
 | `src/components/shelf/RatingInput.tsx` | 1-10 star rating |
@@ -336,11 +361,17 @@ git push origin develop  # Deploy to staging
 | `src/app/login/page.tsx` | Login page |
 | `src/app/shelf/page.tsx` | Shelf page |
 | `src/app/settings/page.tsx` | Profile settings |
-| `src/app/u/[username]/page.tsx` | Public profile page |
-| `src/components/profile/TopGamesDisplay.tsx` | Top 10 games horizontal strip display |
-| `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor modal (sticky search) |
-| `src/components/profile/ProfileStats.tsx` | Collection insights display |
-| `src/components/settings/ProfileImageUpload.tsx` | Header/avatar upload component |
+| `src/app/u/[username]/page.tsx` | Public profile page (server component) |
+| `src/app/u/[username]/ProfileContent.tsx` | Profile layout orchestrator |
+| `src/components/profile/ProfileIdentityCard.tsx` | Left sticky card (avatar, bio, social) |
+| `src/components/profile/ProfileHeroStats.tsx` | Big stat cards + badges |
+| `src/components/profile/ProfileShelfGrid.tsx` | Game collection with filter tabs |
+| `src/components/profile/ProfileInsights.tsx` | Collection analytics |
+| `src/components/profile/ProfileReviews.tsx` | User's written reviews |
+| `src/components/profile/MutualGamesSection.tsx` | "Games You Both Have" |
+| `src/components/profile/TopGamesDisplay.tsx` | Top 10 games horizontal strip |
+| `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor |
+| `src/components/settings/ProfileImageUpload.tsx` | Avatar upload |
 | `src/app/api/user/profile-image/route.ts` | Profile image upload API |
 
 ### Social Features
@@ -430,7 +461,7 @@ git push origin develop  # Deploy to staging
 **Bucket**: `user-profiles` (exists in both staging and production)
 - Public read access
 - Authenticated upload/delete (users can only upload to their own folder)
-- Path: `{user-id}/{type}/{timestamp}.{ext}` (type = header or avatar)
+- Path: `{user-id}/avatar/{timestamp}.{ext}`
 - Max 5MB, JPG/PNG/WebP/GIF
 
 ---
