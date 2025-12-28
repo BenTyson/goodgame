@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import { Search, GripVertical, X, Plus, Loader2, Trophy } from 'lucide-react'
 import {
   DndContext,
@@ -213,32 +212,9 @@ export function TopGamesEditor({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto -mx-6 px-6">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={slots.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2">
-                {slots.map((slot) => (
-                  <SortableSlot
-                    key={slot.id}
-                    slot={slot}
-                    isActive={activeSlotId === slot.id}
-                    onActivate={() => setActiveSlotId(slot.id)}
-                    onRemove={() => handleRemoveGame(slot.id)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-
-          {/* Search UI (shown when a slot is active) */}
+          {/* Search UI (shown when a slot is active) - at top for visibility */}
           {activeSlotId && (
-            <div className="mt-4 p-3 border rounded-lg bg-muted/50">
+            <div className="mb-4 p-3 border rounded-lg bg-muted/50 sticky top-0 z-10">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -266,12 +242,10 @@ export function TopGamesEditor({
                     >
                       <div className="relative h-10 w-10 rounded overflow-hidden bg-muted flex-shrink-0">
                         {game.box_image_url || game.thumbnail_url ? (
-                          <Image
-                            src={game.box_image_url || game.thumbnail_url || ''}
+                          <img
+                            src={game.thumbnail_url || game.box_image_url || ''}
                             alt={game.name}
-                            fill
-                            className="object-cover"
-                            sizes="40px"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <span className="flex items-center justify-center h-full text-sm font-bold text-muted-foreground">
@@ -299,6 +273,29 @@ export function TopGamesEditor({
               )}
             </div>
           )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={slots.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {slots.map((slot) => (
+                  <SortableSlot
+                    key={slot.id}
+                    slot={slot}
+                    isActive={activeSlotId === slot.id}
+                    onActivate={() => setActiveSlotId(slot.id)}
+                    onRemove={() => handleRemoveGame(slot.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
 
         <DialogFooter className="border-t pt-4 -mx-6 px-6">
@@ -382,12 +379,10 @@ function SortableSlot({ slot, isActive, onActivate, onRemove }: SortableSlotProp
           {/* Game info */}
           <div className="relative h-10 w-10 rounded overflow-hidden bg-muted flex-shrink-0">
             {slot.game.box_image_url || slot.game.thumbnail_url ? (
-              <Image
-                src={slot.game.box_image_url || slot.game.thumbnail_url || ''}
+              <img
+                src={slot.game.thumbnail_url || slot.game.box_image_url || ''}
                 alt={slot.game.name}
-                fill
-                className="object-cover"
-                sizes="40px"
+                className="h-full w-full object-cover"
               />
             ) : (
               <span className="flex items-center justify-center h-full text-sm font-bold text-muted-foreground">

@@ -1,6 +1,6 @@
 # Current Status
 
-> Last Updated: 2025-12-27 (Phase 16 Complete)
+> Last Updated: 2025-12-28 (Profile V2 UI Redesign)
 
 ## Phase: 16 - Social Features (COMPLETE)
 
@@ -93,17 +93,22 @@
 | Aggregate ratings on game pages | ✅ |
 | Review section on game pages | ✅ |
 
-**Profile Enhancements:**
+**Profile V2 UI (Redesigned):**
+- Modern horizontal layout: avatar + name side-by-side (bottom-aligned)
+- Avatar uses teal primary color for initials (consistent branding)
+- Icon-only social links with tooltips (BGG, X, Instagram, Discord, Website)
+- Stat pills in header (games, avg rating, followers, following)
+- Two-column layout: "My Shelf" grid + Insights sidebar on desktop
 - Header banner image upload (drag & drop)
 - Custom avatar (overrides Google profile picture)
-- Collection insights showing average rating, player count preferences
 - Last active timestamp with relative time display
 - Badges: Admin role, Collector 50+/100+, Rater (25+ ratings)
 
 **Top 10 Games:**
 - Curate favorite games (any game in database)
 - Drag & drop reordering in modal editor
-- Podium display (#1-3 large, #4-10 compact)
+- Horizontal strip display (uniform cards, primary color badges)
+- Search UI at top of modal (sticky, visible on all screen sizes)
 - Visibility follows profile settings
 
 **Shelf Status Icons (Lucide):**
@@ -335,8 +340,8 @@ railway logs                                                      # View logs
 | `src/app/shelf/page.tsx` | Shelf page |
 | `src/app/settings/page.tsx` | Profile settings |
 | `src/app/u/[username]/page.tsx` | Public profile page |
-| `src/components/profile/TopGamesDisplay.tsx` | Top 10 games display with podium |
-| `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor modal |
+| `src/components/profile/TopGamesDisplay.tsx` | Top 10 games horizontal strip display |
+| `src/components/profile/TopGamesEditor.tsx` | Drag & drop ranking editor modal (sticky search) |
 | `src/components/profile/ProfileStats.tsx` | Collection insights display |
 | `src/components/settings/ProfileImageUpload.tsx` | Header/avatar upload component |
 | `src/app/api/user/profile-image/route.ts` | Profile image upload API |

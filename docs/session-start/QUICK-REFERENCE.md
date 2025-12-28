@@ -81,7 +81,7 @@ src/app/
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
 ├── settings/page.tsx          # Profile settings (with image uploads)
-├── u/[username]/page.tsx      # Public user profiles (with stats, badges)
+├── u/[username]/page.tsx      # Public user profiles (V2 UI: horizontal layout, tooltips)
 ├── u/[username]/followers/    # Followers list
 ├── u/[username]/following/    # Following list
 ├── feed/page.tsx              # Activity feed from followed users
@@ -104,7 +104,7 @@ src/components/
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
-├── profile/                   # TopGamesDisplay, TopGamesEditor, ProfileStats, FollowButton, FollowStats
+├── profile/                   # TopGamesDisplay (horizontal), TopGamesEditor, ProfileStats, FollowButton
 ├── feed/                      # ActivityFeed, ActivityItem
 ├── notifications/             # NotificationBell
 ├── reviews/                   # ReviewSection, ReviewCard, ReviewDialog, AggregateRating
