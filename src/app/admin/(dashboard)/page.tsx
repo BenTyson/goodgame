@@ -265,7 +265,9 @@ export default async function AdminDashboard() {
                     <p className="font-medium truncate group-hover:text-primary transition-colors">
                       {game.name}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{game.slug}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Added {game.created_at ? new Date(game.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
