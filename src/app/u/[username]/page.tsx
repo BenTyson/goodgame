@@ -66,6 +66,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Determine if shelf should be shown
   const showShelf = profile.shelf_visibility === 'public' || isOwnProfile
 
+  // Fetch top games (visible if profile is public or own profile)
+  let topGames = null
+  if (profile.profile_visibility === 'public' || isOwnProfile) {
+    const { data: topGamesData } = await supabase
+      .from('user_top_games')
+      .select(`
+        id,
+        position,
+        game:games(id, name, slug, box_image_url, thumbnail_url)
+      `)
+      .eq('user_id', profile.id)
+      .order('position', { ascending: true })
+
+    topGames = topGamesData
+  }
+
   // Fetch shelf data if it should be shown
   let shelfData = null
   let shelfStats = null
@@ -108,6 +124,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <ProfileContent
       profile={profile}
       socialLinks={socialLinks}
+      topGames={topGames}
       shelfData={shelfData}
       shelfStats={shelfStats}
       showShelf={showShelf}

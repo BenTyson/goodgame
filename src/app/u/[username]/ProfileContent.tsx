@@ -22,7 +22,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { TopGamesDisplay } from '@/components/profile/TopGamesDisplay'
 import type { UserProfile, SocialLinks, Game } from '@/types/database'
+import type { TopGameWithDetails } from '@/lib/supabase/user-queries'
 
 interface ShelfGame {
   id: string
@@ -43,6 +45,7 @@ interface ShelfStats {
 interface ProfileContentProps {
   profile: UserProfile
   socialLinks: SocialLinks
+  topGames: TopGameWithDetails[] | null
   shelfData: ShelfGame[] | null
   shelfStats: ShelfStats | null
   showShelf: boolean
@@ -60,6 +63,7 @@ const statusConfig = {
 export function ProfileContent({
   profile,
   socialLinks,
+  topGames,
   shelfData,
   shelfStats,
   showShelf,
@@ -211,6 +215,15 @@ export function ProfileContent({
           </div>
         </CardContent>
       </Card>
+
+      {/* Top Games Section */}
+      {(topGames || isOwnProfile) && (
+        <TopGamesDisplay
+          topGames={topGames || []}
+          isOwner={isOwnProfile}
+          userId={profile.id}
+        />
+      )}
 
       {/* Shelf Section */}
       {showShelf && shelfStats ? (
