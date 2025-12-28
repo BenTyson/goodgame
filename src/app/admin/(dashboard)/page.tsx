@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,7 @@ async function getRecentGames() {
 
   const { data: games } = await supabase
     .from('games')
-    .select('id, name, slug, content_status, is_published, created_at')
+    .select('id, name, slug, content_status, is_published, created_at, box_image_url, thumbnail_url')
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -247,8 +248,18 @@ export default async function AdminDashboard() {
                 className="flex items-center justify-between py-3 hover:bg-muted/30 -mx-6 px-6 transition-colors group first:pt-0 last:pb-0"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground shrink-0">
-                    {game.name.charAt(0)}
+                  <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground shrink-0 overflow-hidden">
+                    {game.box_image_url || game.thumbnail_url ? (
+                      <Image
+                        src={game.box_image_url || game.thumbnail_url || ''}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      game.name.charAt(0)
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium truncate group-hover:text-primary transition-colors">
