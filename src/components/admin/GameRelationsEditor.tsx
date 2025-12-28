@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import {
@@ -65,10 +65,11 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
   const [saving, setSaving] = useState(false)
   const [newRelationType, setNewRelationType] = useState<RelationType>('expansion_of')
 
-  const supabase = createBrowserClient<Database>(
+  // Memoize supabase client to prevent infinite loops
+  const supabase = useMemo(() => createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  ), [])
 
   // Load families and relations
   useEffect(() => {
