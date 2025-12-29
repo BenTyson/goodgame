@@ -85,6 +85,8 @@ src/app/
 ├── u/[username]/followers/    # Followers list
 ├── u/[username]/following/    # Following list
 ├── feed/page.tsx              # Activity feed from followed users
+├── recommend/page.tsx         # Game recommendation wizard
+├── api/recommendations/       # Recommendation API endpoint
 ├── api/user/profile-image/    # User profile image upload API
 ├── score-sheets/page.tsx
 ├── rules/page.tsx
@@ -108,6 +110,7 @@ src/components/
 ├── feed/                      # ActivityFeed, ActivityItem
 ├── notifications/             # NotificationBell
 ├── reviews/                   # ReviewSection, ReviewCard, ReviewDialog, AggregateRating
+├── recommend/                 # WizardContainer, WelcomeStep, ScenarioCards, SliderQuestion, ArchetypeReveal, RecommendationResults
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
@@ -121,6 +124,7 @@ src/types/database.ts          # Convenience types (GameRow, GameInsert, etc.)
 src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
+src/lib/recommend/             # Recommendation engine (types, scoring, archetypes, prompts)
 src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
 supabase/migrations/           # Database schema (29 files)

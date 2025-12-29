@@ -1,8 +1,66 @@
 # Current Status
 
-> Last Updated: 2025-12-28 (Profile V3 Redesign + Settings Cleanup)
+> Last Updated: 2025-12-28 (Game Recommendation Engine)
 
-## Phase: 16 - Social Features (COMPLETE)
+## Phase: 17 - Game Recommendation Engine (COMPLETE)
+
+### Game Recommendation Engine (2025-12-28)
+Smart wizard that asks adaptive questions and recommends personalized games:
+
+**Wizard Flow (5 questions):**
+1. **Who are you playing with?** (Scenario cards) - Solo / Partner / Small group / Party
+2. **How much time do you have?** (Slider with Continue button) - Quick / Standard / Long / Epic
+3. **What's your experience level?** (Scenario cards) - New / Casual / Experienced / Hardcore
+4. **What experience are you looking for?** (Scenario cards) - Competitive / Cooperative / Strategic / Social / Narrative
+5. **What world draws you in?** (Scenario cards) - Swords & Sorcery / Stars & Cosmos / Empires & Ages / Mystery & Shadows / Hearth & Harvest / Surprise Me
+
+**Smart Adaptations:**
+- Theme question skipped for "Social" experience type (party games are theme-light)
+- Auto-sets theme to "surprise-me" when skipped
+
+**Algorithm:**
+- Phase 1: Hard filters (player count, time, weight constraints)
+- Phase 2: Soft scoring (0-100 points based on category, theme, mechanics, curated flags)
+- Phase 3: AI ranking with Claude for final top 3 + personalized explanations
+- Fallback: Template-based personalization when AI unavailable
+
+**Gamer Archetypes (revealed after questions):**
+- The Strategist (Brain icon) - Heavy weight, competitive, strategy
+- The Social Butterfly (Users icon) - Party games, 5+ players
+- The Team Player (Handshake icon) - Cooperative, campaign games
+- The Storyteller (BookOpen icon) - Thematic, adventure, narrative
+- The Quick Draw (Zap icon) - Short play time, light weight
+- The Curator (Gem icon) - Staff picks, hidden gems
+
+**Results Page:**
+- Archetype reveal with animation
+- Top 3 recommendations with personalized "Why you'll love this" text
+- "Also Consider" section with 4 additional game thumbnails
+- "Start Over" button for refinement
+
+**Personalized Text Generation:**
+- Theme-based phrases (e.g., "Takes you into an epic fantasy world")
+- Experience-type reasons (e.g., "Strategic depth will keep you thinking")
+- Player count fit (e.g., "Plays excellently at 2 players")
+- Complexity match (e.g., "Approachable enough to learn quickly")
+- Curated flag callouts (e.g., "Staff favorite here at Board Nomads")
+- Dynamic "Perfect for" text combining user preferences
+
+**Navigation:**
+- Featured "Recommend" button in header (pill style, primary color)
+- Homepage CTA sections
+- Progress bar during questions
+- Back button for question navigation
+
+**Files Created:**
+- `src/app/recommend/page.tsx` - Entry point
+- `src/app/recommend/RecommendWizard.tsx` - Main wizard component
+- `src/app/api/recommendations/route.ts` - API endpoint
+- `src/lib/recommend/types.ts` - TypeScript types
+- `src/lib/recommend/scoring.ts` - Game scoring algorithm
+- `src/lib/recommend/archetypes.ts` - Archetype definitions
+- `src/lib/recommend/prompts.ts` - AI prompts + template personalization
+- `src/components/recommend/` - 7 UI components (WizardContainer, WelcomeStep, ScenarioCards, SliderQuestion, ArchetypeReveal, RecommendationResults, index)
 
 ### Profile V3 Redesign (2025-12-28)
 Modern Airbnb-inspired card-based layout:
@@ -115,6 +173,7 @@ Modern Airbnb-inspired card-based layout:
 - **Activity Feed** - See activities from followed users at `/feed`
 - **Notifications** - Bell icon in header, new follower notifications
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
+- **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
 
 ### Environments & Branches
 
@@ -165,6 +224,29 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | Aggregate ratings on game pages | ✅ |
 | Review section on game pages | ✅ |
 
+### Game Recommendation Engine (Phase 17)
+| Feature | Status |
+|---------|--------|
+| Wizard UI at `/recommend` | ✅ |
+| Player count question (scenario cards) | ✅ |
+| Play time question (slider with Continue) | ✅ |
+| Experience level question | ✅ |
+| Experience type question | ✅ |
+| Theme world question (6 options + surprise me) | ✅ |
+| Adaptive skip (theme skipped for social games) | ✅ |
+| Progress bar during questions | ✅ |
+| Back navigation | ✅ |
+| Loading animation ("Board Nomads are Wandering") | ✅ |
+| Gamer archetype classification | ✅ |
+| Archetype reveal animation | ✅ |
+| Game scoring algorithm (0-100 points) | ✅ |
+| AI ranking with Claude | ✅ |
+| Template-based personalization fallback | ✅ |
+| Top 3 recommendations with personalized text | ✅ |
+| "Also Consider" section (4 thumbnails) | ✅ |
+| "Recommend" button in header (featured style) | ✅ |
+| Homepage CTA sections | ✅ |
+
 **Profile V3 UI (Current):**
 - Two-column layout: sticky identity card on left, scrollable content on right
 - No banner - clean card-based design (Airbnb-inspired)
@@ -199,6 +281,7 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 - `/u/[username]/followers` - Followers list
 - `/u/[username]/following` - Following list
 - `/feed` - Activity feed (from followed users)
+- `/recommend` - Game recommendation wizard
 
 ### Admin System (`/admin`)
 | Feature | Status |
@@ -400,6 +483,23 @@ git push origin develop  # Deploy to staging
 | `src/app/feed/page.tsx` | Activity feed page |
 | `src/app/u/[username]/followers/page.tsx` | Followers list page |
 | `src/app/u/[username]/following/page.tsx` | Following list page |
+
+### Game Recommendation Engine
+| File | Purpose |
+|------|---------|
+| `src/app/recommend/page.tsx` | Recommendation wizard page |
+| `src/app/recommend/RecommendWizard.tsx` | Main wizard component with state |
+| `src/app/api/recommendations/route.ts` | Recommendation API endpoint |
+| `src/lib/recommend/types.ts` | Wizard types (answers, signals, archetypes) |
+| `src/lib/recommend/scoring.ts` | Game scoring algorithm (0-100) |
+| `src/lib/recommend/archetypes.ts` | Archetype definitions + classification |
+| `src/lib/recommend/prompts.ts` | AI prompts + template personalization |
+| `src/components/recommend/WizardContainer.tsx` | Layout with progress bar |
+| `src/components/recommend/WelcomeStep.tsx` | Welcome screen |
+| `src/components/recommend/ScenarioCards.tsx` | Card selection question |
+| `src/components/recommend/SliderQuestion.tsx` | Slider with Continue button |
+| `src/components/recommend/ArchetypeReveal.tsx` | Archetype animation |
+| `src/components/recommend/RecommendationResults.tsx` | Results display |
 
 ### API & Security
 | File | Purpose |

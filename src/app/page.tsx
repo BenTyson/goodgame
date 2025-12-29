@@ -99,11 +99,17 @@ export default async function HomePage() {
               Built for collectors and enthusiasts.
             </p>
 
-            <div className="mt-10">
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" className="group" asChild>
                 <Link href="/games">
                   Browse Games
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="group" asChild>
+                <Link href="/recommend">
+                  <Star className="mr-2 h-4 w-4" />
+                  Find Your Perfect Game
                 </Link>
               </Button>
             </div>
@@ -309,6 +315,32 @@ export default async function HomePage() {
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* Recommendation CTA Section */}
+      <section className="container py-16 md:py-24">
+        <Card className="bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20">
+          <CardContent className="py-12 md:py-16 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 rounded-2xl bg-primary/10">
+                <Sparkles className="h-10 w-10 text-primary" />
+              </div>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">
+              Not Sure Where to Start?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8">
+              Answer a few quick questions and we will find your perfect game match.
+              Takes less than 2 minutes.
+            </p>
+            <Button size="lg" className="group" asChild>
+              <Link href="/recommend">
+                Find Your Perfect Game
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Categories Section */}

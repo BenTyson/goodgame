@@ -18,9 +18,9 @@ const navigation = [
   { name: 'Publishers', href: '/publishers' },
   { name: 'Awards', href: '/awards' },
   { name: 'Categories', href: '/categories' },
-  { name: 'Collections', href: '/collections' },
   { name: 'Feed', href: '/feed' },
   { name: 'Shelf', href: '/shelf' },
+  { name: 'Recommend', href: '/recommend', featured: true },
 ]
 
 export function Header() {
@@ -67,6 +67,24 @@ export function Header() {
         <nav className="hidden md:flex md:items-center md:gap-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            const isFeatured = 'featured' in item && item.featured
+
+            if (isFeatured) {
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
+                    'bg-primary text-primary-foreground hover:bg-primary/90',
+                    'shadow-sm hover:shadow-md'
+                  )}
+                >
+                  {item.name}
+                </Link>
+              )
+            }
+
             return (
               <Link
                 key={item.name}
@@ -128,6 +146,21 @@ export function Header() {
               <nav className="flex flex-col gap-2 mt-8">
                 {navigation.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  const isFeatured = 'featured' in item && item.featured
+
+                  if (isFeatured) {
+                    return (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className="mt-4 px-4 py-3 text-base font-medium rounded-lg text-center bg-primary text-primary-foreground"
+                      >
+                        {item.name}
+                      </a>
+                    )
+                  }
+
                   return (
                     <a
                       key={item.name}

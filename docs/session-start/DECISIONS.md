@@ -54,8 +54,22 @@
 | Mobile-first | Yes | Game night use case |
 | Print styles | Required | Score sheets must print clean |
 | Search | Cmd+K command palette | Modern, fast |
-| Main navigation | Games, Publishers, Awards, Categories, Collections, Shelf | Streamlined, no redundant links |
+| Main navigation | Games, Publishers, Awards, Categories, Feed, Shelf, Recommend | Streamlined, Recommend as featured button |
 | Emoji usage | **Never use emoji** in UI | User preference, prefer clean Lucide icons |
+
+## Game Recommendation Engine
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Route | `/recommend` | Clear, memorable URL |
+| Question count | 5 adaptive questions | Enough signal without fatigue |
+| Question styles | Mixed (scenario cards, slider) | Engaging variety |
+| Algorithm | Hybrid (rule-based + AI) | Reliability with intelligence |
+| Personalization | Template fallback + Claude AI | Works even without API |
+| Archetype reveal | Fun personality reveal | Memorable, shareable |
+| Results count | Top 3 + 4 "also consider" | Focused but options available |
+| Theme question | Skip for social games | Party games are theme-light |
+| Nav placement | Featured pill button after Shelf | Prominent but not intrusive |
 
 ### Design History
 - ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
@@ -85,5 +99,6 @@
 - ~~Top 10 rankings~~ ✅ Built (drag & drop editor)
 - Mobile app
 - ~~BGG data scraping~~ ✅ Built (import pipeline)
+- ~~Game recommendations~~ ✅ Built (wizard + AI at `/recommend`)
 - Premium/paid tier
 - Dark mode theme
