@@ -29,6 +29,14 @@ Modern Airbnb-inspired card-based layout:
 - Avatar upload constrained to appropriate size (max-w-xs)
 - Added "View Profile" button for quick navigation back to profile
 
+### Admin Dashboard V2 (2025-12-28)
+- Clean monochromatic design (teal primary + muted grays)
+- Removed rainbow of colors (green/yellow/blue/purple/orange)
+- Stat cards with larger icons and progress bar for published %
+- Pipeline status cards with 3-column grid layout
+- Recent games list with actual game thumbnails and "Added" date
+- Uses Badge component with default/outline variants for status
+
 ### Security & Maintenance (2025-12-28)
 - Fixed open redirect vulnerability in auth callback
 - Added timing-safe CRON_SECRET comparison
