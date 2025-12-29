@@ -4,9 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { fetchBGGGame, type BGGRawGame } from './client'
+import { fetchBGGGame, type BGGRawGame, type BGGLink } from './client'
 import { generateSlug } from '@/lib/utils/slug'
-import { BGG_CATEGORY_MAP } from '@/lib/config/bgg-mappings'
+import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
+import { resolveBGGAliases } from '@/lib/supabase/category-queries'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -446,6 +447,37 @@ function cleanDescription(description: string): string {
 // BGG category mappings are defined in @/lib/config/bgg-mappings.ts
 
 /**
+ * Get the complexity tier ID for a given weight value
+ */
+async function getComplexityTierIdForWeight(weight: number | undefined): Promise<string | null> {
+  if (!weight || weight <= 0) return null
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('complexity_tiers')
+    .select('id')
+    .lte('weight_min', weight)
+    .gt('weight_max', weight)
+    .single()
+
+  if (error || !data) {
+    // Try edge case: weight exactly equals weight_max of expert tier (5.0)
+    if (weight >= 5.0) {
+      const { data: expertTier } = await supabase
+        .from('complexity_tiers')
+        .select('id')
+        .eq('slug', 'expert')
+        .single()
+      return expertTier?.id || null
+    }
+    return null
+  }
+
+  return data.id
+}
+
+/**
  * Transform BGG raw data to our game insert format
  */
 export function transformBGGToGame(bgg: BGGRawGame): GameInsert {
@@ -534,6 +566,12 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
   }
   gameData.slug = finalSlug
 
+  // Get complexity tier based on weight
+  const complexityTierId = await getComplexityTierIdForWeight(bggData.weight)
+  if (complexityTierId) {
+    gameData.complexity_tier_id = complexityTierId
+  }
+
   // Insert game
   const { data: newGame, error: insertError } = await supabase
     .from('games')
@@ -550,8 +588,14 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
     }
   }
 
-  // Link to categories based on BGG categories
-  await linkGameToCategories(newGame.id, bggData.categories)
+  // Link to categories based on BGG categories (alias system + name fallback)
+  await linkGameToCategories(newGame.id, bggData.categoryLinks, bggData.categories)
+
+  // Link to themes based on BGG categories (alias system + name fallback)
+  await linkGameToThemes(newGame.id, bggData.categoryLinks, bggData.categories)
+
+  // Link to player experiences based on BGG categories and mechanics (alias system + name fallback)
+  await linkGameToPlayerExperiences(newGame.id, bggData.categoryLinks, bggData.categories, bggData.mechanics)
 
   // Link to designers, publishers, artists, and mechanics
   if (bggData.designers.length > 0) {
@@ -594,39 +638,162 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
 }
 
 /**
- * Link a game to categories based on BGG category names
+ * Link a game to categories based on BGG categories
+ * Uses alias system (BGG ID lookup) with fallback to name-based mapping
  */
-async function linkGameToCategories(gameId: string, bggCategories: string[]): Promise<void> {
+async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[]): Promise<void> {
   const supabase = await createClient()
 
-  // Get our category slugs
+  // Get our categories
   const { data: categories } = await supabase
     .from('categories')
     .select('id, slug')
 
   if (!categories) return
 
-  const categoryMap = new Map(categories.map(c => [c.slug, c.id]))
+  const categoryBySlug = new Map(categories.map(c => [c.slug, c.id]))
+  const categoryById = new Map(categories.map(c => [c.id, c.slug]))
+  const matchedCategoryIds = new Set<string>()
 
-  // Find matching categories
-  const matchedCategories: string[] = []
+  // Step 1: Resolve via alias system (BGG IDs)
+  if (bggCategoryLinks.length > 0) {
+    const bggIds = bggCategoryLinks.map(link => link.id)
+    const aliasMap = await resolveBGGAliases(bggIds, 'category', 'category')
+
+    for (const [, targetId] of aliasMap) {
+      if (categoryById.has(targetId)) {
+        matchedCategoryIds.add(targetId)
+      }
+    }
+  }
+
+  // Step 2: Fall back to name-based mapping for unmatched categories
   for (const bggCat of bggCategories) {
     const ourSlug = BGG_CATEGORY_MAP[bggCat]
-    if (ourSlug && categoryMap.has(ourSlug) && !matchedCategories.includes(ourSlug)) {
-      matchedCategories.push(ourSlug)
+    if (ourSlug && categoryBySlug.has(ourSlug)) {
+      const categoryId = categoryBySlug.get(ourSlug)!
+      matchedCategoryIds.add(categoryId)
     }
   }
 
   // Insert category links
-  if (matchedCategories.length > 0) {
-    const links = matchedCategories.map((slug, index) => ({
+  if (matchedCategoryIds.size > 0) {
+    const categoryIdArray = Array.from(matchedCategoryIds)
+    const links = categoryIdArray.map((categoryId, index) => ({
       game_id: gameId,
-      category_id: categoryMap.get(slug)!,
+      category_id: categoryId,
       is_primary: index === 0  // First match is primary
     }))
 
     await supabase.from('game_categories').insert(links)
   }
+}
+
+/**
+ * Link a game to themes based on BGG categories
+ * Uses alias system (BGG ID lookup) with fallback to name-based mapping
+ */
+async function linkGameToThemes(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[]): Promise<void> {
+  const supabase = await createClient()
+
+  // Get all themes
+  const { data: themes } = await supabase
+    .from('themes')
+    .select('id, slug')
+
+  if (!themes) return
+
+  const themeBySlug = new Map(themes.map(t => [t.slug, t.id]))
+  const themeById = new Map(themes.map(t => [t.id, t.slug]))
+  const matchedThemeIds = new Set<string>()
+
+  // Step 1: Resolve via alias system (BGG IDs)
+  if (bggCategoryLinks.length > 0) {
+    const bggIds = bggCategoryLinks.map(link => link.id)
+    const aliasMap = await resolveBGGAliases(bggIds, 'category', 'theme')
+
+    for (const [, targetId] of aliasMap) {
+      if (themeById.has(targetId)) {
+        matchedThemeIds.add(targetId)
+      }
+    }
+  }
+
+  // Step 2: Fall back to name-based mapping for unmatched categories
+  const themeSlugs = getBGGThemeSlugs(bggCategories)
+  for (const slug of themeSlugs) {
+    if (themeBySlug.has(slug)) {
+      matchedThemeIds.add(themeBySlug.get(slug)!)
+    }
+  }
+
+  if (matchedThemeIds.size === 0) return
+
+  // Insert theme links
+  const themeIdArray = Array.from(matchedThemeIds)
+  const links = themeIdArray.map((themeId, index) => ({
+    game_id: gameId,
+    theme_id: themeId,
+    is_primary: index === 0  // First match is primary
+  }))
+
+  await supabase.from('game_themes').insert(links)
+}
+
+/**
+ * Link a game to player experiences based on BGG categories and mechanics
+ * Uses alias system (BGG ID lookup) with fallback to name-based mapping
+ */
+async function linkGameToPlayerExperiences(
+  gameId: string,
+  bggCategoryLinks: BGGLink[],
+  bggCategories: string[],
+  bggMechanics: string[]
+): Promise<void> {
+  const supabase = await createClient()
+
+  // Get all player experiences
+  const { data: experiences } = await supabase
+    .from('player_experiences')
+    .select('id, slug')
+
+  if (!experiences) return
+
+  const expBySlug = new Map(experiences.map(e => [e.slug, e.id]))
+  const expById = new Map(experiences.map(e => [e.id, e.slug]))
+  const matchedExpIds = new Set<string>()
+
+  // Step 1: Resolve via alias system (BGG IDs)
+  if (bggCategoryLinks.length > 0) {
+    const bggIds = bggCategoryLinks.map(link => link.id)
+    const aliasMap = await resolveBGGAliases(bggIds, 'category', 'player_experience')
+
+    for (const [, targetId] of aliasMap) {
+      if (expById.has(targetId)) {
+        matchedExpIds.add(targetId)
+      }
+    }
+  }
+
+  // Step 2: Fall back to name-based mapping for unmatched categories/mechanics
+  const experienceSlugs = getBGGExperienceSlugs(bggCategories, bggMechanics)
+  for (const slug of experienceSlugs) {
+    if (expBySlug.has(slug)) {
+      matchedExpIds.add(expBySlug.get(slug)!)
+    }
+  }
+
+  if (matchedExpIds.size === 0) return
+
+  // Insert experience links
+  const expIdArray = Array.from(matchedExpIds)
+  const links = expIdArray.map((expId, index) => ({
+    game_id: gameId,
+    player_experience_id: expId,
+    is_primary: index === 0  // First match is primary
+  }))
+
+  await supabase.from('game_player_experiences').insert(links)
 }
 
 /**

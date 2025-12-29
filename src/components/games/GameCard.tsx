@@ -15,13 +15,11 @@ interface GameCardProps {
     categories?: Pick<Category, 'slug' | 'name'>[]
   }
   variant?: 'default' | 'compact' | 'featured'
-  showContentBadges?: boolean
 }
 
 export function GameCard({
   game,
   variant = 'default',
-  showContentBadges = true,
 }: GameCardProps) {
   const router = useRouter()
 
@@ -72,16 +70,16 @@ export function GameCard({
 
         {/* Hover overlay with quick actions */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 transition-all duration-300 group-hover:opacity-100">
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="flex flex-wrap gap-2">
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <div className="flex flex-wrap gap-1.5">
               {availableContent.map((type) => (
                 <Link
                   key={type.key}
                   href={`/games/${game.slug}/${type.href}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-black shadow-sm hover:bg-white hover:shadow-md transition-all duration-200"
+                  className="flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[11px] font-medium text-black shadow-sm hover:bg-white hover:shadow-md transition-all duration-200"
                 >
-                  <type.icon className="h-3.5 w-3.5" />
+                  <type.icon className="h-3 w-3" />
                   {type.label}
                 </Link>
               ))}
@@ -142,21 +140,6 @@ export function GameCard({
               >
                 {category.name}
               </Badge>
-            ))}
-          </div>
-        )}
-
-        {/* Content availability badges */}
-        {showContentBadges && variant !== 'compact' && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {availableContent.map((type) => (
-              <div
-                key={type.key}
-                className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs text-muted-foreground"
-              >
-                <type.icon className="h-3 w-3" />
-                {type.label}
-              </div>
             ))}
           </div>
         )}

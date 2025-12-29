@@ -17,6 +17,77 @@ export type Mechanic = Database['public']['Tables']['mechanics']['Row']
 export type MechanicInsert = Database['public']['Tables']['mechanics']['Insert']
 export type MechanicUpdate = Database['public']['Tables']['mechanics']['Update']
 
+// Theme types (for thematic/setting classification)
+export type Theme = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string | null
+  display_order: number | null
+  bgg_id: number | null
+  bgg_name: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+export type ThemeInsert = Omit<Theme, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+export type ThemeUpdate = Partial<ThemeInsert>
+
+export type GameTheme = {
+  game_id: string
+  theme_id: string
+  is_primary: boolean | null
+}
+
+// Player Experience types (for interaction style classification)
+export type PlayerExperience = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string | null
+  display_order: number | null
+  created_at: string | null
+  updated_at: string | null
+}
+export type PlayerExperienceInsert = Omit<PlayerExperience, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+export type PlayerExperienceUpdate = Partial<PlayerExperienceInsert>
+
+export type GamePlayerExperience = {
+  game_id: string
+  player_experience_id: string
+  is_primary: boolean | null
+}
+
+// Complexity Tier types (for weight-based classification)
+export type ComplexityTier = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string | null
+  weight_min: number
+  weight_max: number
+  display_order: number | null
+  created_at: string | null
+  updated_at: string | null
+}
+export type ComplexityTierInsert = Omit<ComplexityTier, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+export type ComplexityTierUpdate = Partial<ComplexityTierInsert>
+
+// BGG Tag Alias types (for mapping BGG categories/mechanics to our taxonomy)
+export type BGGTagAlias = {
+  id: string
+  bgg_id: number
+  bgg_name: string
+  bgg_type: 'category' | 'mechanic' | 'family'
+  target_type: 'category' | 'mechanic' | 'theme' | 'player_experience'
+  target_id: string
+  created_at: string | null
+}
+export type BGGTagAliasInsert = Omit<BGGTagAlias, 'id' | 'created_at'> & { id?: string }
+export type BGGTagAliasUpdate = Partial<BGGTagAliasInsert>
+
 export type Collection = Database['public']['Tables']['collections']['Row']
 export type CollectionInsert = Database['public']['Tables']['collections']['Insert']
 export type CollectionUpdate = Database['public']['Tables']['collections']['Update']
@@ -146,6 +217,9 @@ export type GameRow = Omit<Game, 'fts'>
 export type GameWithRelations = Game & {
   categories?: Category[]
   mechanics?: Mechanic[]
+  themes?: Theme[]
+  player_experiences?: PlayerExperience[]
+  complexity_tier?: ComplexityTier | null
   designers_list?: Designer[]
   publishers_list?: Publisher[]
   artists_list?: Artist[]
@@ -154,6 +228,12 @@ export type GameWithRelations = Game & {
   score_sheet_config?: ScoreSheetConfig & {
     fields?: ScoreSheetField[]
   }
+}
+
+// Theme with game count for admin
+export type ThemeWithGames = Theme & {
+  games?: Game[]
+  game_count?: number
 }
 
 // Entity types with game counts

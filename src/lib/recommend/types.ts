@@ -61,7 +61,8 @@ export interface RecommendationSignals {
   weightMax: number
   preferredCategories: string[]
   preferredMechanics: string[]
-  preferredThemes: string[]  // Theme keywords derived from themeWorld
+  preferredThemes: string[]  // Theme slugs (fantasy, sci-fi, etc.)
+  preferredExperiences: string[]  // Player experience slugs (cooperative, solo, etc.)
 }
 
 // A single question in the wizard

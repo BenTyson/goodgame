@@ -79,6 +79,7 @@
 - ~~Publisher initials with rainbow colors~~ - Changed to muted grays (less harsh on eyes)
 - ~~Emoji in shelf dropdown/keytags~~ - Replaced with Lucide icons (cleaner, more professional)
 - ~~Profile header/banner images~~ - Removed in V3 redesign (clean card-based layout, Airbnb-inspired)
+- ~~Content badges at bottom of game cards~~ - Removed (redundant with hover badges, saves vertical space)
 
 ## Images
 

@@ -20,6 +20,7 @@ export function buildSignals(answers: WizardAnswers): RecommendationSignals {
     preferredCategories: [],
     preferredMechanics: [],
     preferredThemes: [],
+    preferredExperiences: [],
   }
 
   // Player count mapping
@@ -82,46 +83,56 @@ export function buildSignals(answers: WizardAnswers): RecommendationSignals {
       break
   }
 
-  // Category preferences based on experience type
+  // Category and player experience preferences based on experience type
   switch (answers.experienceType) {
     case 'competitive':
       signals.preferredCategories = ['strategy', 'economic', 'war-game']
+      signals.preferredExperiences = ['competitive', 'asymmetric']
       break
     case 'cooperative':
       signals.preferredCategories = ['cooperative', 'team-based']
+      signals.preferredExperiences = ['cooperative', 'team-based']
       break
     case 'strategic':
       signals.preferredCategories = ['strategy', 'economic', 'civilization']
+      signals.preferredExperiences = ['competitive', 'asymmetric']
       break
     case 'social':
-      signals.preferredCategories = ['party', 'social-deduction', 'word-game']
+      signals.preferredCategories = ['party-games', 'word-games']
+      signals.preferredExperiences = ['social', 'hidden-roles', 'team-based']
       break
     case 'narrative':
-      signals.preferredCategories = ['thematic', 'adventure', 'fantasy']
+      signals.preferredCategories = ['thematic', 'adventure']
+      signals.preferredExperiences = ['narrative', 'cooperative']
       break
   }
 
-  // Theme/world preferences
+  // Solo player preference
+  if (answers.playerCount === 'solo') {
+    signals.preferredExperiences.push('solo')
+  }
+
+  // Theme/world preferences (using our theme slugs)
   switch (answers.themeWorld) {
     case 'swords-sorcery':
-      signals.preferredThemes = ['fantasy', 'medieval', 'adventure', 'mythology', 'fighting', 'dragons']
-      signals.preferredCategories.push('fantasy', 'adventure', 'fighting')
+      signals.preferredThemes = ['fantasy', 'medieval', 'mythology']
+      signals.preferredCategories.push('thematic')
       break
     case 'stars-cosmos':
-      signals.preferredThemes = ['science-fiction', 'space', 'space-exploration', 'cyberpunk', 'post-apocalyptic']
-      signals.preferredCategories.push('science-fiction')
+      signals.preferredThemes = ['sci-fi', 'post-apocalyptic']
+      signals.preferredCategories.push('thematic')
       break
     case 'empires-ages':
-      signals.preferredThemes = ['ancient', 'medieval', 'renaissance', 'civilization', 'war', 'political']
-      signals.preferredCategories.push('civilization', 'war-game', 'political')
+      signals.preferredThemes = ['historical', 'medieval', 'war', 'economic']
+      signals.preferredCategories.push('strategy')
       break
     case 'mystery-shadows':
-      signals.preferredThemes = ['horror', 'mystery', 'murder', 'spies', 'deduction', 'zombies', 'lovecraft']
-      signals.preferredCategories.push('horror', 'mystery', 'deduction')
+      signals.preferredThemes = ['horror', 'mystery']
+      signals.preferredExperiences.push('hidden-roles')
       break
     case 'hearth-harvest':
-      signals.preferredThemes = ['animals', 'farming', 'nature', 'environmental', 'prehistoric']
-      signals.preferredCategories.push('animals', 'environmental')
+      signals.preferredThemes = ['nature', 'abstract']
+      signals.preferredCategories.push('family-games')
       break
     case 'surprise-me':
       // No theme preference - leave empty
@@ -138,29 +149,31 @@ export function scoreGame(
   game: Game,
   signals: RecommendationSignals,
   gameCategories: string[],
-  gameMechanics: string[]
+  gameMechanics: string[],
+  gameThemes: string[] = [],
+  gameExperiences: string[] = []
 ): number {
   let score = 0
 
-  // Player count optimality (25 points)
+  // Player count optimality (20 points)
   const playerTarget = (signals.playerCountMin + signals.playerCountMax) / 2
   const gameBestPlayers = game.player_count_best || []
 
   if (gameBestPlayers.includes(Math.round(playerTarget))) {
     // Perfect match with "best player count"
-    score += 25
+    score += 20
   } else if (
     playerTarget >= game.player_count_min &&
     playerTarget <= game.player_count_max
   ) {
     // Within supported range
-    score += 15
+    score += 12
   } else if (
     game.player_count_min <= signals.playerCountMax &&
     game.player_count_max >= signals.playerCountMin
   ) {
     // Overlapping range
-    score += 8
+    score += 6
   }
 
   // Play time match (10 points)
@@ -182,25 +195,33 @@ export function scoreGame(
     score += Math.max(5, 15 - deviation * 10)
   }
 
-  // Category match (15 points)
+  // Category match (10 points)
   const categoryMatches = gameCategories.filter((cat) =>
     signals.preferredCategories.includes(cat)
   ).length
-  score += Math.min(categoryMatches * 7, 15)
+  score += Math.min(categoryMatches * 5, 10)
 
-  // Theme match (10 points) - themes often overlap with categories
-  if (signals.preferredThemes.length > 0) {
-    const themeMatches = gameCategories.filter((cat) =>
-      signals.preferredThemes.includes(cat)
+  // Theme match (15 points) - using actual game themes
+  if (signals.preferredThemes.length > 0 && gameThemes.length > 0) {
+    const themeMatches = gameThemes.filter((theme) =>
+      signals.preferredThemes.includes(theme)
     ).length
-    score += Math.min(themeMatches * 5, 10)
+    score += Math.min(themeMatches * 7, 15)
   }
 
-  // Mechanic match (10 points)
+  // Player experience match (10 points) - cooperative, competitive, solo, etc.
+  if (signals.preferredExperiences.length > 0 && gameExperiences.length > 0) {
+    const experienceMatches = gameExperiences.filter((exp) =>
+      signals.preferredExperiences.includes(exp)
+    ).length
+    score += Math.min(experienceMatches * 5, 10)
+  }
+
+  // Mechanic match (5 points)
   const mechanicMatches = gameMechanics.filter((mech) =>
     signals.preferredMechanics.includes(mech)
   ).length
-  score += Math.min(mechanicMatches * 5, 10)
+  score += Math.min(mechanicMatches * 3, 5)
 
   // Curated flags boost (15 points total)
   if (game.is_staff_pick) score += 6
@@ -232,7 +253,9 @@ export function rankGames(
   games: Game[],
   signals: RecommendationSignals,
   gameCategoriesMap: Map<string, string[]>,
-  gameMechanicsMap: Map<string, string[]>
+  gameMechanicsMap: Map<string, string[]>,
+  gameThemesMap: Map<string, string[]> = new Map(),
+  gameExperiencesMap: Map<string, string[]> = new Map()
 ): { game: Game; score: number }[] {
   const scored = games.map((game) => ({
     game,
@@ -240,7 +263,9 @@ export function rankGames(
       game,
       signals,
       gameCategoriesMap.get(game.id) || [],
-      gameMechanicsMap.get(game.id) || []
+      gameMechanicsMap.get(game.id) || [],
+      gameThemesMap.get(game.id) || [],
+      gameExperiencesMap.get(game.id) || []
     ),
   }))
 

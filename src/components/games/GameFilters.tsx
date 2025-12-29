@@ -26,12 +26,16 @@ interface FilterOption {
 interface GameFiltersProps {
   categories: FilterOption[]
   mechanics: FilterOption[]
+  themes: FilterOption[]
+  playerExperiences: FilterOption[]
   className?: string
 }
 
 export function GameFilters({
   categories,
   mechanics,
+  themes,
+  playerExperiences,
   className,
 }: GameFiltersProps) {
   const router = useRouter()
@@ -40,6 +44,8 @@ export function GameFilters({
   // Read filter values from URL
   const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
   const selectedMechanics = searchParams.get('mechanics')?.split(',').filter(Boolean) || []
+  const selectedThemes = searchParams.get('themes')?.split(',').filter(Boolean) || []
+  const selectedExperiences = searchParams.get('experiences')?.split(',').filter(Boolean) || []
 
   // Parse URL params for initial/committed values
   const playerCountFromUrl: [number, number] = [
@@ -94,6 +100,8 @@ export function GameFilters({
   const activeFilterCount =
     selectedCategories.length +
     selectedMechanics.length +
+    selectedThemes.length +
+    selectedExperiences.length +
     (playerCount[0] !== 1 || playerCount[1] !== 8 ? 1 : 0) +
     (playTime[0] !== 0 || playTime[1] !== 180 ? 1 : 0) +
     (weight[0] !== 1 || weight[1] !== 5 ? 1 : 0)
@@ -119,6 +127,26 @@ export function GameFilters({
 
     updateFilters({
       mechanics: newMechanics.length > 0 ? newMechanics.join(',') : null
+    })
+  }
+
+  const toggleTheme = (slug: string) => {
+    const newThemes = selectedThemes.includes(slug)
+      ? selectedThemes.filter((s) => s !== slug)
+      : [...selectedThemes, slug]
+
+    updateFilters({
+      themes: newThemes.length > 0 ? newThemes.join(',') : null
+    })
+  }
+
+  const toggleExperience = (slug: string) => {
+    const newExperiences = selectedExperiences.includes(slug)
+      ? selectedExperiences.filter((s) => s !== slug)
+      : [...selectedExperiences, slug]
+
+    updateFilters({
+      experiences: newExperiences.length > 0 ? newExperiences.join(',') : null
     })
   }
 
@@ -191,6 +219,34 @@ export function GameFilters({
                 </Badge>
               ) : null
             })}
+            {selectedThemes.map((slug) => {
+              const theme = themes.find((t) => t.slug === slug)
+              return theme ? (
+                <Badge
+                  key={slug}
+                  variant="secondary"
+                  className="gap-1 cursor-pointer"
+                  onClick={() => toggleTheme(slug)}
+                >
+                  {theme.name}
+                  <X className="h-3 w-3" />
+                </Badge>
+              ) : null
+            })}
+            {selectedExperiences.map((slug) => {
+              const exp = playerExperiences.find((e) => e.slug === slug)
+              return exp ? (
+                <Badge
+                  key={slug}
+                  variant="secondary"
+                  className="gap-1 cursor-pointer"
+                  onClick={() => toggleExperience(slug)}
+                >
+                  {exp.name}
+                  <X className="h-3 w-3" />
+                </Badge>
+              ) : null
+            })}
           </div>
           <Separator className="mt-4" />
         </div>
@@ -227,6 +283,44 @@ export function GameFilters({
               onClick={() => toggleMechanic(mechanic.slug)}
             >
               {mechanic.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Themes */}
+      <div>
+        <h3 className="text-sm font-medium mb-3">Themes</h3>
+        <div className="flex flex-wrap gap-2">
+          {themes.map((theme) => (
+            <Badge
+              key={theme.slug}
+              variant={selectedThemes.includes(theme.slug) ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => toggleTheme(theme.slug)}
+            >
+              {theme.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Player Experiences */}
+      <div>
+        <h3 className="text-sm font-medium mb-3">Play Style</h3>
+        <div className="flex flex-wrap gap-2">
+          {playerExperiences.map((exp) => (
+            <Badge
+              key={exp.slug}
+              variant={selectedExperiences.includes(exp.slug) ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => toggleExperience(exp.slug)}
+            >
+              {exp.name}
             </Badge>
           ))}
         </div>

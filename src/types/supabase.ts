@@ -199,6 +199,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bgg_tag_aliases: {
+        Row: {
+          bgg_id: number
+          bgg_name: string
+          bgg_type: string
+          created_at: string | null
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          bgg_id: number
+          bgg_name: string
+          bgg_type: string
+          created_at?: string | null
+          id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          bgg_id?: number
+          bgg_name?: string
+          bgg_type?: string
+          created_at?: string | null
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -322,6 +352,45 @@ export type Database = {
           short_description?: string | null
           slug?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      complexity_tiers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+          weight_max: number
+          weight_min: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+          weight_max: number
+          weight_min: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+          weight_max?: number
+          weight_min?: number
         }
         Relationships: []
       }
@@ -696,6 +765,39 @@ export type Database = {
           },
         ]
       }
+      game_player_experiences: {
+        Row: {
+          game_id: string
+          is_primary: boolean | null
+          player_experience_id: string
+        }
+        Insert: {
+          game_id: string
+          is_primary?: boolean | null
+          player_experience_id: string
+        }
+        Update: {
+          game_id?: string
+          is_primary?: boolean | null
+          player_experience_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_player_experiences_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_player_experiences_player_experience_id_fkey"
+            columns: ["player_experience_id"]
+            isOneToOne: false
+            referencedRelation: "player_experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_publishers: {
         Row: {
           display_order: number | null
@@ -777,6 +879,39 @@ export type Database = {
           },
         ]
       }
+      game_themes: {
+        Row: {
+          game_id: string
+          is_primary: boolean | null
+          theme_id: string
+        }
+        Insert: {
+          game_id: string
+          is_primary?: boolean | null
+          theme_id: string
+        }
+        Update: {
+          game_id?: string
+          is_primary?: boolean | null
+          theme_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_themes_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_themes_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           amazon_asin: string | null
@@ -784,6 +919,7 @@ export type Database = {
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
           box_image_url: string | null
+          complexity_tier_id: string | null
           content_generated_at: string | null
           content_notes: string | null
           content_reviewed_at: string | null
@@ -835,6 +971,7 @@ export type Database = {
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
           box_image_url?: string | null
+          complexity_tier_id?: string | null
           content_generated_at?: string | null
           content_notes?: string | null
           content_reviewed_at?: string | null
@@ -886,6 +1023,7 @@ export type Database = {
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
           box_image_url?: string | null
+          complexity_tier_id?: string | null
           content_generated_at?: string | null
           content_notes?: string | null
           content_reviewed_at?: string | null
@@ -932,6 +1070,13 @@ export type Database = {
           year_published?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "games_complexity_tier_id_fkey"
+            columns: ["complexity_tier_id"]
+            isOneToOne: false
+            referencedRelation: "complexity_tiers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "games_family_id_fkey"
             columns: ["family_id"]
@@ -1029,6 +1174,39 @@ export type Database = {
           bgg_id?: number | null
           created_at?: string | null
           description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      player_experiences: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           name?: string
           slug?: string
@@ -1192,6 +1370,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      themes: {
+        Row: {
+          bgg_id: number | null
+          bgg_name: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          bgg_id?: number | null
+          bgg_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          bgg_id?: number | null
+          bgg_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_activities: {
         Row: {
@@ -1497,6 +1714,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_complexity_tier_id: { Args: { game_weight: number }; Returns: string }
       search_games: {
         Args: { search_query: string }
         Returns: {
@@ -1505,6 +1723,7 @@ export type Database = {
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
           box_image_url: string | null
+          complexity_tier_id: string | null
           content_generated_at: string | null
           content_notes: string | null
           content_reviewed_at: string | null

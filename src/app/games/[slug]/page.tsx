@@ -225,7 +225,14 @@ export default async function GamePage({ params }: GamePageProps) {
                 <Brain className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Complexity</p>
-                  <p className="font-medium">{game.weight.toFixed(1)} / 5</p>
+                  <p className="font-medium">
+                    {game.weight.toFixed(1)} / 5
+                    {game.complexity_tier && (
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        ({game.complexity_tier.name})
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             )}

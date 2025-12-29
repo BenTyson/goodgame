@@ -99,7 +99,8 @@ src/app/
 src/components/
 ├── ui/                        # shadcn/ui (don't edit directly)
 ├── layout/                    # Header, Footer, ThemeProvider
-├── games/                     # GameCard, GameGrid, GameFilters, ImageGallery, RelatedGames
+├── games/                     # GameCard, GameGrid, ImageGallery, RelatedGames
+│   └── filters/               # V2 Filter UI (FilterBar, FilterSidebar, FilterRail, etc.)
 ├── families/                  # FamilyCard, FamilyBadge
 ├── publishers/                # PublisherCard
 ├── admin/                     # ImageUpload, LogoUpload, ContentEditor, FamilyEditor, PublisherEditor
@@ -115,6 +116,9 @@ src/components/
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
 └── monetization/              # AdUnit, AffiliateButton (planned)
+
+src/hooks/
+└── use-local-storage.ts       # SSR-safe localStorage hook
 ```
 
 ### Data & Types

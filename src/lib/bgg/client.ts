@@ -49,6 +49,12 @@ async function waitForRateLimit(): Promise<void> {
 /**
  * Raw BGG game data structure from XML API
  */
+// BGG link with ID for category/mechanic/family mappings
+export interface BGGLink {
+  id: number
+  name: string
+}
+
 export interface BGGRawGame {
   id: number
   type: string
@@ -71,11 +77,13 @@ export interface BGGRawGame {
   designers: string[]
   artists: string[]
   publishers: string[]
-  categories: string[]
-  mechanics: string[]
-  families: { id: number; name: string }[]
-  expansions: { id: number; name: string }[]
-  expandsGame: { id: number; name: string } | null // If this is an expansion
+  categories: string[]  // Kept for backwards compatibility
+  mechanics: string[]   // Kept for backwards compatibility
+  categoryLinks: BGGLink[]  // Categories with BGG IDs
+  mechanicLinks: BGGLink[]  // Mechanics with BGG IDs
+  families: BGGLink[]
+  expansions: BGGLink[]
+  expandsGame: BGGLink | null // If this is an expansion
 }
 
 /**
@@ -232,6 +240,8 @@ export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
       publishers: parseLinks(item.link, 'boardgamepublisher'),
       categories: parseLinks(item.link, 'boardgamecategory'),
       mechanics: parseLinks(item.link, 'boardgamemechanic'),
+      categoryLinks: parseLinkWithId(item.link, 'boardgamecategory'),
+      mechanicLinks: parseLinkWithId(item.link, 'boardgamemechanic'),
       families: parseLinkWithId(item.link, 'boardgamefamily'),
       expansions,
       expandsGame,
@@ -339,6 +349,8 @@ async function parseBGGItem(item: Record<string, unknown>): Promise<BGGRawGame |
       publishers: parseLinks(links, 'boardgamepublisher'),
       categories: parseLinks(links, 'boardgamecategory'),
       mechanics: parseLinks(links, 'boardgamemechanic'),
+      categoryLinks: parseLinkWithId(links, 'boardgamecategory'),
+      mechanicLinks: parseLinkWithId(links, 'boardgamemechanic'),
       families: parseLinkWithId(links, 'boardgamefamily'),
       expansions,
       expandsGame,

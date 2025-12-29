@@ -1,20 +1,14 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  ExternalLink,
-  Eye,
-  Pencil,
-  Users,
-  Scale,
   CheckCircle2,
   FileEdit,
   Clock,
   Search,
-  Filter,
   Gamepad2
 } from 'lucide-react'
 
@@ -138,92 +132,35 @@ export default async function AdminGamesPage({
       </div>
 
       {/* Games Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {games.map((game) => (
-          <Card key={game.id} className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group">
-            {/* Image */}
-            <Link href={`/admin/games/${game.id}`}>
-              <div className="relative h-40 bg-muted">
+          <Link key={game.id} href={`/admin/games/${game.id}`}>
+            <Card className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group cursor-pointer h-full">
+              <div className="relative aspect-[4/3] bg-muted">
                 {game.thumbnail_url ? (
                   <Image
                     src={game.thumbnail_url}
                     alt={game.name}
                     fill
                     className="object-cover transition-transform group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Gamepad2 className="h-12 w-12 text-muted-foreground/30" />
+                    <Gamepad2 className="h-8 w-8 text-muted-foreground/30" />
                   </div>
                 )}
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-1.5 right-1.5">
                   {getStatusBadge(game)}
                 </div>
               </div>
-            </Link>
-
-            {/* Content */}
-            <CardContent className="p-4">
-              <Link href={`/admin/games/${game.id}`}>
-                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1">
+              <CardContent className="p-2.5">
+                <h3 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {game.name}
                 </h3>
-              </Link>
-              {game.tagline && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {game.tagline}
-                </p>
-              )}
-
-              {/* Meta */}
-              <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" />
-                  <span>{game.player_count_min}-{game.player_count_max}</span>
-                </div>
-                {game.weight && (
-                  <div className="flex items-center gap-1">
-                    <Scale className="h-3.5 w-3.5" />
-                    <span>{game.weight.toFixed(1)}</span>
-                  </div>
-                )}
-                {game.bgg_id && (
-                  <a
-                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 hover:text-primary"
-                  >
-                    <span>BGG</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                {game.is_published && (
-                  <a
-                    href={`/games/${game.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Eye className="h-3.5 w-3.5" />
-                      View
-                    </Button>
-                  </a>
-                )}
-                <Link href={`/admin/games/${game.id}`} className="ml-auto">
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 

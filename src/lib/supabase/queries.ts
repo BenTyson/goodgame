@@ -33,7 +33,7 @@ export {
   type GameFilters,
 } from './game-queries'
 
-// Category and mechanic queries
+// Category, mechanic, theme, player experience, complexity tier, and BGG alias queries
 export {
   getCategories,
   getCategoryBySlug,
@@ -43,6 +43,24 @@ export {
   getMechanicBySlug,
   getGamesByMechanic,
   getGameMechanics,
+  getThemes,
+  getThemeBySlug,
+  getGamesByTheme,
+  getGameThemes,
+  getPlayerExperiences,
+  getPlayerExperienceBySlug,
+  getGamesByPlayerExperience,
+  getGamePlayerExperiences,
+  getComplexityTiers,
+  getComplexityTierBySlug,
+  getComplexityTierByWeight,
+  getGamesByComplexityTier,
+  getGameComplexityTier,
+  getBGGAliasesForTarget,
+  getBGGAliasByBGGId,
+  resolveBGGAliases,
+  createBGGAlias,
+  deleteBGGAlias,
 } from './category-queries'
 
 // Collection queries

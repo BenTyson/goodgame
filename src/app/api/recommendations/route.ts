@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Fetch categories and mechanics for each game
+    // 4. Fetch categories, mechanics, themes, and player experiences for each game
     const gameIds = games.map((g) => g.id)
 
-    const [categoriesResult, mechanicsResult] = await Promise.all([
+    const [categoriesResult, mechanicsResult, themesResult, experiencesResult] = await Promise.all([
       supabase
         .from('game_categories')
         .select('game_id, categories(slug, name)')
@@ -84,13 +84,25 @@ export async function POST(request: NextRequest) {
         .from('game_mechanics')
         .select('game_id, mechanics(slug, name)')
         .in('game_id', gameIds),
+      supabase
+        .from('game_themes')
+        .select('game_id, themes(slug, name)')
+        .in('game_id', gameIds),
+      supabase
+        .from('game_player_experiences')
+        .select('game_id, player_experiences(slug, name)')
+        .in('game_id', gameIds),
     ])
 
     // Build lookup maps
     const gameCategoriesMap = new Map<string, string[]>()
     const gameMechanicsMap = new Map<string, string[]>()
+    const gameThemesMap = new Map<string, string[]>()
+    const gameExperiencesMap = new Map<string, string[]>()
     const gameCategoryNamesMap = new Map<string, string[]>()
     const gameMechanicNamesMap = new Map<string, string[]>()
+    const gameThemeNamesMap = new Map<string, string[]>()
+    const gameExperienceNamesMap = new Map<string, string[]>()
 
     if (categoriesResult.data) {
       for (const row of categoriesResult.data) {
@@ -120,12 +132,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (themesResult.data) {
+      for (const row of themesResult.data) {
+        const existing = gameThemesMap.get(row.game_id) || []
+        const existingNames = gameThemeNamesMap.get(row.game_id) || []
+        const theme = row.themes as { slug: string; name: string } | null
+        if (theme?.slug) {
+          existing.push(theme.slug)
+          existingNames.push(theme.name)
+          gameThemesMap.set(row.game_id, existing)
+          gameThemeNamesMap.set(row.game_id, existingNames)
+        }
+      }
+    }
+
+    if (experiencesResult.data) {
+      for (const row of experiencesResult.data) {
+        const existing = gameExperiencesMap.get(row.game_id) || []
+        const existingNames = gameExperienceNamesMap.get(row.game_id) || []
+        const exp = row.player_experiences as { slug: string; name: string } | null
+        if (exp?.slug) {
+          existing.push(exp.slug)
+          existingNames.push(exp.name)
+          gameExperiencesMap.set(row.game_id, existing)
+          gameExperienceNamesMap.set(row.game_id, existingNames)
+        }
+      }
+    }
+
     // 5. Score and rank games
     const rankedGames = rankGames(
       games as Game[],
       signals,
       gameCategoriesMap,
-      gameMechanicsMap
+      gameMechanicsMap,
+      gameThemesMap,
+      gameExperiencesMap
     )
 
     // 6. Prepare candidates for AI
@@ -134,6 +176,8 @@ export async function POST(request: NextRequest) {
       score: r.score,
       categories: gameCategoryNamesMap.get(r.game.id) || [],
       mechanics: gameMechanicNamesMap.get(r.game.id) || [],
+      themes: gameThemeNamesMap.get(r.game.id) || [],
+      experiences: gameExperienceNamesMap.get(r.game.id) || [],
     }))
 
     // 7. Call Claude for final ranking and explanations
@@ -150,25 +194,26 @@ export async function POST(request: NextRequest) {
 
       // Map AI recommendations to full game data
       recommendations = aiResult.data.recommendations.map((rec) => {
-        const gameData = candidates.find((c) => c.game.id === rec.gameId)?.game
+        const candidate = candidates.find((c) => c.game.id === rec.gameId)
+        const gameData = candidate?.game
         if (!gameData) {
           // Fallback to first candidate if AI returned invalid ID
-          const fallback = candidates[0].game
+          const fallback = candidates[0]
           return {
             ...rec,
             game: {
-              id: fallback.id,
-              name: fallback.name,
-              slug: fallback.slug,
-              description: fallback.description,
-              thumbnail_url: fallback.thumbnail_url,
-              player_count_min: fallback.player_count_min,
-              player_count_max: fallback.player_count_max,
-              play_time_min: fallback.play_time_min,
-              play_time_max: fallback.play_time_max,
-              weight: fallback.weight,
-              categories: gameCategoryNamesMap.get(fallback.id),
-              mechanics: gameMechanicNamesMap.get(fallback.id),
+              id: fallback.game.id,
+              name: fallback.game.name,
+              slug: fallback.game.slug,
+              description: fallback.game.description,
+              thumbnail_url: fallback.game.thumbnail_url,
+              player_count_min: fallback.game.player_count_min,
+              player_count_max: fallback.game.player_count_max,
+              play_time_min: fallback.game.play_time_min,
+              play_time_max: fallback.game.play_time_max,
+              weight: fallback.game.weight,
+              categories: fallback.categories,
+              mechanics: fallback.mechanics,
             },
           }
         }
@@ -185,8 +230,8 @@ export async function POST(request: NextRequest) {
             play_time_min: gameData.play_time_min,
             play_time_max: gameData.play_time_max,
             weight: gameData.weight,
-            categories: gameCategoryNamesMap.get(gameData.id),
-            mechanics: gameMechanicNamesMap.get(gameData.id),
+            categories: candidate.categories,
+            mechanics: candidate.mechanics,
           },
         }
       })

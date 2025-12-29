@@ -18,6 +18,10 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 - **games** - Core game metadata with full-text search
 - **categories** - Game categories (strategy, family, party, etc.)
 - **mechanics** - Game mechanics (deck building, worker placement, etc.)
+- **themes** - Game themes/settings (fantasy, sci-fi, historical, etc.)
+- **player_experiences** - How players interact (competitive, cooperative, solo, etc.)
+- **complexity_tiers** - Weight-based classifications (gateway, family, medium, heavy, expert)
+- **bgg_tag_aliases** - Maps BGG IDs to internal taxonomy for imports
 - **designers** - Game designers (normalized from TEXT[])
 - **publishers** - Game publishers (normalized from VARCHAR)
 - **artists** - Game artists (normalized)
@@ -43,6 +47,18 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 ┌─────────────┐       ┌──────────────────┐             │
 │  mechanics  │◄──────│  game_mechanics  │─────────────┤
 └─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│   themes    │◄──────│   game_themes    │─────────────┤
+└─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐       ┌──────────────────┐             │
+│player_exper.│◄──────│game_player_exper.│─────────────┤
+└─────────────┘       └──────────────────┘             │
+                                                       │
+┌─────────────┐                                        │
+│complex_tiers│◄───────────────────────────────────────┤ (complexity_tier_id)
+└─────────────┘                                        │
                                                        │
 ┌─────────────┐       ┌──────────────────┐             │
 │  designers  │◄──────│  game_designers  │─────────────┤
@@ -91,6 +107,10 @@ The database uses Supabase (PostgreSQL) with the following main entities:
                       ┌──────────────────┐             │
                       │ affiliate_links  │◄────────────┘
                       └──────────────────┘
+
+┌─────────────┐
+│bgg_tag_alias│ (maps BGG IDs → themes/experiences/categories/mechanics)
+└─────────────┘
 ```
 
 ## Migration Files
@@ -129,6 +149,10 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 32. `00032_user_notifications.sql` - Notifications with trigger
 33. `00033_game_reviews.sql` - Review columns on user_games
 34. `00034_add_review_activity_type.sql` - Review activity type
+35. `00035_themes_table.sql` - Themes table + game_themes junction
+36. `00036_player_experiences_table.sql` - Player experiences + junction
+37. `00037_complexity_tiers.sql` - Complexity tiers + games.complexity_tier_id
+38. `00038_bgg_tag_aliases.sql` - BGG alias system for imports
 
 ## Tables
 
@@ -201,6 +225,82 @@ Game mechanics for filtering.
 | name | VARCHAR(100) | Display name |
 | description | TEXT | Mechanic description |
 | bgg_id | INTEGER | BoardGameGeek mechanic ID |
+
+### themes
+Game themes/settings for filtering (Fantasy, Sci-Fi, etc.).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(50) | URL identifier (unique) |
+| name | VARCHAR(100) | Display name |
+| description | TEXT | Theme description |
+| icon | VARCHAR(50) | Lucide icon name |
+| display_order | SMALLINT | Sort order |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Seeded themes:** fantasy, sci-fi, historical, horror, nature, mythology, mystery, war, economic, pirates, medieval, post-apocalyptic, abstract, humor, steampunk
+
+### player_experiences
+How players interact (Competitive, Cooperative, etc.).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(50) | URL identifier (unique) |
+| name | VARCHAR(100) | Display name |
+| description | TEXT | Experience description |
+| icon | VARCHAR(50) | Lucide icon name |
+| display_order | SMALLINT | Sort order |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Seeded experiences:** competitive, cooperative, team-based, solo, social, narrative, asymmetric, hidden-roles
+
+### complexity_tiers
+Weight-based game classifications.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(50) | URL identifier (unique) |
+| name | VARCHAR(100) | Display name |
+| description | TEXT | Tier description |
+| icon | VARCHAR(50) | Lucide icon name |
+| weight_min | DECIMAL(2,1) | Minimum weight (inclusive) |
+| weight_max | DECIMAL(2,1) | Maximum weight (exclusive) |
+| display_order | SMALLINT | Sort order |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Seeded tiers:**
+| Tier | Weight Range | Description |
+|------|--------------|-------------|
+| gateway | 1.0 - 1.8 | Perfect for newcomers |
+| family | 1.8 - 2.5 | Great for family game nights |
+| medium | 2.5 - 3.2 | Satisfying depth without overwhelm |
+| heavy | 3.2 - 4.0 | For dedicated gamers |
+| expert | 4.0 - 5.0 | Ultimate complexity |
+
+**Note:** Games link to tiers via `games.complexity_tier_id` (auto-assigned during BGG import)
+
+### bgg_tag_aliases
+Maps BGG category/mechanic IDs to internal taxonomy.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| bgg_id | INTEGER | BGG category/mechanic ID |
+| bgg_name | VARCHAR(255) | Original BGG name |
+| bgg_type | VARCHAR(50) | 'category', 'mechanic', 'family' |
+| target_type | VARCHAR(50) | 'category', 'mechanic', 'theme', 'player_experience' |
+| target_id | UUID | FK to target table |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+
+**Unique constraint:** (bgg_id, bgg_type, target_type)
+
+**Usage:** During BGG import, the importer looks up aliases first (by BGG ID), then falls back to name-based mapping.
 
 ### designers
 Game designers (normalized from TEXT[] on games).
@@ -566,6 +666,24 @@ Many-to-many: games ↔ mechanics
 |--------|------|
 | game_id | UUID |
 | mechanic_id | UUID |
+
+### game_themes
+Many-to-many: games ↔ themes
+
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| theme_id | UUID | FK to themes |
+| is_primary | BOOLEAN | Primary theme for game |
+
+### game_player_experiences
+Many-to-many: games ↔ player_experiences
+
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| player_experience_id | UUID | FK to player_experiences |
+| is_primary | BOOLEAN | Primary experience for game |
 
 ### game_designers
 Many-to-many: games ↔ designers

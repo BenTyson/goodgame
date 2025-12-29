@@ -8,6 +8,7 @@ import type {
   Designer,
   Publisher,
   Mechanic,
+  ComplexityTier,
   Database
 } from '@/types/database'
 
@@ -55,6 +56,9 @@ export async function getGames(options?: {
 
 export interface GameFilters {
   categories?: string[]
+  mechanics?: string[]
+  themes?: string[]
+  experiences?: string[]
   playersMin?: number
   playersMax?: number
   timeMin?: number
@@ -66,9 +70,12 @@ export interface GameFilters {
 export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
   const supabase = await createClient()
 
-  // If filtering by categories, we need to join with game_categories
+  // Track game IDs that match junction table filters (categories, mechanics)
+  // We intersect these to find games matching ALL filters
+  let filteredGameIds: Set<string> | null = null
+
+  // Filter by categories
   if (filters.categories && filters.categories.length > 0) {
-    // First get category IDs
     const { data: categoryData } = await supabase
       .from('categories')
       .select('id')
@@ -80,7 +87,6 @@ export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
 
     const categoryIds = categoryData.map(c => c.id)
 
-    // Get game IDs that belong to these categories
     const { data: gameCategories } = await supabase
       .from('game_categories')
       .select('game_id')
@@ -90,46 +96,126 @@ export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
       return []
     }
 
-    const gameIds = [...new Set(gameCategories.map(gc => gc.game_id))]
-
-    // Now get the games with additional filters
-    let query = supabase
-      .from('games')
-      .select('*')
-      .eq('is_published', true)
-      .in('id', gameIds)
-      .order('name')
-
-    // Apply numeric filters
-    if (filters.playersMin !== undefined) {
-      query = query.gte('player_count_max', filters.playersMin)
-    }
-    if (filters.playersMax !== undefined) {
-      query = query.lte('player_count_min', filters.playersMax)
-    }
-    if (filters.timeMin !== undefined) {
-      query = query.gte('play_time_max', filters.timeMin)
-    }
-    if (filters.timeMax !== undefined && filters.timeMax < 180) {
-      query = query.lte('play_time_min', filters.timeMax)
-    }
-    if (filters.weightMin !== undefined && filters.weightMin > 1) {
-      query = query.gte('weight', filters.weightMin)
-    }
-    if (filters.weightMax !== undefined && filters.weightMax < 5) {
-      query = query.lte('weight', filters.weightMax)
-    }
-
-    const { data } = await query
-    return data || []
+    const categoryGameIds = new Set(gameCategories.map(gc => gc.game_id))
+    filteredGameIds = categoryGameIds
   }
 
-  // No category filter - just apply numeric filters
+  // Filter by mechanics
+  if (filters.mechanics && filters.mechanics.length > 0) {
+    const { data: mechanicData } = await supabase
+      .from('mechanics')
+      .select('id')
+      .in('slug', filters.mechanics)
+
+    if (!mechanicData || mechanicData.length === 0) {
+      return []
+    }
+
+    const mechanicIds = mechanicData.map(m => m.id)
+
+    const { data: gameMechanics } = await supabase
+      .from('game_mechanics')
+      .select('game_id')
+      .in('mechanic_id', mechanicIds)
+
+    if (!gameMechanics || gameMechanics.length === 0) {
+      return []
+    }
+
+    const mechanicGameIds = new Set(gameMechanics.map(gm => gm.game_id))
+
+    // Intersect with existing filtered IDs (if any)
+    if (filteredGameIds !== null) {
+      filteredGameIds = new Set([...filteredGameIds].filter(id => mechanicGameIds.has(id)))
+      if (filteredGameIds.size === 0) {
+        return []
+      }
+    } else {
+      filteredGameIds = mechanicGameIds
+    }
+  }
+
+  // Filter by themes
+  if (filters.themes && filters.themes.length > 0) {
+    const { data: themeData } = await supabase
+      .from('themes')
+      .select('id')
+      .in('slug', filters.themes)
+
+    if (!themeData || themeData.length === 0) {
+      return []
+    }
+
+    const themeIds = themeData.map(t => t.id)
+
+    const { data: gameThemes } = await supabase
+      .from('game_themes')
+      .select('game_id')
+      .in('theme_id', themeIds)
+
+    if (!gameThemes || gameThemes.length === 0) {
+      return []
+    }
+
+    const themeGameIds = new Set(gameThemes.map(gt => gt.game_id))
+
+    // Intersect with existing filtered IDs (if any)
+    if (filteredGameIds !== null) {
+      filteredGameIds = new Set([...filteredGameIds].filter(id => themeGameIds.has(id)))
+      if (filteredGameIds.size === 0) {
+        return []
+      }
+    } else {
+      filteredGameIds = themeGameIds
+    }
+  }
+
+  // Filter by player experiences
+  if (filters.experiences && filters.experiences.length > 0) {
+    const { data: experienceData } = await supabase
+      .from('player_experiences')
+      .select('id')
+      .in('slug', filters.experiences)
+
+    if (!experienceData || experienceData.length === 0) {
+      return []
+    }
+
+    const experienceIds = experienceData.map(e => e.id)
+
+    const { data: gameExperiences } = await supabase
+      .from('game_player_experiences')
+      .select('game_id')
+      .in('player_experience_id', experienceIds)
+
+    if (!gameExperiences || gameExperiences.length === 0) {
+      return []
+    }
+
+    const experienceGameIds = new Set(gameExperiences.map(ge => ge.game_id))
+
+    // Intersect with existing filtered IDs (if any)
+    if (filteredGameIds !== null) {
+      filteredGameIds = new Set([...filteredGameIds].filter(id => experienceGameIds.has(id)))
+      if (filteredGameIds.size === 0) {
+        return []
+      }
+    } else {
+      filteredGameIds = experienceGameIds
+    }
+  }
+
+  // Build the main query
   let query = supabase
     .from('games')
     .select('*')
     .eq('is_published', true)
     .order('name')
+
+  // Apply junction table filter results
+  if (filteredGameIds !== null) {
+    query = query.in('id', [...filteredGameIds])
+  }
 
   // Apply numeric filters
   if (filters.playersMin !== undefined) {
@@ -438,6 +524,17 @@ export async function getGameWithDetails(slug: string) {
     .filter(m => m !== null)
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // Get complexity tier if game has one
+  let complexity_tier: ComplexityTier | null = null
+  if (game.complexity_tier_id) {
+    const { data: tierData } = await supabase
+      .from('complexity_tiers')
+      .select('*')
+      .eq('id', game.complexity_tier_id)
+      .single()
+    complexity_tier = tierData
+  }
+
   return {
     ...game,
     images: images || [],
@@ -445,7 +542,8 @@ export async function getGameWithDetails(slug: string) {
     affiliate_links: affiliateLinks || [],
     designers_list,
     publishers_list,
-    mechanics
+    mechanics,
+    complexity_tier
   }
 }
 

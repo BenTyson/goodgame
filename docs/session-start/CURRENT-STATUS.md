@@ -1,6 +1,123 @@
 # Current Status
 
-> Last Updated: 2025-12-28 (Game Recommendation Engine)
+> Last Updated: 2025-12-29 (Games Page Filter UI V2 - COMPLETE)
+
+## Phase: 19 - Games Page Filter UI V2 (COMPLETE)
+
+Modern filter UX redesign for `/games` page with collapsible sidebar, horizontal filter bar, and dynamic grid columns.
+
+### Filter UI V2 Features (2025-12-29) ✅
+- **Horizontal Filter Bar** - Range sliders (Players, Time, Complexity) as compact popovers above grid
+- **Collapsible Sidebar Rail** - Toggle between full (256px) and icon-only rail (48px)
+- **Accordion Sections** - Categories, Mechanics, Themes, Play Style with active count badges
+- **Default Collapsed** - Only Categories expanded by default, others collapsed
+- **Active Filter Pills** - Horizontal scrollable bar showing selected filters with quick remove
+- **Dynamic Grid Columns** - More columns when sidebar collapsed (3→4 on lg, 4→5 on xl)
+- **Wider Container** - `max-w-[1600px]` for more game real estate
+- **State Persistence** - Sidebar collapsed/expanded and accordion states saved to localStorage
+- **Mobile Sheet** - Full filter drawer with accordions on mobile
+
+### Game Card Cleanup (2025-12-29) ✅
+- Removed redundant content badges from bottom of cards (Rules, Score, Setup, Ref)
+- Kept hover-only quick action badges, made smaller (text-[11px], h-3 w-3 icons)
+- Saves significant vertical space per card
+
+### New Files Created
+```
+src/components/games/filters/
+├── index.ts              # Barrel exports
+├── types.ts              # Filter types (TaxonomyType, RangeType, etc.)
+├── constants.ts          # Icons, labels, defaults per section
+├── FilterBar.tsx         # Horizontal range filter popovers
+├── FilterSidebar.tsx     # Main collapsible sidebar container
+├── FilterRail.tsx        # Collapsed icon-only rail (48px)
+├── FilterSection.tsx     # Accordion wrapper using Collapsible
+├── TaxonomyBadges.tsx    # Badge grid for taxonomy selection
+├── RangeFilterPopover.tsx # Popover with slider
+├── ActiveFilters.tsx     # Horizontal pill bar
+└── MobileFilterSheet.tsx # Mobile drawer with all filters
+
+src/hooks/
+└── use-local-storage.ts  # SSR-safe localStorage hook
+
+src/app/games/
+└── GamesPageClient.tsx   # Client component for filter state
+```
+
+### UI Components Added
+- `src/components/ui/collapsible.tsx` (via shadcn)
+- `src/components/ui/popover.tsx` (via shadcn)
+
+---
+
+## Phase: 18 - Taxonomy Management System (COMPLETE)
+
+Full faceted classification system with 5 taxonomy types, admin UI, BGG import compatibility, and recommendation engine integration.
+
+### Phase 1: Mechanics Filtering Fix (2025-12-29) ✅
+- Removed hardcoded `mockMechanics` from `/games` page
+- Mechanics now fetched from database via `getMechanics()`
+- Implemented mechanics filtering in `getFilteredGames()`
+
+### Phase 2: Admin Taxonomy UI (2025-12-29) ✅
+- `/admin/taxonomy` - Overview dashboard with stats for all 5 taxonomy types
+- Full CRUD for Categories, Mechanics, Themes, Player Experiences
+- Complexity Tiers view (auto-assigned based on weight)
+- `TaxonomyEditor.tsx` shared component
+
+### Phase 3: Themes Table (2025-12-29) ✅
+New taxonomy facet for game settings/worlds:
+- **15 themes**: fantasy, sci-fi, historical, horror, nature, mythology, mystery, war, economic, pirates, medieval, post-apocalyptic, abstract, humor, steampunk
+- Admin UI at `/admin/taxonomy/themes`
+- Junction table `game_themes` with `is_primary` flag
+
+### Phase 4: Player Experiences Table (2025-12-29) ✅
+New taxonomy facet for how players interact:
+- **8 experiences**: competitive, cooperative, team-based, solo, social, narrative, asymmetric, hidden-roles
+- Admin UI at `/admin/taxonomy/player-experiences`
+- Junction table `game_player_experiences` with `is_primary` flag
+
+### Phase 5: Complexity Tiers Table (2025-12-29) ✅
+Weight-based game classifications:
+- **5 tiers**: gateway (1.0-1.8), family (1.8-2.5), medium (2.5-3.2), heavy (3.2-4.0), expert (4.0-5.0)
+- Auto-assigned during BGG import based on weight
+- `complexity_tier_id` column added to games table
+- Read-only admin view at `/admin/taxonomy/complexity`
+
+### Phase 6: BGG Alias System (2025-12-29) ✅
+Robust mapping for BGG imports:
+- `bgg_tag_aliases` table maps BGG IDs to internal taxonomy
+- Supports category→theme, category→player_experience mappings
+- Importer uses alias system with name-based fallback
+- ~50 initial aliases seeded
+
+### Phase 7: Recommendation Engine Integration (2025-12-29) ✅
+Enhanced scoring algorithm:
+- **New scoring distribution** (100 points total):
+  - Player count: 20 pts
+  - Play time: 10 pts
+  - Weight/complexity: 15 pts
+  - Categories: 10 pts
+  - **Themes: 15 pts** (uses actual game themes)
+  - **Player experiences: 10 pts** (new!)
+  - Mechanics: 5 pts
+  - Curated flags: 15 pts
+- `preferredExperiences` added to RecommendationSignals
+- API fetches themes/experiences for candidate games
+
+### Phase 8: Data Migration (2025-12-29) ✅
+Backfilled 35 existing games:
+- Created migration script `scripts/migrate-from-categories.ts`
+- Inferred themes/experiences from existing category links
+- **33 theme links** and **43 experience links** added
+
+### Admin Games Page Redesign (2025-12-29)
+- Compact card grid (image + name only)
+- Whole card clickable to edit screen
+- 5-column layout on xl screens
+- Removed View/Edit buttons
+
+---
 
 ## Phase: 17 - Game Recommendation Engine (COMPLETE)
 
@@ -174,6 +291,7 @@ Modern Airbnb-inspired card-based layout:
 - **Notifications** - Bell icon in header, new follower notifications
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 - **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
+- **Games Page Filter V2** - Collapsible sidebar rail, horizontal filter bar, dynamic grid columns
 
 ### Environments & Branches
 
@@ -246,6 +364,22 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | "Also Consider" section (4 thumbnails) | ✅ |
 | "Recommend" button in header (featured style) | ✅ |
 | Homepage CTA sections | ✅ |
+
+### Games Page Filter UI V2 (Phase 19)
+| Feature | Status |
+|---------|--------|
+| Horizontal filter bar with range popovers | ✅ |
+| Collapsible sidebar rail (256px ↔ 48px) | ✅ |
+| Accordion sections for taxonomies | ✅ |
+| Only Categories open by default | ✅ |
+| Active filter pills with remove | ✅ |
+| Clear all filters button | ✅ |
+| Dynamic grid columns based on sidebar | ✅ |
+| Wider container (max-w-[1600px]) | ✅ |
+| State persistence (localStorage) | ✅ |
+| Mobile filter sheet with accordions | ✅ |
+| Compact hover badges on game cards | ✅ |
+| Removed redundant bottom badges | ✅ |
 
 **Profile V3 UI (Current):**
 - Two-column layout: sticky identity card on left, scrollable content on right
@@ -409,7 +543,11 @@ supabase/migrations/
 ├── 00031_user_activities.sql        # Activity feed
 ├── 00032_user_notifications.sql     # Notifications with trigger
 ├── 00033_game_reviews.sql           # Review columns on user_games
-└── 00034_add_review_activity_type.sql # Review activity type
+├── 00034_add_review_activity_type.sql # Review activity type
+├── 00035_themes_table.sql           # Themes + game_themes junction
+├── 00036_player_experiences_table.sql # Player experiences + junction
+├── 00037_complexity_tiers.sql       # Complexity tiers + games.complexity_tier_id
+└── 00038_bgg_tag_aliases.sql        # BGG alias system for imports
 ```
 
 ---
@@ -549,6 +687,23 @@ git push origin develop  # Deploy to staging
 | `src/components/admin/LogoUpload.tsx` | Logo upload component |
 | `src/app/api/admin/publishers/route.ts` | Publisher CRUD API |
 | `src/app/api/admin/publisher-logo/route.ts` | Logo upload API |
+
+### Games Page Filter UI V2
+| File | Purpose |
+|------|---------|
+| `src/app/games/page.tsx` | Server component, fetches data |
+| `src/app/games/GamesPageClient.tsx` | Client component, filter state management |
+| `src/components/games/filters/FilterBar.tsx` | Horizontal range filter popovers |
+| `src/components/games/filters/FilterSidebar.tsx` | Collapsible sidebar container |
+| `src/components/games/filters/FilterRail.tsx` | Collapsed icon-only rail (48px) |
+| `src/components/games/filters/FilterSection.tsx` | Accordion wrapper (Collapsible) |
+| `src/components/games/filters/TaxonomyBadges.tsx` | Badge grid for taxonomy selection |
+| `src/components/games/filters/RangeFilterPopover.tsx` | Popover with slider |
+| `src/components/games/filters/ActiveFilters.tsx` | Horizontal pill bar |
+| `src/components/games/filters/MobileFilterSheet.tsx` | Mobile drawer |
+| `src/components/games/filters/constants.ts` | Icons, labels, DEFAULT_OPEN_SECTIONS |
+| `src/components/games/filters/types.ts` | Filter types and defaults |
+| `src/hooks/use-local-storage.ts` | SSR-safe localStorage hook |
 
 ---
 
