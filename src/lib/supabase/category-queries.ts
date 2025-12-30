@@ -78,6 +78,46 @@ export async function getAllCategorySlugs(): Promise<string[]> {
   return data?.map(c => c.slug) || []
 }
 
+export async function getCategoriesWithGameCounts(): Promise<(Category & { game_count: number })[]> {
+  const supabase = await createClient()
+
+  // Get all categories ordered by display_order
+  const { data: categories, error: catError } = await supabase
+    .from('categories')
+    .select('*')
+    .order('display_order')
+
+  if (catError || !categories) {
+    return []
+  }
+
+  // Get counts from junction table (only published games)
+  const { data: counts, error: countError } = await supabase
+    .from('game_categories')
+    .select(`
+      category_id,
+      games!inner(is_published)
+    `)
+    .eq('games.is_published', true)
+
+  if (countError) {
+    // Return categories with 0 counts if count query fails
+    return categories.map(cat => ({ ...cat, game_count: 0 }))
+  }
+
+  // Aggregate counts per category
+  const countMap = new Map<string, number>()
+  counts?.forEach(row => {
+    const current = countMap.get(row.category_id) || 0
+    countMap.set(row.category_id, current + 1)
+  })
+
+  return categories.map(cat => ({
+    ...cat,
+    game_count: countMap.get(cat.id) || 0
+  }))
+}
+
 // ===========================================
 // MECHANICS
 // ===========================================

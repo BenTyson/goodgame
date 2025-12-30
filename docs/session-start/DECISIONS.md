@@ -80,6 +80,7 @@
 - ~~Emoji in shelf dropdown/keytags~~ - Replaced with Lucide icons (cleaner, more professional)
 - ~~Profile header/banner images~~ - Removed in V3 redesign (clean card-based layout, Airbnb-inspired)
 - ~~Content badges at bottom of game cards~~ - Removed (redundant with hover badges, saves vertical space)
+- ~~Categories link to /categories/[slug]~~ - Changed to link to `/games?categories={slug}` (uses filter UI, less redundancy)
 
 ## Images
 

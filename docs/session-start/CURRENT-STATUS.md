@@ -1,6 +1,30 @@
 # Current Status
 
-> Last Updated: 2025-12-29 (Games Page Filter UI V2 - COMPLETE)
+> Last Updated: 2025-12-29 (Categories Page Update - COMPLETE)
+
+## Phase: 20 - Categories Page Update (COMPLETE)
+
+Updated `/categories` page from hardcoded mock data to database-driven with UI polish.
+
+### Changes (2025-12-29) ✅
+- **Database-driven** - Fetches categories from Supabase via `getCategoriesWithGameCounts()`
+- **Game counts** - Shows actual published game count per category from junction table
+- **Links to filters** - Category cards now link to `/games?categories={slug}` (uses Filter UI V2)
+- **Dynamic icons** - Maps DB `icon` field to Lucide components with fallback
+- **UI polish** - Card shadows, hover states, consistent styling with GameCard
+- **Empty state** - Graceful handling when no categories exist
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/lib/supabase/category-queries.ts` | Added `getCategoriesWithGameCounts()` |
+| `src/app/categories/page.tsx` | Rewrote to use DB fetch, new links, polished UI |
+
+### Removed
+- `mockCategories` and `mockGames` imports (no longer using hardcoded data)
+- Hardcoded 5-category icon mapping (now uses DB `icon` field)
+
+---
 
 ## Phase: 19 - Games Page Filter UI V2 (COMPLETE)
 
