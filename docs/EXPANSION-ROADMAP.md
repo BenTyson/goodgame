@@ -97,11 +97,39 @@
 
 ---
 
+## In Progress: Buy/Sell/Trade Marketplace
+
+**Status:** Phase 5 (Reputation & Feedback) COMPLETE
+
+Building a full marketplace to compete with BGG GeekMarket:
+- [x] Feature flags for gradual rollout
+- [x] Core marketplace types and constants
+- [x] Database schema (listings, images, saves, user settings)
+- [x] Browse page with filters
+- [x] Create listing wizard (game selector, details, pricing)
+- [x] Listing detail page
+- [x] My listings dashboard
+- [x] Photo uploads for listings
+- [x] In-app messaging (Phase 2)
+- [x] Offers and negotiation (Phase 3)
+- [x] Stripe Connect payments (Phase 4)
+- [x] Reputation/feedback system (Phase 5)
+- [ ] Wishlist matching alerts (Phase 6)
+
+### Completed Marketplace Phases:
+- **Phase 1:** Listings - Browse, create, edit, manage listings
+- **Phase 2:** Messaging - In-app buyer/seller conversations
+- **Phase 3:** Offers - Buy/trade/counter-offer negotiation system
+- **Phase 4:** Payments - Stripe Connect for seller onboarding, checkout, escrow, refunds
+- **Phase 5:** Reputation - 1-5 star ratings, trust levels (new → top_seller), feedback on profiles
+
+---
+
 ## Parking Lot (Ideas to Revisit)
 
 ### Features to Add Later
 - [ ] Price tracking (Board Game Atlas integration)
-- [ ] User collections / wishlists
+- [x] User collections / wishlists (DONE - shelf system)
 - [ ] Play logging
 - [ ] "Find players near me"
 - [ ] Game night planning tools

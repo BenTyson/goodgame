@@ -7,6 +7,7 @@ import { ProfileInsights } from '@/components/profile/ProfileInsights'
 import { ProfileReviews } from '@/components/profile/ProfileReviews'
 import { MutualGamesSection } from '@/components/profile/MutualGamesSection'
 import { TopGamesDisplay } from '@/components/profile/TopGamesDisplay'
+import { ProfileMarketplaceFeedback } from '@/components/profile/ProfileMarketplaceFeedback'
 import type { UserProfile, SocialLinks, Game, FollowStats as FollowStatsType } from '@/types/database'
 import type { TopGameWithDetails, MutualGame } from '@/lib/supabase/user-queries'
 import type { UserReviewWithGame } from '@/lib/supabase/review-queries'
@@ -131,6 +132,13 @@ export function ProfileContent({
               isOwnProfile={isOwnProfile}
             />
           )}
+
+          {/* Marketplace Reputation */}
+          <ProfileMarketplaceFeedback
+            userId={profile.id}
+            username={profile.username}
+            isOwnProfile={isOwnProfile}
+          />
 
           {/* Mutual Games (only shown when viewing another user's profile) */}
           {mutualGames && mutualGames.length > 0 && (

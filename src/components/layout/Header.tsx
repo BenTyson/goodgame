@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Categories', href: '/categories' },
   { name: 'Feed', href: '/feed' },
   { name: 'Shelf', href: '/shelf' },
+  { name: 'Marketplace', href: '/marketplace' },
   { name: 'Recommend', href: '/recommend', featured: true },
 ]
 

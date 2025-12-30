@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -483,6 +484,36 @@ export type Database = {
           slug?: string
           updated_at?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          allowed_user_ids: string[] | null
+          created_at: string | null
+          flag_key: string
+          id: string
+          is_enabled: boolean | null
+          metadata: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_user_ids?: string[] | null
+          created_at?: string | null
+          flag_key: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_user_ids?: string[] | null
+          created_at?: string | null
+          flag_key?: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1151,6 +1182,579 @@ export type Database = {
           },
         ]
       }
+      listing_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          display_order: number
+          file_size: number | null
+          height: number | null
+          id: string
+          is_primary: boolean | null
+          listing_id: string
+          mime_type: string | null
+          storage_path: string | null
+          url: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          display_order?: number
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          is_primary?: boolean | null
+          listing_id: string
+          mime_type?: string | null
+          storage_path?: string | null
+          url: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          display_order?: number
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          is_primary?: boolean | null
+          listing_id?: string
+          mime_type?: string | null
+          storage_path?: string | null
+          url?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_images_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_saves: {
+        Row: {
+          created_at: string | null
+          id: string
+          listing_id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          listing_id: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          listing_id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_saves_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_saves_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_conversations: {
+        Row: {
+          buyer_archived: boolean | null
+          buyer_id: string
+          buyer_unread_count: number | null
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          listing_id: string
+          seller_archived: boolean | null
+          seller_id: string
+          seller_unread_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_archived?: boolean | null
+          buyer_id: string
+          buyer_unread_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          listing_id: string
+          seller_archived?: boolean | null
+          seller_id: string
+          seller_unread_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_archived?: boolean | null
+          buyer_id?: string
+          buyer_unread_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          listing_id?: string
+          seller_archived?: boolean | null
+          seller_id?: string
+          seller_unread_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_conversations_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_conversations_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_listings: {
+        Row: {
+          accepts_offers: boolean | null
+          condition: Database["public"]["Enums"]["game_condition"] | null
+          condition_notes: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          expires_at: string | null
+          fts: unknown
+          game_id: string
+          id: string
+          is_featured: boolean | null
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          location_city: string | null
+          location_country: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_postal: string | null
+          location_state: string | null
+          minimum_offer_cents: number | null
+          price_cents: number | null
+          published_at: string | null
+          save_count: number | null
+          seller_id: string
+          shipping_cost_cents: number | null
+          shipping_notes: string | null
+          shipping_preference:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          sold_at: string | null
+          status: Database["public"]["Enums"]["listing_status"] | null
+          title: string | null
+          trade_game_ids: string[] | null
+          trade_preferences: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          accepts_offers?: boolean | null
+          condition?: Database["public"]["Enums"]["game_condition"] | null
+          condition_notes?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expires_at?: string | null
+          fts?: unknown
+          game_id: string
+          id?: string
+          is_featured?: boolean | null
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          location_city?: string | null
+          location_country?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_postal?: string | null
+          location_state?: string | null
+          minimum_offer_cents?: number | null
+          price_cents?: number | null
+          published_at?: string | null
+          save_count?: number | null
+          seller_id: string
+          shipping_cost_cents?: number | null
+          shipping_notes?: string | null
+          shipping_preference?:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          sold_at?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title?: string | null
+          trade_game_ids?: string[] | null
+          trade_preferences?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          accepts_offers?: boolean | null
+          condition?: Database["public"]["Enums"]["game_condition"] | null
+          condition_notes?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expires_at?: string | null
+          fts?: unknown
+          game_id?: string
+          id?: string
+          is_featured?: boolean | null
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          location_city?: string | null
+          location_country?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_postal?: string | null
+          location_state?: string | null
+          minimum_offer_cents?: number | null
+          price_cents?: number | null
+          published_at?: string | null
+          save_count?: number | null
+          seller_id?: string
+          shipping_cost_cents?: number | null
+          shipping_notes?: string | null
+          shipping_preference?:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          sold_at?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title?: string | null
+          trade_game_ids?: string[] | null
+          trade_preferences?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          is_deleted: boolean | null
+          is_read: boolean | null
+          is_system_message: boolean | null
+          read_at: string | null
+          sender_id: string
+          system_message_type: string | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_read?: boolean | null
+          is_system_message?: boolean | null
+          read_at?: string | null
+          sender_id: string
+          system_message_type?: string | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_read?: boolean | null
+          is_system_message?: boolean | null
+          read_at?: string | null
+          sender_id?: string
+          system_message_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_offers: {
+        Row: {
+          amount_cents: number | null
+          buyer_id: string
+          conversation_id: string | null
+          counter_count: number | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids: string[] | null
+          trade_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          buyer_id: string
+          conversation_id?: string | null
+          counter_count?: number | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string
+          id?: string
+          listing_id: string
+          message?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          seller_id: string
+          status?: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids?: string[] | null
+          trade_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          buyer_id?: string
+          conversation_id?: string | null
+          counter_count?: number | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string
+          id?: string
+          listing_id?: string
+          message?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          seller_id?: string
+          status?: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids?: string[] | null
+          trade_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_parent_offer_id_fkey"
+            columns: ["parent_offer_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_transactions: {
+        Row: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          buyer_id: string
+          created_at?: string | null
+          currency?: string | null
+          delivered_at?: string | null
+          id?: string
+          listing_id: string
+          offer_id: string
+          paid_at?: string | null
+          platform_fee_cents: number
+          released_at?: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at?: string | null
+          shipping_carrier?:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents?: number | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          buyer_id?: string
+          created_at?: string | null
+          currency?: string | null
+          delivered_at?: string | null
+          id?: string
+          listing_id?: string
+          offer_id?: string
+          paid_at?: string | null
+          platform_fee_cents?: number
+          released_at?: string | null
+          seller_id?: string
+          seller_payout_cents?: number
+          shipped_at?: string | null
+          shipping_carrier?:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents?: number | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_fee_cents?: number
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_transactions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_transactions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_transactions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mechanics: {
         Row: {
           bgg_id: number | null
@@ -1555,6 +2159,101 @@ export type Database = {
           },
         ]
       }
+      user_marketplace_settings: {
+        Row: {
+          buyer_rating: number | null
+          created_at: string | null
+          default_shipping_preference:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          id: string
+          notification_preferences: Json | null
+          pickup_location_city: string | null
+          pickup_location_country: string | null
+          pickup_location_lat: number | null
+          pickup_location_lng: number | null
+          pickup_location_postal: string | null
+          pickup_location_state: string | null
+          seller_rating: number | null
+          ships_from_location: string | null
+          ships_to_countries: string[] | null
+          stripe_account_id: string | null
+          stripe_account_status: string | null
+          stripe_charges_enabled: boolean | null
+          stripe_onboarding_complete: boolean | null
+          stripe_payouts_enabled: boolean | null
+          total_purchases: number | null
+          total_sales: number | null
+          total_trades: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          buyer_rating?: number | null
+          created_at?: string | null
+          default_shipping_preference?:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          id?: string
+          notification_preferences?: Json | null
+          pickup_location_city?: string | null
+          pickup_location_country?: string | null
+          pickup_location_lat?: number | null
+          pickup_location_lng?: number | null
+          pickup_location_postal?: string | null
+          pickup_location_state?: string | null
+          seller_rating?: number | null
+          ships_from_location?: string | null
+          ships_to_countries?: string[] | null
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_onboarding_complete?: boolean | null
+          stripe_payouts_enabled?: boolean | null
+          total_purchases?: number | null
+          total_sales?: number | null
+          total_trades?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          buyer_rating?: number | null
+          created_at?: string | null
+          default_shipping_preference?:
+            | Database["public"]["Enums"]["shipping_preference"]
+            | null
+          id?: string
+          notification_preferences?: Json | null
+          pickup_location_city?: string | null
+          pickup_location_country?: string | null
+          pickup_location_lat?: number | null
+          pickup_location_lng?: number | null
+          pickup_location_postal?: string | null
+          pickup_location_state?: string | null
+          seller_rating?: number | null
+          ships_from_location?: string | null
+          ships_to_countries?: string[] | null
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_onboarding_complete?: boolean | null
+          stripe_payouts_enabled?: boolean | null
+          total_purchases?: number | null
+          total_sales?: number | null
+          total_trades?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_marketplace_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           actor_id: string | null
@@ -1714,7 +2413,338 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_offer: {
+        Args: { p_message?: string; p_offer_id: string; p_user_id: string }
+        Returns: {
+          amount_cents: number | null
+          buyer_id: string
+          conversation_id: string | null
+          counter_count: number | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids: string[] | null
+          trade_notes: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      auto_release_funds: { Args: never; Returns: number }
+      calculate_distance_miles: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      cancel_unpaid_transactions: { Args: never; Returns: number }
+      confirm_delivery: {
+        Args: { p_transaction_id: string; p_user_id: string }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      counter_offer: {
+        Args: {
+          p_amount_cents?: number
+          p_message?: string
+          p_offer_id: string
+          p_trade_game_ids?: string[]
+          p_user_id: string
+        }
+        Returns: {
+          amount_cents: number | null
+          buyer_id: string
+          conversation_id: string | null
+          counter_count: number | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids: string[] | null
+          trade_notes: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_transaction_from_offer: {
+        Args: {
+          p_amount_cents: number
+          p_offer_id: string
+          p_platform_fee_cents: number
+          p_seller_payout_cents: number
+          p_shipping_cents: number
+          p_stripe_fee_cents: number
+        }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_offer: {
+        Args: { p_message?: string; p_offer_id: string; p_user_id: string }
+        Returns: {
+          amount_cents: number | null
+          buyer_id: string
+          conversation_id: string | null
+          counter_count: number | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids: string[] | null
+          trade_notes: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      expire_stale_offers: { Args: never; Returns: number }
       get_complexity_tier_id: { Args: { game_weight: number }; Returns: string }
+      get_listing_offer_counts: {
+        Args: { p_listing_id: string }
+        Returns: {
+          highest_offer_cents: number
+          pending_offers: number
+          total_offers: number
+        }[]
+      }
+      get_or_create_conversation: {
+        Args: { p_buyer_id: string; p_listing_id: string }
+        Returns: string
+      }
+      get_user_transaction_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          as_buyer_active: number
+          as_buyer_completed: number
+          as_buyer_pending: number
+          as_seller_active: number
+          as_seller_completed: number
+          as_seller_pending: number
+          total_earned_cents: number
+          total_spent_cents: number
+        }[]
+      }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      mark_transaction_paid: {
+        Args: {
+          p_charge_id?: string
+          p_payment_intent_id: string
+          p_transaction_id: string
+        }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      release_transaction_funds: {
+        Args: { p_transaction_id: string; p_transfer_id?: string }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_refund: {
+        Args: { p_reason?: string; p_transaction_id: string; p_user_id: string }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       search_games: {
         Args: { search_query: string }
         Returns: {
@@ -1776,7 +2806,80 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      ship_transaction: {
+        Args: {
+          p_carrier: Database["public"]["Enums"]["shipping_carrier"]
+          p_tracking_number?: string
+          p_transaction_id: string
+          p_user_id: string
+        }
+        Returns: {
+          amount_cents: number
+          buyer_id: string
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          offer_id: string
+          paid_at: string | null
+          platform_fee_cents: number
+          released_at: string | null
+          seller_id: string
+          seller_payout_cents: number
+          shipped_at: string | null
+          shipping_carrier:
+            | Database["public"]["Enums"]["shipping_carrier"]
+            | null
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       slugify: { Args: { text_input: string }; Returns: string }
+      withdraw_offer: {
+        Args: { p_offer_id: string; p_user_id: string }
+        Returns: {
+          amount_cents: number | null
+          buyer_id: string
+          conversation_id: string | null
+          counter_count: number | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          parent_offer_id: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trade_game_ids: string[] | null
+          trade_notes: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       activity_type:
@@ -1786,13 +2889,65 @@ export type Database = {
         | "rating"
         | "top_games_update"
         | "review"
-      notification_type: "new_follower" | "rating"
+        | "listing_created"
+        | "listing_sold"
+        | "listing_traded"
+      game_condition:
+        | "new_sealed"
+        | "like_new"
+        | "very_good"
+        | "good"
+        | "acceptable"
+      listing_status:
+        | "draft"
+        | "active"
+        | "pending"
+        | "sold"
+        | "traded"
+        | "expired"
+        | "cancelled"
+      listing_type: "sell" | "trade" | "want"
+      notification_type:
+        | "new_follower"
+        | "rating"
+        | "new_offer"
+        | "offer_accepted"
+        | "offer_declined"
+        | "offer_countered"
+        | "new_message"
+        | "transaction_shipped"
+        | "transaction_delivered"
+        | "feedback_received"
+        | "wishlist_match"
+        | "offer_withdrawn"
+        | "offer_expired"
+      offer_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "countered"
+        | "expired"
+        | "withdrawn"
+      offer_type: "buy" | "trade" | "buy_plus_trade"
       shelf_status:
         | "owned"
         | "want_to_buy"
         | "want_to_play"
         | "previously_owned"
         | "wishlist"
+      shipping_carrier: "usps" | "ups" | "fedex" | "dhl" | "other"
+      shipping_preference: "local_only" | "will_ship" | "ship_only"
+      transaction_status:
+        | "pending_payment"
+        | "payment_processing"
+        | "payment_held"
+        | "shipped"
+        | "delivered"
+        | "completed"
+        | "refund_requested"
+        | "refunded"
+        | "disputed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1930,14 +3085,71 @@ export const Constants = {
         "rating",
         "top_games_update",
         "review",
+        "listing_created",
+        "listing_sold",
+        "listing_traded",
       ],
-      notification_type: ["new_follower", "rating"],
+      game_condition: [
+        "new_sealed",
+        "like_new",
+        "very_good",
+        "good",
+        "acceptable",
+      ],
+      listing_status: [
+        "draft",
+        "active",
+        "pending",
+        "sold",
+        "traded",
+        "expired",
+        "cancelled",
+      ],
+      listing_type: ["sell", "trade", "want"],
+      notification_type: [
+        "new_follower",
+        "rating",
+        "new_offer",
+        "offer_accepted",
+        "offer_declined",
+        "offer_countered",
+        "new_message",
+        "transaction_shipped",
+        "transaction_delivered",
+        "feedback_received",
+        "wishlist_match",
+        "offer_withdrawn",
+        "offer_expired",
+      ],
+      offer_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "countered",
+        "expired",
+        "withdrawn",
+      ],
+      offer_type: ["buy", "trade", "buy_plus_trade"],
       shelf_status: [
         "owned",
         "want_to_buy",
         "want_to_play",
         "previously_owned",
         "wishlist",
+      ],
+      shipping_carrier: ["usps", "ups", "fedex", "dhl", "other"],
+      shipping_preference: ["local_only", "will_ship", "ship_only"],
+      transaction_status: [
+        "pending_payment",
+        "payment_processing",
+        "payment_held",
+        "shipped",
+        "delivered",
+        "completed",
+        "refund_requested",
+        "refunded",
+        "disputed",
+        "cancelled",
       ],
     },
   },

@@ -1,6 +1,277 @@
 # Current Status
 
-> Last Updated: 2025-12-29 (Categories Page Update - COMPLETE)
+> Last Updated: 2025-12-30 (Marketplace Phase 5 - COMPLETE)
+
+## Phase: 25 - Marketplace Phase 5: Reputation & Feedback (COMPLETE)
+
+Built seller/buyer rating and feedback system for completed marketplace transactions.
+
+### Phase 5: Reputation & Feedback (2025-12-30) ✅
+- **Feedback System** - 1-5 star ratings with optional comments for completed transactions
+- **Trust Levels** - new, established, trusted, top_seller (auto-calculated)
+- **Reputation Stats** - Materialized view for aggregated seller/buyer ratings
+- **Transaction Feedback** - Leave feedback form on completed transaction page
+- **Seller Rating Display** - Rating/trust badge on listing detail pages
+- **Profile Integration** - Marketplace reputation section on user profiles
+
+### New Routes (Phase 5)
+| Route | Purpose |
+|-------|---------|
+| `/api/marketplace/feedback` | GET: List feedback, POST: Leave feedback |
+| `/api/marketplace/feedback/[transactionId]` | GET: Feedback for a transaction |
+| `/api/marketplace/reputation/[userId]` | GET: User reputation stats + recent feedback |
+
+### New Components (Phase 5)
+```
+src/components/marketplace/feedback/
+├── FeedbackCard.tsx         # Individual feedback display
+├── ReputationBadge.tsx      # Trust level badge with tooltip
+├── SellerRating.tsx         # Seller reputation display (inline/card variants)
+├── TransactionFeedback.tsx  # Leave feedback form
+└── index.ts                 # Barrel exports
+
+src/components/profile/
+└── ProfileMarketplaceFeedback.tsx  # Marketplace rep on user profile
+```
+
+### New Files (Phase 5)
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/feedback-queries.ts` | Feedback CRUD + reputation queries |
+| `src/lib/config/marketplace-constants.ts` | Added `FEEDBACK_SETTINGS` |
+| `src/types/marketplace.ts` | Added feedback/reputation types |
+
+### Database Migration: `00044_marketplace_feedback.sql`
+- `feedback_role` enum: buyer, seller
+- `trust_level` enum: new, established, trusted, top_seller
+- `marketplace_feedback` table with rating, comment, transaction link
+- `seller_reputation_stats` materialized view for aggregated stats
+- RLS policies (public read, participant write)
+- Helper functions: `leave_feedback()`, `get_user_feedback()`, `get_user_reputation()`, `can_leave_feedback()`
+- Triggers: Create notification on feedback, update marketplace settings rating
+
+---
+
+## Phase: 24 - Marketplace Phase 4: Payment Processing (COMPLETE)
+
+Built Stripe Connect payment processing for marketplace transactions.
+
+### Phase 4: Stripe Connect Integration (2025-12-30) ✅
+- **Stripe SDK Setup** - Server-side client with lazy loading for build compatibility
+- **Connect Onboarding** - Express accounts for sellers with OAuth flow
+- **Checkout Sessions** - Stripe-hosted checkout for secure payments
+- **Destination Charges** - Platform collects payment, transfers to sellers
+- **Fee Calculation** - 3% platform fee + 2.9% + $0.30 Stripe fees
+- **Webhook Handler** - Handles payment, transfer, refund, and account events
+- **Transaction Dashboard** - `/marketplace/transactions` with Purchases/Sales tabs
+- **Settings Integration** - Payments section in `/settings` for seller onboarding
+
+### New Routes (Phase 4)
+| Route | Purpose |
+|-------|---------|
+| `/marketplace/transactions` | Transaction dashboard (purchases + sales) |
+| `/marketplace/transactions/[id]` | Transaction detail page |
+| `/api/marketplace/stripe/connect` | Create/get Connect account |
+| `/api/marketplace/stripe/connect/callback` | OAuth return handler |
+| `/api/marketplace/stripe/connect/refresh` | Refresh onboarding link |
+| `/api/marketplace/transactions` | GET: List transactions, POST: Create from offer |
+| `/api/marketplace/transactions/[id]` | GET: Details, PATCH: Update shipping/status |
+| `/api/marketplace/transactions/[id]/checkout` | POST: Create checkout session |
+| `/api/stripe/webhooks` | Handle Stripe webhook events |
+
+### New Components (Phase 4)
+```
+src/components/marketplace/transactions/
+├── StripeConnectButton.tsx  # Onboarding status + setup button
+├── CheckoutButton.tsx       # Create checkout session
+├── TransactionCard.tsx      # Transaction display with actions
+├── TransactionTimeline.tsx  # Visual status progression
+├── ShippingForm.tsx         # Add tracking info
+└── index.ts                 # Barrel exports
+```
+
+### New Stripe Files (Phase 4)
+```
+src/lib/stripe/
+├── client.ts   # Lazy-loaded Stripe client + fee calculations
+├── connect.ts  # Connect account + payment helpers
+└── index.ts    # Barrel exports
+```
+
+### Database Migration: `00043_marketplace_transactions.sql`
+- `transaction_status` enum (10 states: pending_payment → completed/disputed)
+- `shipping_carrier` enum (USPS, UPS, FedEx, DHL, Other)
+- `marketplace_transactions` table with full payment tracking
+- RLS policies for buyer/seller access
+- Helper functions: `create_transaction_from_offer()`, `mark_transaction_paid()`, `ship_transaction()`, `confirm_delivery()`, `release_transaction_funds()`, `request_refund()`
+- Triggers: Create notification on transaction created, shipped, delivered
+
+---
+
+## Phase: 23 - Marketplace Phase 3: Offers & Negotiation (COMPLETE)
+
+Built structured offer system for price negotiation and trades.
+
+### Phase 3: Offers System (2025-12-30) ✅
+- **Database Schema** - `marketplace_offers` table with full state machine (pending → accepted/declined/countered/expired/withdrawn)
+- **Offer Types** - buy, trade, buy_plus_trade with validation
+- **Counter-Offer Chains** - via `parent_offer_id` with counter limit
+- **48-Hour Expiration** - Default expiry with auto-expire function
+- **Offer Queries** - `src/lib/supabase/offer-queries.ts` with CRUD + RPC calls
+- **Offers Dashboard** - `/marketplace/offers` with Received/Sent tabs
+- **Make Offer Button** - Integrated into listing detail page for listings that accept offers
+- **Trade Selector** - Select games from shelf to offer in trades
+
+### New Routes (Phase 3)
+| Route | Purpose |
+|-------|---------|
+| `/marketplace/offers` | Offers dashboard (received + sent tabs) |
+| `/api/marketplace/offers` | GET: List offers, POST: Create offer |
+| `/api/marketplace/offers/[id]` | GET: Offer details, PATCH: Accept/decline/counter/withdraw |
+| `/api/user/shelf` | GET: User's shelf items (for trade selector) |
+
+### New Components (Phase 3)
+```
+src/components/marketplace/offers/
+├── MakeOfferDialog.tsx    # Modal with offer type, amount, trade games, message
+├── OfferCard.tsx          # Offer display with accept/decline/counter/withdraw actions
+├── TradeSelector.tsx      # Select owned games from shelf to offer in trade
+└── index.ts               # Barrel exports
+```
+
+### Database Migration: `00042_marketplace_offers.sql`
+- `offer_type` enum: buy, trade, buy_plus_trade
+- `offer_status` enum: pending, accepted, declined, countered, expired, withdrawn
+- `marketplace_offers` table with constraints for valid offers
+- RLS policies for buyer/seller access
+- Helper functions: `accept_offer()`, `decline_offer()`, `counter_offer()`, `withdraw_offer()`
+- Triggers: Create notification on new offer, notification on status change
+- Auto-decline other offers when one is accepted
+
+---
+
+## Phase: 22 - Marketplace Phase 2: Messaging (COMPLETE)
+
+Built in-app messaging system for buyer/seller communication.
+
+### Phase 2: Messaging System (2025-12-30) ✅
+- **Database Schema** - `marketplace_conversations`, `marketplace_messages` tables
+- **Conversation Queries** - `src/lib/supabase/conversation-queries.ts` with full CRUD
+- **Messages Inbox** - `/marketplace/messages` with unread badges, conversation list
+- **Conversation Thread** - `/marketplace/messages/[id]` with real-time messaging UI
+- **Contact Seller Button** - Integrated into listing detail page, creates/opens conversations
+- **Header Navigation** - Added "Marketplace" link to main header
+
+### New Routes (Phase 2)
+| Route | Purpose |
+|-------|---------|
+| `/marketplace/messages` | Messages inbox page |
+| `/marketplace/messages/[id]` | Conversation thread page |
+| `/api/marketplace/conversations` | GET: List conversations, POST: Create new |
+| `/api/marketplace/conversations/[id]` | GET: Conversation with messages, PATCH: Archive/mark read |
+| `/api/marketplace/conversations/[id]/messages` | POST: Send message |
+
+### New Components (Phase 2)
+```
+src/components/marketplace/messaging/
+├── ConversationList.tsx      # Inbox list with unread badges
+├── MessageThread.tsx         # Message display + send UI
+├── ContactSellerButton.tsx   # Start conversation from listing
+└── index.ts                  # Barrel exports
+```
+
+### Database Migration: `00041_marketplace_messaging.sql`
+- `marketplace_conversations` - Threads (listing_id, buyer_id, seller_id, unread counts, archive flags)
+- `marketplace_messages` - Individual messages (content, is_read, is_system_message)
+- Triggers: Auto-update conversation on new message, create notification on new message
+- RPC functions: `get_or_create_conversation`, `mark_conversation_read`
+
+---
+
+## Phase: 21 - Marketplace Phase 1 (COMPLETE)
+
+Built the foundation for a Buy/Sell/Trade marketplace competing with BGG's marketplace on UX.
+
+### Phase 0: Foundation (2025-12-30) ✅
+- **Feature Flags** - System for gradual rollout (`feature_flags` table)
+- **Marketplace Constants** - Fee structures, limits, durations
+- **TypeScript Types** - Full type definitions for marketplace entities
+
+### Phase 1: Listing System (2025-12-30) ✅
+- **Database Schema** - `marketplace_listings`, `listing_images`, `listing_saves`, `user_marketplace_settings`
+- **Browse Page** - `/marketplace` with filter sidebar, grid layout, pagination
+- **Create Listing Wizard** - 4-step flow (Select Game → Details → Pricing & Shipping → Photos)
+- **Listing Detail Page** - `/marketplace/listings/[id]` with images, seller info, condition, actions
+- **My Listings Dashboard** - `/marketplace/my-listings` with tabs (Active, Drafts, Pending, Sold, Expired)
+- **Edit Listing Page** - `/marketplace/listings/[id]/edit` with details + photos tabs
+- **Photo Uploads** - Drag-drop image upload with primary selection, up to 6 photos per listing
+- **Game Search API** - `/api/games/search` for game selector component
+
+### Database Migrations (Phase 0-1)
+| Migration | Description |
+|-----------|-------------|
+| `00039_marketplace_foundation.sql` | Feature flags table |
+| `00040_marketplace_listings.sql` | Listings, images, saves, settings tables + enums |
+
+### Enum Types Created
+```sql
+listing_type: 'sell' | 'trade' | 'want'
+listing_status: 'draft' | 'active' | 'pending' | 'sold' | 'traded' | 'expired' | 'cancelled'
+game_condition: 'new_sealed' | 'like_new' | 'very_good' | 'good' | 'acceptable'
+shipping_preference: 'local_only' | 'will_ship' | 'ship_only'
+```
+
+### New Routes
+| Route | Purpose |
+|-------|---------|
+| `/marketplace` | Browse all listings |
+| `/marketplace/listings/new` | Create listing wizard |
+| `/marketplace/listings/[id]` | Listing detail page |
+| `/marketplace/my-listings` | User's listings dashboard |
+| `/api/marketplace/listings` | POST: Create listing |
+| `/api/marketplace/listings/[id]` | GET/PATCH/DELETE listing |
+| `/api/marketplace/listings/[id]/save` | POST/DELETE: Save/unsave |
+| `/api/marketplace/listings/[id]/saved` | GET: Check if saved |
+| `/api/games/search` | Game search for selector |
+
+### New Components
+```
+src/components/marketplace/
+├── ListingCard.tsx           # Grid card with image, price, condition
+├── ListingGrid.tsx           # Responsive grid layout
+├── ConditionBadge.tsx        # Color-coded condition indicator
+├── CreateListingWizard.tsx   # 3-step create flow
+├── filters/
+│   ├── MarketplaceFilterSidebar.tsx
+│   ├── MobileMarketplaceFilters.tsx
+│   └── index.ts
+└── forms/
+    ├── GameSelector.tsx      # Game search + selection
+    ├── ListingDetailsForm.tsx # Type, condition, description
+    ├── PricingForm.tsx       # Price, shipping, location
+    └── index.ts
+```
+
+### New UI Components
+- `src/components/ui/checkbox.tsx` - Radix checkbox
+- `src/components/ui/radio-group.tsx` - Radix radio group
+- `src/components/ui/alert-dialog.tsx` - Confirmation dialogs
+- `src/components/ui/avatar.tsx` - User avatars
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `src/lib/config/marketplace-constants.ts` | Fees, limits, durations |
+| `src/types/marketplace.ts` | All marketplace TypeScript types |
+| `src/lib/config/feature-flags.ts` | Feature flag utilities |
+| `src/lib/supabase/listing-queries.ts` | Listing CRUD operations |
+| `src/hooks/use-debounce.ts` | Debounce hook for search |
+
+### Future Phases (Not Yet Built)
+- Phase 5: Reputation & Feedback
+- Phase 6: Discovery & Alerts
+
+---
 
 ## Phase: 20 - Categories Page Update (COMPLETE)
 
@@ -316,6 +587,7 @@ Modern Airbnb-inspired card-based layout:
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 - **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
 - **Games Page Filter V2** - Collapsible sidebar rail, horizontal filter bar, dynamic grid columns
+- **Marketplace Phase 1-5** - Full marketplace with listings, messaging, offers, Stripe payments, and seller reputation
 
 ### Environments & Branches
 
@@ -571,7 +843,13 @@ supabase/migrations/
 ├── 00035_themes_table.sql           # Themes + game_themes junction
 ├── 00036_player_experiences_table.sql # Player experiences + junction
 ├── 00037_complexity_tiers.sql       # Complexity tiers + games.complexity_tier_id
-└── 00038_bgg_tag_aliases.sql        # BGG alias system for imports
+├── 00038_bgg_tag_aliases.sql        # BGG alias system for imports
+├── 00039_marketplace_foundation.sql # Feature flags table
+├── 00040_marketplace_listings.sql   # Listings, images, saves, settings + enums
+├── 00041_marketplace_messaging.sql  # Conversations, messages, triggers, RPC functions
+├── 00042_marketplace_offers.sql     # Offers table, enums, RPC functions, triggers
+├── 00043_marketplace_transactions.sql # Transactions, Stripe Connect, payment flow
+└── 00044_marketplace_feedback.sql    # Feedback/reputation system
 ```
 
 ---
@@ -729,6 +1007,47 @@ git push origin develop  # Deploy to staging
 | `src/components/games/filters/types.ts` | Filter types and defaults |
 | `src/hooks/use-local-storage.ts` | SSR-safe localStorage hook |
 
+### Marketplace
+| File | Purpose |
+|------|---------|
+| `src/app/marketplace/page.tsx` | Browse listings page |
+| `src/app/marketplace/listings/new/page.tsx` | Create listing wizard |
+| `src/app/marketplace/listings/[id]/page.tsx` | Listing detail page |
+| `src/app/marketplace/listings/[id]/edit/page.tsx` | Edit listing page |
+| `src/app/marketplace/listings/[id]/ListingDetailActions.tsx` | Contact/save/offer/edit actions |
+| `src/app/marketplace/my-listings/page.tsx` | User's listings dashboard |
+| `src/app/marketplace/messages/page.tsx` | Messages inbox |
+| `src/app/marketplace/messages/[id]/page.tsx` | Conversation thread |
+| `src/app/marketplace/offers/page.tsx` | Offers dashboard (received + sent) |
+| `src/lib/supabase/listing-queries.ts` | Listing CRUD operations |
+| `src/lib/supabase/conversation-queries.ts` | Conversation/message queries |
+| `src/lib/supabase/offer-queries.ts` | Offer CRUD + RPC functions |
+| `src/lib/config/marketplace-constants.ts` | Fees, limits, durations |
+| `src/types/marketplace.ts` | Marketplace TypeScript types |
+| `src/components/marketplace/ListingCard.tsx` | Grid card component |
+| `src/components/marketplace/ListingGrid.tsx` | Responsive grid layout |
+| `src/components/marketplace/ConditionBadge.tsx` | Color-coded condition |
+| `src/components/marketplace/CreateListingWizard.tsx` | 4-step create flow |
+| `src/components/marketplace/messaging/ConversationList.tsx` | Inbox list |
+| `src/components/marketplace/messaging/MessageThread.tsx` | Message thread UI |
+| `src/components/marketplace/messaging/ContactSellerButton.tsx` | Start conversation |
+| `src/components/marketplace/offers/MakeOfferDialog.tsx` | Make offer modal |
+| `src/components/marketplace/offers/OfferCard.tsx` | Offer with actions |
+| `src/components/marketplace/offers/TradeSelector.tsx` | Select games to trade |
+| `src/components/marketplace/transactions/StripeConnectButton.tsx` | Seller onboarding |
+| `src/components/marketplace/transactions/CheckoutButton.tsx` | Payment checkout |
+| `src/components/marketplace/transactions/TransactionCard.tsx` | Transaction display |
+| `src/components/marketplace/transactions/TransactionTimeline.tsx` | Status timeline |
+| `src/components/marketplace/transactions/ShippingForm.tsx` | Add tracking |
+| `src/lib/stripe/client.ts` | Server-side Stripe SDK |
+| `src/lib/stripe/connect.ts` | Stripe Connect helpers |
+| `src/lib/supabase/transaction-queries.ts` | Transaction CRUD |
+| `src/lib/supabase/feedback-queries.ts` | Feedback + reputation queries |
+| `src/app/marketplace/transactions/page.tsx` | Transaction dashboard |
+| `src/app/api/stripe/webhooks/route.ts` | Stripe webhook handler |
+| `src/components/marketplace/feedback/` | Feedback components |
+| `src/components/profile/ProfileMarketplaceFeedback.tsx` | Profile reputation section |
+
 ---
 
 ## Supabase Storage
@@ -750,6 +1069,13 @@ git push origin develop  # Deploy to staging
 - Authenticated upload/delete (users can only upload to their own folder)
 - Path: `{user-id}/avatar/{timestamp}.{ext}`
 - Max 5MB, JPG/PNG/WebP/GIF
+
+**Bucket**: `listing-images` (exists in both staging and production)
+- Public read access
+- Authenticated upload/delete (users can only upload to their own listings)
+- Path: `{listing-id}/{timestamp}-{random}.{ext}`
+- Max 5MB, JPG/PNG/WebP/GIF
+- Up to 6 images per listing
 
 ---
 
@@ -776,14 +1102,38 @@ git push origin develop  # Deploy to staging
 
 ## Next Steps
 
+### 🎯 NEXT: Marketplace Phase 6 - Discovery & Alerts
+
+**Phase 6 Overview:**
+- Saved searches with email alerts
+- Wishlist price drop notifications
+- Similar listings recommendations
+- Advanced search filters (distance, verified sellers)
+
+**Potential Components:**
+| Component | Purpose |
+|-----------|---------|
+| `SavedSearchList.tsx` | Manage saved search alerts |
+| `WishlistAlerts.tsx` | Configure price/availability alerts |
+| `SimilarListings.tsx` | Related listings on detail page |
+| `VerifiedSellerBadge.tsx` | Badge for high-trust sellers |
+
+**Potential Tables:**
+| Table | Purpose |
+|-------|---------|
+| `saved_searches` | User's saved search criteria |
+| `wishlist_alerts` | Price/availability notifications |
+
 ### Content
 - Upload images for all games via admin
 - Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
 - Import more games to populate families and relations
 
-### Phase 17+ - Future Features
-- Marketplace (buy/sell/trade)
+### Future Marketplace Phases
+- Phase 6: Discovery & Alerts (saved searches, wishlist alerts)
+
+### Other Future Features
 - Local discovery (find gamers nearby, game nights)
 - Enhanced profile stats (category breakdown)
 - Push to production (merge develop → main)

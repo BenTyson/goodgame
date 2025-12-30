@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, UserCircle, ExternalLink } from 'lucide-react'
+import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, UserCircle, ExternalLink, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { updateUserProfile } from '@/lib/supabase/user-queries'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { UsernameInput } from '@/components/settings/UsernameInput'
 import { ProfileImageUpload } from '@/components/settings/ProfileImageUpload'
+import { StripeConnectButton } from '@/components/marketplace/transactions'
 import type { UserProfile, SocialLinks, Json } from '@/types/database'
 
 interface SettingsContentProps {
@@ -348,6 +349,22 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
                 Your profile must be public for others to see your shelf.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Payments Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Payments
+            </CardTitle>
+            <CardDescription>
+              Set up payments to sell items on the marketplace
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StripeConnectButton />
           </CardContent>
         </Card>
 

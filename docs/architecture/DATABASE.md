@@ -153,6 +153,102 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 36. `00036_player_experiences_table.sql` - Player experiences + junction
 37. `00037_complexity_tiers.sql` - Complexity tiers + games.complexity_tier_id
 38. `00038_bgg_tag_aliases.sql` - BGG alias system for imports
+39. `00039_marketplace_foundation.sql` - Feature flags, marketplace notification/activity types
+40. `00040_marketplace_listings.sql` - Marketplace tables, enums, storage bucket
+41. `00041_marketplace_messaging.sql` - Conversations, messages, triggers, RPC functions
+42. `00042_marketplace_offers.sql` - Offers table, enums, RPC functions, triggers
+43. `00043_marketplace_transactions.sql` - Transactions, Stripe Connect, payment flow
+44. `00044_marketplace_feedback.sql` - Feedback/reputation system
+
+## Marketplace Enums
+
+### listing_type
+| Value | Description |
+|-------|-------------|
+| `sell` | Selling for money |
+| `trade` | Trading for other games |
+| `want` | Looking for this game |
+
+### listing_status
+| Value | Description |
+|-------|-------------|
+| `draft` | Not yet published |
+| `active` | Currently visible and available |
+| `pending` | Transaction in progress |
+| `sold` | Successfully sold |
+| `traded` | Successfully traded |
+| `expired` | Auto-expired after duration |
+| `cancelled` | Manually cancelled by seller |
+
+### game_condition
+| Value | Description |
+|-------|-------------|
+| `new_sealed` | Factory sealed, never opened |
+| `like_new` | Played 1-2 times, mint condition |
+| `very_good` | Light wear, all components present |
+| `good` | Moderate wear, complete and playable |
+| `acceptable` | Heavy wear or minor damage, playable |
+
+### shipping_preference
+| Value | Description |
+|-------|-------------|
+| `local_only` | Local pickup only |
+| `will_ship` | Willing to ship (default) |
+| `ship_only` | Shipping only, no local pickup |
+
+### offer_type
+| Value | Description |
+|-------|-------------|
+| `buy` | Cash offer only |
+| `trade` | Trade offer only |
+| `buy_plus_trade` | Cash plus trade |
+
+### offer_status
+| Value | Description |
+|-------|-------------|
+| `pending` | Awaiting response |
+| `accepted` | Offer accepted |
+| `declined` | Offer declined |
+| `countered` | Counter-offer made |
+| `expired` | Auto-expired after 48 hours |
+| `withdrawn` | Withdrawn by buyer |
+
+### transaction_status
+| Value | Description |
+|-------|-------------|
+| `pending_payment` | Awaiting payment |
+| `payment_processing` | Payment being processed |
+| `payment_held` | Payment held in escrow |
+| `shipped` | Item shipped by seller |
+| `delivered` | Delivery confirmed |
+| `completed` | Transaction complete, funds released |
+| `refund_requested` | Buyer requested refund |
+| `refunded` | Payment refunded |
+| `disputed` | Under dispute resolution |
+| `cancelled` | Transaction cancelled |
+
+### shipping_carrier
+| Value | Description |
+|-------|-------------|
+| `usps` | USPS |
+| `ups` | UPS |
+| `fedex` | FedEx |
+| `dhl` | DHL |
+| `other` | Other carrier |
+
+### feedback_role
+| Value | Description |
+|-------|-------------|
+| `buyer` | Buyer rating the seller |
+| `seller` | Seller rating the buyer |
+
+### trust_level
+| Value | Description |
+|-------|-------------|
+| `new` | No completed transactions |
+| `established` | 1-4 completed sales |
+| `trusted` | 5+ sales with 4.0+ rating |
+| `top_seller` | 20+ sales with 4.5+ rating |
 
 ## Tables
 
@@ -648,6 +744,260 @@ User notification system.
 | is_read | BOOLEAN | Whether notification has been read |
 | created_at | TIMESTAMPTZ | When notification was created |
 
+### feature_flags
+Feature flags for gradual rollout of new features.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| flag_key | VARCHAR(100) | Unique flag identifier (e.g., marketplace_enabled) |
+| is_enabled | BOOLEAN | Global enabled state |
+| allowed_user_ids | UUID[] | Array of users with beta access |
+| metadata | JSONB | Additional flag configuration |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Seeded flags:**
+- `marketplace_enabled` - Master switch for marketplace visibility
+- `marketplace_beta_access` - Allow specific users early access
+
+### user_marketplace_settings
+User marketplace preferences, shipping location, and Stripe Connect info.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles (unique) |
+| stripe_account_id | VARCHAR(100) | Stripe Connect account ID |
+| stripe_account_status | VARCHAR(50) | pending, verified, etc. |
+| stripe_onboarding_complete | BOOLEAN | Onboarding finished |
+| stripe_charges_enabled | BOOLEAN | Can accept payments |
+| stripe_payouts_enabled | BOOLEAN | Can receive payouts |
+| default_shipping_preference | shipping_preference | Default for new listings |
+| ships_from_location | VARCHAR(200) | Shipping origin |
+| ships_to_countries | TEXT[] | Countries willing to ship to |
+| pickup_location_city | VARCHAR(100) | Local pickup city |
+| pickup_location_state | VARCHAR(100) | Local pickup state |
+| pickup_location_country | VARCHAR(100) | Local pickup country |
+| pickup_location_postal | VARCHAR(20) | Local pickup ZIP |
+| pickup_location_lat | DECIMAL(10,8) | Latitude for distance search |
+| pickup_location_lng | DECIMAL(11,8) | Longitude for distance search |
+| notification_preferences | JSONB | Marketplace notification settings |
+| total_sales | INTEGER | Denormalized sales count |
+| total_purchases | INTEGER | Denormalized purchases count |
+| total_trades | INTEGER | Denormalized trades count |
+| seller_rating | DECIMAL(3,2) | Average seller rating |
+| buyer_rating | DECIMAL(3,2) | Average buyer rating |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### marketplace_listings
+Board game marketplace listings for buy/sell/trade.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| seller_id | UUID | FK to user_profiles |
+| game_id | UUID | FK to games |
+| listing_type | listing_type | sell, trade, or want |
+| status | listing_status | draft, active, pending, sold, traded, expired, cancelled |
+| title | VARCHAR(200) | Optional custom title |
+| condition | game_condition | Physical condition (null for want listings) |
+| condition_notes | TEXT | Additional condition details |
+| description | TEXT | Listing description |
+| price_cents | INTEGER | Price in cents (100-1000000) |
+| currency | VARCHAR(3) | Currency code (default USD) |
+| accepts_offers | BOOLEAN | Allow offers below asking |
+| minimum_offer_cents | INTEGER | Minimum acceptable offer |
+| trade_preferences | TEXT | What seller wants in trade |
+| trade_game_ids | UUID[] | Games wanted in trade |
+| shipping_preference | shipping_preference | local_only, will_ship, ship_only |
+| shipping_cost_cents | INTEGER | Shipping cost in cents |
+| shipping_notes | TEXT | Shipping details |
+| location_city | VARCHAR(100) | Seller city |
+| location_state | VARCHAR(100) | Seller state |
+| location_country | VARCHAR(100) | Seller country |
+| location_postal | VARCHAR(20) | Seller ZIP |
+| location_lat | DECIMAL(10,8) | Latitude for distance search |
+| location_lng | DECIMAL(11,8) | Longitude for distance search |
+| is_featured | BOOLEAN | Featured listing |
+| view_count | INTEGER | View counter |
+| save_count | INTEGER | Watchlist counter |
+| expires_at | TIMESTAMPTZ | Auto-expiration date |
+| published_at | TIMESTAMPTZ | When made active |
+| sold_at | TIMESTAMPTZ | When sold/traded |
+| fts | TSVECTOR | Full-text search (generated) |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### listing_images
+Photos for marketplace listings.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| listing_id | UUID | FK to marketplace_listings |
+| url | TEXT | Image URL |
+| storage_path | VARCHAR(500) | Supabase storage path |
+| alt_text | VARCHAR(255) | Alt text |
+| width | INTEGER | Image width |
+| height | INTEGER | Image height |
+| file_size | INTEGER | File size in bytes |
+| mime_type | VARCHAR(50) | MIME type |
+| display_order | SMALLINT | Sort order |
+| is_primary | BOOLEAN | Primary image for listing |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+
+### listing_saves
+User watchlist/favorites for listings.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| listing_id | UUID | FK to marketplace_listings |
+| notes | TEXT | User's private notes |
+| created_at | TIMESTAMPTZ | When saved |
+
+**Unique constraint:** (user_id, listing_id)
+
+### marketplace_conversations
+Message threads between buyers and sellers.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| listing_id | UUID | FK to marketplace_listings |
+| buyer_id | UUID | FK to user_profiles |
+| seller_id | UUID | FK to user_profiles |
+| buyer_unread_count | INTEGER | Unread messages for buyer |
+| seller_unread_count | INTEGER | Unread messages for seller |
+| last_message_at | TIMESTAMPTZ | When last message was sent |
+| buyer_archived | BOOLEAN | Archived by buyer |
+| seller_archived | BOOLEAN | Archived by seller |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraint:** (listing_id, buyer_id)
+
+### marketplace_messages
+Individual messages in conversations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| conversation_id | UUID | FK to marketplace_conversations |
+| sender_id | UUID | FK to user_profiles |
+| content | TEXT | Message content |
+| is_read | BOOLEAN | Whether recipient has read |
+| is_system_message | BOOLEAN | System-generated message |
+| created_at | TIMESTAMPTZ | When sent |
+
+### marketplace_offers
+Offers on marketplace listings.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| listing_id | UUID | FK to marketplace_listings |
+| buyer_id | UUID | FK to user_profiles |
+| seller_id | UUID | FK to user_profiles |
+| offer_type | offer_type | buy, trade, buy_plus_trade |
+| status | offer_status | pending, accepted, declined, etc. |
+| amount_cents | INTEGER | Cash offer amount |
+| trade_game_ids | UUID[] | Games offered in trade |
+| message | TEXT | Message with offer |
+| parent_offer_id | UUID | FK to parent (for counter-offers) |
+| counter_count | INTEGER | Number of counters in chain |
+| expires_at | TIMESTAMPTZ | Auto-expiration (48 hours) |
+| responded_at | TIMESTAMPTZ | When seller responded |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+### marketplace_transactions
+Payment transactions linking offers to Stripe.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| offer_id | UUID | FK to marketplace_offers |
+| listing_id | UUID | FK to marketplace_listings |
+| buyer_id | UUID | FK to user_profiles |
+| seller_id | UUID | FK to user_profiles |
+| stripe_payment_intent_id | VARCHAR(100) | Stripe PaymentIntent ID |
+| stripe_checkout_session_id | VARCHAR(100) | Stripe Checkout Session ID |
+| stripe_charge_id | VARCHAR(100) | Stripe Charge ID |
+| stripe_transfer_id | VARCHAR(100) | Stripe Transfer ID |
+| amount_cents | INTEGER | Item amount in cents |
+| shipping_cents | INTEGER | Shipping cost in cents |
+| platform_fee_cents | INTEGER | Platform fee (3%) |
+| stripe_fee_cents | INTEGER | Stripe fee (2.9% + $0.30) |
+| seller_payout_cents | INTEGER | Amount seller receives |
+| currency | VARCHAR(3) | Currency code (USD) |
+| status | transaction_status | Current transaction state |
+| shipping_carrier | shipping_carrier | Shipping carrier used |
+| tracking_number | VARCHAR(200) | Tracking number |
+| shipped_at | TIMESTAMPTZ | When item shipped |
+| delivered_at | TIMESTAMPTZ | When delivery confirmed |
+| paid_at | TIMESTAMPTZ | When payment confirmed |
+| released_at | TIMESTAMPTZ | When funds released |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Helper functions:**
+- `create_transaction_from_offer(offer_id)` - Create transaction from accepted offer
+- `mark_transaction_paid(id, payment_intent_id)` - Mark as paid
+- `ship_transaction(id, carrier, tracking)` - Add shipping info
+- `confirm_delivery(id)` - Confirm receipt
+- `release_transaction_funds(id)` - Release funds to seller
+- `request_refund(id)` - Request refund
+
+### marketplace_feedback
+Feedback and ratings for completed transactions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| transaction_id | UUID | FK to marketplace_transactions |
+| reviewer_id | UUID | FK to user_profiles (who left feedback) |
+| reviewee_id | UUID | FK to user_profiles (who received feedback) |
+| role | feedback_role | buyer or seller |
+| rating | SMALLINT | 1-5 star rating |
+| comment | TEXT | Optional feedback comment |
+| is_positive | BOOLEAN | Generated: rating >= 4 |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraint:** (transaction_id, reviewer_id) - one feedback per user per transaction
+
+**Helper functions:**
+- `leave_feedback(transaction_id, user_id, rating, comment)` - Leave feedback for completed transaction
+- `get_user_feedback(user_id, role, limit, offset)` - Get paginated feedback for user
+- `get_user_reputation(user_id)` - Get aggregated reputation stats
+- `can_leave_feedback(transaction_id, user_id)` - Check if user can leave feedback
+
+### seller_reputation_stats (Materialized View)
+Aggregated reputation statistics for marketplace users.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| user_id | UUID | FK to user_profiles |
+| seller_feedback_count | BIGINT | Total feedback received as seller |
+| seller_rating | NUMERIC | Average seller rating |
+| seller_five_star_count | BIGINT | Count of 5-star seller ratings |
+| seller_positive_count | BIGINT | Count of positive (4-5 star) ratings |
+| seller_negative_count | BIGINT | Count of negative (1-2 star) ratings |
+| buyer_feedback_count | BIGINT | Total feedback received as buyer |
+| buyer_rating | NUMERIC | Average buyer rating |
+| total_feedback_count | BIGINT | Total feedback count |
+| overall_rating | NUMERIC | Combined average rating |
+| trust_level | trust_level | Calculated trust tier |
+| total_sales | BIGINT | From user_marketplace_settings |
+| total_purchases | BIGINT | From user_marketplace_settings |
+| calculated_at | TIMESTAMPTZ | When stats were calculated |
+
+**Refresh function:** `refresh_seller_reputation()` - Refresh materialized view
+
 ## Junction Tables
 
 ### game_categories
@@ -734,6 +1084,14 @@ Many-to-many: collections ↔ games (ordered)
 - `games(player_count_min, player_count_max)` - Player count filtering
 - `games(fts)` - GIN index for full-text search
 - `game_images(game_id)` - Fast image lookups
+- `marketplace_listings(seller_id)` - Seller's listings
+- `marketplace_listings(game_id)` - Listings by game
+- `marketplace_listings(status, listing_type, published_at)` - Browse queries (partial on active)
+- `marketplace_listings(location_lat, location_lng)` - Location search (partial on active)
+- `marketplace_listings(price_cents)` - Price filtering (partial on sell/active)
+- `marketplace_listings(fts)` - GIN index for listing search
+- `listing_images(listing_id, display_order)` - Image ordering
+- `listing_saves(user_id)` - User's watchlist
 
 ## Row Level Security (RLS)
 
@@ -744,6 +1102,14 @@ All tables have RLS enabled with public read access for:
 - All junction tables
 - All score sheet configs and fields
 - All affiliate links and game images
+- Feature flags (read-only)
+- Active marketplace listings (`status = 'active'`)
+
+**Marketplace RLS policies:**
+- Users can view all active listings + their own draft/cancelled listings
+- Users can only CRUD their own listings
+- Listing images follow their parent listing's visibility
+- Users can only manage their own watchlist saves
 
 ## Full-Text Search
 
@@ -814,4 +1180,27 @@ SELECT * FROM game_images
 WHERE game_id = 'uuid-here'
   AND image_type = 'gallery'
 ORDER BY display_order;
+```
+
+## Storage Buckets
+
+| Bucket | Public | Size Limit | MIME Types | Purpose |
+|--------|--------|------------|------------|---------|
+| `game-images` | Yes | 10MB | jpeg, png, webp | Game box art and gallery |
+| `user-avatars` | Yes | 5MB | jpeg, png, webp | User profile images |
+| `listing-images` | Yes | 10MB | jpeg, png, webp, gif | Marketplace listing photos |
+
+**Storage path conventions:**
+- Game images: `{game_id}/{image_type}/{filename}`
+- User avatars: `{user_id}/{filename}`
+- Listing images: `{user_id}/{listing_id}/{filename}`
+
+## Helper Functions
+
+### calculate_distance_miles
+Haversine formula for distance between two lat/lng points in miles.
+Used for location-based marketplace search.
+
+```sql
+SELECT calculate_distance_miles(lat1, lng1, lat2, lng2);
 ```
