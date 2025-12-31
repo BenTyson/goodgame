@@ -1,0 +1,23 @@
+{
+  "name": "bgg-extractor",
+  "version": "1.0.0",
+  "description": "Extract factual game data from BoardGameGeek API",
+  "type": "module",
+  "scripts": {
+    "extract": "tsx src/extract.ts",
+    "extract:small": "tsx src/extract.ts --count=100 --output=./output/games-100.json",
+    "extract:full": "tsx src/extract.ts --count=500 --with-rulebooks --output=./output/games-full.json",
+    "extract:ids": "tsx src/extract.ts --ids",
+    "enrich": "tsx src/enrich-entities.ts",
+    "enrich:publishers": "tsx src/enrich-entities.ts --publishers",
+    "enrich:designers": "tsx src/enrich-entities.ts --designers"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

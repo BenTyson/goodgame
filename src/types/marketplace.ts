@@ -1258,6 +1258,7 @@ export type ActionRequiredType =
   | 'transaction_ship'
   | 'feedback_pending'
   | 'listing_expiring'
+  | 'payment_setup'
 
 /**
  * Action urgency levels

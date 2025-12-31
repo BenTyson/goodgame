@@ -12,7 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/admin/ImageUpload'
+import { TempImage } from '@/components/admin/TempImage'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
+import { RulebookEditor } from '@/components/admin/RulebookEditor'
 import {
   ArrowLeft,
   Save,
@@ -31,7 +33,8 @@ import {
   Building2,
   Pencil,
   Hash,
-  Link2
+  Link2,
+  BookOpen,
 } from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { Game, GameImage, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
@@ -194,7 +197,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
       {/* Editor Tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -206,6 +209,10 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TabsTrigger value="content" className="gap-2">
             <FileText className="h-4 w-4 hidden sm:block" />
             Content
+          </TabsTrigger>
+          <TabsTrigger value="rulebook" className="gap-2">
+            <BookOpen className="h-4 w-4 hidden sm:block" />
+            Rulebook
           </TabsTrigger>
           <TabsTrigger value="relationships" className="gap-2">
             <Link2 className="h-4 w-4 hidden sm:block" />
@@ -487,7 +494,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <ImageUpload
                 gameId={game.id}
                 gameSlug={game.slug}
@@ -497,6 +504,28 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                   setSaved(false)
                 }}
               />
+
+              {/* Show BGG reference image when no images uploaded */}
+              {images.length === 0 && (game.bgg_raw_data as { reference_images?: { box?: string } })?.reference_images?.box && (
+                <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-amber-600 dark:text-amber-400">
+                      BGG Reference Image
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      This image is from BoardGameGeek for reference only. Upload your own licensed images above.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TempImage
+                      src={(game.bgg_raw_data as { reference_images: { box: string } }).reference_images.box}
+                      alt={`${game.name} reference`}
+                      aspectRatio="4/3"
+                      className="max-w-md rounded-lg overflow-hidden"
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -641,6 +670,14 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Rulebook Tab */}
+        <TabsContent value="rulebook" className="space-y-6">
+          <RulebookEditor
+            game={game}
+            onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
+          />
         </TabsContent>
 
         {/* Relationships Tab */}

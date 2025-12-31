@@ -44,7 +44,7 @@ export async function createConnectAccountLink(
   const accountLink = await stripe.accountLinks.create({
     account: accountId,
     refresh_url: `${APP_URL}/api/marketplace/stripe/connect/refresh`,
-    return_url: `${APP_URL}/settings?stripe=connected`,
+    return_url: `${APP_URL}/marketplace/dashboard?tab=account&stripe=connected`,
     type: 'account_onboarding',
   })
 

@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   description: 'Manage your account settings',
 }
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  searchParams: Promise<{ stripe?: string }>
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -22,5 +26,8 @@ export default async function SettingsPage() {
     .eq('id', user.id)
     .single()
 
-  return <SettingsContent profile={profile} userEmail={user.email || ''} />
+  const params = await searchParams
+  const stripeStatus = params.stripe
+
+  return <SettingsContent profile={profile} userEmail={user.email || ''} stripeStatus={stripeStatus} />
 }

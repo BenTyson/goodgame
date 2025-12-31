@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, UserCircle, ExternalLink, CreditCard } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Settings, User, Link2, Eye, Globe, Twitter, Gamepad2, MessageCircle, MapPin, UserCircle, ExternalLink, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,16 +14,35 @@ import { updateUserProfile } from '@/lib/supabase/user-queries'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { UsernameInput } from '@/components/settings/UsernameInput'
 import { ProfileImageUpload } from '@/components/settings/ProfileImageUpload'
-import { StripeConnectButton } from '@/components/marketplace/transactions'
 import type { UserProfile, SocialLinks, Json } from '@/types/database'
 
 interface SettingsContentProps {
   profile: UserProfile | null
   userEmail: string
+  stripeStatus?: string
 }
 
-export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
+const STRIPE_MESSAGES = {
+  connected: {
+    type: 'success' as const,
+    text: 'Payment setup complete! You can now receive payments for marketplace sales.',
+    icon: CheckCircle2,
+  },
+  pending: {
+    type: 'warning' as const,
+    text: 'Almost there! Stripe is verifying your details. This usually takes 1-2 business days.',
+    icon: Clock,
+  },
+  error: {
+    type: 'error' as const,
+    text: 'Payment setup incomplete. Please try again or contact support if the issue persists.',
+    icon: AlertCircle,
+  },
+}
+
+export function SettingsContent({ profile, userEmail, stripeStatus }: SettingsContentProps) {
   const { refreshProfile } = useAuth()
+  const router = useRouter()
 
   // Profile image
   const [customAvatarUrl, setCustomAvatarUrl] = useState(profile?.custom_avatar_url || null)
@@ -49,6 +69,23 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [usernameValid, setUsernameValid] = useState(true)
+
+  // Stripe callback notification
+  const [stripeNotification, setStripeNotification] = useState<{
+    type: 'success' | 'warning' | 'error'
+    text: string
+    icon: typeof CheckCircle2
+  } | null>(null)
+
+  // Handle Stripe callback on mount
+  useEffect(() => {
+    if (stripeStatus && stripeStatus in STRIPE_MESSAGES) {
+      const messageConfig = STRIPE_MESSAGES[stripeStatus as keyof typeof STRIPE_MESSAGES]
+      setStripeNotification(messageConfig)
+      // Clear the query param from URL without triggering a re-render
+      router.replace('/settings', { scroll: false })
+    }
+  }, [stripeStatus, router])
 
   const handleSave = async () => {
     if (!profile) return
@@ -101,6 +138,40 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
           <p className="text-muted-foreground">Manage your account and profile</p>
         </div>
       </div>
+
+      {/* Stripe callback notification */}
+      {stripeNotification && (
+        <div
+          className={`mb-6 p-4 rounded-lg border flex items-start gap-3 ${
+            stripeNotification.type === 'success'
+              ? 'bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+              : stripeNotification.type === 'warning'
+              ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+              : 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+          }`}
+        >
+          <stripeNotification.icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">
+              {stripeNotification.type === 'success'
+                ? 'Payment Setup Complete'
+                : stripeNotification.type === 'warning'
+                ? 'Verification In Progress'
+                : 'Setup Incomplete'}
+            </p>
+            <p className="text-sm mt-1 opacity-90">{stripeNotification.text}</p>
+          </div>
+          <button
+            onClick={() => setStripeNotification(null)}
+            className="text-current opacity-50 hover:opacity-100"
+            aria-label="Dismiss"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Profile Avatar Card */}
@@ -349,22 +420,6 @@ export function SettingsContent({ profile, userEmail }: SettingsContentProps) {
                 Your profile must be public for others to see your shelf.
               </p>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Payments Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Payments
-            </CardTitle>
-            <CardDescription>
-              Set up payments to sell items on the marketplace
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StripeConnectButton />
           </CardContent>
         </Card>
 

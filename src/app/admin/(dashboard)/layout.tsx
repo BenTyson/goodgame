@@ -1,20 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import { LayoutDashboard, Gamepad2, ListTodo, ArrowLeft, Dice5, Users2, Building2, Tags, Globe } from 'lucide-react'
+import { ArrowLeft, Dice5 } from 'lucide-react'
 import { LogoutButton } from '@/components/admin/LogoutButton'
+import { AdminNav } from '@/components/admin/AdminNav'
 import type { Database } from '@/types/supabase'
-
-const adminNav = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
-  { name: 'Games', href: '/admin/games', icon: Gamepad2, exact: false },
-  { name: 'Taxonomy', href: '/admin/taxonomy', icon: Tags, exact: false },
-  { name: 'Families', href: '/admin/families', icon: Users2, exact: false },
-  { name: 'Publishers', href: '/admin/publishers', icon: Building2, exact: false },
-  { name: 'Queue', href: '/admin/queue', icon: ListTodo, exact: false },
-  { name: 'Wikidata', href: '/admin/wikidata', icon: Globe, exact: false },
-]
 
 async function getUser() {
   const cookieStore = await cookies()
@@ -47,19 +38,10 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const user = await getUser()
-  const headersList = await headers()
-  const pathname = headersList.get('x-pathname') || '/admin'
 
   // Check if user is authenticated and is an admin
   if (!user || !isAdmin(user.email)) {
     redirect('/admin/login')
-  }
-
-  const isActive = (item: typeof adminNav[0]) => {
-    if (item.exact) {
-      return pathname === item.href
-    }
-    return pathname.startsWith(item.href)
   }
 
   return (
@@ -95,50 +77,14 @@ export default async function AdminLayout({
 
       {/* Mobile Navigation */}
       <nav className="md:hidden sticky top-14 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex gap-1 py-2 overflow-x-auto">
-          {adminNav.map((item) => {
-            const active = isActive(item)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-all ${
-                  active
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`}
-              >
-                <item.icon className={`h-4 w-4 ${active ? '' : 'opacity-70'}`} />
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
+        <AdminNav variant="mobile" />
       </nav>
 
       <div className="container py-4 md:py-6">
         <div className="flex gap-8">
           {/* Sidebar - Desktop only */}
           <aside className="hidden md:block w-52 shrink-0">
-            <nav className="sticky top-24 flex flex-col gap-1">
-              {adminNav.map((item) => {
-                const active = isActive(item)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                      active
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <item.icon className={`h-4 w-4 ${active ? '' : 'opacity-70'}`} />
-                    {item.name}
-                  </Link>
-                )
-              })}
-            </nav>
+            <AdminNav variant="desktop" />
           </aside>
 
           {/* Main Content */}

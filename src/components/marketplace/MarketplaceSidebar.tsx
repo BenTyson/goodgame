@@ -73,9 +73,14 @@ export function MarketplaceSidebar({
           <>
             <div className="border-t pt-4">
               <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Quick Links
+                Selling
               </h3>
               <nav className="space-y-1">
+                <QuickLink
+                  href="/marketplace/dashboard"
+                  icon={<LayoutDashboard className="h-4 w-4" />}
+                  label="Seller Dashboard"
+                />
                 <QuickLink
                   href="/marketplace/dashboard?tab=listings"
                   icon={<Package className="h-4 w-4" />}
@@ -85,11 +90,6 @@ export function MarketplaceSidebar({
                   href="/marketplace/dashboard?tab=offers"
                   icon={<Tag className="h-4 w-4" />}
                   label="My Offers"
-                />
-                <QuickLink
-                  href="/marketplace/dashboard?tab=sales"
-                  icon={<LayoutDashboard className="h-4 w-4" />}
-                  label="My Sales"
                 />
                 <QuickLink
                   href="/marketplace/saved-searches"

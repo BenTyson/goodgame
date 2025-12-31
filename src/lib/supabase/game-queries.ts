@@ -55,6 +55,7 @@ export async function getGames(options?: {
 }
 
 export interface GameFilters {
+  query?: string
   categories?: string[]
   mechanics?: string[]
   themes?: string[]
@@ -211,6 +212,11 @@ export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
     .select('*')
     .eq('is_published', true)
     .order('name')
+
+  // Apply search query
+  if (filters.query && filters.query.trim().length >= 2) {
+    query = query.ilike('name', `%${filters.query.trim()}%`)
+  }
 
   // Apply junction table filter results
   if (filteredGameIds !== null) {

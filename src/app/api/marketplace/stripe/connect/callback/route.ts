@@ -27,8 +27,8 @@ export async function GET() {
     const settings = await getUserMarketplaceSettings(user.id)
 
     if (!settings?.stripeAccountId) {
-      // No account, redirect to settings
-      redirect('/settings?stripe=error&message=no_account')
+      // No account, redirect to dashboard
+      redirect('/marketplace/dashboard?tab=account&stripe=error&message=no_account')
     }
 
     // Check current status from Stripe
@@ -43,12 +43,12 @@ export async function GET() {
     })
 
     if (status.isOnboarded) {
-      redirect('/settings?stripe=connected')
+      redirect('/marketplace/dashboard?tab=account&stripe=connected')
     } else {
-      redirect('/settings?stripe=pending')
+      redirect('/marketplace/dashboard?tab=account&stripe=pending')
     }
   } catch (error) {
     console.error('Error in Stripe Connect callback:', error)
-    redirect('/settings?stripe=error')
+    redirect('/marketplace/dashboard?tab=account&stripe=error')
   }
 }

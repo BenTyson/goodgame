@@ -1,17 +1,17 @@
 'use client'
 
-import { Package, Tag, DollarSign, MessageCircle } from 'lucide-react'
+import { Package, Tag, DollarSign, MessageCircle, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ListingGrid } from '@/components/marketplace'
 import { OfferCard } from '@/components/marketplace/offers'
-import { TransactionCard } from '@/components/marketplace/transactions'
+import { TransactionCard, StripeConnectButton } from '@/components/marketplace/transactions'
 import type { ListingCardData, OfferCardData, TransactionCardData } from '@/types/marketplace'
 
-type DashboardTab = 'listings' | 'offers' | 'sales' | 'messages'
+type DashboardTab = 'listings' | 'offers' | 'sales' | 'messages' | 'account'
 
 interface DashboardTabsProps {
   listings: ListingCardData[]
@@ -74,7 +74,7 @@ export function DashboardTabs({
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
       {/* Hide TabsList on md+ since sidebar handles navigation */}
-      <TabsList className="grid w-full grid-cols-4 md:hidden">
+      <TabsList className="grid w-full grid-cols-5 md:hidden">
         <TabsTrigger value="listings" className="gap-1">
           <Package className="h-4 w-4" />
           <span className="sr-only">Listings</span>
@@ -105,6 +105,10 @@ export function DashboardTabs({
         <TabsTrigger value="messages" className="gap-1">
           <MessageCircle className="h-4 w-4" />
           <span className="sr-only">Messages</span>
+        </TabsTrigger>
+        <TabsTrigger value="account" className="gap-1">
+          <Settings className="h-4 w-4" />
+          <span className="sr-only">Account</span>
         </TabsTrigger>
       </TabsList>
 
@@ -193,6 +197,23 @@ export function DashboardTabs({
           title="No messages"
           description="Messages from buyers will appear here."
         />
+      </TabsContent>
+
+      <TabsContent value="account" className="space-y-6 mt-0">
+        <h2 className="text-xl font-semibold">Account Settings</h2>
+
+        {/* Payment Setup */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Setup</CardTitle>
+            <CardDescription>
+              Configure how you receive payments from sales
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StripeConnectButton />
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   )

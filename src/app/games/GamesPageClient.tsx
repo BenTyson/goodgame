@@ -2,14 +2,17 @@
 
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Menu, Search, X } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { GameGrid } from '@/components/games/GameGrid'
+import { GamesSidebar } from '@/components/games/GamesSidebar'
 import {
   FilterBar,
   FilterSidebar,
   ActiveFilters,
   MobileFilterSheet,
-  useSidebarCollapsed,
   type FilterOption,
   type TaxonomyType,
   type RangeType,
@@ -24,6 +27,7 @@ interface GamesPageClientProps {
   themes: FilterOption[]
   playerExperiences: FilterOption[]
   hasFilters: boolean
+  initialSearchQuery?: string
 }
 
 export function GamesPageClient({
@@ -33,12 +37,17 @@ export function GamesPageClient({
   themes,
   playerExperiences,
   hasFilters,
+  initialSearchQuery = '',
 }: GamesPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState(initialSearchQuery)
 
-  // Sidebar collapsed state (shared with FilterSidebar)
-  const [sidebarCollapsed] = useSidebarCollapsed()
+  // Sync search query when URL changes
+  React.useEffect(() => {
+    setSearchQuery(searchParams.get('q') || '')
+  }, [searchParams])
 
   // Parse URL params for taxonomy filters
   const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
@@ -155,7 +164,31 @@ export function GamesPageClient({
 
   // Clear all filters
   const handleClearAll = () => {
+    setSearchQuery('')
     router.push('/games', { scroll: false })
+  }
+
+  // Search handler
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const params = new URLSearchParams(searchParams.toString())
+    if (searchQuery.trim()) {
+      params.set('q', searchQuery.trim())
+    } else {
+      params.delete('q')
+    }
+    const queryString = params.toString()
+    const newUrl = queryString ? `/games?${queryString}` : '/games'
+    window.location.href = newUrl
+  }
+
+  const handleClearSearch = () => {
+    setSearchQuery('')
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('q')
+    const queryString = params.toString()
+    const newUrl = queryString ? `/games?${queryString}` : '/games'
+    window.location.href = newUrl
   }
 
   // Filter options and selected state
@@ -179,75 +212,124 @@ export function GamesPageClient({
     weight: weight,
   }
 
+  // Count active taxonomy filters for mobile badge
+  const activeTaxonomyCount =
+    selectedCategories.length +
+    selectedMechanics.length +
+    selectedThemes.length +
+    selectedExperiences.length
+
   return (
-    <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8 md:py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">All Games</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse our collection of board games with rules, score sheets, and reference materials.
-        </p>
-      </div>
-
-      {/* Filter Bar - horizontal range sliders (desktop) */}
-      <div className="hidden lg:block mb-4">
-        <FilterBar
-          playerCount={playerCount}
-          playTime={playTime}
-          weight={weight}
-          onPlayerCountChange={setPlayerCount}
-          onPlayTimeChange={setPlayTime}
-          onWeightChange={setWeight}
-          onPlayerCountCommit={handlePlayerCountCommit}
-          onPlayTimeCommit={handlePlayTimeCommit}
-          onWeightCommit={handleWeightCommit}
-        />
-      </div>
-
-      {/* Active Filters Pills */}
-      <ActiveFilters
-        options={options}
-        selected={selected}
-        ranges={ranges}
-        onRemoveTaxonomy={handleToggleTaxonomy}
-        onRemoveRange={handleRemoveRange}
-        onClearAll={handleClearAll}
-        className="mb-4"
-      />
-
-      {/* Mobile filter button */}
-      <div className="mb-6">
-        <MobileFilterSheet
-          options={options}
-          selected={selected}
-          playerCount={playerCount}
-          playTime={playTime}
-          weight={weight}
-          onToggleTaxonomy={handleToggleTaxonomy}
-          onPlayerCountChange={setPlayerCount}
-          onPlayTimeChange={setPlayTime}
-          onWeightChange={setWeight}
-          onPlayerCountCommit={handlePlayerCountCommit}
-          onPlayTimeCommit={handlePlayTimeCommit}
-          onWeightCommit={handleWeightCommit}
-          onClearAll={handleClearAll}
-          resultsCount={games.length}
-        />
-      </div>
-
-      {/* Main content with sidebar */}
-      <div className="flex gap-6">
-        {/* Collapsible Sidebar - desktop only */}
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      <GamesSidebar
+        isMobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      >
+        {/* Filter content inside sidebar */}
         <FilterSidebar
           options={options}
           selected={selected}
           onToggle={handleToggleTaxonomy}
-          className="hidden lg:block shrink-0"
+          onClearAll={handleClearAll}
+          embedded
         />
+      </GamesSidebar>
 
-        {/* Games grid */}
-        <main className="flex-1 min-w-0">
-          <div className="mb-4 flex items-center justify-between">
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 overflow-auto">
+        {/* Mobile Header */}
+        <div className="lg:hidden sticky top-0 z-30 bg-background border-b px-4 py-3 flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setMobileMenuOpen(true)}
+            className="relative"
+          >
+            <Menu className="h-5 w-5" />
+            {activeTaxonomyCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-medium rounded-full flex items-center justify-center">
+                {activeTaxonomyCount}
+              </span>
+            )}
+          </Button>
+          <h1 className="text-lg font-semibold">Games</h1>
+        </div>
+
+        <div className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search for a game..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-12 pl-12 pr-12 text-lg rounded-xl border-2 focus-visible:ring-2 focus-visible:ring-primary/20"
+              />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClearSearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </form>
+
+          {/* Filter Bar - horizontal range sliders */}
+          <div className="hidden lg:block mb-4">
+            <FilterBar
+              playerCount={playerCount}
+              playTime={playTime}
+              weight={weight}
+              onPlayerCountChange={setPlayerCount}
+              onPlayTimeChange={setPlayTime}
+              onWeightChange={setWeight}
+              onPlayerCountCommit={handlePlayerCountCommit}
+              onPlayTimeCommit={handlePlayTimeCommit}
+              onWeightCommit={handleWeightCommit}
+            />
+          </div>
+
+          {/* Active Filters Pills */}
+          <ActiveFilters
+            options={options}
+            selected={selected}
+            ranges={ranges}
+            onRemoveTaxonomy={handleToggleTaxonomy}
+            onRemoveRange={handleRemoveRange}
+            onClearAll={handleClearAll}
+            className="mb-4"
+          />
+
+          {/* Mobile filter button */}
+          <div className="lg:hidden mb-4">
+            <MobileFilterSheet
+              options={options}
+              selected={selected}
+              playerCount={playerCount}
+              playTime={playTime}
+              weight={weight}
+              onToggleTaxonomy={handleToggleTaxonomy}
+              onPlayerCountChange={setPlayerCount}
+              onPlayTimeChange={setPlayTime}
+              onWeightChange={setWeight}
+              onPlayerCountCommit={handlePlayerCountCommit}
+              onPlayTimeCommit={handlePlayTimeCommit}
+              onWeightCommit={handleWeightCommit}
+              onClearAll={handleClearAll}
+              resultsCount={games.length}
+            />
+          </div>
+
+          {/* Results count */}
+          <div className="mb-4 flex items-center justify-between border-b pb-4">
             <p className="text-sm text-muted-foreground">
               {hasFilters
                 ? `${games.length} games match your filters`
@@ -255,17 +337,21 @@ export function GamesPageClient({
             </p>
           </div>
 
+          {/* Games grid */}
           {games.length > 0 ? (
-            <GameGrid games={games} sidebarExpanded={!sidebarCollapsed} />
+            <GameGrid games={games} sidebarExpanded={true} />
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-lg">
               <p className="text-muted-foreground">
                 No games match your filters. Try adjusting your criteria.
               </p>
+              <Button variant="outline" onClick={handleClearAll} className="mt-4">
+                Clear Filters
+              </Button>
             </div>
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

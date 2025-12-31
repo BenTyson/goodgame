@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 interface GamesPageProps {
   searchParams: Promise<{
+    q?: string
     categories?: string
     mechanics?: string
     themes?: string
@@ -32,7 +33,9 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
   const params = await searchParams
 
   // Parse filter parameters
+  const searchQuery = params.q?.trim() || ''
   const filters = {
+    query: searchQuery || undefined,
     categories: params.categories?.split(',').filter(Boolean) || [],
     mechanics: params.mechanics?.split(',').filter(Boolean) || [],
     themes: params.themes?.split(',').filter(Boolean) || [],
@@ -46,6 +49,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
   }
 
   const hasFilters =
+    !!searchQuery ||
     filters.categories.length > 0 ||
     filters.mechanics.length > 0 ||
     filters.themes.length > 0 ||
@@ -86,6 +90,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
           themes={themeOptions}
           playerExperiences={experienceOptions}
           hasFilters={hasFilters}
+          initialSearchQuery={searchQuery}
         />
       </Suspense>
     </>
@@ -94,20 +99,34 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
 
 function GamesPageSkeleton() {
   return (
-    <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8 md:py-12">
-      <div className="mb-8">
-        <div className="h-10 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-5 w-96 bg-muted animate-pulse rounded mt-2" />
-      </div>
-      <div className="h-12 bg-muted/30 animate-pulse rounded-lg mb-4" />
-      <div className="flex gap-6">
-        <div className="hidden lg:block w-64 h-96 bg-muted animate-pulse rounded-lg" />
-        <div className="flex-1 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar Skeleton */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-muted/50 border-r flex-shrink-0">
+        <div className="px-4 py-4 border-b">
+          <div className="h-6 w-24 bg-muted animate-pulse rounded" />
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="h-5 w-16 bg-muted animate-pulse rounded" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-10 bg-muted animate-pulse rounded" />
           ))}
         </div>
-      </div>
+      </aside>
+
+      {/* Main Content Skeleton */}
+      <main className="flex-1 min-w-0">
+        <div className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
+          {/* Search Bar Skeleton */}
+          <div className="h-12 bg-muted animate-pulse rounded-xl mb-6" />
+          {/* Filter Bar Skeleton */}
+          <div className="hidden lg:block h-12 bg-muted/30 animate-pulse rounded-lg mb-4" />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   )
 }

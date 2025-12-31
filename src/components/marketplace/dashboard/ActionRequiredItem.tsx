@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   Loader2,
+  CreditCard,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,18 +30,18 @@ interface ActionRequiredItemProps {
 const urgencyStyles = {
   high: {
     border: 'border-l-4 border-l-red-500',
-    bg: 'bg-red-50/50',
-    icon: 'text-red-500',
+    bg: 'bg-red-50/50 dark:bg-red-950/30',
+    icon: 'text-red-500 dark:text-red-400',
   },
   medium: {
     border: 'border-l-4 border-l-amber-500',
-    bg: 'bg-amber-50/50',
-    icon: 'text-amber-600',
+    bg: 'bg-amber-50/50 dark:bg-amber-950/30',
+    icon: 'text-amber-600 dark:text-amber-400',
   },
   low: {
     border: 'border-l-4 border-l-blue-500',
-    bg: 'bg-blue-50/50',
-    icon: 'text-blue-500',
+    bg: 'bg-blue-50/50 dark:bg-blue-950/30',
+    icon: 'text-blue-500 dark:text-blue-400',
   },
 }
 
@@ -49,6 +50,7 @@ const typeIcons = {
   transaction_ship: Truck,
   feedback_pending: MessageSquare,
   listing_expiring: AlertCircle,
+  payment_setup: CreditCard,
 }
 
 function formatCurrency(cents: number): string {

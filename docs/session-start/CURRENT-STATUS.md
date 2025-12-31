@@ -1,6 +1,40 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Games Page UI Unification - COMPLETE)
+> Last Updated: 2025-12-31 (Admin Enhancements + BGG Import Fixes)
+
+## Phase: 31 - Admin Enhancements (COMPLETE)
+
+Improved admin UX with BGG reference images and navigation fixes.
+
+### BGG Reference Images in Admin (2025-12-31) ✅
+- **TempImage Component** - New component displaying images with red "Temp" badge overlay
+- **Admin Games List** - Falls back to BGG reference thumbnail when no `thumbnail_url` exists
+- **GameEditor Images Tab** - Shows BGG box art reference when no images uploaded
+- **Purpose** - Helps admins see what the game looks like while sourcing proper licensed images
+
+### New Component
+```
+src/components/admin/
+└── TempImage.tsx   # Image with "Temp" badge overlay for reference images
+```
+
+### Admin Navigation Fix (2025-12-31) ✅
+- **Issue** - Sidebar nav active state wasn't updating on client-side navigation
+- **Root Cause** - Layout was a Server Component reading pathname from headers (stale on navigation)
+- **Fix** - Created `AdminNav` client component using `usePathname()` hook
+
+### New Component
+```
+src/components/admin/
+└── AdminNav.tsx    # Client component with proper active state tracking
+```
+
+### BGG Import Script Fix (2025-12-31) ✅
+- **Issue** - 21 games failed to import due to invalid `data_source` enum value ('bgg-extractor')
+- **Fix** - Changed to `data_source: 'seed' as const` in `scripts/import-bgg-extract.ts`
+- **Result** - Re-ran import: 21 imported, 654 updated, 0 failed
+
+---
 
 ## Phase: 30 - Games Page UI Unification (COMPLETE)
 
@@ -1260,6 +1294,8 @@ git push origin develop  # Deploy to staging
 | `src/app/admin/login/page.tsx` | OAuth + magic link |
 | `src/app/auth/callback/route.ts` | OAuth callback handler |
 | `src/components/admin/ImageUpload.tsx` | Image upload component |
+| `src/components/admin/TempImage.tsx` | BGG reference image with "Temp" badge |
+| `src/components/admin/AdminNav.tsx` | Client-side nav with active state |
 | `src/app/api/admin/upload/route.ts` | Image upload API |
 
 ### User Auth & Shelf

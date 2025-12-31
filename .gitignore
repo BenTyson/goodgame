@@ -43,3 +43,10 @@ next-env.d.ts
 # Supabase temp files
 supabase/.temp/
 .claude/
+
+# BGG Extractor output (keep .gitkeep)
+tools/bgg-extractor/output/*.json
+tools/bgg-extractor/.env
+
+# Old Python extractor
+/extractor/

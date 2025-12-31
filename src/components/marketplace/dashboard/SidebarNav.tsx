@@ -1,9 +1,9 @@
 'use client'
 
-import { Package, Tag, Receipt, MessageSquare } from 'lucide-react'
+import { Package, Tag, Receipt, MessageSquare, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type DashboardTab = 'listings' | 'offers' | 'sales' | 'messages'
+export type DashboardTab = 'listings' | 'offers' | 'sales' | 'messages' | 'account'
 
 interface SidebarNavProps {
   activeTab: DashboardTab
@@ -49,6 +49,7 @@ export function SidebarNav({ activeTab, onTabChange, isCollapsed }: SidebarNavPr
     { tab: 'offers', label: 'Offers', icon: <Tag className="h-5 w-5" /> },
     { tab: 'sales', label: 'Sales', icon: <Receipt className="h-5 w-5" /> },
     { tab: 'messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
+    { tab: 'account', label: 'Account', icon: <Settings className="h-5 w-5" /> },
   ]
 
   return (

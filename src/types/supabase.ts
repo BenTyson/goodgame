@@ -992,8 +992,12 @@ export type Database = {
           bgg_id: number | null
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
+          bncs_breakdown: Json | null
+          bncs_generated_at: string | null
+          bncs_score: number | null
           box_image_url: string | null
           complexity_tier_id: string | null
+          component_list: Json | null
           content_generated_at: string | null
           content_notes: string | null
           content_reviewed_at: string | null
@@ -1032,6 +1036,9 @@ export type Database = {
           priority: number | null
           publisher: string | null
           reference_content: Json | null
+          rulebook_parsed_at: string | null
+          rulebook_source: string | null
+          rulebook_url: string | null
           rules_content: Json | null
           setup_content: Json | null
           slug: string
@@ -1047,8 +1054,12 @@ export type Database = {
           bgg_id?: number | null
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
+          bncs_breakdown?: Json | null
+          bncs_generated_at?: string | null
+          bncs_score?: number | null
           box_image_url?: string | null
           complexity_tier_id?: string | null
+          component_list?: Json | null
           content_generated_at?: string | null
           content_notes?: string | null
           content_reviewed_at?: string | null
@@ -1087,6 +1098,9 @@ export type Database = {
           priority?: number | null
           publisher?: string | null
           reference_content?: Json | null
+          rulebook_parsed_at?: string | null
+          rulebook_source?: string | null
+          rulebook_url?: string | null
           rules_content?: Json | null
           setup_content?: Json | null
           slug: string
@@ -1102,8 +1116,12 @@ export type Database = {
           bgg_id?: number | null
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
+          bncs_breakdown?: Json | null
+          bncs_generated_at?: string | null
+          bncs_score?: number | null
           box_image_url?: string | null
           complexity_tier_id?: string | null
+          component_list?: Json | null
           content_generated_at?: string | null
           content_notes?: string | null
           content_reviewed_at?: string | null
@@ -1142,6 +1160,9 @@ export type Database = {
           priority?: number | null
           publisher?: string | null
           reference_content?: Json | null
+          rulebook_parsed_at?: string | null
+          rulebook_source?: string | null
+          rulebook_url?: string | null
           rules_content?: Json | null
           setup_content?: Json | null
           slug?: string
@@ -2015,6 +2036,56 @@ export type Database = {
         }
         Relationships: []
       }
+      publisher_rulebook_patterns: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          last_checked_at: string | null
+          notes: string | null
+          pattern_type: string
+          publisher_id: string | null
+          publisher_name: string | null
+          resource_page_url: string | null
+          updated_at: string | null
+          url_pattern: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          last_checked_at?: string | null
+          notes?: string | null
+          pattern_type?: string
+          publisher_id?: string | null
+          publisher_name?: string | null
+          resource_page_url?: string | null
+          updated_at?: string | null
+          url_pattern: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          last_checked_at?: string | null
+          notes?: string | null
+          pattern_type?: string
+          publisher_id?: string | null
+          publisher_name?: string | null
+          resource_page_url?: string | null
+          updated_at?: string | null
+          url_pattern?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publisher_rulebook_patterns_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "publishers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       publishers: {
         Row: {
           bgg_id: number | null
@@ -2050,6 +2121,53 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      rulebook_parse_log: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          extracted_data: Json | null
+          game_id: string | null
+          id: string
+          page_count: number | null
+          processing_time_ms: number | null
+          rulebook_url: string
+          status: string
+          word_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          extracted_data?: Json | null
+          game_id?: string | null
+          id?: string
+          page_count?: number | null
+          processing_time_ms?: number | null
+          rulebook_url: string
+          status: string
+          word_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          extracted_data?: Json | null
+          game_id?: string | null
+          id?: string
+          page_count?: number | null
+          processing_time_ms?: number | null
+          rulebook_url?: string
+          status?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rulebook_parse_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_searches: {
         Row: {
@@ -3339,8 +3457,12 @@ export type Database = {
           bgg_id: number | null
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
+          bncs_breakdown: Json | null
+          bncs_generated_at: string | null
+          bncs_score: number | null
           box_image_url: string | null
           complexity_tier_id: string | null
+          component_list: Json | null
           content_generated_at: string | null
           content_notes: string | null
           content_reviewed_at: string | null
@@ -3379,6 +3501,9 @@ export type Database = {
           priority: number | null
           publisher: string | null
           reference_content: Json | null
+          rulebook_parsed_at: string | null
+          rulebook_source: string | null
+          rulebook_url: string | null
           rules_content: Json | null
           setup_content: Json | null
           slug: string
@@ -3598,6 +3723,12 @@ export type Database = {
         | "expired"
         | "withdrawn"
       offer_type: "buy" | "trade" | "buy_plus_trade"
+      rulebook_source:
+        | "publisher_website"
+        | "publisher_partnership"
+        | "bgg_files"
+        | "user_submitted"
+        | "manual"
       shelf_status:
         | "owned"
         | "want_to_buy"
@@ -3811,6 +3942,13 @@ export const Constants = {
         "withdrawn",
       ],
       offer_type: ["buy", "trade", "buy_plus_trade"],
+      rulebook_source: [
+        "publisher_website",
+        "publisher_partnership",
+        "bgg_files",
+        "user_submitted",
+        "manual",
+      ],
       shelf_status: [
         "owned",
         "want_to_buy",
