@@ -1,6 +1,54 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Legal Data Sourcing Phase 1 - COMPLETE)
+> Last Updated: 2025-12-31 (Games Page UI Unification - COMPLETE)
+
+## Phase: 30 - Games Page UI Unification (COMPLETE)
+
+Redesigned the games page (`/games`) to match the marketplace sidebar layout pattern for consistency across the site.
+
+### Games Page Sidebar Layout (2025-12-31) ✅
+- **GamesSidebar Component** - New full-height sticky sidebar with "The Games" header and dice icon
+- **Embedded Filter Mode** - Updated `FilterSidebar` to support `embedded` prop for sidebar integration
+- **Prominent Search Bar** - Large search input at top of main content with clear button
+- **Consistent Layout** - Matches marketplace pattern: sidebar left, main content right
+- **Mobile Support** - Hamburger menu with overlay drawer on mobile
+
+### Search Functionality (2025-12-31) ✅
+- **URL-based Search** - Search query persists in URL (`?q=...`)
+- **Combined with Filters** - Search works together with taxonomy and range filters
+- **Server-side Filtering** - Added `query` field to `GameFilters` interface
+- **ilike Search** - Filters games by name using case-insensitive pattern matching
+
+### New/Updated Components
+```
+src/components/games/
+├── GamesSidebar.tsx           # NEW - Sidebar wrapper matching marketplace
+├── filters/
+│   └── FilterSidebar.tsx      # UPDATED - Added embedded prop + onClearAll
+└── index.ts                   # UPDATED - Export GamesSidebar
+```
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/app/games/page.tsx` | Parse `q` search param, updated skeleton |
+| `src/app/games/GamesPageClient.tsx` | New sidebar layout, search bar, search handlers |
+| `src/lib/supabase/game-queries.ts` | Added `query` to GameFilters, ilike search |
+
+### UI Changes
+- Removed "All Games" header/description (redundant with sidebar header)
+- Changed sidebar header to "The Games" with `Dice5` icon
+- Search bar: 48px height, rounded-xl, larger text/icon, clear button
+
+### Known Issue: Turbopack Bug (2025-12-31)
+**Issue:** Some pages (notably `/publishers`) hang with `Maximum call stack size exceeded at Map.set` error in Turbopack dev mode.
+
+- **Root Cause:** Pre-existing Next.js 16 Turbopack bug (not caused by session changes)
+- **Verified:** Issue persists even with all session changes reverted
+- **Workaround:** Use production build (`npm run build && npm start`) to bypass Turbopack
+- **Status:** Upstream Turbopack issue - may need to report to Next.js team
+
+---
 
 ## Phase: 29 - Legal Data Sourcing Strategy (IN PROGRESS)
 
@@ -13,6 +61,53 @@ Building a legally defensible data pipeline to compete with BGG without scraping
 - Data source tracked as `data_source: 'seed'`
 - Image URLs stored as reference in `bgg_raw_data` (NOT displayed)
 - Designers and publishers linked via junction tables
+
+### Phase 2: Publisher & Rulebook Pipeline (2025-12-31) ✅
+Built complete rulebook parsing infrastructure for AI content extraction.
+
+**Rulebook Library** (`src/lib/rulebook/`):
+| File | Purpose |
+|------|---------|
+| `types.ts` | TypeScript types for PDF parsing, BNCS, discovery |
+| `parser.ts` | PDF text extraction using pdf-parse |
+| `prompts.ts` | AI prompts for extracting game data from rulebooks |
+| `complexity.ts` | Board Nomads Complexity Score (BNCS) generation |
+| `discovery.ts` | Publisher URL pattern matching for rulebook discovery |
+| `index.ts` | Barrel exports |
+
+**Admin UI**:
+- New **Rulebook** tab in game editor (`/admin/games/[id]`)
+- Rulebook URL input with validation
+- Auto-discover button (checks publisher patterns)
+- Parse & Generate BNCS button
+- BNCS score display with 5-dimension breakdown
+- Component list display from extracted data
+
+**API Routes** (`/api/admin/rulebook/`):
+| Route | Purpose |
+|------|---------|
+| `validate/` | Validate rulebook URL is a valid PDF |
+| `discover/` | Auto-discover rulebook using publisher patterns |
+| `parse/` | Parse PDF, extract data, generate BNCS |
+
+**Database Migration** (`00048_rulebook_bncs.sql`):
+- `rulebook_url`, `rulebook_source`, `rulebook_parsed_at` columns on games
+- `bncs_score` (1.0-5.0), `bncs_breakdown` (JSONB), `bncs_generated_at`
+- `component_list` JSONB for extracted components
+- `publisher_rulebook_patterns` table with 9 publisher URL patterns
+- `rulebook_parse_log` table for tracking parse attempts
+
+**BNCS Scoring Dimensions**:
+1. **Rules Density** - Amount of rules to learn
+2. **Decision Space** - Choices per turn
+3. **Learning Curve** - Time to understand
+4. **Strategic Depth** - Mastery difficulty
+5. **Component Complexity** - Game state tracking
+
+**Publisher Patterns Seeded**:
+- Stonemaier Games, Leder Games, CMON, Fantasy Flight Games
+- Czech Games Edition, Rio Grande Games, Z-Man Games
+- Pandasaurus Games, Restoration Games
 
 ### Admin Queue Redesign (2025-12-31) ✅
 - **Repurposed `/admin/queue`** as master content pipeline
@@ -27,7 +122,7 @@ Building a legally defensible data pipeline to compete with BGG without scraping
 - Accurate filter counts using Supabase count queries
 - Page number navigation (1-5 visible with smart windowing)
 
-### New Files Created
+### Phase 1 Files Created
 | File | Purpose |
 |------|---------|
 | `data/seed-games.json` | 688 games with factual data (names, players, time, designers) |
@@ -35,21 +130,44 @@ Building a legally defensible data pipeline to compete with BGG without scraping
 
 ### Database Updates
 - Added `'seed'` to `data_source` enum
+- Added rulebook/BNCS columns and tables (migration 00048)
 - Regenerated Supabase types (`src/types/supabase.ts`)
 
 ### Legal Data Strategy (See Plan File)
 Full strategy documented in `~/.claude/plans/kind-prancing-reef.md`:
 - **Wikidata** (CC0 licensed) as foundation layer
-- **Publisher rulebook PDFs** for original content
+- **Publisher rulebook PDFs** for original content ✅ Infrastructure built
 - **Publisher partnerships** for official data
-- **Board Nomads Complexity Score (BNCS)** - AI-generated from rulebooks (differentiator)
+- **Board Nomads Complexity Score (BNCS)** - AI-generated from rulebooks ✅ Implemented
 - **BGG Collection Import** - User data portability feature
 
-### Phase 2: Publisher & Rulebook Pipeline (NEXT)
-- Create rulebook parser (`src/lib/rulebook/parser.ts`)
-- PDF text extraction + AI content generation
-- Publisher outreach templates
-- BNCS complexity scoring system
+### Phase 2b: Enhanced Discovery & Publisher Data (2025-12-31) ✅
+Improved rulebook auto-discovery with publisher website integration.
+
+**Discovery Enhancements** (`src/lib/rulebook/discovery.ts`):
+- **Priority 1**: Use publisher website URL from database (16 common path patterns)
+- **Priority 2**: Use known publisher patterns (Stonemaier, CMON, etc.)
+- **Priority 3**: Web search fallback with generated Google query
+- Admin UI now shows "Search Google for rulebook" link when auto-discover fails
+
+**Publisher Data Enrichment Scripts:**
+| Script | Purpose |
+|--------|---------|
+| `scripts/enrich-publishers-from-bgg.ts` | Full enrichment: find BGG IDs + fetch websites |
+| `scripts/backfill-publisher-websites.ts` | Fetch websites for publishers with existing BGG IDs |
+
+**Legal Data Notes (All Public Factual Data - OK to use):**
+- Publisher names, BGG IDs, website URLs
+- Designer/Artist names and relationships
+- Year published, player counts, play time
+- Awards and nominations
+- ❌ BGG descriptions, reviews, rankings (copyrighted by BGG)
+
+### Phase 3: Publisher Outreach (NEXT)
+- Create cold outreach email templates
+- Target mid-size publishers (Stonemaier, Leder, Pandasaurus)
+- Offer "Verified Publisher" badge program
+- Goal: Official images, descriptions, rulebook access
 
 ---
 
@@ -794,6 +912,7 @@ Modern Airbnb-inspired card-based layout:
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 - **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
 - **Games Page Filter V2** - Collapsible sidebar rail, horizontal filter bar, dynamic grid columns
+- **Games Page Sidebar** - Unified sidebar layout matching marketplace, prominent search bar
 - **Marketplace Phase 1-8** - Full marketplace with listings, messaging, offers, Stripe payments, seller reputation, saved searches, wishlist alerts, seller dashboard V2 (sidebar layout), and unified browse/dashboard UI
 
 ### Environments & Branches
@@ -925,6 +1044,20 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | Mobile filter sheet with accordions | ✅ |
 | Compact hover badges on game cards | ✅ |
 | Removed redundant bottom badges | ✅ |
+
+### Games Page UI Unification (Phase 30)
+| Feature | Status |
+|---------|--------|
+| Sidebar layout matching marketplace | ✅ |
+| GamesSidebar component | ✅ |
+| "The Games" header with Dice5 icon | ✅ |
+| Embedded FilterSidebar mode | ✅ |
+| Prominent search bar (48px height) | ✅ |
+| Search via URL parameter (`?q=`) | ✅ |
+| Search combined with filters | ✅ |
+| Clear search button | ✅ |
+| Mobile hamburger drawer | ✅ |
+| Loading skeleton for sidebar layout | ✅ |
 
 **Profile V3 UI (Current):**
 - Two-column layout: sticky identity card on left, scrollable content on right
@@ -1243,10 +1376,11 @@ git push origin develop  # Deploy to staging
 ### Games Page Filter UI V2
 | File | Purpose |
 |------|---------|
-| `src/app/games/page.tsx` | Server component, fetches data |
-| `src/app/games/GamesPageClient.tsx` | Client component, filter state management |
+| `src/app/games/page.tsx` | Server component, fetches data, parses search query |
+| `src/app/games/GamesPageClient.tsx` | Client component, sidebar layout, search bar, filter state |
+| `src/components/games/GamesSidebar.tsx` | Full-height sidebar wrapper with "The Games" header |
 | `src/components/games/filters/FilterBar.tsx` | Horizontal range filter popovers |
-| `src/components/games/filters/FilterSidebar.tsx` | Collapsible sidebar container |
+| `src/components/games/filters/FilterSidebar.tsx` | Collapsible sidebar/embedded filter container |
 | `src/components/games/filters/FilterRail.tsx` | Collapsed icon-only rail (48px) |
 | `src/components/games/filters/FilterSection.tsx` | Accordion wrapper (Collapsible) |
 | `src/components/games/filters/TaxonomyBadges.tsx` | Badge grid for taxonomy selection |
@@ -1256,6 +1390,7 @@ git push origin develop  # Deploy to staging
 | `src/components/games/filters/constants.ts` | Icons, labels, DEFAULT_OPEN_SECTIONS |
 | `src/components/games/filters/types.ts` | Filter types and defaults |
 | `src/hooks/use-local-storage.ts` | SSR-safe localStorage hook |
+| `src/lib/supabase/game-queries.ts` | Game queries with search support |
 
 ### Marketplace
 | File | Purpose |

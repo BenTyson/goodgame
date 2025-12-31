@@ -46,7 +46,7 @@
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Theme | **Light mode only** | Cleaner, simpler, better readability |
+| Theme | Light and dark mode | User toggle available |
 | Primary color | **Fresh teal** (`oklch(0.55 0.15 195)`) | Modern, energetic, approachable |
 | Background | Clean white | Lets content shine, professional |
 | Color palette | **Monochromatic teal** | Unified look, no rainbow of colors |
@@ -83,6 +83,18 @@
 | Saved searches | Separate page (not dashboard tab) | Discovery feature, different context |
 | Mobile pattern | Hamburger drawer overlay | Consistent across browse/dashboard |
 
+## Games Page UI/UX
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Layout pattern | Sidebar + main content (matches marketplace) | Site-wide consistency |
+| Sidebar header | "The Games" with Dice5 icon | Descriptive, appropriate icon |
+| Search bar | Prominent, 48px height, top of main content | Easy discoverability |
+| Search + filters | Combined via URL params (`?q=...&categories=...`) | Bookmarkable, shareable |
+| Filter embedding | `embedded` prop on FilterSidebar | Reusable in sidebar wrapper |
+| Mobile pattern | Hamburger drawer overlay | Consistent with marketplace |
+| No page header | Removed "All Games" header/description | Redundant with sidebar header |
+
 ## Legal Data Sourcing Strategy
 
 | Decision | Choice | Rationale |
@@ -112,7 +124,7 @@
 - BGG's specific data structure
 
 ### Design History
-- ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
+- ~~Dark mode with purple primary~~ - Changed to teal primary, dark mode now supported
 - ~~Rainbow content type colors~~ - Removed (visual chaos, replaced with unified teal)
 - ~~Gamepad2 icon~~ - Replaced with Dices (video game controller inappropriate for board games)
 - ~~Rules/Score Sheets in nav~~ - Removed (redundant, just filtered game lists; pages kept for SEO)
@@ -143,4 +155,4 @@
 - ~~BGG data scraping~~ ✅ Built (import pipeline)
 - ~~Game recommendations~~ ✅ Built (wizard + AI at `/recommend`)
 - Premium/paid tier
-- Dark mode theme
+- ~~Dark mode theme~~ ✅ Built (theme toggle)

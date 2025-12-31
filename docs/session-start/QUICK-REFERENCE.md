@@ -12,8 +12,9 @@
 
 ```bash
 # Development
-npm run dev                    # Start dev server (port 3399)
-npm run build                  # Production build
+npm run dev                    # Start dev server (port 3399, Turbopack)
+npm run build && npm start     # Production build + server (use if Turbopack has issues)
+npm run build                  # Production build only
 npm run lint                   # ESLint check
 
 # Git (always work on develop)
@@ -355,3 +356,15 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | `/u/[username]` | Public user profile |
 | `/feed` | Activity feed |
 | `/recommend` | Game recommendation wizard |
+
+## Known Issues
+
+### Turbopack Dev Mode Bug (Next.js 16)
+**Symptom:** Some pages (e.g., `/publishers`) hang indefinitely with `Maximum call stack size exceeded at Map.set` error.
+
+**Workaround:** Use production build instead of dev mode:
+```bash
+npm run build && npm start
+```
+
+**Status:** Upstream Turbopack bug in Next.js 16. Does not affect production builds.
