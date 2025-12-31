@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -80,6 +79,75 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_notifications: {
+        Row: {
+          email_sent: boolean
+          id: string
+          listing_id: string
+          push_sent: boolean
+          saved_search_id: string | null
+          sent_at: string | null
+          user_id: string
+          wishlist_alert_id: string | null
+        }
+        Insert: {
+          email_sent?: boolean
+          id?: string
+          listing_id: string
+          push_sent?: boolean
+          saved_search_id?: string | null
+          sent_at?: string | null
+          user_id: string
+          wishlist_alert_id?: string | null
+        }
+        Update: {
+          email_sent?: boolean
+          id?: string
+          listing_id?: string
+          push_sent?: boolean
+          saved_search_id?: string | null
+          sent_at?: string | null
+          user_id?: string
+          wishlist_alert_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_notifications_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_notifications_saved_search_id_fkey"
+            columns: ["saved_search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "alert_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_notifications_wishlist_alert_id_fkey"
+            columns: ["wishlist_alert_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_alerts"
             referencedColumns: ["id"]
           },
         ]
@@ -1269,6 +1337,13 @@ export type Database = {
             foreignKeyName: "listing_saves_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "listing_saves_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1322,6 +1397,13 @@ export type Database = {
             foreignKeyName: "marketplace_conversations_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_conversations_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1336,7 +1418,89 @@ export type Database = {
             foreignKeyName: "marketplace_conversations_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_conversations_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          is_positive: boolean | null
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          role: Database["public"]["Enums"]["feedback_role"]
+          transaction_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          is_positive?: boolean | null
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          role: Database["public"]["Enums"]["feedback_role"]
+          transaction_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          is_positive?: boolean | null
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
+          role?: Database["public"]["Enums"]["feedback_role"]
+          transaction_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_feedback_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_feedback_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_feedback_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_feedback_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_feedback_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -1465,6 +1629,13 @@ export type Database = {
             foreignKeyName: "marketplace_listings_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1517,6 +1688,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "marketplace_conversations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "marketplace_messages_sender_id_fkey"
@@ -1599,6 +1777,13 @@ export type Database = {
             foreignKeyName: "marketplace_offers_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1627,8 +1812,22 @@ export type Database = {
             foreignKeyName: "marketplace_offers_responded_by_fkey"
             columns: ["responded_by"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_offers_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "marketplace_offers_seller_id_fkey"
@@ -1729,6 +1928,13 @@ export type Database = {
             foreignKeyName: "marketplace_transactions_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "marketplace_transactions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1745,6 +1951,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "marketplace_offers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_transactions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "marketplace_transactions_seller_id_fkey"
@@ -1853,6 +2066,72 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          alert_email: boolean
+          alert_frequency: Database["public"]["Enums"]["alert_frequency"]
+          alert_push: boolean
+          alerts_enabled: boolean
+          created_at: string | null
+          filters: Json
+          id: string
+          last_match_at: string | null
+          last_notified_at: string | null
+          match_count: number
+          name: string
+          status: Database["public"]["Enums"]["alert_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_email?: boolean
+          alert_frequency?: Database["public"]["Enums"]["alert_frequency"]
+          alert_push?: boolean
+          alerts_enabled?: boolean
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          last_match_at?: string | null
+          last_notified_at?: string | null
+          match_count?: number
+          name: string
+          status?: Database["public"]["Enums"]["alert_status"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_email?: boolean
+          alert_frequency?: Database["public"]["Enums"]["alert_frequency"]
+          alert_push?: boolean
+          alerts_enabled?: boolean
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          last_match_at?: string | null
+          last_notified_at?: string | null
+          match_count?: number
+          name?: string
+          status?: Database["public"]["Enums"]["alert_status"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "saved_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       score_sheet_configs: {
         Row: {
@@ -2054,8 +2333,22 @@ export type Database = {
             foreignKeyName: "user_activities_target_user_id_fkey"
             columns: ["target_user_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_activities_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "user_activities_user_id_fkey"
@@ -2090,8 +2383,22 @@ export type Database = {
             foreignKeyName: "user_follows_follower_id_fkey"
             columns: ["follower_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "user_follows_following_id_fkey"
@@ -2149,6 +2456,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "user_games_user_id_fkey"
@@ -2249,6 +2563,13 @@ export type Database = {
             foreignKeyName: "user_marketplace_settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_marketplace_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -2293,6 +2614,13 @@ export type Database = {
             foreignKeyName: "user_notifications_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -2302,6 +2630,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "user_notifications_user_id_fkey"
@@ -2403,6 +2738,92 @@ export type Database = {
             foreignKeyName: "user_top_games_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_top_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_alerts: {
+        Row: {
+          accepted_conditions:
+            | Database["public"]["Enums"]["game_condition"][]
+            | null
+          alerts_enabled: boolean
+          created_at: string | null
+          game_id: string
+          id: string
+          last_match_at: string | null
+          last_notified_at: string | null
+          local_only: boolean
+          match_count: number
+          max_distance_miles: number | null
+          max_price_cents: number | null
+          status: Database["public"]["Enums"]["alert_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_conditions?:
+            | Database["public"]["Enums"]["game_condition"][]
+            | null
+          alerts_enabled?: boolean
+          created_at?: string | null
+          game_id: string
+          id?: string
+          last_match_at?: string | null
+          last_notified_at?: string | null
+          local_only?: boolean
+          match_count?: number
+          max_distance_miles?: number | null
+          max_price_cents?: number | null
+          status?: Database["public"]["Enums"]["alert_status"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_conditions?:
+            | Database["public"]["Enums"]["game_condition"][]
+            | null
+          alerts_enabled?: boolean
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          last_match_at?: string | null
+          last_notified_at?: string | null
+          local_only?: boolean
+          match_count?: number
+          max_distance_miles?: number | null
+          max_price_cents?: number | null
+          status?: Database["public"]["Enums"]["alert_status"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_alerts_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wishlist_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -2410,7 +2831,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      seller_reputation_stats: {
+        Row: {
+          buyer_feedback_count: number | null
+          buyer_rating: number | null
+          calculated_at: string | null
+          overall_rating: number | null
+          seller_feedback_count: number | null
+          seller_five_star_count: number | null
+          seller_negative_count: number | null
+          seller_positive_count: number | null
+          seller_rating: number | null
+          total_feedback_count: number | null
+          total_purchases: number | null
+          total_sales: number | null
+          trust_level: Database["public"]["Enums"]["trust_level"] | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_offer: {
@@ -2448,6 +2887,15 @@ export type Database = {
       calculate_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
+      }
+      can_leave_feedback: {
+        Args: { p_transaction_id: string; p_user_id: string }
+        Returns: {
+          already_left: boolean
+          can_leave: boolean
+          reason: string
+          role: Database["public"]["Enums"]["feedback_role"]
+        }[]
       }
       cancel_unpaid_transactions: { Args: never; Returns: number }
       confirm_delivery: {
@@ -2600,6 +3048,22 @@ export type Database = {
         }
       }
       expire_stale_offers: { Args: never; Returns: number }
+      find_matching_saved_searches: {
+        Args: { p_listing_id: string }
+        Returns: {
+          alert_email: boolean
+          alert_push: boolean
+          saved_search_id: string
+          user_id: string
+        }[]
+      }
+      find_matching_wishlist_alerts: {
+        Args: { p_listing_id: string }
+        Returns: {
+          user_id: string
+          wishlist_alert_id: string
+        }[]
+      }
       get_complexity_tier_id: { Args: { game_weight: number }; Returns: string }
       get_listing_offer_counts: {
         Args: { p_listing_id: string }
@@ -2613,6 +3077,73 @@ export type Database = {
         Args: { p_buyer_id: string; p_listing_id: string }
         Returns: string
       }
+      get_similar_listings: {
+        Args: { p_limit?: number; p_listing_id: string }
+        Returns: {
+          listing_id: string
+          similarity_score: number
+        }[]
+      }
+      get_user_feedback: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_role?: Database["public"]["Enums"]["feedback_role"]
+          p_user_id: string
+        }
+        Returns: {
+          comment: string
+          created_at: string
+          feedback_id: string
+          game_image: string
+          game_name: string
+          game_slug: string
+          rating: number
+          reviewer_avatar: string
+          reviewer_display_name: string
+          reviewer_id: string
+          reviewer_username: string
+          role: Database["public"]["Enums"]["feedback_role"]
+          transaction_id: string
+        }[]
+      }
+      get_user_reputation: {
+        Args: { p_user_id: string }
+        Returns: {
+          buyer_feedback_count: number
+          buyer_rating: number
+          overall_rating: number
+          seller_feedback_count: number
+          seller_five_star_count: number
+          seller_negative_count: number
+          seller_positive_count: number
+          seller_rating: number
+          total_feedback_count: number
+          total_purchases: number
+          total_sales: number
+          trust_level: Database["public"]["Enums"]["trust_level"]
+          user_id: string
+        }[]
+      }
+      get_user_saved_searches: {
+        Args: {
+          p_status?: Database["public"]["Enums"]["alert_status"]
+          p_user_id: string
+        }
+        Returns: {
+          alert_email: boolean
+          alert_frequency: Database["public"]["Enums"]["alert_frequency"]
+          alerts_enabled: boolean
+          created_at: string
+          filters: Json
+          id: string
+          last_match_at: string
+          match_count: number
+          name: string
+          status: Database["public"]["Enums"]["alert_status"]
+          updated_at: string
+        }[]
+      }
       get_user_transaction_stats: {
         Args: { p_user_id: string }
         Returns: {
@@ -2625,6 +3156,51 @@ export type Database = {
           total_earned_cents: number
           total_spent_cents: number
         }[]
+      }
+      get_user_wishlist_alerts: {
+        Args: { p_user_id: string }
+        Returns: {
+          accepted_conditions: Database["public"]["Enums"]["game_condition"][]
+          alerts_enabled: boolean
+          created_at: string
+          game_id: string
+          game_image: string
+          game_name: string
+          game_slug: string
+          id: string
+          last_match_at: string
+          local_only: boolean
+          match_count: number
+          max_distance_miles: number
+          max_price_cents: number
+          status: Database["public"]["Enums"]["alert_status"]
+        }[]
+      }
+      leave_feedback: {
+        Args: {
+          p_comment?: string
+          p_rating: number
+          p_transaction_id: string
+          p_user_id: string
+        }
+        Returns: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          is_positive: boolean | null
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          role: Database["public"]["Enums"]["feedback_role"]
+          transaction_id: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketplace_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       mark_conversation_read: {
         Args: { p_conversation_id: string; p_user_id: string }
@@ -2671,6 +3247,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_alert_notification: {
+        Args: {
+          p_email_sent?: boolean
+          p_listing_id: string
+          p_push_sent?: boolean
+          p_saved_search_id?: string
+          p_user_id: string
+          p_wishlist_alert_id?: string
+        }
+        Returns: {
+          email_sent: boolean
+          id: string
+          listing_id: string
+          push_sent: boolean
+          saved_search_id: string | null
+          sent_at: string | null
+          user_id: string
+          wishlist_alert_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "alert_notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      refresh_seller_reputation: { Args: never; Returns: undefined }
       release_transaction_funds: {
         Args: { p_transaction_id: string; p_transfer_id?: string }
         Returns: {
@@ -2849,6 +3452,72 @@ export type Database = {
         }
       }
       slugify: { Args: { text_input: string }; Returns: string }
+      upsert_saved_search: {
+        Args: {
+          p_alert_email?: boolean
+          p_alert_frequency?: Database["public"]["Enums"]["alert_frequency"]
+          p_filters: Json
+          p_id?: string
+          p_name: string
+          p_user_id: string
+        }
+        Returns: {
+          alert_email: boolean
+          alert_frequency: Database["public"]["Enums"]["alert_frequency"]
+          alert_push: boolean
+          alerts_enabled: boolean
+          created_at: string | null
+          filters: Json
+          id: string
+          last_match_at: string | null
+          last_notified_at: string | null
+          match_count: number
+          name: string
+          status: Database["public"]["Enums"]["alert_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "saved_searches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_wishlist_alert: {
+        Args: {
+          p_accepted_conditions?: Database["public"]["Enums"]["game_condition"][]
+          p_game_id: string
+          p_local_only?: boolean
+          p_max_distance_miles?: number
+          p_max_price_cents?: number
+          p_user_id: string
+        }
+        Returns: {
+          accepted_conditions:
+            | Database["public"]["Enums"]["game_condition"][]
+            | null
+          alerts_enabled: boolean
+          created_at: string | null
+          game_id: string
+          id: string
+          last_match_at: string | null
+          last_notified_at: string | null
+          local_only: boolean
+          match_count: number
+          max_distance_miles: number | null
+          max_price_cents: number | null
+          status: Database["public"]["Enums"]["alert_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wishlist_alerts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       withdraw_offer: {
         Args: { p_offer_id: string; p_user_id: string }
         Returns: {
@@ -2892,6 +3561,9 @@ export type Database = {
         | "listing_created"
         | "listing_sold"
         | "listing_traded"
+      alert_frequency: "instant" | "daily" | "weekly"
+      alert_status: "active" | "paused" | "expired"
+      feedback_role: "buyer" | "seller"
       game_condition:
         | "new_sealed"
         | "like_new"
@@ -2921,6 +3593,8 @@ export type Database = {
         | "wishlist_match"
         | "offer_withdrawn"
         | "offer_expired"
+        | "listing_match"
+        | "wishlist_listing"
       offer_status:
         | "pending"
         | "accepted"
@@ -2948,6 +3622,7 @@ export type Database = {
         | "refunded"
         | "disputed"
         | "cancelled"
+      trust_level: "new" | "established" | "trusted" | "top_seller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3089,6 +3764,9 @@ export const Constants = {
         "listing_sold",
         "listing_traded",
       ],
+      alert_frequency: ["instant", "daily", "weekly"],
+      alert_status: ["active", "paused", "expired"],
+      feedback_role: ["buyer", "seller"],
       game_condition: [
         "new_sealed",
         "like_new",
@@ -3120,6 +3798,8 @@ export const Constants = {
         "wishlist_match",
         "offer_withdrawn",
         "offer_expired",
+        "listing_match",
+        "wishlist_listing",
       ],
       offer_status: [
         "pending",
@@ -3151,6 +3831,7 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      trust_level: ["new", "established", "trusted", "top_seller"],
     },
   },
 } as const

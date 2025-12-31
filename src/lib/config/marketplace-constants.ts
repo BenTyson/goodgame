@@ -238,3 +238,34 @@ export const FEEDBACK_SETTINGS = {
   /** Minimum rating for "top_seller" trust level */
   TOP_SELLER_MIN_RATING: 4.5,
 } as const
+
+// ===========================================
+// DISCOVERY & ALERTS (PHASE 6)
+// ===========================================
+
+export const SAVED_SEARCH_SETTINGS = {
+  /** Maximum saved searches per user */
+  MAX_PER_USER: 25,
+
+  /** Maximum name length */
+  MAX_NAME_LENGTH: 100,
+
+  /** Days before inactive alert expires */
+  EXPIRY_DAYS: 90,
+} as const
+
+export const WISHLIST_ALERT_SETTINGS = {
+  /** Default accepted conditions */
+  DEFAULT_CONDITIONS: ['new_sealed', 'like_new', 'very_good'] as const,
+
+  /** Default max distance for local alerts (miles) */
+  DEFAULT_MAX_DISTANCE: 50,
+} as const
+
+export const SIMILAR_LISTINGS_SETTINGS = {
+  /** Number of similar listings to show */
+  DEFAULT_LIMIT: 6,
+
+  /** Minimum similarity score to include */
+  MIN_SCORE: 10,
+} as const

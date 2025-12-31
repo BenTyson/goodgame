@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConditionBadge, SellerRating } from '@/components/marketplace'
+import { SimilarListings } from '@/components/marketplace/discovery'
 import { getListingById } from '@/lib/supabase/listing-queries'
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/utils'
@@ -418,6 +419,12 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
           </Card>
         </div>
       </div>
+
+      {/* Similar Listings */}
+      <SimilarListings
+        listingId={listing.id}
+        className="mt-12 pt-8 border-t"
+      />
     </div>
   )
 }

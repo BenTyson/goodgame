@@ -1,6 +1,58 @@
 # Current Status
 
-> Last Updated: 2025-12-30 (Marketplace Phase 5 - COMPLETE)
+> Last Updated: 2025-12-30 (Marketplace Phase 6 - COMPLETE)
+
+## Phase: 26 - Marketplace Phase 6: Discovery & Alerts (COMPLETE)
+
+Built saved searches, wishlist alerts, and similar listings recommendations.
+
+### Phase 6: Discovery & Alerts (2025-12-30) ✅
+- **Saved Searches** - Save marketplace search criteria with customizable alert settings
+- **Alert Notifications** - Instant, daily, or weekly digest alerts for matching listings
+- **Wishlist Alerts** - Price drop/availability notifications for games on wishlist
+- **Similar Listings** - "You Might Also Like" recommendations on listing detail pages
+- **Verified Seller Badge** - Trust level badges for high-reputation sellers
+- **Saved Searches Page** - Manage saved searches at `/marketplace/saved-searches`
+
+### New Routes (Phase 6)
+| Route | Purpose |
+|-------|---------|
+| `/marketplace/saved-searches` | Manage saved searches and alerts |
+| `/api/marketplace/saved-searches` | GET: List searches, POST: Create search |
+| `/api/marketplace/saved-searches/[id]` | GET/PATCH/DELETE: Manage single search |
+| `/api/marketplace/wishlist-alerts` | GET: List alerts, POST: Create alert |
+| `/api/marketplace/wishlist-alerts/[id]` | GET/PATCH/DELETE: Manage single alert |
+| `/api/marketplace/listings/[id]/similar` | GET: Similar listings recommendations |
+
+### New Components (Phase 6)
+```
+src/components/marketplace/discovery/
+├── SavedSearchCard.tsx      # Saved search display with actions
+├── SaveSearchButton.tsx     # Save current search dialog
+├── WishlistAlertToggle.tsx  # Enable/configure wishlist alerts
+├── SimilarListings.tsx      # Similar listings grid
+├── VerifiedSellerBadge.tsx  # Trust level badge component
+└── index.ts                 # Barrel exports
+```
+
+### New Files (Phase 6)
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/discovery-queries.ts` | Saved search + alert queries |
+| `src/lib/config/marketplace-constants.ts` | Added `SAVED_SEARCH_SETTINGS`, `WISHLIST_ALERT_SETTINGS`, `SIMILAR_LISTINGS_SETTINGS` |
+| `src/types/marketplace.ts` | Added discovery/alert types |
+
+### Database Migration: `00045_marketplace_discovery.sql`
+- `alert_frequency` enum: instant, daily, weekly
+- `alert_status` enum: active, paused, expired
+- `saved_searches` table with filters JSONB, alert preferences
+- `wishlist_alerts` table with price threshold, condition preferences
+- `alert_notifications` table for tracking sent notifications
+- RLS policies (user-only access)
+- Helper functions: `upsert_saved_search()`, `upsert_wishlist_alert()`, `find_matching_saved_searches()`, `find_matching_wishlist_alerts()`, `get_similar_listings()`
+- Triggers: Auto-notify on matching listing published, notification types added
+
+---
 
 ## Phase: 25 - Marketplace Phase 5: Reputation & Feedback (COMPLETE)
 
@@ -587,7 +639,7 @@ Modern Airbnb-inspired card-based layout:
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 - **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
 - **Games Page Filter V2** - Collapsible sidebar rail, horizontal filter bar, dynamic grid columns
-- **Marketplace Phase 1-5** - Full marketplace with listings, messaging, offers, Stripe payments, and seller reputation
+- **Marketplace Phase 1-6** - Full marketplace with listings, messaging, offers, Stripe payments, seller reputation, saved searches, and wishlist alerts
 
 ### Environments & Branches
 
@@ -637,6 +689,21 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | Game reviews on shelf items | ✅ |
 | Aggregate ratings on game pages | ✅ |
 | Review section on game pages | ✅ |
+
+### Marketplace Phase 6: Discovery & Alerts
+| Feature | Status |
+|---------|--------|
+| Saved searches with filters | ✅ |
+| Save current search button | ✅ |
+| Saved searches management page | ✅ |
+| Alert frequency (instant/daily/weekly) | ✅ |
+| Pause/resume search alerts | ✅ |
+| Wishlist alerts for price drops | ✅ |
+| Wishlist alert configuration | ✅ |
+| Similar listings recommendations | ✅ |
+| "You Might Also Like" on listing detail | ✅ |
+| Verified seller badges | ✅ |
+| Trust level badges (new/established/trusted/top_seller) | ✅ |
 
 ### Game Recommendation Engine (Phase 17)
 | Feature | Status |
@@ -849,7 +916,8 @@ supabase/migrations/
 ├── 00041_marketplace_messaging.sql  # Conversations, messages, triggers, RPC functions
 ├── 00042_marketplace_offers.sql     # Offers table, enums, RPC functions, triggers
 ├── 00043_marketplace_transactions.sql # Transactions, Stripe Connect, payment flow
-└── 00044_marketplace_feedback.sql    # Feedback/reputation system
+├── 00044_marketplace_feedback.sql    # Feedback/reputation system
+└── 00045_marketplace_discovery.sql   # Saved searches, wishlist alerts, similar listings
 ```
 
 ---
@@ -1047,6 +1115,14 @@ git push origin develop  # Deploy to staging
 | `src/app/api/stripe/webhooks/route.ts` | Stripe webhook handler |
 | `src/components/marketplace/feedback/` | Feedback components |
 | `src/components/profile/ProfileMarketplaceFeedback.tsx` | Profile reputation section |
+| `src/lib/supabase/discovery-queries.ts` | Saved search + wishlist alert queries |
+| `src/lib/utils/saved-search-utils.ts` | Client-safe saved search helpers |
+| `src/app/marketplace/saved-searches/page.tsx` | Saved searches management page |
+| `src/components/marketplace/discovery/SavedSearchCard.tsx` | Saved search display |
+| `src/components/marketplace/discovery/SaveSearchButton.tsx` | Save current search dialog |
+| `src/components/marketplace/discovery/WishlistAlertToggle.tsx` | Wishlist alert config |
+| `src/components/marketplace/discovery/SimilarListings.tsx` | Similar listings grid |
+| `src/components/marketplace/discovery/VerifiedSellerBadge.tsx` | Trust level badge |
 
 ---
 
@@ -1102,36 +1178,11 @@ git push origin develop  # Deploy to staging
 
 ## Next Steps
 
-### 🎯 NEXT: Marketplace Phase 6 - Discovery & Alerts
-
-**Phase 6 Overview:**
-- Saved searches with email alerts
-- Wishlist price drop notifications
-- Similar listings recommendations
-- Advanced search filters (distance, verified sellers)
-
-**Potential Components:**
-| Component | Purpose |
-|-----------|---------|
-| `SavedSearchList.tsx` | Manage saved search alerts |
-| `WishlistAlerts.tsx` | Configure price/availability alerts |
-| `SimilarListings.tsx` | Related listings on detail page |
-| `VerifiedSellerBadge.tsx` | Badge for high-trust sellers |
-
-**Potential Tables:**
-| Table | Purpose |
-|-------|---------|
-| `saved_searches` | User's saved search criteria |
-| `wishlist_alerts` | Price/availability notifications |
-
 ### Content
 - Upload images for all games via admin
 - Generate content for the 19 new BGG top 20 games
 - Set up cron-job.org to trigger import/generate APIs
 - Import more games to populate families and relations
-
-### Future Marketplace Phases
-- Phase 6: Discovery & Alerts (saved searches, wishlist alerts)
 
 ### Other Future Features
 - Local discovery (find gamers nearby, game nights)

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, Store } from 'lucide-react'
+import { Plus, Search, Store, Bell } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,8 @@ import {
   useMarketplaceSidebarCollapsed,
   type MarketplaceFilters,
 } from '@/components/marketplace'
-import type { ListingCardData, ListingType, GameCondition, ShippingPreference } from '@/types/marketplace'
+import { SaveSearchButton } from '@/components/marketplace/discovery'
+import type { ListingCardData, ListingType, GameCondition, ShippingPreference, SavedSearchFilters } from '@/types/marketplace'
 
 interface MarketplacePageClientProps {
   listings: ListingCardData[]
@@ -129,6 +130,32 @@ export function MarketplacePageClient({
     console.log('Toggle save for listing:', listingId)
   }
 
+  const handleSaveSearch = async (request: { name: string; filters: SavedSearchFilters; alert_frequency?: string; alert_email?: boolean }) => {
+    const res = await fetch('/api/marketplace/saved-searches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+
+    if (!res.ok) {
+      throw new Error('Failed to save search')
+    }
+  }
+
+  const handleLoginRequired = () => {
+    router.push('/login?redirect=/marketplace')
+  }
+
+  // Build saved search filters from current state
+  const savedSearchFilters: SavedSearchFilters = {
+    query: searchQuery || undefined,
+    listing_types: filters.listingTypes.length > 0 ? filters.listingTypes : undefined,
+    conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
+    shipping_preferences: filters.shippingPreferences.length > 0 ? filters.shippingPreferences : undefined,
+    price_min_cents: filters.priceMin !== null ? filters.priceMin * 100 : undefined,
+    price_max_cents: filters.priceMax !== null ? filters.priceMax * 100 : undefined,
+  }
+
   const savedSet = new Set(savedListingIds)
 
   return (
@@ -198,6 +225,24 @@ export function MarketplacePageClient({
                 ? `${listings.length} listings match your criteria`
                 : `Showing all ${totalCount} listings`}
             </p>
+            <div className="flex items-center gap-2">
+              {/* Save Search Button - only show when filters are applied */}
+              <SaveSearchButton
+                filters={savedSearchFilters}
+                isLoggedIn={isAuthenticated}
+                onSave={handleSaveSearch}
+                onLoginRequired={handleLoginRequired}
+              />
+              {/* Link to saved searches */}
+              {isAuthenticated && (
+                <Button variant="ghost" size="sm" asChild className="gap-2">
+                  <Link href="/marketplace/saved-searches">
+                    <Bell className="h-4 w-4" />
+                    <span className="hidden sm:inline">Saved Searches</span>
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
 
           {listings.length > 0 ? (

@@ -10,7 +10,7 @@ import {
   getRecentFeedback,
   getFeedbackBreakdown,
 } from '@/lib/supabase/feedback-queries'
-import type { ReputationResponse } from '@/types/marketplace'
+import type { ReputationResponse, FeedbackWithDetails } from '@/types/marketplace'
 
 interface RouteParams {
   params: Promise<{ userId: string }>
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get recent feedback if requested
-    let recent_feedback = []
+    let recent_feedback: FeedbackWithDetails[] = []
     if (includeFeedback) {
       recent_feedback = await getRecentFeedback(userId, feedbackLimit)
     }

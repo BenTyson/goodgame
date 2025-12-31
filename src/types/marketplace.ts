@@ -1041,3 +1041,207 @@ export interface ReputationResponse {
   reputation: UserReputationStats
   recent_feedback: FeedbackWithDetails[]
 }
+
+// ===========================================
+// DISCOVERY & ALERTS TYPES (PHASE 6)
+// ===========================================
+
+/**
+ * Alert frequency options
+ */
+export type AlertFrequency = 'instant' | 'daily' | 'weekly'
+
+/**
+ * Alert status
+ */
+export type AlertStatus = 'active' | 'paused' | 'expired'
+
+/**
+ * Saved search filters structure
+ */
+export interface SavedSearchFilters {
+  query?: string
+  listing_types?: ListingType[]
+  conditions?: GameCondition[]
+  price_min_cents?: number
+  price_max_cents?: number
+  shipping_preferences?: ShippingPreference[]
+  game_ids?: string[]
+  category_ids?: string[]
+  location_postal?: string
+  max_distance_miles?: number
+  verified_sellers_only?: boolean
+}
+
+/**
+ * Saved search
+ */
+export interface SavedSearch {
+  id: string
+  user_id: string
+  name: string
+  filters: SavedSearchFilters
+  alerts_enabled: boolean
+  alert_frequency: AlertFrequency
+  alert_email: boolean
+  alert_push: boolean
+  status: AlertStatus
+  last_match_at: string | null
+  match_count: number
+  last_notified_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SavedSearchInsert = {
+  name: string
+  filters: SavedSearchFilters
+  alert_frequency?: AlertFrequency
+  alert_email?: boolean
+}
+
+export type SavedSearchUpdate = Partial<
+  Pick<SavedSearch, 'name' | 'filters' | 'alerts_enabled' | 'alert_frequency' | 'alert_email' | 'status'>
+>
+
+/**
+ * Wishlist alert
+ */
+export interface WishlistAlert {
+  id: string
+  user_id: string
+  game_id: string
+  alerts_enabled: boolean
+  max_price_cents: number | null
+  accepted_conditions: GameCondition[]
+  local_only: boolean
+  max_distance_miles: number | null
+  status: AlertStatus
+  last_match_at: string | null
+  match_count: number
+  last_notified_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type WishlistAlertInsert = {
+  game_id: string
+  max_price_cents?: number | null
+  accepted_conditions?: GameCondition[]
+  local_only?: boolean
+  max_distance_miles?: number | null
+}
+
+export type WishlistAlertUpdate = Partial<
+  Pick<WishlistAlert, 'alerts_enabled' | 'max_price_cents' | 'accepted_conditions' | 'local_only' | 'max_distance_miles' | 'status'>
+>
+
+/**
+ * Wishlist alert with game info for display
+ */
+export interface WishlistAlertWithGame extends WishlistAlert {
+  game_name: string
+  game_slug: string
+  game_image: string | null
+}
+
+/**
+ * Alert notification record
+ */
+export interface AlertNotification {
+  id: string
+  saved_search_id: string | null
+  wishlist_alert_id: string | null
+  listing_id: string
+  user_id: string
+  sent_at: string
+  email_sent: boolean
+  push_sent: boolean
+}
+
+/**
+ * Similar listing with score
+ */
+export interface SimilarListing {
+  listing_id: string
+  similarity_score: number
+}
+
+// ===========================================
+// DISCOVERY API TYPES
+// ===========================================
+
+export interface SavedSearchResponse {
+  savedSearches: SavedSearch[]
+  total: number
+}
+
+export interface CreateSavedSearchRequest {
+  name: string
+  filters: SavedSearchFilters
+  alert_frequency?: AlertFrequency
+  alert_email?: boolean
+}
+
+export interface UpdateSavedSearchRequest {
+  name?: string
+  filters?: SavedSearchFilters
+  alerts_enabled?: boolean
+  alert_frequency?: AlertFrequency
+  alert_email?: boolean
+}
+
+export interface WishlistAlertsResponse {
+  alerts: WishlistAlertWithGame[]
+  total: number
+}
+
+export interface CreateWishlistAlertRequest {
+  game_id: string
+  max_price_cents?: number
+  accepted_conditions?: GameCondition[]
+  local_only?: boolean
+  max_distance_miles?: number
+}
+
+export interface UpdateWishlistAlertRequest {
+  alerts_enabled?: boolean
+  max_price_cents?: number | null
+  accepted_conditions?: GameCondition[]
+  local_only?: boolean
+  max_distance_miles?: number | null
+}
+
+export interface SimilarListingsResponse {
+  listings: ListingCardData[]
+}
+
+// ===========================================
+// ALERT FREQUENCY DISPLAY INFO
+// ===========================================
+
+export interface AlertFrequencyInfo {
+  label: string
+  description: string
+}
+
+export const ALERT_FREQUENCY_INFO: Record<AlertFrequency, AlertFrequencyInfo> = {
+  instant: {
+    label: 'Instant',
+    description: 'Get notified immediately when a match is found',
+  },
+  daily: {
+    label: 'Daily Digest',
+    description: 'Receive a daily summary of all matches',
+  },
+  weekly: {
+    label: 'Weekly Digest',
+    description: 'Receive a weekly summary of all matches',
+  },
+}
+
+export const ALERT_STATUS_INFO: Record<AlertStatus, { label: string; color: string }> = {
+  active: { label: 'Active', color: 'bg-green-500' },
+  paused: { label: 'Paused', color: 'bg-yellow-500' },
+  expired: { label: 'Expired', color: 'bg-gray-400' },
+}

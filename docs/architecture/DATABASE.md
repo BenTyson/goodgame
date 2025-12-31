@@ -159,6 +159,7 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 42. `00042_marketplace_offers.sql` - Offers table, enums, RPC functions, triggers
 43. `00043_marketplace_transactions.sql` - Transactions, Stripe Connect, payment flow
 44. `00044_marketplace_feedback.sql` - Feedback/reputation system
+45. `00045_marketplace_discovery.sql` - Saved searches, wishlist alerts, similar listings
 
 ## Marketplace Enums
 
@@ -249,6 +250,20 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 | `established` | 1-4 completed sales |
 | `trusted` | 5+ sales with 4.0+ rating |
 | `top_seller` | 20+ sales with 4.5+ rating |
+
+### alert_frequency
+| Value | Description |
+|-------|-------------|
+| `instant` | Send alert immediately when match found |
+| `daily` | Daily digest of matching listings |
+| `weekly` | Weekly digest of matching listings |
+
+### alert_status
+| Value | Description |
+|-------|-------------|
+| `active` | Alerts are enabled |
+| `paused` | Alerts temporarily disabled |
+| `expired` | Alert has expired |
 
 ## Tables
 
@@ -997,6 +1012,77 @@ Aggregated reputation statistics for marketplace users.
 | calculated_at | TIMESTAMPTZ | When stats were calculated |
 
 **Refresh function:** `refresh_seller_reputation()` - Refresh materialized view
+
+### saved_searches
+User's saved marketplace search criteria with alert preferences.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| name | VARCHAR(100) | Search name (auto-generated or custom) |
+| filters | JSONB | Saved filter criteria |
+| alerts_enabled | BOOLEAN | Whether alerts are on |
+| alert_frequency | alert_frequency | instant, daily, weekly |
+| alert_email | BOOLEAN | Send email notifications |
+| status | alert_status | active, paused, expired |
+| last_run_at | TIMESTAMPTZ | Last time search was executed |
+| last_match_at | TIMESTAMPTZ | Last time a match was found |
+| match_count | INTEGER | Total matches found |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Constraints:**
+- Max 25 saved searches per user (enforced by trigger)
+
+**Helper functions:**
+- `upsert_saved_search(user_id, name, filters, frequency)` - Create or update saved search
+- `find_matching_saved_searches(listing)` - Find searches matching a new listing
+
+### wishlist_alerts
+Price/availability alerts for games on user's wishlist.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| game_id | UUID | FK to games |
+| max_price_cents | INTEGER | Maximum price threshold |
+| accepted_conditions | game_condition[] | Acceptable conditions |
+| local_only | BOOLEAN | Only local listings |
+| max_distance_miles | INTEGER | Max distance for local |
+| alerts_enabled | BOOLEAN | Whether alerts are on |
+| status | alert_status | active, paused, expired |
+| last_notified_at | TIMESTAMPTZ | Last notification sent |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraint:** (user_id, game_id)
+
+**Helper functions:**
+- `upsert_wishlist_alert(user_id, game_id, max_price, conditions)` - Create or update alert
+- `find_matching_wishlist_alerts(listing)` - Find alerts matching a new listing
+
+### alert_notifications
+Tracks sent notifications to avoid duplicates.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to user_profiles |
+| saved_search_id | UUID | FK to saved_searches (nullable) |
+| wishlist_alert_id | UUID | FK to wishlist_alerts (nullable) |
+| listing_id | UUID | FK to marketplace_listings |
+| notification_type | VARCHAR(50) | Type of alert sent |
+| sent_at | TIMESTAMPTZ | When notification was sent |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+
+**Partial unique indexes:**
+- (saved_search_id, listing_id) WHERE saved_search_id IS NOT NULL
+- (wishlist_alert_id, listing_id) WHERE wishlist_alert_id IS NOT NULL
+
+**RPC function:**
+- `get_similar_listings(listing_id, limit)` - Returns similar listings with similarity scores
 
 ## Junction Tables
 
