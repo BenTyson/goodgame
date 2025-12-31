@@ -202,7 +202,10 @@ export async function getUserReputation(userId: string): Promise<UserReputationS
     })
 
   if (error) {
-    console.error('Error fetching user reputation:', error)
+    // RPC may not exist in all environments - this is expected
+    if (error.code !== 'PGRST202') {
+      console.warn('getUserReputation:', error.message || 'RPC not available')
+    }
     return null
   }
 

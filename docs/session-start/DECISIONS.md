@@ -71,6 +71,18 @@
 | Theme question | Skip for social games | Party games are theme-light |
 | Nav placement | Featured pill button after Shelf | Prominent but not intrusive |
 
+## Marketplace UI/UX
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Layout pattern | Sidebar + main content (Faire-inspired) | Modern, efficient use of space |
+| Sidebar width | 240px desktop, 64px tablet, drawer on mobile | Responsive breakpoints |
+| Quick links | Link to dashboard tabs, not standalone pages | Centralized seller experience |
+| Dashboard deep linking | `?tab=` URL parameter | Shareable, bookmarkable states |
+| Filter embedding | `embedded` prop on MarketplaceFilterSidebar | Reusable in sidebar wrapper |
+| Saved searches | Separate page (not dashboard tab) | Discovery feature, different context |
+| Mobile pattern | Hamburger drawer overlay | Consistent across browse/dashboard |
+
 ### Design History
 - ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
 - ~~Rainbow content type colors~~ - Removed (visual chaos, replaced with unified teal)

@@ -1,6 +1,110 @@
 # Current Status
 
-> Last Updated: 2025-12-30 (Marketplace Phase 6 - COMPLETE)
+> Last Updated: 2025-12-31 (Marketplace Sidebar Unification - COMPLETE)
+
+## Phase: 28 - Marketplace UI/UX Unification (COMPLETE)
+
+Unified marketplace page layout to match the seller dashboard sidebar pattern.
+
+### Marketplace Sidebar Unification (2025-12-31) ✅
+- **Consistent Layout** - Both `/marketplace` and `/marketplace/dashboard` use same sidebar pattern
+- **MarketplaceSidebar Component** - New wrapper with header, filters, quick links, action button
+- **Embedded Filter Mode** - `MarketplaceFilterSidebar` now supports `embedded` prop for sidebar integration
+- **Quick Links** - My Listings, My Offers, My Sales link to dashboard tabs (authenticated users)
+- **Deep Linking** - Dashboard supports `?tab=` URL parameter for direct navigation
+- **Mobile Header** - Hamburger menu with filter badge matching dashboard pattern
+- **Loading Skeleton** - New `/marketplace/loading.tsx` matching sidebar layout
+
+### New/Updated Components
+```
+src/components/marketplace/
+├── MarketplaceSidebar.tsx      # NEW - Sidebar wrapper matching dashboard
+├── filters/
+│   └── MarketplaceFilterSidebar.tsx  # UPDATED - Added embedded prop
+└── index.ts                    # UPDATED - Export MarketplaceSidebar
+```
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/app/marketplace/MarketplacePageClient.tsx` | New flex layout with sidebar |
+| `src/app/marketplace/loading.tsx` | NEW - Loading skeleton for sidebar layout |
+| `src/app/marketplace/dashboard/SellerDashboardClient.tsx` | Added URL tab sync |
+
+---
+
+## Phase: 27 - Marketplace Phase 7: Seller Dashboard V2 (COMPLETE)
+
+Built unified seller dashboard with sidebar layout (Faire-inspired).
+
+### Phase 7: Seller Dashboard V2 (2025-12-30) ✅
+- **Sidebar Layout** - Fixed sidebar with navigation, scrollable main content
+- **Horizontal Stats Bar** - Compact stat chips at top of content area
+- **Sidebar Navigation** - Listings, Offers, Sales, Messages tabs
+- **Quick Actions Footer** - Earnings, rating, trust level in sidebar footer
+- **URL Tab Sync** - `?tab=` parameter for deep linking to specific tabs
+- **Action Required Section** - Priority-sorted items with inline accept/decline
+- **Tabbed Content** - Quick access to listings, offers, and sales
+- **Stripe Onboarding Banner** - Prompts to complete payment setup
+- **Mobile Responsive** - Drawer overlay on mobile, collapsed on tablet, full on desktop
+
+### Dashboard Layout
+```
++------------------+------------------------------------------------+
+|  SIDEBAR (240px) |  MAIN CONTENT                                  |
+|                  |                                                |
+|  [Dashboard]     |  HORIZONTAL STATS BAR                          |
+|                  |  [Active] [Offers] [Action] [Messages]         |
+|  NAVIGATION      |                                                |
+|  > Listings      |  STRIPE BANNER (if needed)                     |
+|  > Offers        |                                                |
+|  > Sales         |  ACTION REQUIRED SECTION                       |
+|  > Messages      |                                                |
+|                  |  TABBED CONTENT                                |
+|  QUICK ACTIONS   |  [Listings | Offers | Sales]                   |
+|  $1,234 earned   |                                                |
+|  4.8★ rating     |  [Content Grid]                                |
+|  [+ New Listing] |                                                |
++------------------+------------------------------------------------+
+```
+
+### New Route (Phase 7)
+| Route | Purpose |
+|-------|---------|
+| `/marketplace/dashboard` | Unified seller dashboard |
+| `/marketplace/dashboard?tab=listings` | Deep link to listings tab |
+| `/marketplace/dashboard?tab=offers` | Deep link to offers tab |
+| `/marketplace/dashboard?tab=sales` | Deep link to sales tab |
+| `/marketplace/dashboard?tab=messages` | Deep link to messages tab |
+
+### New Components (Phase 7)
+```
+src/components/marketplace/dashboard/
+├── DashboardSidebar.tsx        # Sidebar container with nav + footer
+├── SidebarNav.tsx              # Tab navigation (listings/offers/sales/messages)
+├── SidebarQuickActions.tsx     # Earnings, rating, trust level, new listing button
+├── HorizontalStats.tsx         # Compact stat chips for top of content
+├── MobileMenuTrigger.tsx       # Hamburger button with action badge
+├── StripeOnboardingBanner.tsx  # Payment setup prompt
+├── ActionRequiredItem.tsx      # Single action item with CTA
+├── ActionRequiredSection.tsx   # Priority items section
+├── DashboardTabs.tsx           # Tabbed listings/offers/sales content
+├── DashboardStatCard.tsx       # Legacy stat card (kept for compatibility)
+├── DashboardStatsGrid.tsx      # Legacy 6-card grid (kept for compatibility)
+├── QuickActionsPanel.tsx       # Legacy nav shortcuts (kept for compatibility)
+└── index.ts                    # Barrel exports
+```
+
+### New Files (Phase 7)
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/dashboard-queries.ts` | Consolidated dashboard data fetch |
+| `src/app/marketplace/dashboard/page.tsx` | Server component |
+| `src/app/marketplace/dashboard/SellerDashboardClient.tsx` | Client component |
+| `src/app/marketplace/dashboard/loading.tsx` | Loading skeleton |
+| `src/types/marketplace.ts` | Added dashboard types |
+
+---
 
 ## Phase: 26 - Marketplace Phase 6: Discovery & Alerts (COMPLETE)
 
@@ -639,7 +743,7 @@ Modern Airbnb-inspired card-based layout:
 - **Game Reviews** - Write reviews on games (requires game on shelf), aggregate ratings on game pages
 - **Game Recommendation Engine** - Smart wizard at `/recommend` with personalized game suggestions
 - **Games Page Filter V2** - Collapsible sidebar rail, horizontal filter bar, dynamic grid columns
-- **Marketplace Phase 1-6** - Full marketplace with listings, messaging, offers, Stripe payments, seller reputation, saved searches, and wishlist alerts
+- **Marketplace Phase 1-8** - Full marketplace with listings, messaging, offers, Stripe payments, seller reputation, saved searches, wishlist alerts, seller dashboard V2 (sidebar layout), and unified browse/dashboard UI
 
 ### Environments & Branches
 
@@ -704,6 +808,33 @@ See `QUICK-REFERENCE.md` for full environment/URL/Supabase reference.
 | "You Might Also Like" on listing detail | ✅ |
 | Verified seller badges | ✅ |
 | Trust level badges (new/established/trusted/top_seller) | ✅ |
+
+### Marketplace Phase 7: Seller Dashboard V2
+| Feature | Status |
+|---------|--------|
+| Unified dashboard at `/marketplace/dashboard` | ✅ |
+| Sidebar layout (Faire-inspired) | ✅ |
+| Sidebar navigation (listings/offers/sales/messages) | ✅ |
+| Horizontal stats bar at top of content | ✅ |
+| Quick actions in sidebar footer (earnings, rating) | ✅ |
+| URL tab sync (`?tab=` parameter) | ✅ |
+| Action required section with priority sorting | ✅ |
+| Inline offer accept/decline | ✅ |
+| Tabbed content (listings/offers/sales) | ✅ |
+| Stripe onboarding banner | ✅ |
+| Mobile drawer overlay | ✅ |
+| Loading skeleton | ✅ |
+
+### Marketplace Phase 8: UI/UX Unification
+| Feature | Status |
+|---------|--------|
+| Marketplace page sidebar layout | ✅ |
+| MarketplaceSidebar component | ✅ |
+| Embedded filter mode | ✅ |
+| Quick links to dashboard tabs | ✅ |
+| Dashboard deep linking (`?tab=`) | ✅ |
+| Mobile header with filter badge | ✅ |
+| Loading skeleton for sidebar layout | ✅ |
 
 ### Game Recommendation Engine (Phase 17)
 | Feature | Status |
@@ -1123,6 +1254,20 @@ git push origin develop  # Deploy to staging
 | `src/components/marketplace/discovery/WishlistAlertToggle.tsx` | Wishlist alert config |
 | `src/components/marketplace/discovery/SimilarListings.tsx` | Similar listings grid |
 | `src/components/marketplace/discovery/VerifiedSellerBadge.tsx` | Trust level badge |
+| `src/lib/supabase/dashboard-queries.ts` | Dashboard data consolidation |
+| `src/app/marketplace/dashboard/page.tsx` | Seller dashboard page |
+| `src/app/marketplace/dashboard/SellerDashboardClient.tsx` | Dashboard client with URL tab sync |
+| `src/app/marketplace/dashboard/loading.tsx` | Dashboard loading skeleton |
+| `src/components/marketplace/MarketplaceSidebar.tsx` | Browse page sidebar wrapper |
+| `src/app/marketplace/MarketplacePageClient.tsx` | Browse page with sidebar layout |
+| `src/app/marketplace/loading.tsx` | Browse page loading skeleton |
+| `src/components/marketplace/dashboard/DashboardSidebar.tsx` | Dashboard sidebar container |
+| `src/components/marketplace/dashboard/SidebarNav.tsx` | Dashboard tab navigation |
+| `src/components/marketplace/dashboard/SidebarQuickActions.tsx` | Earnings, rating, trust level |
+| `src/components/marketplace/dashboard/HorizontalStats.tsx` | Compact stat chips |
+| `src/components/marketplace/dashboard/MobileMenuTrigger.tsx` | Mobile hamburger with badge |
+| `src/components/marketplace/dashboard/ActionRequiredSection.tsx` | Priority items |
+| `src/components/marketplace/dashboard/DashboardTabs.tsx` | Tabbed content |
 
 ---
 

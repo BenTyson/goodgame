@@ -46,6 +46,8 @@ interface MarketplaceFilterSidebarProps {
   onFiltersChange: (filters: MarketplaceFilters) => void
   onClearAll: () => void
   className?: string
+  /** When true, renders without outer wrapper for embedding in MarketplaceSidebar */
+  embedded?: boolean
 }
 
 const STORAGE_KEY = 'marketplace-filter-sections'
@@ -56,6 +58,7 @@ export function MarketplaceFilterSidebar({
   onFiltersChange,
   onClearAll,
   className,
+  embedded = false,
 }: MarketplaceFilterSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useLocalStorage('marketplace-sidebar-collapsed', false)
   const [openSections, setOpenSections] = useLocalStorage<string[]>(
@@ -117,6 +120,144 @@ export function MarketplaceFilterSidebar({
     filters.shippingPreferences.length +
     (filters.priceMin !== null || filters.priceMax !== null ? 1 : 0)
 
+  // Filter sections content - shared between embedded and standalone modes
+  const filterSections = (
+    <>
+      {/* Listing Type */}
+      <FilterSection
+        title="Listing Type"
+        icon={Tag}
+        isOpen={openSections.includes('listingType')}
+        onToggle={() => toggleSection('listingType')}
+        activeCount={filters.listingTypes.length}
+      >
+        <div className="space-y-2">
+          {LISTING_TYPE_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Checkbox
+                checked={filters.listingTypes.includes(option.value)}
+                onCheckedChange={() => handleListingTypeToggle(option.value)}
+              />
+              <option.icon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Condition */}
+      <FilterSection
+        title="Condition"
+        icon={Package}
+        isOpen={openSections.includes('condition')}
+        onToggle={() => toggleSection('condition')}
+        activeCount={filters.conditions.length}
+      >
+        <div className="space-y-2">
+          {CONDITION_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Checkbox
+                checked={filters.conditions.includes(option.value)}
+                onCheckedChange={() => handleConditionToggle(option.value)}
+              />
+              <span className="text-sm">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Price Range */}
+      <FilterSection
+        title="Price"
+        icon={DollarSign}
+        isOpen={openSections.includes('price')}
+        onToggle={() => toggleSection('price')}
+        activeCount={filters.priceMin !== null || filters.priceMax !== null ? 1 : 0}
+      >
+        <div className="space-y-4 pt-1">
+          <Slider
+            min={0}
+            max={500}
+            step={5}
+            value={localPriceRange}
+            onValueChange={(value) => setLocalPriceRange(value as [number, number])}
+            onValueCommit={(value) => handlePriceCommit(value as [number, number])}
+            className="w-full"
+          />
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>${localPriceRange[0]}</span>
+            <span>{localPriceRange[1] >= 500 ? '$500+' : `$${localPriceRange[1]}`}</span>
+          </div>
+        </div>
+      </FilterSection>
+
+      {/* Shipping Preference */}
+      <FilterSection
+        title="Shipping"
+        icon={Truck}
+        isOpen={openSections.includes('shipping')}
+        onToggle={() => toggleSection('shipping')}
+        activeCount={filters.shippingPreferences.length}
+      >
+        <div className="space-y-2">
+          {SHIPPING_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Checkbox
+                checked={filters.shippingPreferences.includes(option.value)}
+                onCheckedChange={() => handleShippingToggle(option.value)}
+              />
+              <option.icon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+    </>
+  )
+
+  // Embedded mode: just render filter sections with header
+  if (embedded) {
+    return (
+      <div className={cn('space-y-1', className)}>
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-2 py-1 mb-2">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Filters
+            </span>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </div>
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearAll}
+              className="h-6 px-2 text-xs"
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+        {filterSections}
+      </div>
+    )
+  }
+
+  // Standalone collapsed mode
   if (isCollapsed) {
     return (
       <aside className={cn('sticky top-20 w-14', className)}>
@@ -143,6 +284,7 @@ export function MarketplaceFilterSidebar({
     )
   }
 
+  // Standalone expanded mode
   return (
     <aside
       className={cn(
@@ -187,104 +329,7 @@ export function MarketplaceFilterSidebar({
 
         {/* Filter sections */}
         <div className="p-2 space-y-1">
-          {/* Listing Type */}
-          <FilterSection
-            title="Listing Type"
-            icon={Tag}
-            isOpen={openSections.includes('listingType')}
-            onToggle={() => toggleSection('listingType')}
-            activeCount={filters.listingTypes.length}
-          >
-            <div className="space-y-2">
-              {LISTING_TYPE_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <Checkbox
-                    checked={filters.listingTypes.includes(option.value)}
-                    onCheckedChange={() => handleListingTypeToggle(option.value)}
-                  />
-                  <option.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
-            </div>
-          </FilterSection>
-
-          {/* Condition */}
-          <FilterSection
-            title="Condition"
-            icon={Package}
-            isOpen={openSections.includes('condition')}
-            onToggle={() => toggleSection('condition')}
-            activeCount={filters.conditions.length}
-          >
-            <div className="space-y-2">
-              {CONDITION_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <Checkbox
-                    checked={filters.conditions.includes(option.value)}
-                    onCheckedChange={() => handleConditionToggle(option.value)}
-                  />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
-            </div>
-          </FilterSection>
-
-          {/* Price Range */}
-          <FilterSection
-            title="Price"
-            icon={DollarSign}
-            isOpen={openSections.includes('price')}
-            onToggle={() => toggleSection('price')}
-            activeCount={filters.priceMin !== null || filters.priceMax !== null ? 1 : 0}
-          >
-            <div className="space-y-4 pt-1">
-              <Slider
-                min={0}
-                max={500}
-                step={5}
-                value={localPriceRange}
-                onValueChange={(value) => setLocalPriceRange(value as [number, number])}
-                onValueCommit={(value) => handlePriceCommit(value as [number, number])}
-                className="w-full"
-              />
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>${localPriceRange[0]}</span>
-                <span>{localPriceRange[1] >= 500 ? '$500+' : `$${localPriceRange[1]}`}</span>
-              </div>
-            </div>
-          </FilterSection>
-
-          {/* Shipping Preference */}
-          <FilterSection
-            title="Shipping"
-            icon={Truck}
-            isOpen={openSections.includes('shipping')}
-            onToggle={() => toggleSection('shipping')}
-            activeCount={filters.shippingPreferences.length}
-          >
-            <div className="space-y-2">
-              {SHIPPING_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <Checkbox
-                    checked={filters.shippingPreferences.includes(option.value)}
-                    onCheckedChange={() => handleShippingToggle(option.value)}
-                  />
-                  <option.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
-            </div>
-          </FilterSection>
+          {filterSections}
         </div>
       </div>
     </aside>

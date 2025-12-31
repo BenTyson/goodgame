@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, Store, Bell } from 'lucide-react'
+import { Plus, Search, Store, Bell, Menu } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import {
   ListingGrid,
   MarketplaceFilterSidebar,
   MobileMarketplaceFilters,
+  MarketplaceSidebar,
   useMarketplaceSidebarCollapsed,
   type MarketplaceFilters,
 } from '@/components/marketplace'
@@ -35,6 +36,7 @@ export function MarketplacePageClient({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [sidebarCollapsed] = useMarketplaceSidebarCollapsed()
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
   // Parse URL params
   const parseArrayParam = <T extends string>(key: string): T[] => {
@@ -158,93 +160,104 @@ export function MarketplacePageClient({
 
   const savedSet = new Set(savedListingIds)
 
+  // Count active filters for mobile badge
+  const activeFilterCount =
+    filters.listingTypes.length +
+    filters.conditions.length +
+    filters.shippingPreferences.length +
+    (filters.priceMin !== null || filters.priceMax !== null ? 1 : 0)
+
   return (
-    <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8 md:py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl flex items-center gap-3">
-              <Store className="h-8 w-8 text-primary" />
-              Marketplace
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              Buy, sell, and trade board games with the community
-            </p>
-          </div>
-          {isAuthenticated && (
-            <Button asChild size="lg" className="gap-2">
-              <Link href="/marketplace/listings/new">
-                <Plus className="h-5 w-5" />
-                Create Listing
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search games..."
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className="pl-10 pr-4"
-          />
-        </div>
-      </form>
-
-      {/* Mobile Filters */}
-      <div className="mb-6">
-        <MobileMarketplaceFilters
-          filters={filters}
-          onFiltersChange={updateFilters}
-          onClearAll={handleClearAll}
-          resultsCount={listings.length}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex gap-6">
-        {/* Sidebar - Desktop Only */}
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      <MarketplaceSidebar
+        filters={filters}
+        onFiltersChange={updateFilters}
+        onClearAll={handleClearAll}
+        isAuthenticated={isAuthenticated}
+        isMobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      >
+        {/* Filter content inside sidebar */}
         <MarketplaceFilterSidebar
           filters={filters}
           onFiltersChange={updateFilters}
           onClearAll={handleClearAll}
-          className="hidden lg:block shrink-0"
+          embedded
         />
+      </MarketplaceSidebar>
 
-        {/* Listings Grid */}
-        <main className="flex-1 min-w-0">
-          <div className="mb-4 flex items-center justify-between">
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 overflow-auto">
+        {/* Mobile Header */}
+        <div className="lg:hidden sticky top-0 z-30 bg-background border-b px-4 py-3 flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setMobileMenuOpen(true)}
+            className="relative"
+          >
+            <Menu className="h-5 w-5" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-medium rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          <h1 className="text-lg font-semibold">Marketplace</h1>
+        </div>
+
+        <div className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="mb-4">
+            <div className="relative max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search games..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="pl-10 pr-4"
+              />
+            </div>
+          </form>
+
+          {/* Results Bar */}
+          <div className="mb-4 flex items-center justify-between border-b pb-4">
             <p className="text-sm text-muted-foreground">
               {hasFilters || searchQuery
                 ? `${listings.length} listings match your criteria`
                 : `Showing all ${totalCount} listings`}
             </p>
             <div className="flex items-center gap-2">
-              {/* Save Search Button - only show when filters are applied */}
               <SaveSearchButton
                 filters={savedSearchFilters}
                 isLoggedIn={isAuthenticated}
                 onSave={handleSaveSearch}
                 onLoginRequired={handleLoginRequired}
               />
-              {/* Link to saved searches */}
               {isAuthenticated && (
-                <Button variant="ghost" size="sm" asChild className="gap-2">
+                <Button variant="ghost" size="sm" asChild className="gap-2 hidden sm:flex">
                   <Link href="/marketplace/saved-searches">
                     <Bell className="h-4 w-4" />
-                    <span className="hidden sm:inline">Saved Searches</span>
+                    Saved Searches
                   </Link>
                 </Button>
               )}
             </div>
           </div>
 
+          {/* Mobile Filters (Sheet) */}
+          <div className="lg:hidden mb-4">
+            <MobileMarketplaceFilters
+              filters={filters}
+              onFiltersChange={updateFilters}
+              onClearAll={handleClearAll}
+              resultsCount={listings.length}
+            />
+          </div>
+
+          {/* Listings Grid */}
           {listings.length > 0 ? (
             <ListingGrid
               listings={listings}
@@ -259,8 +272,8 @@ export function MarketplacePageClient({
               onClearFilters={handleClearAll}
             />
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

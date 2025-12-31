@@ -12,6 +12,9 @@ export {
   type MarketplaceFilters,
 } from './filters'
 
+// Sidebar
+export { MarketplaceSidebar } from './MarketplaceSidebar'
+
 // Forms
 export { GameSelector, ListingDetailsForm, PricingForm, ListingImageUpload } from './forms'
 

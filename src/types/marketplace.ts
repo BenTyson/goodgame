@@ -1245,3 +1245,82 @@ export const ALERT_STATUS_INFO: Record<AlertStatus, { label: string; color: stri
   paused: { label: 'Paused', color: 'bg-yellow-500' },
   expired: { label: 'Expired', color: 'bg-gray-400' },
 }
+
+// ===========================================
+// SELLER DASHBOARD TYPES (PHASE 7)
+// ===========================================
+
+/**
+ * Action required item types
+ */
+export type ActionRequiredType =
+  | 'offer_pending'
+  | 'transaction_ship'
+  | 'feedback_pending'
+  | 'listing_expiring'
+
+/**
+ * Action urgency levels
+ */
+export type ActionUrgency = 'high' | 'medium' | 'low'
+
+/**
+ * Action required item for dashboard
+ */
+export interface ActionRequiredItem {
+  type: ActionRequiredType
+  id: string
+  title: string
+  subtitle: string
+  urgency: ActionUrgency
+  expiresAt?: string
+  ctaLabel: string
+  ctaHref: string
+  // Extra data for inline actions
+  offerId?: string
+  transactionId?: string
+  listingId?: string
+  gameImage?: string | null
+  otherUserName?: string | null
+  otherUserAvatar?: string | null
+  amountCents?: number | null
+}
+
+/**
+ * Dashboard stats for seller overview
+ */
+export interface SellerDashboardStats {
+  activeListings: number
+  pendingOffers: number
+  actionRequired: number
+  unreadMessages: number
+  totalEarningsCents: number
+  rating: number | null
+  feedbackCount: number
+  trustLevel: TrustLevel
+  totalSales: number
+}
+
+/**
+ * Stripe onboarding status for dashboard
+ */
+export interface DashboardStripeStatus {
+  connected: boolean
+  onboardingComplete: boolean
+  chargesEnabled: boolean
+  payoutsEnabled: boolean
+  requiresAction: boolean
+}
+
+/**
+ * Complete seller dashboard data
+ */
+export interface SellerDashboardData {
+  stats: SellerDashboardStats
+  stripeStatus: DashboardStripeStatus
+  actionItems: ActionRequiredItem[]
+  // Recent data for tabs (pre-loaded)
+  recentOffers: OfferCardData[]
+  recentTransactions: TransactionCardData[]
+  listings: ListingCardData[]
+}
