@@ -9,15 +9,20 @@ import {
   FileEdit,
   Clock,
   Search,
-  Gamepad2
+  Gamepad2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
-async function getGames(filter?: string, search?: string) {
+const ITEMS_PER_PAGE = 60
+
+async function getGames(filter?: string, search?: string, page: number = 1) {
   const supabase = createAdminClient()
+  const offset = (page - 1) * ITEMS_PER_PAGE
 
   let query = supabase
     .from('games')
-    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max, thumbnail_url, tagline')
+    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max, thumbnail_url, tagline', { count: 'exact' })
     .order('name', { ascending: true })
 
   if (filter === 'published') {
@@ -25,32 +30,83 @@ async function getGames(filter?: string, search?: string) {
   } else if (filter === 'draft') {
     query = query.eq('is_published', false).eq('content_status', 'draft')
   } else if (filter === 'pending') {
-    query = query.eq('is_published', false).eq('content_status', 'none')
+    query = query.eq('is_published', false).or('content_status.is.null,content_status.eq.none')
+  } else if (filter === 'unpublished') {
+    query = query.eq('is_published', false)
   }
 
   if (search) {
     query = query.ilike('name', `%${search}%`)
   }
 
-  const { data: games } = await query.limit(100)
+  query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
 
-  return games || []
+  const { data: games, count } = await query
+
+  return {
+    games: games || [],
+    total: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / ITEMS_PER_PAGE),
+  }
+}
+
+async function getGameCounts() {
+  const supabase = createAdminClient()
+
+  const [
+    { count: total },
+    { count: published },
+    { count: unpublished },
+    { count: draft },
+    { count: pending },
+  ] = await Promise.all([
+    supabase.from('games').select('*', { count: 'exact', head: true }),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', true),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).eq('content_status', 'draft'),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).or('content_status.is.null,content_status.eq.none'),
+  ])
+
+  return {
+    total: total || 0,
+    published: published || 0,
+    unpublished: unpublished || 0,
+    draft: draft || 0,
+    pending: pending || 0,
+  }
 }
 
 export default async function AdminGamesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; q?: string }>
+  searchParams: Promise<{ filter?: string; q?: string; page?: string }>
 }) {
-  const { filter, q } = await searchParams
-  const games = await getGames(filter, q)
+  const { filter, q, page: pageParam } = await searchParams
+  const page = pageParam ? parseInt(pageParam) : 1
+
+  const [{ games, total, totalPages }, counts] = await Promise.all([
+    getGames(filter, q, page),
+    getGameCounts(),
+  ])
 
   const filters = [
-    { label: 'All', value: undefined, icon: Gamepad2, count: null },
-    { label: 'Published', value: 'published', icon: CheckCircle2, color: 'text-green-500' },
-    { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500' },
-    { label: 'Pending', value: 'pending', icon: Clock, color: 'text-gray-500' },
+    { label: 'All', value: undefined, icon: Gamepad2, count: counts.total },
+    { label: 'Published', value: 'published', icon: CheckCircle2, color: 'text-green-500', count: counts.published },
+    { label: 'Unpublished', value: 'unpublished', icon: Clock, color: 'text-orange-500', count: counts.unpublished },
+    { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500', count: counts.draft },
+    { label: 'Pending', value: 'pending', icon: Clock, color: 'text-gray-500', count: counts.pending },
   ]
+
+  // Build pagination URL helper
+  const buildPageUrl = (newPage: number) => {
+    const params = new URLSearchParams()
+    if (filter) params.set('filter', filter)
+    if (q) params.set('q', q)
+    if (newPage > 1) params.set('page', newPage.toString())
+    const qs = params.toString()
+    return `/admin/games${qs ? `?${qs}` : ''}`
+  }
 
   const getStatusBadge = (game: typeof games[0]) => {
     if (game.is_published) {
@@ -88,7 +144,7 @@ export default async function AdminGamesPage({
           </p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold">{games.length}</div>
+          <div className="text-3xl font-bold">{total}</div>
           <div className="text-sm text-muted-foreground">
             {filter ? `${filter} games` : 'total games'}
           </div>
@@ -111,7 +167,7 @@ export default async function AdminGamesPage({
                   className="gap-1.5"
                 >
                   {f.icon && <f.icon className={`h-3.5 w-3.5 ${!isActive && f.color ? f.color : ''}`} />}
-                  {f.label}
+                  {f.label} ({f.count})
                 </Button>
               </Link>
             )
@@ -130,6 +186,30 @@ export default async function AdminGamesPage({
           </div>
         </form>
       </div>
+
+      {/* Pagination Top */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, total)} of {total} games
+          </p>
+          <div className="flex items-center gap-2">
+            <Link href={buildPageUrl(Math.max(1, page - 1))}>
+              <Button variant="outline" size="sm" disabled={page <= 1}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Link href={buildPageUrl(Math.min(totalPages, page + 1))}>
+              <Button variant="outline" size="sm" disabled={page >= totalPages}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Games Grid */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -163,6 +243,50 @@ export default async function AdminGamesPage({
           </Link>
         ))}
       </div>
+
+      {/* Pagination Bottom */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 pt-4 border-t">
+          <Link href={buildPageUrl(Math.max(1, page - 1))}>
+            <Button variant="outline" size="sm" disabled={page <= 1}>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+          </Link>
+          <div className="flex items-center gap-1">
+            {/* Show page numbers */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum: number
+              if (totalPages <= 5) {
+                pageNum = i + 1
+              } else if (page <= 3) {
+                pageNum = i + 1
+              } else if (page >= totalPages - 2) {
+                pageNum = totalPages - 4 + i
+              } else {
+                pageNum = page - 2 + i
+              }
+              return (
+                <Link key={pageNum} href={buildPageUrl(pageNum)}>
+                  <Button
+                    variant={page === pageNum ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                </Link>
+              )
+            })}
+          </div>
+          <Link href={buildPageUrl(Math.min(totalPages, page + 1))}>
+            <Button variant="outline" size="sm" disabled={page >= totalPages}>
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Empty State */}
       {games.length === 0 && (

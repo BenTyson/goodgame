@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { cookies, headers } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import { LayoutDashboard, Gamepad2, ListTodo, ArrowLeft, Dice5, Users2, Building2, Tags } from 'lucide-react'
+import { LayoutDashboard, Gamepad2, ListTodo, ArrowLeft, Dice5, Users2, Building2, Tags, Globe } from 'lucide-react'
 import { LogoutButton } from '@/components/admin/LogoutButton'
 import type { Database } from '@/types/supabase'
 
@@ -13,6 +13,7 @@ const adminNav = [
   { name: 'Families', href: '/admin/families', icon: Users2, exact: false },
   { name: 'Publishers', href: '/admin/publishers', icon: Building2, exact: false },
   { name: 'Queue', href: '/admin/queue', icon: ListTodo, exact: false },
+  { name: 'Wikidata', href: '/admin/wikidata', icon: Globe, exact: false },
 ]
 
 async function getUser() {

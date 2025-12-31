@@ -69,7 +69,11 @@ export const mockCategories: Category[] = [
   },
 ]
 
-type GameWithCategories = GameRow & {
+// Mock games can omit the newer tracking fields
+type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id'> & {
+  data_source?: string | null
+  field_sources?: Record<string, unknown> | null
+  wikidata_id?: string | null
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

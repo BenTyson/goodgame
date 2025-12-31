@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1026,9 +1001,11 @@ export type Database = {
           content_status: string | null
           content_version: number | null
           created_at: string | null
+          data_source: Database["public"]["Enums"]["data_source"] | null
           description: string | null
           designers: string[] | null
           family_id: string | null
+          field_sources: Json | null
           fts: unknown
           has_reference: boolean | null
           has_rules: boolean | null
@@ -1062,6 +1039,7 @@ export type Database = {
           thumbnail_url: string | null
           updated_at: string | null
           weight: number | null
+          wikidata_id: string | null
           year_published: number | null
         }
         Insert: {
@@ -1078,9 +1056,11 @@ export type Database = {
           content_status?: string | null
           content_version?: number | null
           created_at?: string | null
+          data_source?: Database["public"]["Enums"]["data_source"] | null
           description?: string | null
           designers?: string[] | null
           family_id?: string | null
+          field_sources?: Json | null
           fts?: unknown
           has_reference?: boolean | null
           has_rules?: boolean | null
@@ -1114,6 +1094,7 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string | null
           weight?: number | null
+          wikidata_id?: string | null
           year_published?: number | null
         }
         Update: {
@@ -1130,9 +1111,11 @@ export type Database = {
           content_status?: string | null
           content_version?: number | null
           created_at?: string | null
+          data_source?: Database["public"]["Enums"]["data_source"] | null
           description?: string | null
           designers?: string[] | null
           family_id?: string | null
+          field_sources?: Json | null
           fts?: unknown
           has_reference?: boolean | null
           has_rules?: boolean | null
@@ -1166,6 +1149,7 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string | null
           weight?: number | null
+          wikidata_id?: string | null
           year_published?: number | null
         }
         Relationships: [
@@ -3364,9 +3348,11 @@ export type Database = {
           content_status: string | null
           content_version: number | null
           created_at: string | null
+          data_source: Database["public"]["Enums"]["data_source"] | null
           description: string | null
           designers: string[] | null
           family_id: string | null
+          field_sources: Json | null
           fts: unknown
           has_reference: boolean | null
           has_rules: boolean | null
@@ -3400,6 +3386,7 @@ export type Database = {
           thumbnail_url: string | null
           updated_at: string | null
           weight: number | null
+          wikidata_id: string | null
           year_published: number | null
         }[]
         SetofOptions: {
@@ -3563,6 +3550,14 @@ export type Database = {
         | "listing_traded"
       alert_frequency: "instant" | "daily" | "weekly"
       alert_status: "active" | "paused" | "expired"
+      data_source:
+        | "legacy_bgg"
+        | "wikidata"
+        | "rulebook"
+        | "publisher"
+        | "community"
+        | "manual"
+        | "seed"
       feedback_role: "buyer" | "seller"
       game_condition:
         | "new_sealed"
@@ -3748,9 +3743,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_type: [
@@ -3766,6 +3758,15 @@ export const Constants = {
       ],
       alert_frequency: ["instant", "daily", "weekly"],
       alert_status: ["active", "paused", "expired"],
+      data_source: [
+        "legacy_bgg",
+        "wikidata",
+        "rulebook",
+        "publisher",
+        "community",
+        "manual",
+        "seed",
+      ],
       feedback_role: ["buyer", "seller"],
       game_condition: [
         "new_sealed",

@@ -88,6 +88,31 @@ export type BGGTagAlias = {
 export type BGGTagAliasInsert = Omit<BGGTagAlias, 'id' | 'created_at'> & { id?: string }
 export type BGGTagAliasUpdate = Partial<BGGTagAliasInsert>
 
+// Data Source types (for tracking game data provenance)
+export type DataSource =
+  | 'legacy_bgg'   // Original BGG imports (pre-strategy)
+  | 'wikidata'     // Wikidata SPARQL import (CC0 licensed)
+  | 'rulebook'     // Parsed from publisher rulebook PDFs
+  | 'publisher'    // Direct from publisher partnership
+  | 'community'    // User-contributed data
+  | 'manual'       // Manually entered by admin
+  | 'seed'         // Seed data import (factual data extraction)
+
+// Field-level provenance tracking
+export interface FieldSources {
+  name?: DataSource
+  year_published?: DataSource
+  player_count_min?: DataSource
+  player_count_max?: DataSource
+  play_time_min?: DataSource
+  play_time_max?: DataSource
+  description?: DataSource
+  weight?: DataSource | 'bncs' // Board Nomads Complexity Score
+  designers?: DataSource
+  publisher?: DataSource
+  [key: string]: DataSource | 'bncs' | undefined
+}
+
 export type Collection = Database['public']['Tables']['collections']['Row']
 export type CollectionInsert = Database['public']['Tables']['collections']['Insert']
 export type CollectionUpdate = Database['public']['Tables']['collections']['Update']

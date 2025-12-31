@@ -1,6 +1,57 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Marketplace Sidebar Unification - COMPLETE)
+> Last Updated: 2025-12-31 (Legal Data Sourcing Phase 1 - COMPLETE)
+
+## Phase: 29 - Legal Data Sourcing Strategy (IN PROGRESS)
+
+Building a legally defensible data pipeline to compete with BGG without scraping copyrighted content.
+
+### Phase 1: Seed Data Import (2025-12-31) ✅
+- **688 games imported** from `data/seed-games.json` into database
+- Games imported as `is_published: false` (admin queue only)
+- Content status set to `none` (needs enrichment)
+- Data source tracked as `data_source: 'seed'`
+- Image URLs stored as reference in `bgg_raw_data` (NOT displayed)
+- Designers and publishers linked via junction tables
+
+### Admin Queue Redesign (2025-12-31) ✅
+- **Repurposed `/admin/queue`** as master content pipeline
+- Shows all unpublished games from `games` table (not old `import_queue`)
+- Summary cards: Content Status, Data Source, Image Status, Total
+- Filters: Status, Source, Images
+- Pagination: 50 items per page with accurate counts
+
+### Admin Games Pagination Fix (2025-12-31) ✅
+- **Fixed `/admin/games`** pagination (was limited to 100)
+- Now shows 60 items per page with proper pagination
+- Accurate filter counts using Supabase count queries
+- Page number navigation (1-5 visible with smart windowing)
+
+### New Files Created
+| File | Purpose |
+|------|---------|
+| `data/seed-games.json` | 688 games with factual data (names, players, time, designers) |
+| `scripts/import-seed-games.ts` | Import script for seed data |
+
+### Database Updates
+- Added `'seed'` to `data_source` enum
+- Regenerated Supabase types (`src/types/supabase.ts`)
+
+### Legal Data Strategy (See Plan File)
+Full strategy documented in `~/.claude/plans/kind-prancing-reef.md`:
+- **Wikidata** (CC0 licensed) as foundation layer
+- **Publisher rulebook PDFs** for original content
+- **Publisher partnerships** for official data
+- **Board Nomads Complexity Score (BNCS)** - AI-generated from rulebooks (differentiator)
+- **BGG Collection Import** - User data portability feature
+
+### Phase 2: Publisher & Rulebook Pipeline (NEXT)
+- Create rulebook parser (`src/lib/rulebook/parser.ts`)
+- PDF text extraction + AI content generation
+- Publisher outreach templates
+- BNCS complexity scoring system
+
+---
 
 ## Phase: 28 - Marketplace UI/UX Unification (COMPLETE)
 

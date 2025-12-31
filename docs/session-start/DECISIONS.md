@@ -83,6 +83,34 @@
 | Saved searches | Separate page (not dashboard tab) | Discovery feature, different context |
 | Mobile pattern | Hamburger drawer overlay | Consistent across browse/dashboard |
 
+## Legal Data Sourcing Strategy
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Primary data source | Wikidata (CC0) | Legally bulletproof, public domain |
+| Secondary source | Publisher rulebook PDFs | Primary sources, original parsing |
+| Tertiary source | Publisher partnerships | Official data with permission |
+| BGG data | **Never scrape** | ToS violation, legal risk |
+| BGG IDs | Keep for linking only | Cross-reference, "View on BGG" links |
+| Image strategy | Publisher partnerships + user uploads | No BGG image scraping |
+| Complexity score | **Board Nomads Complexity Score (BNCS)** | AI-generated from rulebooks (differentiator) |
+| User BGG data | Collection import via API | User-initiated, their own data |
+| Data provenance | Track per-game `data_source` field | Legal audit trail |
+| Seed data import | Factual data only (names, player counts, etc.) | Facts not copyrightable |
+
+### What's Safe to Use (Facts)
+- Game names, publication years
+- Player count, play time, minimum age
+- Designer/publisher/artist names
+- Category/mechanic concepts (not BGG's taxonomy)
+- Award winners (public record)
+
+### What's Proprietary to BGG (Avoid)
+- Weight/complexity scores (user-submitted)
+- Ratings and rankings
+- User-submitted descriptions
+- BGG's specific data structure
+
 ### Design History
 - ~~Dark mode with purple primary~~ - Removed (too harsh, brown/purple mix didn't work)
 - ~~Rainbow content type colors~~ - Removed (visual chaos, replaced with unified teal)

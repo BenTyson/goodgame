@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
         hostname: 'ndskcbuzsmrzgnvdbofd.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // Wikimedia Commons images (from Wikidata imports)
+      {
+        protocol: 'https',
+        hostname: 'commons.wikimedia.org',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/**',
+      },
     ],
   },
 };
