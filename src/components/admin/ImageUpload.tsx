@@ -4,9 +4,14 @@ import { useState, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Upload, X, Star, Loader2, ImageIcon } from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { GameImage } from '@/types/database'
+
+import { ImageCropper } from './ImageCropper'
+import { readFileAsDataURL, type ImageType } from '@/lib/utils/image-crop'
 
 interface ImageUploadProps {
   gameId: string
@@ -20,16 +25,32 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Cropper state
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
+  const [pendingFileName, setPendingFileName] = useState<string>('')
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [selectedImageType, setSelectedImageType] = useState<ImageType>('cover')
+
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const uploadFile = async (file: File): Promise<GameImage | null> => {
+  const uploadFile = async (file: File | Blob, imageType: ImageType, fileName?: string): Promise<GameImage | null> => {
     const formData = new FormData()
-    formData.append('file', file)
+
+    // If it's a Blob (from cropper), convert to File with name
+    if (file instanceof Blob && !(file instanceof File)) {
+      const extension = file.type.split('/')[1] || 'jpg'
+      const name = fileName || `cropped-image.${extension}`
+      formData.append('file', file, name)
+    } else {
+      formData.append('file', file)
+    }
+
     formData.append('gameId', gameId)
     formData.append('gameSlug', gameSlug)
+    formData.append('imageType', imageType)
 
     const response = await fetch('/api/admin/upload', {
       method: 'POST',
@@ -49,26 +70,38 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    setUploading(true)
+    // Take only the first file for cropping (multiple uploads come back through the modal)
+    const file = files[0]
+    e.target.value = '' // Reset input
+
     setError(null)
-    const newImages: GameImage[] = []
 
     try {
-      for (const file of Array.from(files)) {
-        const image = await uploadFile(file)
-        if (image) {
-          newImages.push(image)
-        }
-      }
+      const dataUrl = await readFileAsDataURL(file)
+      setPendingImage(dataUrl)
+      setPendingFileName(file.name)
+      setCropModalOpen(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to read file')
+    }
+  }
 
-      // The API handles setting is_primary and syncing to games table for first image
-      onImagesChange([...images, ...newImages])
+  const handleCropComplete = async (blob: Blob) => {
+    setUploading(true)
+    setError(null)
+
+    try {
+      const image = await uploadFile(blob, selectedImageType, pendingFileName)
+      if (image) {
+        onImagesChange([...images, image])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     }
 
     setUploading(false)
-    e.target.value = '' // Reset input
+    setPendingImage(null)
+    setPendingFileName('')
   }
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -80,26 +113,20 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     )
     if (files.length === 0) return
 
-    setUploading(true)
+    // Take only the first file for cropping
+    const file = files[0]
+
     setError(null)
-    const newImages: GameImage[] = []
 
     try {
-      for (const file of files) {
-        const image = await uploadFile(file)
-        if (image) {
-          newImages.push(image)
-        }
-      }
-
-      // The API handles setting is_primary and syncing to games table for first image
-      onImagesChange([...images, ...newImages])
+      const dataUrl = await readFileAsDataURL(file)
+      setPendingImage(dataUrl)
+      setPendingFileName(file.name)
+      setCropModalOpen(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
+      setError(err instanceof Error ? err.message : 'Failed to read file')
     }
-
-    setUploading(false)
-  }, [images, onImagesChange])
+  }, [])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -190,6 +217,38 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         </div>
       )}
 
+      {/* Image Type Selector */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Image Type</Label>
+        <RadioGroup
+          value={selectedImageType}
+          onValueChange={(value) => setSelectedImageType(value as ImageType)}
+          className="flex gap-6"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="cover" id="type-cover" />
+            <Label htmlFor="type-cover" className="cursor-pointer text-sm">
+              Cover (4:3)
+              <span className="block text-xs text-muted-foreground">Game cards & thumbnails</span>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="hero" id="type-hero" />
+            <Label htmlFor="type-hero" className="cursor-pointer text-sm">
+              Hero (16:9)
+              <span className="block text-xs text-muted-foreground">Banner images</span>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="gallery" id="type-gallery" />
+            <Label htmlFor="type-gallery" className="cursor-pointer text-sm">
+              Gallery
+              <span className="block text-xs text-muted-foreground">Any aspect ratio</span>
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
       {/* Upload Zone */}
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -204,7 +263,6 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
           onChange={handleFileChange}
           className="hidden"
           id="image-upload"
@@ -218,7 +276,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
               <Upload className="h-10 w-10 text-muted-foreground" />
             )}
             <p className="text-sm font-medium">
-              {uploading ? 'Uploading...' : 'Drop images here or click to upload'}
+              {uploading ? 'Uploading...' : 'Drop an image here or click to upload'}
             </p>
             <p className="text-xs text-muted-foreground">
               JPG, PNG, WebP, or GIF up to 5MB
@@ -242,6 +300,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
             />
             <div className="absolute top-2 right-2 flex gap-1">
               <Button
+                type="button"
                 variant="destructive"
                 size="icon"
                 className="h-8 w-8"
@@ -276,6 +335,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button
+                    type="button"
                     variant="secondary"
                     size="icon"
                     className="h-8 w-8"
@@ -285,6 +345,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
                     <Star className="h-4 w-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="destructive"
                     size="icon"
                     className="h-8 w-8"
@@ -306,6 +367,24 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           <p>No images uploaded yet</p>
           <p className="text-sm">Upload an image to get started</p>
         </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {pendingImage && (
+        <ImageCropper
+          image={pendingImage}
+          open={cropModalOpen}
+          onOpenChange={(open) => {
+            setCropModalOpen(open)
+            if (!open) {
+              setPendingImage(null)
+              setPendingFileName('')
+            }
+          }}
+          imageType={selectedImageType}
+          onCropComplete={handleCropComplete}
+          fileName={pendingFileName}
+        />
       )}
     </div>
   )

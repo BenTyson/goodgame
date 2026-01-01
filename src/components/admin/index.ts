@@ -8,6 +8,7 @@ export { GameRelationsEditor } from './GameRelationsEditor'
 
 // Upload components
 export { ImageUpload } from './ImageUpload'
+export { ImageCropper } from './ImageCropper'
 export { LogoUpload } from './LogoUpload'
 
 // UI components

@@ -8,6 +8,11 @@
 | Staging | https://goodgame-staging-staging.up.railway.app | Staging |
 | Production | https://boardnomads.com | Production |
 
+**Dashboards:**
+- Staging Supabase: https://supabase.com/dashboard/project/ndskcbuzsmrzgnvdbofd
+- Production Supabase: https://supabase.com/dashboard/project/jnaibnwxpweahpawxycf
+- Railway: https://railway.app/dashboard
+
 ## Commands
 
 ```bash
@@ -156,6 +161,8 @@ src/components/
 │   ├── AdminLayoutClient.tsx  # Client wrapper for mobile state management
 │   ├── GameEditor.tsx         # Game editor (uses tab components)
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
+│   ├── ImageUpload.tsx        # Image uploader with type selector + crop flow
+│   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
 │   ├── game-editor/           # GameEditor tab components
 │   │   ├── DetailsTab.tsx
 │   │   ├── ContentTab.tsx
@@ -233,7 +240,8 @@ src/lib/rulebook/              # Rulebook parsing and BNCS
   ├── prompts.ts               # AI prompts for extraction
   └── discovery.ts             # Publisher URL pattern matching
 src/lib/utils/
-  └── format.ts                # formatFileSize utility
+  ├── format.ts                # formatFileSize utility
+  └── image-crop.ts            # Canvas-based crop utility, aspect ratio presets
 src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
 src/lib/config/                # App configuration
@@ -352,15 +360,6 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 - **Shadow variables**: `--shadow-card`, `--shadow-card-hover`, `--shadow-glow-primary`
 - **Dark mode**: Warm charcoal (hue 55-70)
 - **Light mode**: Warm cream whites
-
-## URLs
-
-- **Local**: http://localhost:3399
-- **Staging**: https://goodgame-staging-staging.up.railway.app
-- **Production**: https://boardnomads.com
-- **Staging Supabase**: https://supabase.com/dashboard/project/ndskcbuzsmrzgnvdbofd
-- **Production Supabase**: https://supabase.com/dashboard/project/jnaibnwxpweahpawxycf
-- **Railway**: https://railway.app/dashboard
 
 ## Key App Routes
 

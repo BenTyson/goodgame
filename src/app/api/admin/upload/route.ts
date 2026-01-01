@@ -18,6 +18,13 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     const gameId = formData.get('gameId') as string
     const gameSlug = formData.get('gameSlug') as string
+    const imageType = (formData.get('imageType') as string) || 'gallery'
+
+    // Validate imageType
+    const validImageTypes = ['cover', 'hero', 'gallery']
+    if (!validImageTypes.includes(imageType)) {
+      return ApiErrors.validation(`Invalid imageType. Must be one of: ${validImageTypes.join(', ')}`)
+    }
 
     if (!file || !gameId || !gameSlug) {
       return ApiErrors.validation('Missing required fields')
@@ -62,7 +69,8 @@ export async function POST(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('game_id', gameId)
 
-    const isPrimary = count === 0
+    // Cover images are primary by default if no other images exist
+    const isPrimary = imageType === 'cover' && count === 0
 
     // Create database record
     const { data: imageRecord, error: dbError } = await adminClient
@@ -71,7 +79,7 @@ export async function POST(request: NextRequest) {
         game_id: gameId,
         url: publicUrl,
         storage_path: fileName,
-        image_type: 'gallery',
+        image_type: imageType,
         is_primary: isPrimary,
         display_order: count || 0,
         file_size: file.size
@@ -85,17 +93,29 @@ export async function POST(request: NextRequest) {
       return ApiErrors.database(dbError, { route: 'POST /api/admin/upload' })
     }
 
-    // If this is the first/primary image, sync to games table
-    if (isPrimary) {
+    // Sync to games table based on image type
+    if (imageType === 'cover') {
+      // Cover images go to box_image_url and thumbnail_url
+      const updateData: Record<string, string> = {
+        box_image_url: publicUrl,
+        thumbnail_url: publicUrl,
+      }
+      // If it's the first image, also set hero
+      if (isPrimary) {
+        updateData.hero_image_url = publicUrl
+      }
       await adminClient
         .from('games')
-        .update({
-          box_image_url: publicUrl,
-          hero_image_url: publicUrl,
-          thumbnail_url: publicUrl,
-        })
+        .update(updateData)
+        .eq('id', gameId)
+    } else if (imageType === 'hero') {
+      // Hero images only update hero_image_url
+      await adminClient
+        .from('games')
+        .update({ hero_image_url: publicUrl })
         .eq('id', gameId)
     }
+    // Gallery images don't sync to games table
 
     return NextResponse.json({ image: imageRecord })
   } catch (error) {

@@ -160,6 +160,27 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 43. `00043_marketplace_transactions.sql` - Transactions, Stripe Connect, payment flow
 44. `00044_marketplace_feedback.sql` - Feedback/reputation system
 45. `00045_marketplace_discovery.sql` - Saved searches, wishlist alerts, similar listings
+46. `00046_data_source_tracking.sql` - Data provenance (data_source enum, wikidata_id, field_sources)
+47. `00047_data_source_seed.sql` - Add 'seed' to data_source enum
+48. `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS scoring columns
+49. `00049_rulebook_parsed_text.sql` - Parsed text storage + latest_parse_log_id
+
+## Core Enums
+
+### data_source
+Data provenance tracking for legal compliance.
+
+| Value | Description |
+|-------|-------------|
+| `legacy_bgg` | Imported from BGG before legal review |
+| `wikidata` | Sourced from Wikidata (CC0 public domain) |
+| `rulebook` | Extracted from publisher rulebook PDF |
+| `publisher` | Official data from publisher partnership |
+| `community` | User-submitted data (moderated) |
+| `manual` | Admin-entered data |
+| `seed` | Bulk-imported factual seed data |
+
+---
 
 ## Marketplace Enums
 
@@ -307,6 +328,23 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | content_status | VARCHAR(20) | none, importing, draft, review, published |
 | priority | SMALLINT | Content priority (1-5) |
 | bgg_raw_data | JSONB | Raw BGG API response |
+| complexity_tier_id | UUID | FK to complexity_tiers (auto-assigned by weight) |
+| is_trending | BOOLEAN | Keytag: Trending Now |
+| is_top_rated | BOOLEAN | Keytag: Top Rated |
+| is_staff_pick | BOOLEAN | Keytag: Staff Pick |
+| is_hidden_gem | BOOLEAN | Keytag: Hidden Gem |
+| is_new_release | BOOLEAN | Keytag: New Release |
+| data_source | data_source | Data provenance (legacy_bgg, wikidata, rulebook, publisher, community, manual, seed) |
+| wikidata_id | VARCHAR(20) | Wikidata Q-ID (e.g., Q12345) |
+| field_sources | JSONB | Per-field provenance tracking |
+| rulebook_url | TEXT | URL to official rulebook PDF |
+| rulebook_source | TEXT | How rulebook was found (auto-discover, manual, publisher) |
+| rulebook_parsed_at | TIMESTAMPTZ | When rulebook was last parsed |
+| bncs_score | DECIMAL(2,1) | Board Nomads Complexity Score (1.0-5.0) |
+| bncs_breakdown | JSONB | BNCS dimension scores (rulesDensity, decisionSpace, etc.) |
+| bncs_generated_at | TIMESTAMPTZ | When BNCS was generated |
+| component_list | JSONB | Components extracted from rulebook |
+| latest_parse_log_id | UUID | FK to rulebook_parse_log |
 | fts | TSVECTOR | Generated full-text search column |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
@@ -664,6 +702,35 @@ Explicit relationships between games (expansions, sequels, etc.).
 - Query bidirectionally and display inverse labels
 - Auto-created during BGG import for expansions
 
+### publisher_rulebook_patterns
+URL patterns for auto-discovering publisher rulebooks.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| publisher_id | UUID | FK to publishers |
+| url_pattern | TEXT | URL pattern template with {slug} placeholder |
+| priority | SMALLINT | Priority order (lower = try first) |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+
+**Seeded publishers:** Stonemaier Games, Leder Games, CMON, Fantasy Flight Games, Czech Games Edition, Rio Grande Games, Z-Man Games, Pandasaurus Games, Restoration Games
+
+### rulebook_parse_log
+Tracks rulebook parsing attempts for debugging and auditing.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| game_id | UUID | FK to games |
+| rulebook_url | TEXT | URL that was parsed |
+| status | VARCHAR(20) | success, failed, partial |
+| page_count | SMALLINT | Number of pages parsed |
+| word_count | INTEGER | Total words extracted |
+| parsed_text | TEXT | Full extracted text (for reuse in content generation) |
+| error_message | TEXT | Error details if failed |
+| parse_duration_ms | INTEGER | How long parsing took |
+| created_at | TIMESTAMPTZ | When parsing occurred |
+
 ### user_profiles
 User profile data linked to Supabase auth.
 
@@ -674,7 +741,7 @@ User profile data linked to Supabase auth.
 | username | VARCHAR(30) | Unique @username |
 | avatar_url | VARCHAR(500) | Google OAuth profile image |
 | custom_avatar_url | VARCHAR(500) | Custom uploaded avatar (overrides avatar_url) |
-| header_image_url | VARCHAR(500) | Deprecated (removed in V3 profile redesign) |
+| header_image_url | VARCHAR(500) | Profile header image (exists but unused in V3 UI) |
 | bio | TEXT | User biography |
 | location | VARCHAR(100) | User location |
 | social_links | JSONB | Social links (bgg_username, twitter_handle, etc.) |
@@ -696,9 +763,7 @@ User's game shelf/collection tracking with optional reviews.
 | status | shelf_status | owned, want_to_buy, want_to_play, previously_owned, wishlist |
 | rating | SMALLINT | User rating (1-10) |
 | notes | TEXT | Personal notes |
-| review_title | VARCHAR(200) | Review title |
-| review_text | TEXT | Review content |
-| review_created_at | TIMESTAMPTZ | When review was written |
+| review | TEXT | Review content (plain text) |
 | review_updated_at | TIMESTAMPTZ | When review was last edited |
 | acquired_date | DATE | When acquired |
 | created_at | TIMESTAMPTZ | Creation timestamp |
@@ -739,7 +804,7 @@ Activity feed entries for social features.
 |--------|------|-------------|
 | id | UUID | Primary key |
 | user_id | UUID | FK to user_profiles |
-| activity_type | VARCHAR(30) | follow, shelf_add, shelf_update, rating, top_games_update, review |
+| activity_type | VARCHAR(30) | follow, shelf_add, shelf_update, rating, top_games_update, review, listing_created, listing_sold, listing_traded |
 | target_user_id | UUID | FK to user_profiles (for follow activities) |
 | target_game_id | UUID | FK to games (for game-related activities) |
 | metadata | JSONB | Additional activity data |
@@ -752,7 +817,7 @@ User notification system.
 |--------|------|-------------|
 | id | UUID | Primary key |
 | user_id | UUID | FK to user_profiles (notification recipient) |
-| notification_type | VARCHAR(30) | new_follower, rating, etc. |
+| notification_type | VARCHAR(30) | new_follower, rating, new_offer, offer_accepted, offer_declined, offer_countered, offer_withdrawn, offer_expired, new_message, transaction_shipped, transaction_delivered, feedback_received, wishlist_match, listing_match, wishlist_listing |
 | from_user_id | UUID | FK to user_profiles (who triggered it) |
 | game_id | UUID | FK to games (if game-related) |
 | message | TEXT | Notification message |
