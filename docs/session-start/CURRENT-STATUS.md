@@ -1,6 +1,114 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Rulebook Content Pipeline Enhancements)
+> Last Updated: 2025-12-31 (Admin Codebase Cleanup)
+
+## Phase: 33 - Admin Codebase Cleanup (COMPLETE)
+
+Comprehensive refactoring of admin components to improve maintainability, reduce duplication, and split large monolithic components.
+
+### Shared Admin Hooks (2025-12-31) ✅
+
+**Created:** `src/hooks/admin/`
+| File | Purpose |
+|------|---------|
+| `useAsyncAction.ts` | Encapsulates saving/saved/error state pattern used in 5+ editors |
+| `useAutoSlug.ts` | Auto-generates slug from name (used in Publisher, Family, Taxonomy editors) |
+| `index.ts` | Barrel exports |
+
+**Created:** `src/lib/utils/format.ts`
+- `formatFileSize()` utility for human-readable file sizes
+
+### Dead Code Removal (2025-12-31) ✅
+| Location | Issue | Action |
+|----------|-------|--------|
+| `RulebookEditor.tsx` | `onBncsUpdate` prop never invoked | Removed from interface |
+| `PublisherEditor.tsx` | `games` state never updated | Changed to const |
+| `game-relations/route.ts` | PATCH handler never called | Removed entirely |
+| `RulebookEditor.tsx` | Duplicate `getComplexityLabel`/`getComplexityColor` | Import from `@/lib/rulebook/complexity` |
+
+### Component Splits (2025-12-31) ✅
+
+**RulebookEditor Split** (997 → 349 lines):
+```
+src/components/admin/rulebook/
+├── RulebookUrlSection.tsx      # URL input, validation, auto-discover
+├── RulebookParseSection.tsx    # Parse PDF, BNCS generation, parsed text viewer
+├── BNCSScoreDisplay.tsx        # BNCS score visualization with breakdown
+├── ContentGenerationModal.tsx  # Content generation results dialog
+└── index.ts                    # Barrel export
+```
+
+**GameEditor Split** (879 → 283 lines):
+```
+src/components/admin/game-editor/
+├── DetailsTab.tsx      # Identity, Players & Time, Metadata cards
+├── ContentTab.tsx      # Rules, Setup, Reference content editing
+├── PublishingTab.tsx   # Visibility and Collection Tags
+└── index.ts            # Barrel export
+```
+
+### File Reorganization (2025-12-31) ✅
+- **Moved:** `src/app/admin/(dashboard)/games/[id]/GameEditor.tsx` → `src/components/admin/GameEditor.tsx`
+- **Created:** `src/components/admin/index.ts` - Barrel exports for all admin components
+
+### Hook Migration (2025-12-31) ✅
+Updated 5 editors to use shared hooks:
+| Editor | useAsyncAction | useAutoSlug | Improvements |
+|--------|---------------|-------------|--------------|
+| GameEditor | ✅ | - | Added `markUnsaved()` on changes |
+| PublisherEditor | ✅ | ✅ | Added "Saved!" indicator with green button |
+| FamilyEditor | ✅ | ✅ | Added "Saved!" indicator with green button |
+| TaxonomyEditor | ✅ | ✅ | Added "Saved!" indicator with green button |
+| GameRelationsEditor | ✅ | - | Cleaner async operations |
+
+### Client/Server Import Fix (2025-12-31) ✅
+**Issue:** `BNCSScoreDisplay.tsx` (client component) importing from `complexity.ts` which imports Anthropic client at module level.
+
+**Solution:** Created `complexity-utils.ts` with pure utility functions:
+```
+src/lib/rulebook/
+├── complexity.ts       # AI-dependent generateBNCS + re-exports from utils
+└── complexity-utils.ts # Pure utilities safe for client components
+                        # (getComplexityLabel, getComplexityColor, etc.)
+```
+
+### Updated Admin Component Structure
+```
+src/components/admin/
+├── index.ts                    # Barrel exports (NEW)
+├── GameEditor.tsx              # MOVED from app/admin, refactored (283 lines)
+├── RulebookEditor.tsx          # Refactored to use sub-components (349 lines)
+├── PublisherEditor.tsx         # Uses shared hooks
+├── FamilyEditor.tsx            # Uses shared hooks
+├── TaxonomyEditor.tsx          # Uses shared hooks
+├── GameRelationsEditor.tsx     # Uses shared hooks
+├── ImageUpload.tsx
+├── LogoUpload.tsx
+├── GamePicker.tsx
+├── TempImage.tsx
+├── AdminNav.tsx
+├── LogoutButton.tsx
+├── game-editor/                # NEW - GameEditor tab components
+│   ├── DetailsTab.tsx
+│   ├── ContentTab.tsx
+│   ├── PublishingTab.tsx
+│   └── index.ts
+└── rulebook/                   # NEW - RulebookEditor sub-components
+    ├── RulebookUrlSection.tsx
+    ├── RulebookParseSection.tsx
+    ├── BNCSScoreDisplay.tsx
+    ├── ContentGenerationModal.tsx
+    └── index.ts
+```
+
+### Benefits
+- **Reduced code duplication** - Shared hooks for common patterns
+- **Smaller components** - RulebookEditor 66% smaller, GameEditor 68% smaller
+- **Better UX** - Consistent "Saved!" feedback across all editors
+- **Client-safe imports** - No Anthropic client in browser
+- **Easier maintenance** - Focused, single-purpose components
+
+---
 
 ## Phase: 32 - Rulebook Content Pipeline V2 (COMPLETE)
 
@@ -104,12 +212,13 @@ supabase/migrations/
 ### Rulebook Library Structure
 ```
 src/lib/rulebook/
-├── index.ts        # Barrel exports
-├── types.ts        # All rulebook types (ParsedPDF, BNCS, content types)
-├── parser.ts       # PDF parsing with unpdf
-├── prompts.ts      # AI prompts for extraction
-├── complexity.ts   # BNCS score generation
-└── discovery.ts    # Publisher URL pattern matching
+├── index.ts            # Barrel exports
+├── types.ts            # All rulebook types (ParsedPDF, BNCS, content types)
+├── parser.ts           # PDF parsing with unpdf
+├── prompts.ts          # AI prompts for extraction
+├── complexity.ts       # BNCS score generation (server-only, imports AI client)
+├── complexity-utils.ts # Pure utilities safe for client components
+└── discovery.ts        # Publisher URL pattern matching
 ```
 
 ---
@@ -1402,12 +1511,19 @@ git push origin develop  # Deploy to staging
 | File | Purpose |
 |------|---------|
 | `src/app/admin/(dashboard)/layout.tsx` | Auth check + admin nav |
-| `src/app/admin/(dashboard)/games/[id]/` | Game editor |
+| `src/app/admin/(dashboard)/games/[id]/page.tsx` | Game editor page (imports GameEditor) |
 | `src/app/admin/login/page.tsx` | OAuth + magic link |
 | `src/app/auth/callback/route.ts` | OAuth callback handler |
+| `src/components/admin/index.ts` | Barrel exports for all admin components |
+| `src/components/admin/GameEditor.tsx` | Game editor component (283 lines) |
+| `src/components/admin/RulebookEditor.tsx` | Rulebook editor component (349 lines) |
+| `src/components/admin/game-editor/` | GameEditor tab components (DetailsTab, ContentTab, PublishingTab) |
+| `src/components/admin/rulebook/` | RulebookEditor sub-components |
 | `src/components/admin/ImageUpload.tsx` | Image upload component |
 | `src/components/admin/TempImage.tsx` | BGG reference image with "Temp" badge |
 | `src/components/admin/AdminNav.tsx` | Client-side nav with active state |
+| `src/hooks/admin/useAsyncAction.ts` | Shared saving/saved/error state hook |
+| `src/hooks/admin/useAutoSlug.ts` | Auto-generate slug from name hook |
 | `src/app/api/admin/upload/route.ts` | Image upload API |
 
 ### User Auth & Shelf

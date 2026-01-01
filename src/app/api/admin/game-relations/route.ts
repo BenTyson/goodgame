@@ -89,38 +89,3 @@ export async function DELETE(request: NextRequest) {
     return ApiErrors.internal(error, { route: 'DELETE /api/admin/game-relations' })
   }
 }
-
-// Update a game relation
-export async function PATCH(request: NextRequest) {
-  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
-  if (rateLimited) return rateLimited
-
-  if (!await isAdmin()) {
-    return ApiErrors.unauthorized()
-  }
-
-  try {
-    const { relationId, relationType } = await request.json()
-
-    if (!relationId || !relationType) {
-      return ApiErrors.validation('Missing required fields: relationId, relationType')
-    }
-
-    const adminClient = createAdminClient()
-
-    const { data: relation, error } = await adminClient
-      .from('game_relations')
-      .update({ relation_type: relationType })
-      .eq('id', relationId)
-      .select()
-      .single()
-
-    if (error) {
-      return ApiErrors.database(error, { route: 'PATCH /api/admin/game-relations' })
-    }
-
-    return NextResponse.json({ relation })
-  } catch (error) {
-    return ApiErrors.internal(error, { route: 'PATCH /api/admin/game-relations' })
-  }
-}

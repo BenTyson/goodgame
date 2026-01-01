@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { GamePicker } from './GamePicker'
+import { useAsyncAction } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
 import type {
   Game,
@@ -62,7 +63,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
   const [relations, setRelations] = useState<RelationWithGame[]>([])
   const [inverseRelations, setInverseRelations] = useState<InverseRelationWithGame[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { saving, execute } = useAsyncAction()
   const [newRelationType, setNewRelationType] = useState<RelationType>('expansion_of')
 
   // Memoize supabase client to prevent infinite loops
@@ -119,9 +120,8 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
   const handleFamilyChange = useCallback(
     async (familyId: string) => {
       const newFamilyId = familyId === 'none' ? null : familyId
-      setSaving(true)
 
-      try {
+      await execute(async () => {
         const response = await fetch('/api/admin/games', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -135,21 +135,15 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           setSelectedFamilyId(newFamilyId)
           onFamilyChange?.(newFamilyId)
         }
-      } catch (error) {
-        console.error('Error updating family:', error)
-      } finally {
-        setSaving(false)
-      }
+      })
     },
-    [game.id, onFamilyChange]
+    [game.id, onFamilyChange, execute]
   )
 
   // Add a new relation
   const handleAddRelation = useCallback(
     async (targetGame: Game) => {
-      setSaving(true)
-
-      try {
+      await execute(async () => {
         const response = await fetch('/api/admin/game-relations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -168,22 +162,16 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           ])
         } else {
           const { error } = await response.json()
-          alert(error || 'Failed to add relation')
+          throw new Error(error || 'Failed to add relation')
         }
-      } catch (error) {
-        console.error('Error adding relation:', error)
-      } finally {
-        setSaving(false)
-      }
+      })
     },
-    [game.id, newRelationType]
+    [game.id, newRelationType, execute]
   )
 
   // Remove a relation
   const handleRemoveRelation = useCallback(async (relationId: string) => {
-    setSaving(true)
-
-    try {
+    await execute(async () => {
       const response = await fetch('/api/admin/game-relations', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -193,12 +181,8 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
       if (response.ok) {
         setRelations((prev) => prev.filter((r) => r.id !== relationId))
       }
-    } catch (error) {
-      console.error('Error removing relation:', error)
-    } finally {
-      setSaving(false)
-    }
-  }, [])
+    })
+  }, [execute])
 
   // Get excluded game IDs (current game + already related games)
   const excludedGameIds = [

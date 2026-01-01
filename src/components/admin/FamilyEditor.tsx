@@ -15,6 +15,7 @@ import {
   Gamepad2,
   X,
   ExternalLink,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -33,7 +34,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { GamePicker } from './GamePicker'
-import { generateSlug } from '@/lib/utils/slug'
+import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
 import type { Game, GameFamily } from '@/types/database'
 
@@ -56,9 +57,15 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     }
   )
   const [games, setGames] = useState<Game[]>(initialFamily?.games || [])
-  const [saving, setSaving] = useState(false)
+  const { saving, saved, execute, markUnsaved } = useAsyncAction()
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const { handleNameChange: autoSlugNameChange } = useAutoSlug({
+    isNew,
+    currentSlug: family.slug,
+    currentName: family.name,
+  })
 
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -86,13 +93,16 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     value: (typeof family)[K]
   ) => {
     setFamily((prev) => ({ ...prev, [field]: value }))
+    markUnsaved()
   }
 
   const handleNameChange = (name: string) => {
-    updateField('name', name)
-    if (isNew || family.slug === generateSlug(family.name)) {
-      updateField('slug', generateSlug(name))
-    }
+    autoSlugNameChange(
+      name,
+      (n) => setFamily((prev) => ({ ...prev, name: n })),
+      (s) => setFamily((prev) => ({ ...prev, slug: s }))
+    )
+    markUnsaved()
   }
 
   const saveFamily = async () => {
@@ -101,9 +111,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
       return
     }
 
-    setSaving(true)
-
-    try {
+    await execute(async () => {
       if (isNew) {
         const response = await fetch('/api/admin/families', {
           method: 'POST',
@@ -146,11 +154,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
 
         router.refresh()
       }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save')
-    } finally {
-      setSaving(false)
-    }
+    })
   }
 
   const deleteFamily = async () => {
@@ -285,13 +289,19 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
               </Dialog>
             </>
           )}
-          <Button onClick={saveFamily} disabled={saving}>
+          <Button
+            onClick={saveFamily}
+            disabled={saving}
+            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
             {saving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {isNew ? 'Create Family' : 'Save Changes'}
+            {isNew ? 'Create Family' : saved ? 'Saved!' : 'Save Changes'}
           </Button>
         </div>
       </div>

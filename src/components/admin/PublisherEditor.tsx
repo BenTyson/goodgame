@@ -14,6 +14,7 @@ import {
   Gamepad2,
   ExternalLink,
   Globe,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -33,7 +34,8 @@ import {
 } from '@/components/ui/dialog'
 import { LogoUpload } from './LogoUpload'
 import { getInitials, getInitialsColor } from '@/components/publishers/utils'
-import { generateSlug } from '@/lib/utils/slug'
+import { useAsyncAction } from '@/hooks/admin'
+import { useAutoSlug } from '@/hooks/admin'
 import type { Publisher, Game } from '@/types/database'
 
 interface PublisherEditorProps {
@@ -56,23 +58,32 @@ export function PublisherEditor({ publisher: initialPublisher, isNew = false }: 
       updated_at: null,
     }
   )
-  const [games] = useState<Game[]>(initialPublisher?.games || [])
-  const [saving, setSaving] = useState(false)
+  const games = initialPublisher?.games || []
+  const { saving, saved, execute, markUnsaved } = useAsyncAction()
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const { handleNameChange: autoSlugNameChange } = useAutoSlug({
+    isNew,
+    currentSlug: publisher.slug,
+    currentName: publisher.name,
+  })
 
   const updateField = <K extends keyof typeof publisher>(
     field: K,
     value: (typeof publisher)[K]
   ) => {
     setPublisher((prev) => ({ ...prev, [field]: value }))
+    markUnsaved()
   }
 
   const handleNameChange = (name: string) => {
-    updateField('name', name)
-    if (isNew || publisher.slug === generateSlug(publisher.name)) {
-      updateField('slug', generateSlug(name))
-    }
+    autoSlugNameChange(
+      name,
+      (n) => setPublisher((prev) => ({ ...prev, name: n })),
+      (s) => setPublisher((prev) => ({ ...prev, slug: s }))
+    )
+    markUnsaved()
   }
 
   const savePublisher = async () => {
@@ -81,9 +92,7 @@ export function PublisherEditor({ publisher: initialPublisher, isNew = false }: 
       return
     }
 
-    setSaving(true)
-
-    try {
+    await execute(async () => {
       if (isNew) {
         const response = await fetch('/api/admin/publishers', {
           method: 'POST',
@@ -128,11 +137,7 @@ export function PublisherEditor({ publisher: initialPublisher, isNew = false }: 
 
         router.refresh()
       }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save')
-    } finally {
-      setSaving(false)
-    }
+    })
   }
 
   const deletePublisher = async () => {
@@ -226,13 +231,19 @@ export function PublisherEditor({ publisher: initialPublisher, isNew = false }: 
               </Dialog>
             </>
           )}
-          <Button onClick={savePublisher} disabled={saving}>
+          <Button
+            onClick={savePublisher}
+            disabled={saving}
+            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
             {saving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {isNew ? 'Create Publisher' : 'Save Changes'}
+            {isNew ? 'Create Publisher' : saved ? 'Saved!' : 'Save Changes'}
           </Button>
         </div>
       </div>

@@ -150,7 +150,19 @@ src/components/
 │   └── filters/               # V2 Filter UI (FilterBar, FilterSidebar, FilterRail, etc.)
 ├── families/                  # FamilyCard, FamilyBadge
 ├── publishers/                # PublisherCard
-├── admin/                     # ImageUpload, LogoUpload, ContentEditor, FamilyEditor, PublisherEditor
+├── admin/                     # Admin editors and components
+│   ├── index.ts               # Barrel exports for all admin components
+│   ├── GameEditor.tsx         # Game editor (uses tab components)
+│   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
+│   ├── game-editor/           # GameEditor tab components
+│   │   ├── DetailsTab.tsx
+│   │   ├── ContentTab.tsx
+│   │   └── PublishingTab.tsx
+│   └── rulebook/              # RulebookEditor sub-components
+│       ├── RulebookUrlSection.tsx
+│       ├── RulebookParseSection.tsx
+│       ├── BNCSScoreDisplay.tsx
+│       └── ContentGenerationModal.tsx
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
@@ -197,7 +209,11 @@ src/components/
         └── TransactionFeedback.tsx  # Leave feedback form
 
 src/hooks/
-└── use-local-storage.ts       # SSR-safe localStorage hook
+├── use-local-storage.ts       # SSR-safe localStorage hook
+└── admin/                     # Admin-specific hooks
+    ├── useAsyncAction.ts      # Saving/saved/error state for async operations
+    ├── useAutoSlug.ts         # Auto-generate slug from name
+    └── index.ts               # Barrel exports
 ```
 
 ### Data & Types
@@ -208,6 +224,14 @@ src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/recommend/             # Recommendation engine (types, scoring, archetypes, prompts)
+src/lib/rulebook/              # Rulebook parsing and BNCS
+  ├── complexity.ts            # AI-dependent BNCS generation (server-only)
+  ├── complexity-utils.ts      # Pure utilities safe for client components
+  ├── parser.ts                # PDF text extraction
+  ├── prompts.ts               # AI prompts for extraction
+  └── discovery.ts             # Publisher URL pattern matching
+src/lib/utils/
+  └── format.ts                # formatFileSize utility
 src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
 src/lib/config/                # App configuration

@@ -17,6 +17,7 @@ import {
   Gamepad2,
   ExternalLink,
   Hash,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -35,7 +36,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { generateSlug } from '@/lib/utils/slug'
+import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Category, Mechanic, Theme, PlayerExperience, Game } from '@/types/database'
 
 type TaxonomyType = 'category' | 'mechanic' | 'theme' | 'player-experience'
@@ -109,21 +110,29 @@ export function TaxonomyEditor({ type, item: initialItem, isNew = false }: Taxon
     }
   )
   const [games] = useState<Game[]>((initialItem as { games?: Game[] })?.games || [])
-  const [saving, setSaving] = useState(false)
+  const { saving, saved, execute, markUnsaved } = useAsyncAction()
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const { handleNameChange: autoSlugNameChange } = useAutoSlug({
+    isNew,
+    currentSlug: item.slug,
+    currentName: item.name,
+  })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateField = (field: string, value: any) => {
     setItem((prev) => ({ ...prev, [field]: value }))
+    markUnsaved()
   }
 
   const handleNameChange = (name: string) => {
-    updateField('name', name)
-    // Auto-generate slug for new items or if slug matches old auto-generated slug
-    if (isNew || item.slug === generateSlug(item.name)) {
-      updateField('slug', generateSlug(name))
-    }
+    autoSlugNameChange(
+      name,
+      (n) => setItem((prev) => ({ ...prev, name: n })),
+      (s) => setItem((prev) => ({ ...prev, slug: s }))
+    )
+    markUnsaved()
   }
 
   const saveItem = async () => {
@@ -132,9 +141,7 @@ export function TaxonomyEditor({ type, item: initialItem, isNew = false }: Taxon
       return
     }
 
-    setSaving(true)
-
-    try {
+    await execute(async () => {
       const payload = {
         name: item.name,
         slug: item.slug,
@@ -177,11 +184,7 @@ export function TaxonomyEditor({ type, item: initialItem, isNew = false }: Taxon
 
         router.refresh()
       }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save')
-    } finally {
-      setSaving(false)
-    }
+    })
   }
 
   const deleteItem = async () => {
@@ -274,13 +277,19 @@ export function TaxonomyEditor({ type, item: initialItem, isNew = false }: Taxon
               </Dialog>
             </>
           )}
-          <Button onClick={saveItem} disabled={saving}>
+          <Button
+            onClick={saveItem}
+            disabled={saving}
+            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
             {saving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {isNew ? `Create ${config.name}` : 'Save Changes'}
+            {isNew ? `Create ${config.name}` : saved ? 'Saved!' : 'Save Changes'}
           </Button>
         </div>
       </div>
