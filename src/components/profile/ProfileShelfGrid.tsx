@@ -38,6 +38,7 @@ interface ProfileShelfGridProps {
   showShelf: boolean
   showViewFullButton?: boolean
   username?: string
+  mode?: 'preview' | 'full'
 }
 
 const statusConfig = {
@@ -57,8 +58,10 @@ export function ProfileShelfGrid({
   showShelf,
   showViewFullButton = false,
   username,
+  mode = 'preview',
 }: ProfileShelfGridProps) {
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const isPreview = mode === 'preview'
 
   // Handle private shelf
   if (!showShelf) {
@@ -96,6 +99,10 @@ export function ProfileShelfGrid({
     ? shelfData
     : shelfData.filter(item => item.status === filter)
 
+  // In preview mode, limit to 12 items
+  const displayGames = isPreview ? filteredGames.slice(0, 12) : filteredGames
+  const hasMoreGames = isPreview && filteredGames.length > 12
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -103,16 +110,26 @@ export function ProfileShelfGrid({
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Package className="h-5 w-5 text-muted-foreground" />
           Game Shelf
+          {shelfStats && (
+            <span className="text-sm font-normal text-muted-foreground">
+              ({shelfStats.total})
+            </span>
+          )}
         </h2>
-        {shelfStats && shelfStats.total > 0 && isOwnProfile && (
-          <Button variant={showViewFullButton ? 'outline' : 'ghost'} size="sm" asChild>
-            <Link href="/shelf">View Full Shelf</Link>
+        {isPreview && shelfStats && shelfStats.total > 0 && (
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="?tab=games">View All</Link>
+          </Button>
+        )}
+        {!isPreview && isOwnProfile && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/shelf">Manage Shelf</Link>
           </Button>
         )}
       </div>
 
-      {/* Filter Tabs */}
-      {shelfStats && (
+      {/* Filter Tabs - only show in full mode */}
+      {!isPreview && shelfStats && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
           <Badge
             variant={filter === 'all' ? 'default' : 'outline'}
@@ -162,7 +179,7 @@ export function ProfileShelfGrid({
 
       {/* Games Grid */}
       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
-        {filteredGames.map((item) => {
+        {displayGames.map((item) => {
           if (!item.game) return null
           const config = statusConfig[item.status as keyof typeof statusConfig]
 
@@ -211,11 +228,15 @@ export function ProfileShelfGrid({
         })}
       </div>
 
-      {/* Show more indicator */}
-      {shelfStats && shelfStats.total > 12 && !isOwnProfile && (
-        <p className="text-xs text-center text-muted-foreground">
-          Showing {Math.min(filteredGames.length, 12)} of {shelfStats.total} games
-        </p>
+      {/* Show more indicator in preview mode */}
+      {hasMoreGames && (
+        <div className="text-center">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="?tab=games">
+              View all {shelfStats?.total || filteredGames.length} games
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   )

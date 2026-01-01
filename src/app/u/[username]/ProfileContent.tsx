@@ -1,13 +1,13 @@
 'use client'
 
-import { ProfileIdentityCard } from '@/components/profile/ProfileIdentityCard'
-import { ProfileHeroStats } from '@/components/profile/ProfileHeroStats'
-import { ProfileShelfGrid } from '@/components/profile/ProfileShelfGrid'
-import { ProfileInsights } from '@/components/profile/ProfileInsights'
-import { ProfileReviews } from '@/components/profile/ProfileReviews'
-import { MutualGamesSection } from '@/components/profile/MutualGamesSection'
-import { TopGamesDisplay } from '@/components/profile/TopGamesDisplay'
-import { ProfileMarketplaceFeedback } from '@/components/profile/ProfileMarketplaceFeedback'
+import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { ProfileHeader } from '@/components/profile/ProfileHeader'
+import { ProfileTabs, type ProfileTab } from '@/components/profile/ProfileTabs'
+import { ProfileOverviewTab } from '@/components/profile/ProfileOverviewTab'
+import { ProfileGamesTab } from '@/components/profile/ProfileGamesTab'
+import { ProfileReviewsTab } from '@/components/profile/ProfileReviewsTab'
+import { ProfileActivityTab } from '@/components/profile/ProfileActivityTab'
 import type { UserProfile, SocialLinks, Game, FollowStats as FollowStatsType } from '@/types/database'
 import type { TopGameWithDetails, MutualGame } from '@/lib/supabase/user-queries'
 import type { UserReviewWithGame } from '@/lib/supabase/review-queries'
@@ -52,7 +52,7 @@ interface ProfileContentProps {
   mutualGames: MutualGame[] | null
 }
 
-export function ProfileContent({
+function ProfileContentInner({
   profile,
   socialLinks,
   topGames,
@@ -67,86 +67,96 @@ export function ProfileContent({
   reviewCount,
   mutualGames,
 }: ProfileContentProps) {
-  const displayName = profile.display_name || profile.username || 'User'
+  const searchParams = useSearchParams()
+  const activeTab = (searchParams.get('tab') as ProfileTab) || 'overview'
 
   return (
     <div className="container py-6">
-      {/* Two-Column Layout */}
-      <div className="flex flex-col lg:flex-row lg:gap-8">
-        {/* Left Column - Identity Card (Sticky on Desktop) */}
-        <div className="w-full lg:w-[320px] lg:flex-shrink-0 mb-6 lg:mb-0">
-          <div className="lg:sticky lg:top-24">
-            <ProfileIdentityCard
-              profile={profile}
-              socialLinks={socialLinks}
-              isOwnProfile={isOwnProfile}
-              isFollowingUser={isFollowingUser}
-            />
+      {/* Profile Header */}
+      <ProfileHeader
+        profile={profile}
+        socialLinks={socialLinks}
+        isOwnProfile={isOwnProfile}
+        isFollowingUser={isFollowingUser}
+        followStats={followStats}
+        shelfStats={shelfStats}
+        reviewCount={reviewCount}
+      />
+
+      {/* Tab Navigation */}
+      <ProfileTabs username={profile.username || ''} />
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <ProfileOverviewTab
+          profile={profile}
+          topGames={topGames}
+          shelfData={shelfData}
+          shelfStats={shelfStats}
+          profileStats={profileStats}
+          showShelf={showShelf}
+          isOwnProfile={isOwnProfile}
+          userReviews={userReviews}
+          mutualGames={mutualGames}
+        />
+      )}
+
+      {activeTab === 'games' && (
+        <ProfileGamesTab
+          shelfData={shelfData}
+          shelfStats={shelfStats}
+          isOwnProfile={isOwnProfile}
+          showShelf={showShelf}
+        />
+      )}
+
+      {activeTab === 'reviews' && (
+        <ProfileReviewsTab
+          reviews={userReviews}
+          username={profile.username || ''}
+          isOwnProfile={isOwnProfile}
+        />
+      )}
+
+      {activeTab === 'activity' && (
+        <ProfileActivityTab userId={profile.id} />
+      )}
+    </div>
+  )
+}
+
+export function ProfileContent(props: ProfileContentProps) {
+  return (
+    <Suspense fallback={<ProfileContentLoading />}>
+      <ProfileContentInner {...props} />
+    </Suspense>
+  )
+}
+
+function ProfileContentLoading() {
+  return (
+    <div className="container py-6">
+      <div className="animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start pb-6 border-b">
+          <div className="h-[120px] w-[120px] md:h-[180px] md:w-[180px] rounded-2xl bg-muted" />
+          <div className="flex-1 space-y-3 text-center sm:text-left">
+            <div className="h-8 w-48 bg-muted rounded mx-auto sm:mx-0" />
+            <div className="h-4 w-32 bg-muted rounded mx-auto sm:mx-0" />
+            <div className="h-16 w-full max-w-md bg-muted rounded mx-auto sm:mx-0" />
           </div>
         </div>
-
-        {/* Right Column - Main Content */}
-        <div className="flex-1 space-y-6 min-w-0">
-          {/* Game Shelf Grid (Top Position - Most Prominent) */}
-          <ProfileShelfGrid
-            shelfData={shelfData}
-            shelfStats={shelfStats}
-            isOwnProfile={isOwnProfile}
-            showShelf={showShelf}
-            showViewFullButton={true}
-          />
-
-          {/* Top Games Section */}
-          {(topGames || isOwnProfile) && (
-            <TopGamesDisplay
-              topGames={topGames || []}
-              isOwner={isOwnProfile}
-              userId={profile.id}
-            />
-          )}
-
-          {/* Hero Stats (Moved below shelf) */}
-          <ProfileHeroStats
-            username={profile.username || ''}
-            totalGames={shelfStats?.total || 0}
-            averageRating={profileStats?.averageRating || null}
-            totalRated={profileStats?.totalRated || 0}
-            followerCount={followStats?.followerCount || 0}
-            followingCount={followStats?.followingCount || 0}
-            reviewCount={reviewCount}
-          />
-
-          {/* Collection Insights */}
-          {showShelf && (
-            <ProfileInsights
-              shelfStats={shelfStats}
-              profileStats={profileStats}
-            />
-          )}
-
-          {/* Reviews Section */}
-          {(userReviews.length > 0 || isOwnProfile) && (
-            <ProfileReviews
-              reviews={userReviews}
-              username={profile.username || ''}
-              isOwnProfile={isOwnProfile}
-            />
-          )}
-
-          {/* Marketplace Reputation */}
-          <ProfileMarketplaceFeedback
-            userId={profile.id}
-            username={profile.username}
-            isOwnProfile={isOwnProfile}
-          />
-
-          {/* Mutual Games (only shown when viewing another user's profile) */}
-          {mutualGames && mutualGames.length > 0 && (
-            <MutualGamesSection
-              mutualGames={mutualGames}
-              displayName={displayName}
-            />
-          )}
+        {/* Stats skeleton */}
+        <div className="flex gap-8 py-6 border-b">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-8 w-24 bg-muted rounded" />
+          ))}
+        </div>
+        {/* Tabs skeleton */}
+        <div className="flex gap-4 py-4 border-b">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-6 w-20 bg-muted rounded" />
+          ))}
         </div>
       </div>
     </div>

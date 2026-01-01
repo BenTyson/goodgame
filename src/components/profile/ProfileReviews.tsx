@@ -3,13 +3,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MessageSquare, Star } from 'lucide-react'
-import { Card } from '@/components/ui/card'
 import type { UserReviewWithGame } from '@/lib/supabase/review-queries'
 
 interface ProfileReviewsProps {
   reviews: UserReviewWithGame[]
   username: string
   isOwnProfile: boolean
+  mode?: 'preview' | 'full'
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -28,33 +28,40 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function ProfileReviews({ reviews, username, isOwnProfile }: ProfileReviewsProps) {
+export function ProfileReviews({ reviews, username, isOwnProfile, mode = 'preview' }: ProfileReviewsProps) {
+  const isPreview = mode === 'preview'
+  const displayReviews = isPreview ? reviews.slice(0, 3) : reviews
+  const hasMoreReviews = isPreview && reviews.length > 3
+
   if (reviews.length === 0) {
     return (
-      <Card className="p-5">
+      <div className={isPreview ? '' : 'space-y-4'}>
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare className="h-5 w-5 text-muted-foreground" />
           <h3 className="font-semibold">Reviews</h3>
         </div>
-        <div className="text-center py-6 text-muted-foreground text-sm">
+        <div className="text-center py-6 text-muted-foreground text-sm border border-dashed rounded-xl">
           {isOwnProfile
             ? "You haven't written any reviews yet."
             : 'No reviews yet.'}
         </div>
-      </Card>
+      </div>
     )
   }
 
   return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-muted-foreground" />
           <h3 className="font-semibold">Reviews</h3>
+          <span className="text-sm font-normal text-muted-foreground">
+            ({reviews.length})
+          </span>
         </div>
-        {reviews.length > 3 && (
+        {hasMoreReviews && (
           <Link
-            href={`/u/${username}/reviews`}
+            href="?tab=reviews"
             className="text-sm text-primary hover:underline"
           >
             View All
@@ -63,7 +70,7 @@ export function ProfileReviews({ reviews, username, isOwnProfile }: ProfileRevie
       </div>
 
       <div className="space-y-4">
-        {reviews.slice(0, 3).map((review) => (
+        {displayReviews.map((review) => (
           <div
             key={review.id}
             className="border-b last:border-0 pb-4 last:pb-0"
@@ -107,13 +114,13 @@ export function ProfileReviews({ reviews, username, isOwnProfile }: ProfileRevie
               </div>
             </Link>
 
-            {/* Review text - truncated */}
-            <p className="text-sm text-muted-foreground line-clamp-3">
+            {/* Review text - truncated in preview, full in full mode */}
+            <p className={`text-sm text-muted-foreground ${isPreview ? 'line-clamp-3' : ''}`}>
               {review.review}
             </p>
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   )
 }

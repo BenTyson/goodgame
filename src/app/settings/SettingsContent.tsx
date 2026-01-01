@@ -14,6 +14,7 @@ import { updateUserProfile } from '@/lib/supabase/user-queries'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { UsernameInput } from '@/components/settings/UsernameInput'
 import { ProfileImageUpload } from '@/components/settings/ProfileImageUpload'
+import { BGGImportSection } from '@/components/settings/BGGImportSection'
 import type { UserProfile, SocialLinks, Json } from '@/types/database'
 
 interface SettingsContentProps {
@@ -373,6 +374,9 @@ export function SettingsContent({ profile, userEmail, stripeStatus }: SettingsCo
             </div>
           </CardContent>
         </Card>
+
+        {/* BGG Import Section */}
+        <BGGImportSection />
 
         {/* Privacy Card */}
         <Card>
