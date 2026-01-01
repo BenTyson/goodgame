@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
 import { TempImage } from '@/components/admin/TempImage'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
-import { RulebookEditor } from '@/components/admin/RulebookEditor'
-import { DetailsTab, ContentTab, PublishingTab } from './game-editor'
+import { DetailsTab, RulebookContentTab, GameSetupWizard } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -21,14 +20,20 @@ import {
   CheckCircle2,
   Info,
   ImageIcon,
-  FileText,
-  Settings,
-  Link2,
   BookOpen,
+  Link2,
+  Wand2,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
 
-type GameWithImages = Game & { images: GameImage[] }
+interface Publisher {
+  id: string
+  name: string
+  slug: string
+  website: string | null
+}
+
+type GameWithImages = Game & { images: GameImage[]; publishers_list?: Publisher[] }
 
 interface GameEditorProps {
   game: GameWithImages
@@ -40,10 +45,20 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
   const [images, setImages] = useState(initialGame.images)
   const { saving, saved, execute, markUnsaved } = useAsyncAction()
 
-  const updateField = <K extends keyof Game>(field: K, value: Game[K]) => {
+  // Sync state when server data changes (e.g., after router.refresh())
+  useEffect(() => {
+    setGame(initialGame)
+    setImages(initialGame.images)
+  }, [initialGame])
+
+  // Wizard mode: show for unpublished games unless user exits to advanced
+  const [forceAdvanced, setForceAdvanced] = useState(false)
+  const showWizard = !game.is_published && !forceAdvanced
+
+  const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
     markUnsaved()
-  }
+  }, [markUnsaved])
 
   const saveGame = async () => {
     // Get primary image URL for hero_image_url
@@ -96,6 +111,17 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     })
   }
 
+  // Show wizard for unpublished games
+  if (showWizard) {
+    return (
+      <GameSetupWizard
+        game={{ ...game, images }}
+        onExitToAdvanced={() => setForceAdvanced(true)}
+      />
+    )
+  }
+
+  // Advanced editor (tabs)
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -119,6 +145,17 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
+          {!game.is_published && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setForceAdvanced(false)}
+              className="gap-2"
+            >
+              <Wand2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Setup Wizard</span>
+            </Button>
+          )}
           <Link href={`/admin/games/${game.id}/preview`} target="_blank">
             <Button variant="outline" size="sm" className="gap-2">
               <Eye className="h-4 w-4" />
@@ -150,38 +187,39 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs */}
+      {/* Editor Tabs - Consolidated to 4 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
+          </TabsTrigger>
+          <TabsTrigger value="rulebook" className="gap-2">
+            <BookOpen className="h-4 w-4 hidden sm:block" />
+            Rulebook & Content
           </TabsTrigger>
           <TabsTrigger value="images" className="gap-2">
             <ImageIcon className="h-4 w-4 hidden sm:block" />
             Images
           </TabsTrigger>
-          <TabsTrigger value="content" className="gap-2">
-            <FileText className="h-4 w-4 hidden sm:block" />
-            Content
-          </TabsTrigger>
-          <TabsTrigger value="rulebook" className="gap-2">
-            <BookOpen className="h-4 w-4 hidden sm:block" />
-            Rulebook
-          </TabsTrigger>
-          <TabsTrigger value="relationships" className="gap-2">
+          <TabsTrigger value="relations" className="gap-2">
             <Link2 className="h-4 w-4 hidden sm:block" />
             Relations
           </TabsTrigger>
-          <TabsTrigger value="publishing" className="gap-2">
-            <Settings className="h-4 w-4 hidden sm:block" />
-            Publishing
-          </TabsTrigger>
         </TabsList>
 
-        {/* Details Tab */}
+        {/* Details Tab (includes Publishing) */}
         <TabsContent value="details">
           <DetailsTab game={game} updateField={updateField} />
+        </TabsContent>
+
+        {/* Rulebook & Content Tab */}
+        <TabsContent value="rulebook">
+          <RulebookContentTab
+            game={game}
+            updateField={updateField}
+            onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
+          />
         </TabsContent>
 
         {/* Images Tab */}
@@ -236,30 +274,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           </Card>
         </TabsContent>
 
-        {/* Content Tab */}
-        <TabsContent value="content">
-          <ContentTab game={game} updateField={updateField} />
-        </TabsContent>
-
-        {/* Rulebook Tab */}
-        <TabsContent value="rulebook" className="space-y-6">
-          <RulebookEditor
-            game={game}
-            onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
-          />
-        </TabsContent>
-
-        {/* Relationships Tab */}
-        <TabsContent value="relationships" className="space-y-6">
+        {/* Relations Tab */}
+        <TabsContent value="relations" className="space-y-6">
           <GameRelationsEditor
             game={game}
             onFamilyChange={(familyId) => updateField('family_id', familyId)}
           />
-        </TabsContent>
-
-        {/* Publishing Tab */}
-        <TabsContent value="publishing">
-          <PublishingTab game={game} updateField={updateField} />
         </TabsContent>
       </Tabs>
     </div>

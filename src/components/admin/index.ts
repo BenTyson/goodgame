@@ -13,8 +13,11 @@ export { LogoUpload } from './LogoUpload'
 // UI components
 export { GamePicker } from './GamePicker'
 export { TempImage } from './TempImage'
-export { AdminNav } from './AdminNav'
 export { LogoutButton } from './LogoutButton'
+
+// Layout components
+export { AdminSidebar } from './AdminSidebar'
+export { AdminLayoutClient } from './AdminLayoutClient'
 
 // Sub-component exports
 export * from './rulebook'

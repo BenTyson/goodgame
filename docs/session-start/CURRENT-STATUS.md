@@ -1,6 +1,118 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Admin Codebase Cleanup)
+> Last Updated: 2025-12-31 (Admin Game Editor UX Overhaul)
+
+## Phase: 35 - Admin Game Editor UX Overhaul (COMPLETE)
+
+Redesigned the admin game editor with a Setup Wizard for new games and consolidated tabs for power users.
+
+### Setup Wizard (2025-12-31) ✅
+
+**New Hook:**
+| File | Purpose |
+|------|---------|
+| `src/hooks/admin/useWizardProgress.ts` | localStorage-based wizard state with step tracking |
+
+**New Components:**
+| File | Purpose |
+|------|---------|
+| `GameSetupWizard.tsx` | Main wizard orchestrator |
+| `WizardStepIndicator.tsx` | Visual step indicator with checkmarks |
+| `wizard-steps/RulebookStep.tsx` | Step 1: Find/validate rulebook URL |
+| `wizard-steps/ParseGenerateStep.tsx` | Step 2: Parse PDF + generate BNCS + content |
+| `wizard-steps/ImagesStep.tsx` | Step 3: Upload primary and gallery images |
+| `wizard-steps/ReviewContentStep.tsx` | Step 4: Review generated content |
+| `wizard-steps/PublishStep.tsx` | Step 5: Final review + publish |
+| `wizard-steps/index.ts` | Barrel exports |
+
+### Tab Consolidation (2025-12-31) ✅
+
+**Before (6 tabs):** Details, Publishing, Rulebook, Content, Images, Relations
+
+**After (4 tabs):** Details, Rulebook & Content, Images, Relations
+
+**Created:**
+| File | Purpose |
+|------|---------|
+| `RulebookContentTab.tsx` | Merged Rulebook + Content tabs |
+
+**Modified:**
+| File | Changes |
+|------|---------|
+| `DetailsTab.tsx` | Added Visibility Settings, Collection Tags, Content Status |
+| `GameEditor.tsx` | Added wizard/advanced mode toggle |
+| `src/components/admin/game-editor/index.ts` | Updated exports |
+| `src/hooks/admin/index.ts` | Added useWizardProgress export |
+
+**Deleted:**
+| File | Reason |
+|------|--------|
+| `PublishingTab.tsx` | Merged into DetailsTab |
+
+### Wizard Flow
+
+| Step | Complete When |
+|------|---------------|
+| 1. Rulebook | URL validated OR skipped |
+| 2. Parse & Generate | BNCS score exists AND content generated |
+| 3. Images | At least 1 image uploaded OR skipped |
+| 4. Review | User clicks "Looks Good" |
+| 5. Publish | User clicks "Publish Game" |
+
+### UX Behavior
+
+- **Unpublished games**: Wizard auto-starts, can exit to tabs via "Exit to Advanced"
+- **Published games**: Always show tab-based Advanced Editor
+- **Wizard header**: Progress bar, step indicator, exit button
+- **Progress persistence**: localStorage keyed by `wizard-progress-{gameId}`
+
+---
+
+## Phase: 34 - Admin Layout Unification (COMPLETE)
+
+Refactored admin layout to match the Games/Marketplace sidebar pattern for UI consistency across the site.
+
+### Admin Sidebar Layout (2025-12-31) ✅
+
+**Created:**
+| File | Purpose |
+|------|---------|
+| `AdminSidebar.tsx` | New sidebar component matching GamesSidebar pattern |
+| `AdminLayoutClient.tsx` | Client wrapper for mobile state management |
+
+**Deleted:**
+| File | Reason |
+|------|--------|
+| `AdminNav.tsx` | Navigation moved into AdminSidebar |
+
+### Layout Changes
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| Mobile nav | Horizontal scrollable tabs | Hamburger → overlay drawer |
+| Desktop sidebar | 208px (w-52) | 256px (w-64) |
+| Breakpoint | md (768px) | lg (1024px) |
+| Sidebar position | Inside container | Full-height sticky |
+| Sidebar header | None | Settings icon + "Admin" link |
+
+### Implementation Details
+
+**Mobile Pattern:**
+- Hamburger button in header (`lg:hidden`)
+- Overlay drawer from left (`fixed inset-y-0 left-0 z-50 w-72`)
+- Backdrop with `bg-black/50 z-40`
+- Auto-close on nav link click
+
+**Desktop Pattern:**
+- Sticky full-height sidebar (`sticky top-0 h-screen`)
+- Fixed 256px width (`lg:w-64`)
+- Settings icon header linking to `/admin`
+
+### Files Modified
+- `src/app/admin/(dashboard)/layout.tsx` - Simplified to use AdminLayoutClient
+- `src/components/admin/index.ts` - Updated exports
+
+---
 
 ## Phase: 33 - Admin Codebase Cleanup (COMPLETE)
 
@@ -75,7 +187,9 @@ src/lib/rulebook/
 ### Updated Admin Component Structure
 ```
 src/components/admin/
-├── index.ts                    # Barrel exports (NEW)
+├── index.ts                    # Barrel exports
+├── AdminSidebar.tsx            # Sidebar with hamburger drawer (Phase 34)
+├── AdminLayoutClient.tsx       # Layout client wrapper (Phase 34)
 ├── GameEditor.tsx              # MOVED from app/admin, refactored (283 lines)
 ├── RulebookEditor.tsx          # Refactored to use sub-components (349 lines)
 ├── PublisherEditor.tsx         # Uses shared hooks
@@ -86,14 +200,13 @@ src/components/admin/
 ├── LogoUpload.tsx
 ├── GamePicker.tsx
 ├── TempImage.tsx
-├── AdminNav.tsx
 ├── LogoutButton.tsx
-├── game-editor/                # NEW - GameEditor tab components
+├── game-editor/                # GameEditor tab components
 │   ├── DetailsTab.tsx
 │   ├── ContentTab.tsx
 │   ├── PublishingTab.tsx
 │   └── index.ts
-└── rulebook/                   # NEW - RulebookEditor sub-components
+└── rulebook/                   # RulebookEditor sub-components
     ├── RulebookUrlSection.tsx
     ├── RulebookParseSection.tsx
     ├── BNCSScoreDisplay.tsx
@@ -243,12 +356,7 @@ src/components/admin/
 - **Issue** - Sidebar nav active state wasn't updating on client-side navigation
 - **Root Cause** - Layout was a Server Component reading pathname from headers (stale on navigation)
 - **Fix** - Created `AdminNav` client component using `usePathname()` hook
-
-### New Component
-```
-src/components/admin/
-└── AdminNav.tsx    # Client component with proper active state tracking
-```
+- **Note** - `AdminNav` was later replaced by `AdminSidebar` in Phase 34
 
 ### BGG Import Script Fix (2025-12-31) ✅
 - **Issue** - 21 games failed to import due to invalid `data_source` enum value ('bgg-extractor')
@@ -1521,7 +1629,8 @@ git push origin develop  # Deploy to staging
 | `src/components/admin/rulebook/` | RulebookEditor sub-components |
 | `src/components/admin/ImageUpload.tsx` | Image upload component |
 | `src/components/admin/TempImage.tsx` | BGG reference image with "Temp" badge |
-| `src/components/admin/AdminNav.tsx` | Client-side nav with active state |
+| `src/components/admin/AdminSidebar.tsx` | Sidebar with hamburger drawer (matches GamesSidebar) |
+| `src/components/admin/AdminLayoutClient.tsx` | Client wrapper for mobile state management |
 | `src/hooks/admin/useAsyncAction.ts` | Shared saving/saved/error state hook |
 | `src/hooks/admin/useAutoSlug.ts` | Auto-generate slug from name hook |
 | `src/app/api/admin/upload/route.ts` | Image upload API |

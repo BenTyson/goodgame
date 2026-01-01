@@ -2,6 +2,9 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { GameEditor } from '@/components/admin/GameEditor'
 
+// Disable caching to always fetch fresh data
+export const dynamic = 'force-dynamic'
+
 async function getGameWithImages(id: string) {
   const supabase = createAdminClient()
 

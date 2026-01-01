@@ -119,39 +119,108 @@ export interface RulebookParseResult {
   error?: string
 }
 
-// AI-generated rules content structure
+// AI-generated rules content structure (V2 - richer content)
 export interface RulesContent {
   quickStart: string[]
   overview: string
-  coreRules: { title: string; points: string[] }[]
-  turnStructure: { phase: string; description: string }[]
-  scoring: { category: string; points: string }[]
+  coreRules: {
+    title: string
+    summary?: string
+    points: string[]
+  }[]
+  turnStructure: {
+    phase: string
+    description: string
+    keyChoices?: string
+  }[]
+  scoring: {
+    category: string
+    points: string
+    strategy?: string
+  }[]
   endGameConditions: string[]
   winCondition: string
+  keyTerms?: { term: string; definition: string }[]
   tips: string[]
+  rulesNotes?: string[]
 }
 
-// AI-generated setup content structure
+// AI-generated setup content structure (V2 - richer content)
 export interface SetupContent {
   overview: string
   estimatedTime?: string
+  spaceRequired?: string
   beforeYouStart?: string[]
-  components: { name: string; quantity: string; description: string }[]
-  steps: { step: number; title: string; instruction: string; tip?: string }[]
-  playerSetup: { description: string; items: string[] }
+  components: {
+    name: string
+    quantity: string
+    description: string
+    sortingTip?: string
+  }[]
+  steps: {
+    step: number
+    title: string
+    instruction: string
+    details?: string
+    tip?: string | null
+  }[]
+  playerSetup: {
+    description: string
+    items: string[]
+    notes?: string
+  }
+  boardSetup?: {
+    description: string
+    steps: string[]
+    playerCountVariations?: string | null
+  }
   firstPlayerRule: string
-  quickTips: string[]  // Matches admin form field name
+  readyCheck?: string[]
+  quickTips: string[]
   commonMistakes: string[]
+  storageNotes?: string
 }
 
-// AI-generated reference card structure
+// AI-generated reference card structure (V2 - richer content)
 export interface ReferenceContent {
-  turnSummary: { phase: string; actions: string[] }[]
-  keyActions: { action: string; cost?: string; effect: string }[]
-  importantRules: string[]
-  endGame: string  // Matches admin form field name
-  scoringSummary: { category: string; value: string }[]
-  iconography?: { symbol: string; meaning: string }[]
+  turnSummary: {
+    phase: string
+    required?: boolean
+    actions: string[]
+    notes?: string | null
+  }[]
+  actionCosts?: {
+    action: string
+    cost: string
+    effect: string
+    limit?: string
+  }[]
+  resourceConversions?: {
+    from: string
+    to: string
+    when: string
+  }[]
+  keyActions?: { action: string; cost?: string; effect: string }[]
+  importantRules: { rule: string; context?: string }[] | string[]
+  timingRules?: { situation: string; resolution: string }[]
+  endGame: string | {
+    triggers: string[]
+    finalRound?: string
+    winner: string
+    tiebreakers?: string[]
+  }
+  scoringSummary: {
+    category: string
+    value?: string
+    calculation?: string
+    maxPossible?: string
+  }[]
+  iconography?: {
+    symbol: string
+    meaning: string
+    examples?: string
+  }[]
+  commonQuestions?: { question: string; answer: string }[]
   quickReminders: string[]
 }
 

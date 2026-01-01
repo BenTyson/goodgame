@@ -1,0 +1,199 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+
+export interface WizardProgress {
+  currentStep: number
+  completedSteps: number[]
+  skippedSteps: number[]
+}
+
+export interface UseWizardProgressOptions {
+  /** Total number of steps in the wizard */
+  totalSteps: number
+  /** Called when progress changes */
+  onProgressChange?: (progress: WizardProgress) => void
+}
+
+export interface UseWizardProgressReturn {
+  /** Current step (1-indexed) */
+  currentStep: number
+  /** Array of completed step numbers */
+  completedSteps: number[]
+  /** Array of skipped step numbers */
+  skippedSteps: number[]
+  /** Whether a step is completed */
+  isStepComplete: (step: number) => boolean
+  /** Whether a step was skipped */
+  isStepSkipped: (step: number) => boolean
+  /** Whether user can navigate to a step */
+  canNavigateToStep: (step: number) => boolean
+  /** Go to a specific step */
+  goToStep: (step: number) => void
+  /** Go to next step */
+  nextStep: () => void
+  /** Go to previous step */
+  prevStep: () => void
+  /** Mark current step as complete */
+  completeStep: (step?: number) => void
+  /** Mark current step as skipped */
+  skipStep: (step?: number) => void
+  /** Reset all progress */
+  resetProgress: () => void
+  /** Save progress to localStorage */
+  saveProgress: () => void
+  /** Whether progress was loaded from storage */
+  hasRestoredProgress: boolean
+}
+
+/**
+ * Hook for managing wizard progress with localStorage persistence.
+ *
+ * @example
+ * ```tsx
+ * const { currentStep, nextStep, completeStep, isStepComplete } = useWizardProgress('game-123', { totalSteps: 5 })
+ *
+ * const handleComplete = () => {
+ *   completeStep()
+ *   nextStep()
+ * }
+ * ```
+ */
+export function useWizardProgress(
+  gameId: string,
+  options: UseWizardProgressOptions
+): UseWizardProgressReturn {
+  const { totalSteps, onProgressChange } = options
+  const storageKey = `wizard-progress-${gameId}`
+
+  const [currentStep, setCurrentStep] = useState(1)
+  const [completedSteps, setCompletedSteps] = useState<number[]>([])
+  const [skippedSteps, setSkippedSteps] = useState<number[]>([])
+  const [hasRestoredProgress, setHasRestoredProgress] = useState(false)
+
+  // Load progress from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const progress: WizardProgress = JSON.parse(stored)
+        setCurrentStep(progress.currentStep)
+        setCompletedSteps(progress.completedSteps || [])
+        setSkippedSteps(progress.skippedSteps || [])
+        setHasRestoredProgress(true)
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [storageKey])
+
+  // Notify on progress change
+  useEffect(() => {
+    onProgressChange?.({ currentStep, completedSteps, skippedSteps })
+  }, [currentStep, completedSteps, skippedSteps, onProgressChange])
+
+  const saveProgress = useCallback(() => {
+    try {
+      const progress: WizardProgress = {
+        currentStep,
+        completedSteps,
+        skippedSteps,
+      }
+      localStorage.setItem(storageKey, JSON.stringify(progress))
+    } catch {
+      // Ignore storage errors
+    }
+  }, [storageKey, currentStep, completedSteps, skippedSteps])
+
+  // Auto-save on progress change
+  useEffect(() => {
+    saveProgress()
+  }, [saveProgress])
+
+  const isStepComplete = useCallback(
+    (step: number) => completedSteps.includes(step),
+    [completedSteps]
+  )
+
+  const isStepSkipped = useCallback(
+    (step: number) => skippedSteps.includes(step),
+    [skippedSteps]
+  )
+
+  const canNavigateToStep = useCallback(
+    (step: number) => {
+      if (step < 1 || step > totalSteps) return false
+      if (step <= currentStep) return true
+      // Can only go to next step if current is complete or skipped
+      return step === currentStep + 1 && (isStepComplete(currentStep) || isStepSkipped(currentStep))
+    },
+    [currentStep, totalSteps, isStepComplete, isStepSkipped]
+  )
+
+  const goToStep = useCallback(
+    (step: number) => {
+      if (step >= 1 && step <= totalSteps) {
+        setCurrentStep(step)
+      }
+    },
+    [totalSteps]
+  )
+
+  const nextStep = useCallback(() => {
+    if (currentStep < totalSteps) {
+      setCurrentStep((prev) => prev + 1)
+    }
+  }, [currentStep, totalSteps])
+
+  const prevStep = useCallback(() => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1)
+    }
+  }, [currentStep])
+
+  const completeStep = useCallback((step?: number) => {
+    const stepToComplete = step ?? currentStep
+    setCompletedSteps((prev) => {
+      if (prev.includes(stepToComplete)) return prev
+      return [...prev, stepToComplete]
+    })
+    // Remove from skipped if it was there
+    setSkippedSteps((prev) => prev.filter((s) => s !== stepToComplete))
+  }, [currentStep])
+
+  const skipStep = useCallback((step?: number) => {
+    const stepToSkip = step ?? currentStep
+    setSkippedSteps((prev) => {
+      if (prev.includes(stepToSkip)) return prev
+      return [...prev, stepToSkip]
+    })
+  }, [currentStep])
+
+  const resetProgress = useCallback(() => {
+    setCurrentStep(1)
+    setCompletedSteps([])
+    setSkippedSteps([])
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {
+      // Ignore storage errors
+    }
+  }, [storageKey])
+
+  return {
+    currentStep,
+    completedSteps,
+    skippedSteps,
+    isStepComplete,
+    isStepSkipped,
+    canNavigateToStep,
+    goToStep,
+    nextStep,
+    prevStep,
+    completeStep,
+    skipStep,
+    resetProgress,
+    saveProgress,
+    hasRestoredProgress,
+  }
+}

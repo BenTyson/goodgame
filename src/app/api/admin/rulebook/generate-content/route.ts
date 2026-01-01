@@ -30,7 +30,13 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient()
 
     const body = await request.json()
-    const { gameId, contentTypes = ['rules', 'setup', 'reference'] } = body
+    const { gameId, contentTypes = ['rules', 'setup', 'reference'], model = 'sonnet' } = body
+
+    // Map model choice to actual model ID
+    const modelId = model === 'haiku'
+      ? 'claude-3-haiku-20240307'
+      : 'claude-sonnet-4-20250514'
+    const temperature = model === 'haiku' ? 0.4 : 0.6
 
     if (!gameId) {
       return NextResponse.json(
@@ -124,7 +130,7 @@ export async function POST(request: NextRequest) {
             const result = await generateJSON<RulesContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
-              { temperature: 0.4, model: 'claude-3-haiku-20240307' }
+              { temperature, model: modelId }
             )
             results.rules = result.data
             console.log('Generated rules content keys:', Object.keys(result.data || {}))
@@ -147,7 +153,7 @@ export async function POST(request: NextRequest) {
             const result = await generateJSON<SetupContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
-              { temperature: 0.4, model: 'claude-3-haiku-20240307' }
+              { temperature, model: modelId }
             )
             results.setup = result.data
             console.log('Generated setup content keys:', Object.keys(result.data || {}))
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest) {
             const result = await generateJSON<ReferenceContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
-              { temperature: 0.4, model: 'claude-3-haiku-20240307' }
+              { temperature, model: modelId }
             )
             results.reference = result.data
           } catch (error) {

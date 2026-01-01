@@ -152,6 +152,8 @@ src/components/
 ├── publishers/                # PublisherCard
 ├── admin/                     # Admin editors and components
 │   ├── index.ts               # Barrel exports for all admin components
+│   ├── AdminSidebar.tsx       # Sidebar with hamburger drawer (matches GamesSidebar)
+│   ├── AdminLayoutClient.tsx  # Client wrapper for mobile state management
 │   ├── GameEditor.tsx         # Game editor (uses tab components)
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
 │   ├── game-editor/           # GameEditor tab components
