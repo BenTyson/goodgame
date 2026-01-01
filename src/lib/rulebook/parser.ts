@@ -3,7 +3,7 @@
  * Extracts text content from PDF rulebooks for AI processing
  */
 
-import { PDFParse } from 'pdf-parse'
+import { extractText, getMeta } from 'unpdf'
 import type { ParsedPDF } from './types'
 
 /**
@@ -12,70 +12,55 @@ import type { ParsedPDF } from './types'
 export async function parsePdfFromUrl(url: string): Promise<ParsedPDF> {
   const startTime = Date.now()
 
-  // Create parser with URL
-  const parser = new PDFParse({ url })
-
-  // Get text content
-  const textResult = await parser.getText()
-
-  // Get document info
-  const infoResult = await parser.getInfo()
-
-  const text = cleanPdfText(textResult.text)
-  const wordCount = countWords(text)
-  const processingTimeMs = Date.now() - startTime
-
-  // Clean up
-  await parser.destroy()
-
-  return {
-    text,
-    pageCount: textResult.total, // Use total for page count
-    wordCount,
-    metadata: {
-      title: infoResult.info?.Title,
-      author: infoResult.info?.Author,
-      creator: infoResult.info?.Creator,
-      producer: infoResult.info?.Producer,
-    },
-    extractedAt: new Date(),
-    processingTimeMs,
+  // Fetch PDF as buffer
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`)
   }
+
+  const arrayBuffer = await response.arrayBuffer()
+
+  return parsePdfFromBuffer(arrayBuffer, startTime)
 }
 
 /**
- * Parse a PDF from a Buffer
+ * Parse a PDF from an ArrayBuffer
  */
 export async function parsePdfFromBuffer(
-  buffer: Buffer,
+  buffer: ArrayBuffer | Buffer,
   startTime: number = Date.now()
 ): Promise<ParsedPDF> {
-  // Create parser with data buffer
-  const parser = new PDFParse({ data: buffer })
+  // Convert Buffer to Uint8Array for unpdf compatibility
+  const data = buffer instanceof Buffer
+    ? new Uint8Array(buffer)
+    : new Uint8Array(buffer)
 
-  // Get text content
-  const textResult = await parser.getText()
+  // Extract text using unpdf
+  const { text, totalPages } = await extractText(data, { mergePages: true })
 
   // Get document info
-  const infoResult = await parser.getInfo()
+  let metadata: ParsedPDF['metadata'] = {}
+  try {
+    const info = await getMeta(data)
+    metadata = {
+      title: info.info?.Title as string | undefined,
+      author: info.info?.Author as string | undefined,
+      creator: info.info?.Creator as string | undefined,
+      producer: info.info?.Producer as string | undefined,
+    }
+  } catch {
+    // Metadata extraction can fail for some PDFs, continue without it
+  }
 
-  const text = cleanPdfText(textResult.text)
-  const wordCount = countWords(text)
+  const cleanedText = cleanPdfText(text)
+  const wordCount = countWords(cleanedText)
   const processingTimeMs = Date.now() - startTime
 
-  // Clean up
-  await parser.destroy()
-
   return {
-    text,
-    pageCount: textResult.total, // Use total for page count
+    text: cleanedText,
+    pageCount: totalPages,
     wordCount,
-    metadata: {
-      title: infoResult.info?.Title,
-      author: infoResult.info?.Author,
-      creator: infoResult.info?.Creator,
-      producer: infoResult.info?.Producer,
-    },
+    metadata,
     extractedAt: new Date(),
     processingTimeMs,
   }

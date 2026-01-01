@@ -15,6 +15,10 @@ export type {
   PublisherPattern,
   RulebookDiscoveryResult,
   RulebookParseResult,
+  RulesContent,
+  SetupContent,
+  ReferenceContent,
+  ContentGenerationResult,
 } from './types'
 
 // Parser
@@ -33,6 +37,7 @@ export {
   getBNCSPrompt,
   getRulesSummaryPrompt,
   getSetupGuidePrompt,
+  getReferenceCardPrompt,
 } from './prompts'
 
 // Complexity scoring

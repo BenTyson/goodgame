@@ -20,6 +20,10 @@ export interface ParsedPDF {
 
 // Extracted game data from rulebook
 export interface ExtractedGameData {
+  // Marketing content
+  tagline?: string
+  description?: string
+
   // Validation data (should match existing game data)
   playerCount?: {
     min: number
@@ -40,6 +44,8 @@ export interface ExtractedGameData {
   setupSummary?: string
   turnStructure?: TurnPhase[]
   winCondition?: string
+  endGameConditions?: string[]
+  firstPlayerRule?: string
 
   // Raw sections for further processing
   rawSections?: RulebookSection[]
@@ -111,4 +117,54 @@ export interface RulebookParseResult {
   extractedData?: ExtractedGameData
   bncs?: BNCSResult
   error?: string
+}
+
+// AI-generated rules content structure
+export interface RulesContent {
+  quickStart: string[]
+  overview: string
+  coreRules: { title: string; points: string[] }[]
+  turnStructure: { phase: string; description: string }[]
+  scoring: { category: string; points: string }[]
+  endGameConditions: string[]
+  winCondition: string
+  tips: string[]
+}
+
+// AI-generated setup content structure
+export interface SetupContent {
+  overview: string
+  estimatedTime?: string
+  beforeYouStart?: string[]
+  components: { name: string; quantity: string; description: string }[]
+  steps: { step: number; title: string; instruction: string; tip?: string }[]
+  playerSetup: { description: string; items: string[] }
+  firstPlayerRule: string
+  quickTips: string[]  // Matches admin form field name
+  commonMistakes: string[]
+}
+
+// AI-generated reference card structure
+export interface ReferenceContent {
+  turnSummary: { phase: string; actions: string[] }[]
+  keyActions: { action: string; cost?: string; effect: string }[]
+  importantRules: string[]
+  endGame: string  // Matches admin form field name
+  scoringSummary: { category: string; value: string }[]
+  iconography?: { symbol: string; meaning: string }[]
+  quickReminders: string[]
+}
+
+// Content generation result
+export interface ContentGenerationResult {
+  success: boolean
+  rulesContent?: RulesContent
+  setupContent?: SetupContent
+  referenceContent?: ReferenceContent
+  errors?: {
+    rules?: string
+    setup?: string
+    reference?: string
+  }
+  processingTimeMs: number
 }

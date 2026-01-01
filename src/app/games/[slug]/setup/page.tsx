@@ -39,11 +39,15 @@ export async function generateStaticParams() {
 // Type for AI-generated content
 interface AISetupContent {
   overview: string
-  beforeYouStart: string[]
+  estimatedTime?: string
+  beforeYouStart?: string[]
   components: { name: string; quantity: string; description: string }[]
   steps: { step: number; title: string; instruction: string; tip?: string }[]
   playerSetup: { description: string; items: string[] }
-  firstPlayer: string
+  firstPlayer?: string // Legacy field
+  firstPlayerRule?: string
+  quickTips?: string[] // New field name
+  setupTips?: string[] // Legacy field name
   commonMistakes: string[]
 }
 
@@ -986,10 +990,15 @@ export default async function SetupPage({ params }: SetupPageProps) {
     ? (content as AISetupContent).commonMistakes
     : (content as LegacySetupContent).quickTips
 
-  // Get first player rule
+  // Get first player rule (handle both old and new field names)
   const firstPlayerRule = isAI
-    ? (content as AISetupContent).firstPlayer
+    ? ((content as AISetupContent).firstPlayerRule || (content as AISetupContent).firstPlayer)
     : (content as LegacySetupContent).firstPlayerRule
+
+  // Get setup tips (AI content only) - can be in either quickTips or setupTips field
+  const setupTips = isAI
+    ? ((content as AISetupContent).quickTips || (content as AISetupContent).setupTips)
+    : undefined
 
   return (
     <div className="container py-8 md:py-12">
@@ -1056,7 +1065,7 @@ export default async function SetupPage({ params }: SetupPageProps) {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {(content as AISetupContent).beforeYouStart.map((item, i) => (
+                  {(content as AISetupContent).beforeYouStart!.map((item, i) => (
                     <li key={i} className="flex gap-2 text-sm">
                       <span className="text-primary">•</span>
                       <span className="text-muted-foreground">{item}</span>
@@ -1155,6 +1164,25 @@ export default async function SetupPage({ params }: SetupPageProps) {
               </ul>
             </CardContent>
           </Card>
+
+          {/* Setup Tips - AI content only */}
+          {setupTips && setupTips.length > 0 && (
+            <Card className="border-green-200 bg-green-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg">Setup Tips</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {setupTips.map((tip, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-green-600">💡</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Tips / Common Mistakes */}
           <Card className="bg-primary/5 border-primary/20">

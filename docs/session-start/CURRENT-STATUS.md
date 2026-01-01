@@ -1,6 +1,118 @@
 # Current Status
 
-> Last Updated: 2025-12-31 (Admin Enhancements + BGG Import Fixes)
+> Last Updated: 2025-12-31 (Rulebook Content Pipeline Enhancements)
+
+## Phase: 32 - Rulebook Content Pipeline V2 (COMPLETE)
+
+Enhanced the rulebook parsing and content generation system with full content pipeline, storage, and admin preview features.
+
+### Content Generation Pipeline (2025-12-31) ✅
+- **Generate Content API** (`/api/admin/rulebook/generate-content`) - Generates rules, setup, and reference content from parsed rulebook
+- **Three Content Types** - Rules summary, setup guide, and quick reference card
+- **Parallel Generation** - All three content types generated simultaneously for speed
+- **Stored Text Reuse** - Uses stored parsed text when available (avoids re-parsing PDF)
+
+### Content Types Generated
+
+**Rules Content** (`rules_content` JSONB):
+- `quickStart` - Quick start bullet points
+- `overview` - Game overview paragraph
+- `coreRules` - Core rules sections with points
+- `turnStructure` - Turn phases with descriptions
+- `scoring` - Scoring categories
+- `endGameConditions` - End game triggers
+- `winCondition` - How to win
+- `tips` - Beginner tips
+
+**Setup Content** (`setup_content` JSONB):
+- `overview` - Setup overview
+- `estimatedTime` - Setup time estimate
+- `components` - Component checklist with quantities
+- `steps` - Numbered setup steps with tips
+- `playerSetup` - Per-player setup items
+- `firstPlayerRule` - First player determination
+- `quickTips` - Setup tips
+- `commonMistakes` - Common mistakes to avoid
+
+**Reference Content** (`reference_content` JSONB):
+- `turnSummary` - Turn phases with available actions
+- `keyActions` - Key actions with costs and effects
+- `importantRules` - Important rules to remember
+- `endGame` - End game summary
+- `scoringSummary` - Scoring reference
+- `iconography` - Symbol meanings
+- `quickReminders` - Common things players forget
+
+### Parsed Text Storage (2025-12-31) ✅
+- **New Migration** (`00049_rulebook_parsed_text.sql`):
+  - `parsed_text` column on `rulebook_parse_log` - Stores full extracted text
+  - `latest_parse_log_id` column on `games` - Links to most recent parse
+- **View Parsed Text API** (`/api/admin/rulebook/parsed-text`) - Fetches stored text for a game
+- **Admin UI** - "View Parsed Text" button with expandable viewer and copy button
+
+### Content Generation Modal (2025-12-31) ✅
+- **Success Modal** - Shows after content generation completes
+- **Content Overview** - Displays counts for each generated section:
+  - Rules: Quick start steps, core rules, turn phases, tips, end game conditions
+  - Setup: Steps, components, quick tips, common mistakes, first player rule
+  - Reference: Turn phases, key actions, important rules, scoring categories
+- **Processing Time** - Shows how long generation took
+- **Action Buttons** - "Close & Refresh" and "View Game Page"
+
+### Game Preview Page (2025-12-31) ✅
+- **New Route** - `/admin/games/[id]/preview`
+- **Preview Banner** - Sticky amber banner indicating preview mode
+- **Missing Content Warning** - Shows missing tagline, description, images, etc.
+- **Section Availability** - Shows which content sections are available vs unavailable
+- **Full Game Layout** - Mirrors public game page layout
+- **Admin Navigation** - "Back to Editor" and "View Live" buttons
+- **Preview Button** - Added to GameEditor header
+
+### Publisher Website in Rulebook (2025-12-31) ✅
+- **Publisher Data Fetch** - Admin game page now fetches linked publishers with website URLs
+- **Website Links Display** - Shows publisher website links in Rulebook tab for finding rulebooks
+- **Helpful Context** - "Publisher website - check for rulebook downloads:" with clickable links
+
+### Dark Mode UI Fixes (2025-12-31) ✅
+- **Content Generation Modal** - Changed from light backgrounds (`bg-blue-50`, etc.) to opacity-based (`bg-blue-500/10 border border-blue-500/20`)
+- **Preview Page Cards** - Fixed available/unavailable section cards for dark mode
+- **Parse Result Messages** - Updated success/error styling for dark mode compatibility
+
+### New Files Created
+```
+src/app/api/admin/rulebook/
+├── generate-content/route.ts  # Content generation API
+└── parsed-text/route.ts       # Fetch parsed text API
+
+src/app/admin/(dashboard)/games/[id]/
+└── preview/page.tsx           # Game preview page
+
+supabase/migrations/
+└── 00049_rulebook_parsed_text.sql  # Parsed text storage
+```
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/components/admin/RulebookEditor.tsx` | Content generation modal, view parsed text, publisher website links, dark mode fixes |
+| `src/app/admin/(dashboard)/games/[id]/page.tsx` | Fetch publishers with website |
+| `src/app/admin/(dashboard)/games/[id]/GameEditor.tsx` | Preview button in header |
+| `src/lib/rulebook/prompts.ts` | Added `getReferenceCardPrompt`, updated all prompts with proper field names |
+| `src/lib/rulebook/types.ts` | Added `RulesContent`, `SetupContent`, `ReferenceContent` types |
+| `src/app/api/admin/rulebook/parse/route.ts` | Save parsed text, link to game |
+
+### Rulebook Library Structure
+```
+src/lib/rulebook/
+├── index.ts        # Barrel exports
+├── types.ts        # All rulebook types (ParsedPDF, BNCS, content types)
+├── parser.ts       # PDF parsing with unpdf
+├── prompts.ts      # AI prompts for extraction
+├── complexity.ts   # BNCS score generation
+└── discovery.ts    # Publisher URL pattern matching
+```
+
+---
 
 ## Phase: 31 - Admin Enhancements (COMPLETE)
 

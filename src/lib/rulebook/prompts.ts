@@ -39,45 +39,44 @@ RULEBOOK TEXT:
 ${truncatedText}
 ---
 
-Extract the following information and return as JSON:
+Extract the following information and return as JSON. IMPORTANT: Generate ORIGINAL content based on the rulebook - do NOT copy the examples below.
+
 {
-  "playerCount": {
-    "min": <number or null>,
-    "max": <number or null>,
-    "best": [<recommended player counts or null>]
-  },
-  "playTime": {
-    "min": <minutes or null>,
-    "max": <minutes or null>
-  },
-  "minAge": <number or null>,
+  "tagline": "<GENERATE: A catchy 5-15 word marketing phrase unique to THIS game>",
+  "description": "<GENERATE: 2-3 paragraphs about this specific game's theme, mechanics, and appeal>",
+  "playerCount": {"min": null, "max": null, "best": []},
+  "playTime": {"min": null, "max": null},
+  "minAge": null,
   "components": {
-    "cards": <count or null>,
-    "dice": <count or null>,
-    "tokens": <count or null>,
-    "boards": <count or null>,
-    "tiles": <count or null>,
-    "meeples": <count or null>,
-    "cubes": <count or null>,
-    "miniatures": <count or null>,
-    "other": ["list of other components"]
+    "cards": null,
+    "dice": null,
+    "tokens": null,
+    "boards": null,
+    "tiles": null,
+    "meeples": null,
+    "cubes": null,
+    "miniatures": null,
+    "other": []
   },
-  "turnStructure": [
-    {
-      "name": "Phase/Step name",
-      "description": "What happens in this phase",
-      "isOptional": <boolean>
-    }
-  ],
-  "winCondition": "How the game ends and who wins",
-  "rulesOverview": "2-3 sentence summary of the core gameplay loop (write in your own words)",
-  "setupSummary": "Brief description of setup process (write in your own words)"
+  "turnStructure": [],
+  "winCondition": "<GENERATE: How does the game end and who wins?>",
+  "endGameConditions": [],
+  "firstPlayerRule": "<GENERATE: How is the first player determined?>",
+  "rulesOverview": "<GENERATE: 2-3 sentences summarizing the core gameplay>",
+  "setupSummary": "<GENERATE: Brief setup overview>"
 }
+
+CRITICAL INSTRUCTIONS:
+- Replace ALL <GENERATE: ...> placeholders with actual content from the rulebook
+- tagline should be catchy and specific to THIS game (not generic)
+- description should be 2-3 paragraphs explaining the game's theme and appeal
+- Use null for numbers you cannot find
+- Use empty arrays [] for lists you cannot populate
 
 Notes:
 - Only include components you can find evidence of in the rulebook
 - For turnStructure, include the main phases/steps of a turn (usually 3-6 items)
-- For rulesOverview and setupSummary, write original text based on the rulebook (do not copy)
+- For tagline, description, rulesOverview and setupSummary, write original text based on the rulebook (do not copy)
 - Return null for any field where information cannot be determined`
 }
 
@@ -182,36 +181,25 @@ ${truncatedText}
 
 Write a friendly, conversational rules summary. Do NOT copy from the rulebook - use your own words.
 
-Return as JSON:
+Return as JSON with these EXACT keys (all are required):
 {
-  "quickStart": [
-    "4-6 bullet points to start playing immediately",
-    "Focus on what you do on your turn",
-    "Skip edge cases"
-  ],
-  "overview": "2-3 sentences about what makes this game fun",
+  "quickStart": ["First bullet point", "Second bullet point", "Third bullet point", "Fourth bullet point"],
+  "overview": "2-3 sentences describing what makes this game engaging and fun to play.",
   "coreRules": [
-    {
-      "title": "Category name",
-      "points": ["Rule 1", "Rule 2", "Rule 3"]
-    }
+    {"title": "Movement", "points": ["How players move", "Movement restrictions"]},
+    {"title": "Actions", "points": ["Available actions", "Action limitations"]}
   ],
   "turnStructure": [
-    {
-      "phase": "Phase name",
-      "description": "What happens"
-    }
+    {"phase": "Phase 1 Name", "description": "What happens in this phase"},
+    {"phase": "Phase 2 Name", "description": "What happens in this phase"}
   ],
   "scoring": [
-    {
-      "category": "How to score",
-      "points": "How many"
-    }
+    {"category": "Victory Points", "points": "1 per card"},
+    {"category": "Bonus", "points": "5 at end"}
   ],
-  "endGame": "When and how the game ends",
-  "tips": [
-    "3-4 beginner strategy tips"
-  ]
+  "endGameConditions": ["When a player reaches X points", "When the deck runs out", "After X rounds"],
+  "winCondition": "The player with the most victory points wins. In case of a tie, the player with more cards wins.",
+  "tips": ["Tip 1 for beginners", "Tip 2 for beginners", "Tip 3 for beginners"]
 }
 
 Guidelines:
@@ -220,7 +208,8 @@ Guidelines:
 - Make it scannable with clear sections
 - Include 3-5 core rules categories
 - Keep turnStructure to main phases only (3-5)
-- Include all major scoring categories`
+- Include all major scoring categories
+- Be specific about endGameConditions (e.g., "When a player reaches 10 victory points")`
 }
 
 /**
@@ -238,30 +227,25 @@ RULEBOOK TEXT:
 ${truncatedText}
 ---
 
-Return as JSON:
+Return as JSON with these EXACT keys (all are required):
 {
-  "overview": "One sentence describing setup",
+  "overview": "One sentence describing what setup involves.",
+  "estimatedTime": "5-10 minutes",
   "components": [
-    {
-      "name": "Component name",
-      "quantity": "How many",
-      "description": "What it is/does"
-    }
+    {"name": "Game Board", "quantity": "1", "description": "The main playing surface"},
+    {"name": "Player Tokens", "quantity": "4", "description": "One for each player"}
   ],
   "steps": [
-    {
-      "step": 1,
-      "title": "Step title",
-      "instruction": "What to do",
-      "tip": "Optional helpful tip"
-    }
+    {"step": 1, "title": "Unfold the Board", "instruction": "Place the game board in the center of the table.", "tip": "Make sure all players can reach it."},
+    {"step": 2, "title": "Shuffle Cards", "instruction": "Shuffle all cards and place them face-down.", "tip": null}
   ],
   "playerSetup": {
-    "description": "What each player receives",
-    "items": ["Item 1", "Item 2"]
+    "description": "Each player receives the following starting materials:",
+    "items": ["1 player board", "5 starting resources", "1 reference card"]
   },
-  "firstPlayer": "How to determine first player",
-  "commonMistakes": ["Setup mistakes to avoid"]
+  "firstPlayerRule": "The player who most recently did X goes first. Otherwise, choose randomly.",
+  "quickTips": ["Organize components by type before starting", "Have each player set up their own area", "Read the quick-start guide first"],
+  "commonMistakes": ["Forgetting to shuffle the deck", "Placing tokens in the wrong starting position", "Missing the first player marker"]
 }
 
 Guidelines:
@@ -269,5 +253,67 @@ Guidelines:
 - Include 5-10 main components
 - Include 5-8 setup steps in order
 - Keep instructions clear and concise
-- Include practical tips where helpful`
+- firstPlayerRule should be specific (e.g., "The player who most recently visited a farm goes first")
+- Include 2-4 practical quickTips
+- Include 2-4 commonMistakes to avoid`
+}
+
+/**
+ * Prompt for generating quick reference card from rulebook
+ */
+export function getReferenceCardPrompt(rulebookText: string, gameName: string): string {
+  const truncatedText = rulebookText.length > 25000
+    ? rulebookText.substring(0, 25000) + '\n\n[...rulebook truncated...]'
+    : rulebookText
+
+  return `Based on this rulebook for "${gameName}", create a quick reference card for during play.
+
+RULEBOOK TEXT:
+---
+${truncatedText}
+---
+
+Return as JSON:
+{
+  "turnSummary": [
+    {
+      "phase": "Phase name",
+      "actions": ["Action 1", "Action 2"]
+    }
+  ],
+  "keyActions": [
+    {
+      "action": "Action name",
+      "cost": "Resource cost if any",
+      "effect": "What it does"
+    }
+  ],
+  "importantRules": [
+    "Critical rule to remember during play"
+  ],
+  "endGame": "The game ends when a player reaches 10 victory points, or when the deck runs out. The player with the most points wins.",
+  "scoringSummary": [
+    {
+      "category": "Scoring category",
+      "value": "Points or formula"
+    }
+  ],
+  "iconography": [
+    {
+      "symbol": "Symbol/icon name",
+      "meaning": "What it represents"
+    }
+  ],
+  "quickReminders": [
+    "Common things players forget"
+  ]
+}
+
+Guidelines:
+- This is for MID-GAME reference, not learning the game
+- Focus on turn structure, costs, and scoring
+- Keep entries brief - this is a reference card, not a rulebook
+- Include 3-5 items per section maximum
+- Include any iconography/symbols used in the game
+- Omit sections if not relevant to the game`
 }

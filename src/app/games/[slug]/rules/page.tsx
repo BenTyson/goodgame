@@ -44,7 +44,9 @@ interface AIRulesContent {
   coreRules?: { title: string; points: string[] }[]
   turnStructure: { phase?: string; title?: string; description: string }[]
   scoring?: { category: string; points: string }[]
-  endGame?: string
+  endGame?: string // Legacy field
+  endGameConditions?: string[]
+  winCondition?: string
   tips: string[]
 }
 
@@ -62,7 +64,7 @@ type RulesContent = AIRulesContent | LegacyRulesContent
 
 // Helper to check if content is AI-generated format
 function isAIContent(content: RulesContent): content is AIRulesContent {
-  return 'coreRules' in content || 'endGame' in content
+  return 'coreRules' in content || 'endGame' in content || 'endGameConditions' in content
 }
 
 // Placeholder rules content - in production this would come from MDX files
@@ -1067,16 +1069,41 @@ export default async function RulesPage({ params }: RulesPageProps) {
           )}
 
           {/* End Game - AI content only */}
-          {isAI && (content as AIRulesContent).endGame && (
+          {isAI && ((content as AIRulesContent).endGame || (content as AIRulesContent).endGameConditions) && (
             <>
               <Separator />
               <div>
                 <h2 className="text-xl font-bold mb-4">End Game & Winning</h2>
                 <Card>
-                  <CardContent className="pt-4">
-                    <p className="text-muted-foreground">
-                      {(content as AIRulesContent).endGame}
-                    </p>
+                  <CardContent className="pt-4 space-y-4">
+                    {/* New format with conditions list */}
+                    {(content as AIRulesContent).endGameConditions && (
+                      <div>
+                        <h4 className="font-medium mb-2">Game Ends When:</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          {(content as AIRulesContent).endGameConditions!.map((condition, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span className="text-primary">•</span>
+                              {condition}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {(content as AIRulesContent).winCondition && (
+                      <div>
+                        <h4 className="font-medium mb-2">Winner:</h4>
+                        <p className="text-muted-foreground">
+                          {(content as AIRulesContent).winCondition}
+                        </p>
+                      </div>
+                    )}
+                    {/* Legacy format */}
+                    {!(content as AIRulesContent).endGameConditions && (content as AIRulesContent).endGame && (
+                      <p className="text-muted-foreground">
+                        {(content as AIRulesContent).endGame}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>

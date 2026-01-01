@@ -15,15 +15,27 @@ async function getGameWithImages(id: string) {
     return null
   }
 
+  // Fetch images
   const { data: images } = await supabase
     .from('game_images')
     .select('*')
     .eq('game_id', id)
     .order('display_order')
 
+  // Fetch linked publishers with website
+  const { data: publisherLinks } = await supabase
+    .from('game_publishers')
+    .select('publisher:publishers(id, name, slug, website)')
+    .eq('game_id', id)
+
+  const publishers = publisherLinks
+    ?.map(p => p.publisher)
+    .filter(Boolean) as { id: string; name: string; slug: string; website: string | null }[] | undefined
+
   return {
     ...game,
-    images: images || []
+    images: images || [],
+    publishers_list: publishers || []
   }
 }
 
