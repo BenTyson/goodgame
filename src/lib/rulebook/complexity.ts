@@ -53,7 +53,7 @@ export async function generateBNCS(
     prompt,
     {
       temperature: 0.3, // Lower temperature for more consistent scoring
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5-20251101',
     }
   )
 

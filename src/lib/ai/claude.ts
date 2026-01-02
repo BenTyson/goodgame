@@ -8,12 +8,17 @@ import Anthropic from '@anthropic-ai/sdk'
 // Initialize client (uses ANTHROPIC_API_KEY env var automatically)
 const anthropic = new Anthropic()
 
-// Model configuration
-const DEFAULT_MODEL = 'claude-3-haiku-20240307'
+// Model configuration - using current Claude 4.x models
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251101'
 const MAX_TOKENS = 4096
 
-// Cost per 1M tokens (as of late 2024)
-const COSTS = {
+// Cost per 1M tokens (as of late 2025)
+const COSTS: Record<string, { input: number; output: number }> = {
+  // Claude 4.5 models (current)
+  'claude-haiku-4-5-20251101': { input: 0.80, output: 4.00 },
+  'claude-sonnet-4-5-20250929': { input: 3.00, output: 15.00 },
+  'claude-opus-4-5-20251101': { input: 15.00, output: 75.00 },
+  // Legacy models (may be deprecated)
   'claude-3-haiku-20240307': { input: 0.25, output: 1.25 },
   'claude-3-sonnet-20240229': { input: 3.00, output: 15.00 },
   'claude-3-opus-20240229': { input: 15.00, output: 75.00 },
@@ -133,9 +138,14 @@ export async function generate(
 function repairJSON(str: string): string {
   let result = str
 
-  // Replace smart/curly quotes with straight quotes
-  result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Double quotes
-  result = result.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")  // Single quotes
+  // IMPORTANT: First, fix smart quotes used as apostrophes in contractions/possessives
+  // Pattern: word"s or word"t (like Martin"s, don"t) - replace with apostrophe
+  result = result.replace(/(\w)[\u201C\u201D\u201E\u201F](\w)/g, "$1'$2")
+
+  // Replace remaining smart/curly double quotes with straight quotes
+  result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+  // Replace smart/curly single quotes with straight single quotes
+  result = result.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
 
   // Replace other unicode quote-like characters
   result = result.replace(/[\u00AB\u00BB]/g, '"')  // Guillemets
