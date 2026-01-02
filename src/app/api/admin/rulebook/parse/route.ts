@@ -99,11 +99,20 @@ export async function POST(request: NextRequest) {
     let taxonomySuggestions: TaxonomyExtractionResult | null = null
     let taxonomyError: string | undefined
     try {
+      console.log('Starting taxonomy extraction...')
+
       // Fetch all themes and player experiences
       const [themesResult, experiencesResult] = await Promise.all([
         supabase.from('themes').select('id, name, description').order('display_order'),
         supabase.from('player_experiences').select('id, name, description').order('display_order'),
       ])
+
+      console.log('Fetched taxonomy options:', {
+        themes: themesResult.data?.length ?? 0,
+        themesError: themesResult.error?.message,
+        experiences: experiencesResult.data?.length ?? 0,
+        experiencesError: experiencesResult.error?.message,
+      })
 
       if (themesResult.data && experiencesResult.data) {
         const prompt = getTaxonomyExtractionPrompt(
@@ -112,13 +121,15 @@ export async function POST(request: NextRequest) {
           themesResult.data,
           experiencesResult.data
         )
+        console.log('Calling AI for taxonomy extraction...')
         const result = await generateJSON<TaxonomyExtractionResult>(
           RULEBOOK_SYSTEM_PROMPT,
           prompt,
           { temperature: 0.3, model: 'claude-3-haiku-20240307' }
         )
         taxonomySuggestions = result.data
-        console.log('Extracted taxonomy:', {
+        console.log('AI taxonomy extraction result:', JSON.stringify(taxonomySuggestions, null, 2))
+        console.log('Extracted taxonomy summary:', {
           themes: taxonomySuggestions?.themes?.length ?? 0,
           experiences: taxonomySuggestions?.playerExperiences?.length ?? 0,
           newSuggestions: taxonomySuggestions?.newSuggestions?.length ?? 0,
@@ -177,12 +188,17 @@ export async function POST(request: NextRequest) {
           }
 
           if (suggestions.length > 0) {
+            console.log(`Inserting ${suggestions.length} taxonomy suggestions into database...`)
             const { error: insertError } = await supabase
               .from('taxonomy_suggestions')
               .insert(suggestions)
             if (insertError) {
               console.error('Failed to store taxonomy suggestions:', insertError)
+            } else {
+              console.log('Successfully stored taxonomy suggestions')
             }
+          } else {
+            console.log('No taxonomy suggestions to insert')
           }
         }
       }
