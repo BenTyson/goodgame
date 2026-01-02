@@ -148,7 +148,7 @@ export async function generateRulesContent(
     await logGeneration(
       gameId,
       'rules',
-      'claude-haiku-4-5-20251101',
+      'claude-haiku-4-5-latest',
       'failed',
       0,
       0,
@@ -234,7 +234,7 @@ export async function generateSetupContent(
     await logGeneration(
       gameId,
       'setup',
-      'claude-haiku-4-5-20251101',
+      'claude-haiku-4-5-latest',
       'failed',
       0,
       0,
@@ -320,7 +320,7 @@ export async function generateReferenceContent(
     await logGeneration(
       gameId,
       'reference',
-      'claude-haiku-4-5-20251101',
+      'claude-haiku-4-5-latest',
       'failed',
       0,
       0,
@@ -458,7 +458,7 @@ export async function generateScoreSheetContent(
     await logGeneration(
       gameId,
       'score_sheet',
-      'claude-haiku-4-5-20251101',
+      'claude-haiku-4-5-latest',
       'failed',
       0,
       0,
