@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
@@ -13,6 +20,8 @@ import {
   FileText,
   PenTool,
   BookOpen,
+  RotateCcw,
+  ChevronDown,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import type { BNCSBreakdown } from '@/lib/rulebook/types'
@@ -24,7 +33,7 @@ interface ParseGenerateStepProps {
   onSkip: () => void
 }
 
-type StepPhase = 'ready' | 'parsing' | 'parsed' | 'generating' | 'complete'
+type StepPhase = 'ready' | 'parsing' | 'parsed' | 'generating' | 'complete' | 'resetting'
 
 export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateStepProps) {
   const [phase, setPhase] = useState<StepPhase>('ready')
@@ -40,6 +49,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
     error?: string
   } | null>(null)
   const [contentModel, setContentModel] = useState<'sonnet' | 'haiku'>('sonnet')
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
 
   const bncsBreakdown = game.bncs_breakdown as BNCSBreakdown | null
   const bncsScore = game.bncs_score
@@ -132,6 +142,43 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
     // Note: generateContent will be called after reload if parse succeeds
   }
 
+  const resetContent = async (options: {
+    resetRulebook?: boolean
+    resetBNCS?: boolean
+    resetContent?: boolean
+    resetTaxonomy?: boolean
+    resetAll?: boolean
+  }) => {
+    const previousPhase = phase
+    setPhase('resetting')
+    setResetMessage(null)
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}/reset-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options),
+      })
+
+      if (!response.ok) {
+        throw new Error('Reset failed')
+      }
+
+      const result = await response.json()
+      const parts = []
+      if (result.reset.rulebook) parts.push('rulebook')
+      if (result.reset.bncs) parts.push('BNCS')
+      if (result.reset.content) parts.push('content')
+      if (result.reset.taxonomy) parts.push('taxonomy')
+
+      setResetMessage(`Reset ${parts.join(', ')} successfully. Reloading...`)
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (error) {
+      setResetMessage('Reset failed. Please try again.')
+      setPhase(previousPhase)
+    }
+  }
+
   // Calculate progress
   const getProgress = () => {
     switch (phase) {
@@ -140,8 +187,11 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
       case 'parsed': return 50
       case 'generating': return 75
       case 'complete': return 100
+      case 'resetting': return 0
     }
   }
+
+  const hasAnyContent = bncsScore || hasContent
 
   return (
     <div className="space-y-6">
@@ -245,7 +295,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
             {!bncsScore && (
               <Button
                 onClick={runFullPipeline}
-                disabled={!game.rulebook_url || phase === 'parsing'}
+                disabled={!game.rulebook_url || phase === 'parsing' || phase === 'resetting'}
                 className="gap-2"
               >
                 {phase === 'parsing' ? (
@@ -259,7 +309,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
             {bncsScore && !hasContent && (
               <Button
                 onClick={generateContent}
-                disabled={phase === 'generating'}
+                disabled={phase === 'generating' || phase === 'resetting'}
                 className="gap-2"
               >
                 {phase === 'generating' ? (
@@ -270,7 +320,54 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
                 Generate All Content
               </Button>
             )}
+
+            {/* Reset dropdown */}
+            {hasAnyContent && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={phase === 'resetting'}
+                    className="gap-2"
+                  >
+                    {phase === 'resetting' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    Reset
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => resetContent({ resetBNCS: true })}>
+                    Reset BNCS Score Only
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => resetContent({ resetContent: true })}>
+                    Reset Generated Content Only
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => resetContent({ resetTaxonomy: true })}>
+                    Reset Taxonomy Only
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => resetContent({ resetAll: true })}
+                    className="text-destructive"
+                  >
+                    Reset Everything
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
+
+          {/* Reset message */}
+          {resetMessage && (
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+              <RotateCcw className="h-5 w-5 shrink-0 mt-0.5" />
+              <div className="text-sm">{resetMessage}</div>
+            </div>
+          )}
 
           {/* Error messages */}
           {parseResult && !parseResult.success && (
