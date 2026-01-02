@@ -138,11 +138,12 @@ export async function generate(
 function repairJSON(str: string): string {
   let result = str
 
-  // IMPORTANT: First, fix quotes used as apostrophes in contractions/possessives
-  // Pattern: word"s or word"t (like Martin"s, don"t) - replace with apostrophe
-  // Handle both smart quotes AND straight quotes used incorrectly as apostrophes
-  result = result.replace(/(\w)[\u201C\u201D\u201E\u201F](\w)/g, "$1'$2")  // Smart quotes
-  result = result.replace(/(\w)"([a-zA-Z])/g, "$1'$2")  // Straight quotes used as apostrophe (e.g., Martin"s)
+  // IMPORTANT: Fix quotes used as apostrophes in contractions/possessives
+  // Match ANY quote-like character between word characters and replace with apostrophe
+  // This catches: Martin"s, Martin"s, Martin's, etc.
+  const quoteChars = '"\u201C\u201D\u201E\u201F\u2018\u2019\u201A\u201B\u0022\u0027'
+  const quotePattern = new RegExp(`(\\w)[${quoteChars}]([a-zA-Z])`, 'g')
+  result = result.replace(quotePattern, "$1'$2")
 
   // Replace remaining smart/curly double quotes with straight quotes
   result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
@@ -218,6 +219,15 @@ export async function generateJSON<T>(
       }
     }
   } catch (parseError) {
+    // Debug: Show character codes around the error position
+    const match = String(parseError).match(/position (\d+)/)
+    if (match) {
+      const pos = parseInt(match[1])
+      const context = jsonStr.substring(Math.max(0, pos - 20), pos + 20)
+      const charCodes = [...context].map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join(' ')
+      console.error('JSON error context:', context)
+      console.error('Character codes:', charCodes)
+    }
     console.error('Failed to parse JSON response:', jsonStr.substring(0, 500))
     throw new Error(`Invalid JSON response: ${parseError}`)
   }
