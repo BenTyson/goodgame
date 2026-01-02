@@ -139,11 +139,21 @@ function repairJSON(str: string): string {
   let result = str
 
   // IMPORTANT: Fix quotes used as apostrophes in contractions/possessives
-  // Match ANY quote-like character between word characters and replace with apostrophe
-  // This catches: Martin"s, Martin"s, Martin's, etc.
-  const quoteChars = '"\u201C\u201D\u201E\u201F\u2018\u2019\u201A\u201B\u0022\u0027'
-  const quotePattern = new RegExp(`(\\w)[${quoteChars}]([a-zA-Z])`, 'g')
-  result = result.replace(quotePattern, "$1'$2")
+  // Pattern: word + any quote + letter (like Martin"s) -> word + apostrophe + letter
+  // Must do this BEFORE general quote replacement to avoid breaking JSON structure
+
+  // Debug: Check if pattern exists
+  const hasApostropheQuote = /\w["'\u201C\u201D\u2018\u2019][a-zA-Z]/.test(result)
+  if (hasApostropheQuote) {
+    console.log('Found quote-as-apostrophe pattern, attempting fix...')
+  }
+
+  // Replace straight double quote used as apostrophe
+  result = result.replace(/(\w)"([a-zA-Z])/g, "$1'$2")
+  // Replace smart double quotes used as apostrophe
+  result = result.replace(/(\w)[\u201C\u201D]([a-zA-Z])/g, "$1'$2")
+  // Replace smart single quotes used as apostrophe (normalize to straight)
+  result = result.replace(/(\w)[\u2018\u2019]([a-zA-Z])/g, "$1'$2")
 
   // Replace remaining smart/curly double quotes with straight quotes
   result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
@@ -204,7 +214,9 @@ export async function generateJSON<T>(
   jsonStr = jsonStr.trim()
 
   // Attempt to repair common JSON issues from AI responses
+  console.log('Before repairJSON - first 300 chars:', jsonStr.substring(0, 300))
   jsonStr = repairJSON(jsonStr)
+  console.log('After repairJSON - first 300 chars:', jsonStr.substring(0, 300))
 
   try {
     const data = JSON.parse(jsonStr) as T
