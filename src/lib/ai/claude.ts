@@ -214,9 +214,18 @@ export async function generateJSON<T>(
   jsonStr = jsonStr.trim()
 
   // Attempt to repair common JSON issues from AI responses
-  console.log('Before repairJSON - first 300 chars:', jsonStr.substring(0, 300))
+  // Check for Martin pattern specifically
+  const martinMatch = jsonStr.match(/Martin.{1,3}s/)
+  if (martinMatch) {
+    const chars = [...martinMatch[0]].map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join('')
+    console.log('Martin pattern BEFORE:', chars)
+  }
   jsonStr = repairJSON(jsonStr)
-  console.log('After repairJSON - first 300 chars:', jsonStr.substring(0, 300))
+  const martinMatch2 = jsonStr.match(/Martin.{1,3}s/)
+  if (martinMatch2) {
+    const chars = [...martinMatch2[0]].map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join('')
+    console.log('Martin pattern AFTER:', chars)
+  }
 
   try {
     const data = JSON.parse(jsonStr) as T
