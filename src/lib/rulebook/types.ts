@@ -75,22 +75,27 @@ export interface RulebookSection {
   pageNumber?: number
 }
 
-// BNCS (Board Nomads Complexity Score) breakdown
-export interface BNCSBreakdown {
-  rulesDensity: number      // 1-5: Rulebook length/complexity ratio
-  decisionSpace: number     // 1-5: Choices per turn
-  learningCurve: number     // 1-5: Easy to learn = low
-  strategicDepth: number    // 1-5: Hard to master = high
-  componentComplexity: number // 1-5: Based on pieces/boards/cards
+// Crunch Score breakdown (1-10 scale)
+export interface CrunchBreakdown {
+  rulesDensity: number      // 1-10: Rulebook length/complexity ratio
+  decisionSpace: number     // 1-10: Choices per turn
+  learningCurve: number     // 1-10: Easy to learn = low
+  strategicDepth: number    // 1-10: Hard to master = high
+  componentComplexity: number // 1-10: Based on pieces/boards/cards
   reasoning: string         // AI explanation of the score
 }
 
-export interface BNCSResult {
-  score: number             // 1.0-5.0 composite score
-  breakdown: BNCSBreakdown
+export interface CrunchResult {
+  score: number             // 1.0-10.0 composite score
+  breakdown: CrunchBreakdown
   confidence: 'high' | 'medium' | 'low'
+  bggReference: number | null // BGG weight used for calibration (if any)
   generatedAt: Date
 }
+
+// Legacy aliases for backward compatibility
+export type BNCSBreakdown = CrunchBreakdown
+export type BNCSResult = Omit<CrunchResult, 'bggReference'>
 
 // Publisher rulebook pattern
 export interface PublisherPattern {
@@ -115,7 +120,8 @@ export interface RulebookParseResult {
   success: boolean
   pdf?: ParsedPDF
   extractedData?: ExtractedGameData
-  bncs?: BNCSResult
+  crunch?: CrunchResult
+  bncs?: BNCSResult // Legacy alias
   error?: string
 }
 

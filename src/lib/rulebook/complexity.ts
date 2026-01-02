@@ -1,31 +1,39 @@
 /**
- * Board Nomads Complexity Score (BNCS)
+ * Crunch Score - Board Nomads Complexity Rating
  * AI-generated complexity scoring from rulebook analysis
  *
- * This is our differentiator vs BGG's user-submitted weight scores.
- * BNCS provides:
- * - Transparent methodology
- * - Consistent scoring
- * - Multi-dimensional breakdown
- * - Original intellectual property
+ * Scale: 1-10 (distinct from BGG's 1-5)
+ * Formula: AI Score (85%) + BGG Weight (15%) as calibration
+ *
+ * Tiers:
+ *   1.0-2.0: Breezy (quick to learn)
+ *   2.1-4.0: Light (family-friendly)
+ *   4.1-6.0: Crunchy (solid complexity)
+ *   6.1-8.0: Heavy (meaty decisions)
+ *   8.1-10.0: Brain Burner (maximum crunch)
  */
 
 import { generateJSON } from '@/lib/ai/claude'
-import { getBNCSPrompt } from './prompts'
-import type { ParsedPDF, BNCSResult, BNCSBreakdown } from './types'
+import { getCrunchScorePrompt } from './prompts'
+import type { ParsedPDF, CrunchResult, CrunchBreakdown } from './types'
 
 // Re-export utility functions from complexity-utils.ts for backward compatibility
-// These are safe to use in client components
 export {
+  getCrunchLabel,
+  getCrunchColor,
+  getCrunchBadgeClasses,
+  formatCrunchBreakdown,
+  getCrunchProfile,
+  compareToBGGWeight,
+  // Legacy aliases
   getComplexityLabel,
   getComplexityColor,
   formatBNCSBreakdown,
-  compareToBGGWeight,
   getComplexityProfile,
 } from './complexity-utils'
 
-// BNCS response from AI
-interface BNCSResponse {
+// Crunch Score response from AI (1-10 scale)
+interface CrunchResponse {
   rulesDensity: number
   decisionSpace: number
   learningCurve: number
@@ -37,28 +45,64 @@ interface BNCSResponse {
 }
 
 /**
- * Generate BNCS score from parsed rulebook
+ * Normalize BGG weight (1-5) to Crunch scale (1-10)
+ * Maps: 1.0 -> 1.0, 3.0 -> 5.5, 5.0 -> 10.0
  */
-export async function generateBNCS(
+export function normalizeBGGWeight(bggWeight: number): number {
+  const normalized = (bggWeight - 1) / 4 * 9 + 1
+  return Math.round(normalized * 10) / 10
+}
+
+/**
+ * Calculate final Crunch Score with BGG calibration
+ * Formula: AI Score (85%) + BGG Reference (15%)
+ */
+export function calculateCalibratedScore(
+  aiScore: number,
+  bggWeight: number | null
+): { score: number; bggReference: number | null } {
+  if (bggWeight === null || bggWeight === undefined) {
+    // No BGG reference available, use pure AI score
+    return { score: aiScore, bggReference: null }
+  }
+
+  const bggNormalized = normalizeBGGWeight(bggWeight)
+  const calibratedScore = aiScore * 0.85 + bggNormalized * 0.15
+  const finalScore = Math.round(calibratedScore * 10) / 10
+
+  return {
+    score: Math.max(1.0, Math.min(10.0, finalScore)),
+    bggReference: bggWeight,
+  }
+}
+
+/**
+ * Generate Crunch Score from parsed rulebook
+ * @param pdf - Parsed PDF content
+ * @param gameName - Name of the game
+ * @param bggWeight - Optional BGG weight for calibration (1-5 scale)
+ */
+export async function generateCrunchScore(
   pdf: ParsedPDF,
-  gameName: string
-): Promise<BNCSResult> {
-  const prompt = getBNCSPrompt(pdf.text, gameName, {
+  gameName: string,
+  bggWeight?: number | null
+): Promise<CrunchResult> {
+  const prompt = getCrunchScorePrompt(pdf.text, gameName, {
     pageCount: pdf.pageCount,
     wordCount: pdf.wordCount,
   })
 
-  const { data } = await generateJSON<BNCSResponse>(
-    'You are an expert board game complexity analyst. Analyze rulebooks and generate accurate complexity scores.',
+  const { data } = await generateJSON<CrunchResponse>(
+    'You are an expert board game complexity analyst. Analyze rulebooks and generate accurate complexity scores on a 1-10 scale.',
     prompt,
     {
-      temperature: 0.3, // Lower temperature for more consistent scoring
+      temperature: 0.3,
       model: 'claude-3-5-haiku-20241022',
     }
   )
 
-  // Validate and clamp scores
-  const breakdown: BNCSBreakdown = {
+  // Validate and clamp AI scores (1-10)
+  const breakdown: CrunchBreakdown = {
     rulesDensity: clampScore(data.rulesDensity),
     decisionSpace: clampScore(data.decisionSpace),
     learningCurve: clampScore(data.learningCurve),
@@ -67,30 +111,46 @@ export async function generateBNCS(
     reasoning: data.reasoning,
   }
 
-  // Calculate overall score (weighted average)
-  const calculatedScore = calculateOverallScore(breakdown)
+  // Calculate AI-based overall score
+  const aiScore = calculateOverallScore(breakdown)
+
+  // Apply BGG calibration if available
+  const { score, bggReference } = calculateCalibratedScore(aiScore, bggWeight ?? null)
 
   return {
-    score: calculatedScore,
+    score,
     breakdown,
     confidence: data.confidence,
+    bggReference,
     generatedAt: new Date(),
   }
 }
 
 /**
- * Clamp score to valid range [1.0, 5.0]
+ * Legacy function name for backward compatibility
+ * @deprecated Use generateCrunchScore instead
  */
-function clampScore(score: number): number {
-  const clamped = Math.max(1.0, Math.min(5.0, score))
-  return Math.round(clamped * 10) / 10 // Round to 1 decimal
+export async function generateBNCS(
+  pdf: ParsedPDF,
+  gameName: string,
+  bggWeight?: number | null
+): Promise<CrunchResult> {
+  return generateCrunchScore(pdf, gameName, bggWeight)
 }
 
 /**
- * Calculate overall BNCS score from breakdown
- * Weights: Learning Curve and Rules Density are more important for new players
+ * Clamp score to valid range [1.0, 10.0]
  */
-function calculateOverallScore(breakdown: BNCSBreakdown): number {
+function clampScore(score: number): number {
+  const clamped = Math.max(1.0, Math.min(10.0, score))
+  return Math.round(clamped * 10) / 10
+}
+
+/**
+ * Calculate overall Crunch Score from breakdown
+ * Weights: Learning Curve and Rules Density weighted higher for new players
+ */
+function calculateOverallScore(breakdown: CrunchBreakdown): number {
   const weighted =
     breakdown.rulesDensity * 1.5 +
     breakdown.learningCurve * 1.5 +
@@ -101,4 +161,3 @@ function calculateOverallScore(breakdown: BNCSBreakdown): number {
   const score = weighted / 6.0
   return Math.round(score * 10) / 10
 }
-

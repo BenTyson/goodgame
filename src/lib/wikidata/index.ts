@@ -28,9 +28,14 @@ export {
   getAwardWinningGames,
   getBoardGameCount,
   getGamesByBggIds,
+  // Publisher enrichment
+  enrichPublisher,
+  enrichPublishers,
+  getPublisherWebsitesForGame,
   type WikidataBoardGame,
   type WikidataSparqlResult,
   type WikidataBinding,
+  type WikidataPublisher,
 } from './client';
 
 // Importer exports

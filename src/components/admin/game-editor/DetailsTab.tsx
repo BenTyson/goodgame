@@ -17,7 +17,10 @@ import {
   Hash,
   CheckCircle2,
   Settings,
+  Cog,
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { getCrunchLabel, getCrunchBadgeClasses } from '@/lib/rulebook/complexity-utils'
 import type { Game } from '@/types/database'
 
 interface DetailsTabProps {
@@ -183,11 +186,31 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Crunch Score Display (read-only, AI-generated) */}
+          {game.crunch_score != null && (
+            <div className="p-4 rounded-lg border bg-amber-500/5 border-amber-500/20">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Cog className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">{Number(game.crunch_score).toFixed(1)}</span>
+                    <Badge className={getCrunchBadgeClasses(Number(game.crunch_score))}>
+                      {getCrunchLabel(Number(game.crunch_score))}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Crunch Score (AI-generated from rulebook)</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="weight" className="flex items-center gap-1.5">
                 <Scale className="h-3.5 w-3.5 text-muted-foreground" />
-                Weight
+                BGG Weight
               </Label>
               <Input
                 id="weight"
@@ -199,7 +222,7 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
                 onChange={(e) => updateField('weight', parseFloat(e.target.value) || null)}
                 placeholder="1.0 - 5.0"
               />
-              <p className="text-xs text-muted-foreground">1 = Light, 5 = Heavy</p>
+              <p className="text-xs text-muted-foreground">BGG scale: 1 = Light, 5 = Heavy</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="min_age">Min Age</Label>

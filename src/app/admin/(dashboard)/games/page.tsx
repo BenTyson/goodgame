@@ -223,7 +223,7 @@ export default async function AdminGamesPage({
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {games.map((game) => (
           <Link key={game.id} href={`/admin/games/${game.id}`}>
-            <Card className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group cursor-pointer h-full">
+            <Card padding="none" className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group cursor-pointer h-full">
               <div className="relative aspect-[4/3] bg-muted">
                 {game.thumbnail_url ? (
                   <Image

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1003,9 +1028,6 @@ export type Database = {
           bgg_id: number | null
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
-          bncs_breakdown: Json | null
-          bncs_generated_at: string | null
-          bncs_score: number | null
           box_image_url: string | null
           complexity_tier_id: string | null
           component_list: Json | null
@@ -1016,6 +1038,10 @@ export type Database = {
           content_status: string | null
           content_version: number | null
           created_at: string | null
+          crunch_bgg_reference: number | null
+          crunch_breakdown: Json | null
+          crunch_generated_at: string | null
+          crunch_score: number | null
           data_source: Database["public"]["Enums"]["data_source"] | null
           description: string | null
           designers: string[] | null
@@ -1041,6 +1067,7 @@ export type Database = {
           meta_title: string | null
           min_age: number | null
           name: string
+          official_website: string | null
           play_time_max: number | null
           play_time_min: number | null
           player_count_best: number[] | null
@@ -1060,6 +1087,8 @@ export type Database = {
           updated_at: string | null
           weight: number | null
           wikidata_id: string | null
+          wikidata_image_url: string | null
+          wikidata_last_synced: string | null
           year_published: number | null
         }
         Insert: {
@@ -1067,9 +1096,6 @@ export type Database = {
           bgg_id?: number | null
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
-          bncs_breakdown?: Json | null
-          bncs_generated_at?: string | null
-          bncs_score?: number | null
           box_image_url?: string | null
           complexity_tier_id?: string | null
           component_list?: Json | null
@@ -1080,6 +1106,10 @@ export type Database = {
           content_status?: string | null
           content_version?: number | null
           created_at?: string | null
+          crunch_bgg_reference?: number | null
+          crunch_breakdown?: Json | null
+          crunch_generated_at?: string | null
+          crunch_score?: number | null
           data_source?: Database["public"]["Enums"]["data_source"] | null
           description?: string | null
           designers?: string[] | null
@@ -1105,6 +1135,7 @@ export type Database = {
           meta_title?: string | null
           min_age?: number | null
           name: string
+          official_website?: string | null
           play_time_max?: number | null
           play_time_min?: number | null
           player_count_best?: number[] | null
@@ -1124,6 +1155,8 @@ export type Database = {
           updated_at?: string | null
           weight?: number | null
           wikidata_id?: string | null
+          wikidata_image_url?: string | null
+          wikidata_last_synced?: string | null
           year_published?: number | null
         }
         Update: {
@@ -1131,9 +1164,6 @@ export type Database = {
           bgg_id?: number | null
           bgg_last_synced?: string | null
           bgg_raw_data?: Json | null
-          bncs_breakdown?: Json | null
-          bncs_generated_at?: string | null
-          bncs_score?: number | null
           box_image_url?: string | null
           complexity_tier_id?: string | null
           component_list?: Json | null
@@ -1144,6 +1174,10 @@ export type Database = {
           content_status?: string | null
           content_version?: number | null
           created_at?: string | null
+          crunch_bgg_reference?: number | null
+          crunch_breakdown?: Json | null
+          crunch_generated_at?: string | null
+          crunch_score?: number | null
           data_source?: Database["public"]["Enums"]["data_source"] | null
           description?: string | null
           designers?: string[] | null
@@ -1169,6 +1203,7 @@ export type Database = {
           meta_title?: string | null
           min_age?: number | null
           name?: string
+          official_website?: string | null
           play_time_max?: number | null
           play_time_min?: number | null
           player_count_best?: number[] | null
@@ -1188,6 +1223,8 @@ export type Database = {
           updated_at?: string | null
           weight?: number | null
           wikidata_id?: string | null
+          wikidata_image_url?: string | null
+          wikidata_last_synced?: string | null
           year_published?: number | null
         }
         Relationships: [
@@ -3540,9 +3577,6 @@ export type Database = {
           bgg_id: number | null
           bgg_last_synced: string | null
           bgg_raw_data: Json | null
-          bncs_breakdown: Json | null
-          bncs_generated_at: string | null
-          bncs_score: number | null
           box_image_url: string | null
           complexity_tier_id: string | null
           component_list: Json | null
@@ -3553,6 +3587,10 @@ export type Database = {
           content_status: string | null
           content_version: number | null
           created_at: string | null
+          crunch_bgg_reference: number | null
+          crunch_breakdown: Json | null
+          crunch_generated_at: string | null
+          crunch_score: number | null
           data_source: Database["public"]["Enums"]["data_source"] | null
           description: string | null
           designers: string[] | null
@@ -3578,6 +3616,7 @@ export type Database = {
           meta_title: string | null
           min_age: number | null
           name: string
+          official_website: string | null
           play_time_max: number | null
           play_time_min: number | null
           player_count_best: number[] | null
@@ -3597,6 +3636,8 @@ export type Database = {
           updated_at: string | null
           weight: number | null
           wikidata_id: string | null
+          wikidata_image_url: string | null
+          wikidata_last_synced: string | null
           year_published: number | null
         }[]
         SetofOptions: {
@@ -3959,6 +4000,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: [

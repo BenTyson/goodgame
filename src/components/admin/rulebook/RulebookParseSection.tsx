@@ -18,6 +18,9 @@ interface ParseResult {
   success: boolean
   wordCount?: number
   pageCount?: number
+  crunchScore?: number
+  crunchError?: string
+  // Legacy fields for backward compatibility
   bncsScore?: number
   bncsError?: string
   error?: string
@@ -82,7 +85,7 @@ export function RulebookParseSection({
           <div>
             <CardTitle className="text-lg">AI Content Extraction</CardTitle>
             <CardDescription>
-              Parse rulebook PDF and generate BNCS complexity score
+              Parse rulebook PDF and generate Crunch Score
             </CardDescription>
           </div>
         </div>
@@ -98,7 +101,7 @@ export function RulebookParseSection({
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
           )}
-          {parsing ? 'Parsing Rulebook...' : 'Parse & Generate BNCS'}
+          {parsing ? 'Parsing Rulebook...' : 'Parse & Generate Crunch Score'}
         </Button>
 
         {parseResult && (
@@ -120,9 +123,9 @@ export function RulebookParseSection({
                   <>
                     Successfully parsed {parseResult.pageCount} pages
                     ({parseResult.wordCount?.toLocaleString()} words)
-                    {parseResult.bncsScore && (
+                    {(parseResult.crunchScore ?? parseResult.bncsScore) && (
                       <span className="ml-2 font-medium">
-                        BNCS: {parseResult.bncsScore.toFixed(1)}
+                        Crunch: {(parseResult.crunchScore ?? parseResult.bncsScore)?.toFixed(1)}/10
                       </span>
                     )}
                   </>
@@ -131,11 +134,11 @@ export function RulebookParseSection({
                 )}
               </div>
             </div>
-            {parseResult.bncsError && (
+            {(parseResult.crunchError ?? parseResult.bncsError) && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <strong>BNCS Generation Failed:</strong> {parseResult.bncsError}
+                  <strong>Crunch Score Failed:</strong> {parseResult.crunchError ?? parseResult.bncsError}
                 </div>
               </div>
             )}

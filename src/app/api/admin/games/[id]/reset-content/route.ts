@@ -5,7 +5,8 @@ import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
 interface ResetOptions {
   resetRulebook?: boolean      // Clear rulebook URL and source
-  resetBNCS?: boolean          // Clear BNCS score and breakdown
+  resetCrunch?: boolean        // Clear Crunch Score and breakdown
+  resetBNCS?: boolean          // Legacy alias for resetCrunch
   resetContent?: boolean       // Clear rules, setup, reference content
   resetTaxonomy?: boolean      // Clear taxonomy suggestions
   resetAll?: boolean           // Clear everything
@@ -33,13 +34,16 @@ export async function POST(
     // Default to reset all if no specific options provided
     const {
       resetRulebook = false,
-      resetBNCS = false,
+      resetCrunch = false,
+      resetBNCS = false,  // Legacy alias
       resetContent = false,
       resetTaxonomy = false,
       resetAll = false,
     } = body
 
-    const shouldResetAll = resetAll || (!resetRulebook && !resetBNCS && !resetContent && !resetTaxonomy)
+    // Support legacy resetBNCS as alias for resetCrunch
+    const shouldResetCrunch = resetCrunch || resetBNCS
+    const shouldResetAll = resetAll || (!resetRulebook && !shouldResetCrunch && !resetContent && !resetTaxonomy)
 
     const adminClient = createAdminClient()
 
@@ -53,10 +57,11 @@ export async function POST(
       updateData.latest_parse_log_id = null
     }
 
-    if (shouldResetAll || resetBNCS) {
-      updateData.bncs_score = null
-      updateData.bncs_breakdown = null
-      updateData.bncs_generated_at = null
+    if (shouldResetAll || shouldResetCrunch) {
+      updateData.crunch_score = null
+      updateData.crunch_breakdown = null
+      updateData.crunch_generated_at = null
+      updateData.crunch_bgg_reference = null
     }
 
     if (shouldResetAll || resetContent) {
@@ -119,7 +124,8 @@ export async function POST(
       success: true,
       reset: {
         rulebook: shouldResetAll || resetRulebook,
-        bncs: shouldResetAll || resetBNCS,
+        crunch: shouldResetAll || shouldResetCrunch,
+        bncs: shouldResetAll || shouldResetCrunch,  // Legacy alias
         content: shouldResetAll || resetContent,
         taxonomy: shouldResetAll || resetTaxonomy,
       },

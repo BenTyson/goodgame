@@ -8,6 +8,7 @@ import { fetchBGGGame, type BGGRawGame, type BGGLink } from './client'
 import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
+import { enrichPublisher, getGameByBggId, type WikidataBoardGame } from '@/lib/wikidata'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -100,6 +101,7 @@ async function upsertDesigner(
 
 /**
  * Upsert a publisher and return their ID
+ * Also enriches from Wikidata if creating a new publisher
  */
 async function upsertPublisher(
   supabase: SupabaseClient<Database>,
@@ -109,20 +111,159 @@ async function upsertPublisher(
 
   const { data: existing } = await supabase
     .from('publishers')
-    .select('id')
+    .select('id, website')
     .eq('slug', slug)
     .single()
 
-  if (existing) return existing.id
+  // If publisher exists and has website, return it
+  if (existing?.website) return existing.id
 
+  // Try to enrich from Wikidata
+  let wikidataData: { website: string | null; description: string | null; wikidata_id: string | null } = {
+    website: null,
+    description: null,
+    wikidata_id: null,
+  }
+
+  try {
+    const wikidata = await enrichPublisher(name)
+    if (wikidata) {
+      wikidataData = {
+        website: wikidata.website,
+        description: wikidata.description,
+        wikidata_id: wikidata.wikidataId,
+      }
+      if (wikidata.website) {
+        console.log(`  [Wikidata] Found website for ${name}: ${wikidata.website}`)
+      }
+    }
+  } catch (err) {
+    // Wikidata enrichment failed, continue without it
+    console.warn(`  [Wikidata] Failed to enrich publisher ${name}:`, err)
+  }
+
+  // If publisher exists but missing website, update it
+  if (existing) {
+    if (wikidataData.website) {
+      await supabase
+        .from('publishers')
+        .update({
+          website: wikidataData.website,
+          description: wikidataData.description || undefined,
+        })
+        .eq('id', existing.id)
+    }
+    return existing.id
+  }
+
+  // Create new publisher with Wikidata enrichment
   const { data: newPublisher, error } = await supabase
     .from('publishers')
-    .insert({ slug, name })
+    .insert({
+      slug,
+      name,
+      website: wikidataData.website,
+      description: wikidataData.description,
+    })
     .select('id')
     .single()
 
   if (error || !newPublisher) return null
   return newPublisher.id
+}
+
+/**
+ * Enrich a game with Wikidata data
+ * Fetches additional fields and logs discrepancies between BGG and Wikidata
+ */
+async function enrichGameFromWikidata(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  bggId: number,
+  bggData: BGGRawGame
+): Promise<void> {
+  try {
+    const wikidata = await getGameByBggId(String(bggId))
+
+    if (!wikidata) {
+      console.log(`  [Wikidata] No game found for BGG ID ${bggId}`)
+      return
+    }
+
+    console.log(`  [Wikidata] Found game: ${wikidata.name} (${wikidata.wikidataId})`)
+
+    // Log discrepancies between BGG and Wikidata
+    logDataDiscrepancies(bggData, wikidata)
+
+    // Update game with Wikidata fields
+    // Wikidata image is preferred (CC-licensed), BGG image is fallback
+    const updateData: Record<string, unknown> = {
+      wikidata_id: wikidata.wikidataId,
+      wikidata_last_synced: new Date().toISOString(),
+    }
+
+    // Wikidata image (CC-licensed, safe for public display)
+    if (wikidata.imageUrl) {
+      updateData.wikidata_image_url = wikidata.imageUrl
+      console.log(`  [Wikidata] Found CC-licensed image`)
+    }
+
+    // Official website (Wikidata-only field)
+    if (wikidata.officialWebsite) {
+      updateData.official_website = wikidata.officialWebsite
+      console.log(`  [Wikidata] Found official website: ${wikidata.officialWebsite}`)
+    }
+
+    // Rulebook URL (P953: full work available at URL)
+    if (wikidata.rulebookUrl) {
+      updateData.rulebook_url = wikidata.rulebookUrl
+      updateData.rulebook_source = 'wikidata'
+      console.log(`  [Wikidata] Found rulebook URL: ${wikidata.rulebookUrl}`)
+    }
+
+    await supabase
+      .from('games')
+      .update(updateData)
+      .eq('id', gameId)
+
+  } catch (err) {
+    console.warn(`  [Wikidata] Failed to enrich game ${bggId}:`, err)
+  }
+}
+
+/**
+ * Log discrepancies between BGG and Wikidata data
+ */
+function logDataDiscrepancies(bgg: BGGRawGame, wikidata: WikidataBoardGame): void {
+  const discrepancies: string[] = []
+
+  // Year published
+  if (bgg.yearPublished && wikidata.yearPublished && bgg.yearPublished !== wikidata.yearPublished) {
+    discrepancies.push(`Year: BGG=${bgg.yearPublished}, Wikidata=${wikidata.yearPublished}`)
+  }
+
+  // Min players
+  if (bgg.minPlayers && wikidata.minPlayers && bgg.minPlayers !== wikidata.minPlayers) {
+    discrepancies.push(`MinPlayers: BGG=${bgg.minPlayers}, Wikidata=${wikidata.minPlayers}`)
+  }
+
+  // Max players
+  if (bgg.maxPlayers && wikidata.maxPlayers && bgg.maxPlayers !== wikidata.maxPlayers) {
+    discrepancies.push(`MaxPlayers: BGG=${bgg.maxPlayers}, Wikidata=${wikidata.maxPlayers}`)
+  }
+
+  // Play time (BGG has min/max, Wikidata has single value)
+  if (wikidata.playTimeMinutes && bgg.playingTime) {
+    const avgBggTime = bgg.playingTime
+    if (Math.abs(avgBggTime - wikidata.playTimeMinutes) > 15) {
+      discrepancies.push(`PlayTime: BGG=${avgBggTime}min, Wikidata=${wikidata.playTimeMinutes}min`)
+    }
+  }
+
+  if (discrepancies.length > 0) {
+    console.log(`  [Wikidata] Data discrepancies found:`)
+    discrepancies.forEach(d => console.log(`    - ${d}`))
+  }
 }
 
 /**
@@ -908,6 +1049,9 @@ export async function importGameFromBGG(
     const implementationBggIds = bggData.implementations.map(i => i.id)
     await linkOriginalGameImplementations(supabase, newGame.id, implementationBggIds)
   }
+
+  // Enrich with Wikidata data (image, official website, etc.)
+  await enrichGameFromWikidata(supabase, newGame.id, bggId, bggData)
 
   // Update has_unimported_relations flag for this game
   await updateUnimportedRelationsFlag(supabase, newGame.id, bggData)

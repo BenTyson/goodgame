@@ -64,6 +64,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     // Get primary image URL for hero_image_url
     const primaryImage = images.find(img => img.is_primary)
 
+    // Ensure content_status is 'published' when publishing
+    const contentStatus = game.is_published ? 'published' : (game.content_status || 'none')
+
     await execute(async () => {
       const response = await fetch('/api/admin/games', {
         method: 'PATCH',
@@ -91,7 +94,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             is_staff_pick: game.is_staff_pick,
             is_hidden_gem: game.is_hidden_gem,
             is_new_release: game.is_new_release,
-            content_status: game.content_status,
+            content_status: contentStatus,
             rules_content: game.rules_content,
             setup_content: game.setup_content,
             reference_content: game.reference_content,

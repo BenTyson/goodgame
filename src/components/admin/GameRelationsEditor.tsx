@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
@@ -65,8 +65,8 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
   const { saving, execute } = useAsyncAction()
   const [newRelationType, setNewRelationType] = useState<RelationType>('expansion_of')
 
-  // Use singleton browser client
-  const supabase = createClient()
+  // Use memoized singleton browser client to prevent infinite re-renders
+  const supabase = useMemo(() => createClient(), [])
 
   // Load families and relations
   useEffect(() => {
@@ -76,34 +76,82 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
       setLoading(true)
       try {
         // Load all families
-        const { data: familiesData } = await supabase
+        const { data: familiesData, error: familiesError } = await supabase
           .from('game_families')
           .select('*')
           .order('name')
 
+        if (familiesError) {
+          console.error('Error loading families:', familiesError)
+        }
         if (isMounted) setFamilies(familiesData || [])
 
         // Load relations where this game is the source
-        const { data: relationsData } = await supabase
+        // First get the relations
+        const { data: relationsData, error: relationsError } = await supabase
           .from('game_relations')
-          .select(`
-            *,
-            target_game:games!game_relations_target_game_id_fkey (*)
-          `)
+          .select('*')
           .eq('source_game_id', game.id)
 
-        if (isMounted) setRelations((relationsData as unknown as RelationWithGame[]) || [])
+        if (relationsError) {
+          console.error('Error loading relations:', relationsError)
+        }
+
+        // Then fetch the target games separately
+        if (relationsData && relationsData.length > 0) {
+          const targetIds = relationsData.map(r => r.target_game_id)
+          const { data: targetGames, error: targetError } = await supabase
+            .from('games')
+            .select('*')
+            .in('id', targetIds)
+
+          if (targetError) {
+            console.error('Error loading target games:', targetError)
+          }
+
+          const gamesMap = new Map(targetGames?.map(g => [g.id, g]) || [])
+          const relationsWithGames = relationsData.map(r => ({
+            ...r,
+            target_game: gamesMap.get(r.target_game_id)!,
+          })).filter(r => r.target_game)
+
+          if (isMounted) setRelations(relationsWithGames as RelationWithGame[])
+        } else {
+          if (isMounted) setRelations([])
+        }
 
         // Load inverse relations where this game is the target
-        const { data: inverseData } = await supabase
+        const { data: inverseData, error: inverseError } = await supabase
           .from('game_relations')
-          .select(`
-            *,
-            source_game:games!game_relations_source_game_id_fkey (*)
-          `)
+          .select('*')
           .eq('target_game_id', game.id)
 
-        if (isMounted) setInverseRelations((inverseData as unknown as InverseRelationWithGame[]) || [])
+        if (inverseError) {
+          console.error('Error loading inverse relations:', inverseError)
+        }
+
+        // Then fetch the source games separately
+        if (inverseData && inverseData.length > 0) {
+          const sourceIds = inverseData.map(r => r.source_game_id)
+          const { data: sourceGames, error: sourceError } = await supabase
+            .from('games')
+            .select('*')
+            .in('id', sourceIds)
+
+          if (sourceError) {
+            console.error('Error loading source games:', sourceError)
+          }
+
+          const gamesMap = new Map(sourceGames?.map(g => [g.id, g]) || [])
+          const inverseWithGames = inverseData.map(r => ({
+            ...r,
+            source_game: gamesMap.get(r.source_game_id)!,
+          })).filter(r => r.source_game)
+
+          if (isMounted) setInverseRelations(inverseWithGames as InverseRelationWithGame[])
+        } else {
+          if (isMounted) setInverseRelations([])
+        }
       } catch (error) {
         console.error('Error loading relations data:', error)
       } finally {

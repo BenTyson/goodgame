@@ -145,18 +145,16 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
               {game.publishers_list && game.publishers_list.length > 0 ? (
                 game.publishers_list.map((publisher) =>
                   publisher.website ? (
-                    <Button
+                    <a
                       key={publisher.id}
-                      variant="outline"
-                      size="sm"
-                      asChild
-                      className="gap-2"
+                      href={publisher.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
                     >
-                      <a href={publisher.website} target="_blank" rel="noopener noreferrer">
-                        {publisher.name}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </Button>
+                      {publisher.name}
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                    </a>
                   ) : (
                     <span
                       key={publisher.id}

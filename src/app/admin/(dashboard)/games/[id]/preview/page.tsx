@@ -145,7 +145,10 @@ export default async function GamePreviewPage({ params }: PreviewPageProps) {
   if (!game.tagline) missingContent.push('Tagline')
   if (!game.description) missingContent.push('Description')
   if (!game.box_image_url && (!game.images || game.images.length === 0)) missingContent.push('Images')
-  if (!game.weight && !game.bncs_score) missingContent.push('Complexity Score')
+  // Check for crunch_score (new) or bncs_score (legacy) - supports pre/post migration
+  const gameAny = game as unknown as Record<string, unknown>
+  const crunchScore = (gameAny.crunch_score ?? gameAny.bncs_score) as number | null
+  if (!game.weight && !crunchScore) missingContent.push('Crunch Score')
 
   return (
     <div className="min-h-screen bg-background">
@@ -302,13 +305,13 @@ export default async function GamePreviewPage({ params }: PreviewPageProps) {
                 </div>
               )}
 
-              {(game.weight || game.bncs_score) && (
+              {(game.weight || crunchScore) && (
                 <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
                   <Brain className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Complexity</p>
+                    <p className="text-sm text-muted-foreground">Crunch</p>
                     <p className="font-medium">
-                      {(game.bncs_score || game.weight || 0).toFixed(1)} / 5
+                      {crunchScore ? `${Number(crunchScore).toFixed(1)} / 10` : `${(game.weight || 0).toFixed(1)} / 5 BGG`}
                       {game.complexity_tier && (
                         <span className="ml-2 text-sm text-muted-foreground">
                           ({game.complexity_tier.name})

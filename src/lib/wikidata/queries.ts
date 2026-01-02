@@ -11,7 +11,9 @@
  * - P123: publisher
  * - P18: image
  * - P856: official website
- * - P2860: cites work
+ * - P953: full work available at URL (rulebook PDF)
+ * - P973: described at URL (info page)
+ * - P2339: BoardGameGeek ID
  * - P166: award received
  *
  * Query endpoint: https://query.wikidata.org/sparql
@@ -183,6 +185,7 @@ SELECT DISTINCT
   ?playTime
   ?image
   ?officialWebsite
+  ?rulebookUrl
   ?bggId
   (GROUP_CONCAT(DISTINCT ?designerLabel; separator=", ") AS ?designers)
   (GROUP_CONCAT(DISTINCT ?publisherLabel; separator=", ") AS ?publishers)
@@ -196,6 +199,7 @@ WHERE {
   OPTIONAL { ?game wdt:P2047 ?playTime . }
   OPTIONAL { ?game wdt:P18 ?image . }
   OPTIONAL { ?game wdt:P856 ?officialWebsite . }
+  OPTIONAL { ?game wdt:P953 ?rulebookUrl . }
   OPTIONAL { ?game wdt:P2339 ?bggId . }
 
   OPTIONAL {
@@ -212,7 +216,7 @@ WHERE {
 
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
 }
-GROUP BY ?game ?gameLabel ?gameDescription ?yearPublished ?minPlayers ?maxPlayers ?playTime ?image ?officialWebsite ?bggId
+GROUP BY ?game ?gameLabel ?gameDescription ?yearPublished ?minPlayers ?maxPlayers ?playTime ?image ?officialWebsite ?rulebookUrl ?bggId
 LIMIT 1
 `;
 

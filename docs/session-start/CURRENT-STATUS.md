@@ -1,8 +1,136 @@
 # Current Status
 
-> Last Updated: 2026-01-01 (AI Taxonomy Wizard + JSON Repair)
+> Last Updated: 2026-01-02 (Wikidata Game Enrichment)
 
-## Current Phase: 38 - AI-Powered Taxonomy Wizard (COMPLETE)
+## Current Phase: 40 - Wikidata Game Enrichment (COMPLETE)
+
+Added game-level Wikidata enrichment to the BGG import pipeline, including CC-licensed images, official websites, and rulebook URLs.
+
+### Key Changes
+
+**New Admin Page:**
+- **Data Dictionary** (`/admin/data`) - Reference table showing all fields imported from BGG and Wikidata
+- Displays field source (BGG/Wikidata/Both), database column, and notes
+- Marks reference-only fields (used internally, not displayed publicly)
+
+**Wikidata Enrichment During Import:**
+- During BGG import, now queries Wikidata for matching games (by BGG ID)
+- Fetches CC-licensed images from Wikimedia Commons (safe for public display)
+- Fetches official game/publisher websites (P856)
+- Fetches rulebook URLs (P953 - "full work available at URL")
+- Logs data discrepancies between BGG and Wikidata for review
+
+**Publisher Enrichment:**
+- Publishers enriched with Wikidata data (website, logo, description)
+- Wikidata ID stored for cross-referencing
+
+### New Migration
+
+| Migration | Purpose |
+|-----------|---------|
+| `00054_wikidata_game_fields.sql` | Add `wikidata_image_url`, `official_website`, `wikidata_last_synced` columns |
+
+### New/Modified Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/admin/(dashboard)/data/page.tsx` | **NEW** - Data Dictionary admin page |
+| `src/components/ui/table.tsx` | **NEW** - shadcn Table component |
+| `src/components/admin/AdminSidebar.tsx` | Added "Data" nav item |
+| `src/lib/wikidata/queries.ts` | Added P953 (rulebookUrl) to SPARQL queries |
+| `src/lib/wikidata/client.ts` | Added `rulebookUrl` to `WikidataBoardGame` interface |
+| `src/lib/bgg/importer.ts` | Added `enrichGameFromWikidata()` function |
+
+### Database Schema Changes
+
+```sql
+-- New columns on games table
+wikidata_image_url VARCHAR(500)   -- CC-licensed image from Wikimedia Commons
+official_website VARCHAR(500)      -- Official publisher/game website
+wikidata_last_synced TIMESTAMPTZ   -- When Wikidata data was last synced
+
+-- Updated column
+rulebook_source TEXT  -- Now includes 'wikidata' as source option
+```
+
+### Image Strategy
+
+| Source | Usage | Legal Status |
+|--------|-------|--------------|
+| Wikidata (P18) | Primary display | CC-licensed, safe for public use |
+| BGG | Fallback/reference only | Copyright, internal reference only |
+
+---
+
+## Phase 39 - Crunch Score Redesign (COMPLETE)
+
+Redesigned the complexity scoring system from "BNCS" (Board Nomads Complexity Score) to "Crunch Score" with a new 1-10 scale and BGG calibration.
+
+### Key Changes
+
+**Rebranding:**
+- Renamed from "BNCS" to "Crunch Score" (simpler, more fun)
+- New 1-10 scale (distinct from BGG's 1-5 weight)
+
+**New Tier System:**
+| Score | Tier | Description |
+|-------|------|-------------|
+| 1.0-2.0 | Breezy | Quick to learn, minimal rules |
+| 2.1-4.0 | Light | Family-friendly depth |
+| 4.1-6.0 | Crunchy | Solid complexity |
+| 6.1-8.0 | Heavy | Meaty decisions |
+| 8.1-10.0 | Brain Burner | Maximum crunch |
+
+**BGG Calibration:**
+- Formula: `crunchScore = (aiScore * 0.85) + (bggNormalized * 0.15)`
+- BGG weight (1-5) normalized to 1-10 scale
+- BGG reference stored for transparency (`crunch_bgg_reference`)
+
+### New Migration
+
+| Migration | Purpose |
+|-----------|---------|
+| `00053_crunch_score.sql` | Rename BNCS → Crunch columns, update constraint 1-10, add BGG reference |
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/lib/rulebook/types.ts` | `CrunchBreakdown`, `CrunchResult` types (with legacy aliases) |
+| `src/lib/rulebook/complexity.ts` | `generateCrunchScore()`, BGG calibration logic |
+| `src/lib/rulebook/complexity-utils.ts` | `getCrunchLabel()`, `getCrunchColor()`, new tier functions |
+| `src/lib/rulebook/prompts.ts` | `getCrunchScorePrompt()` for 1-10 AI scoring |
+| `src/components/admin/rulebook/CrunchScoreDisplay.tsx` | New UI component (renamed from BNCSScoreDisplay) |
+| `src/app/api/admin/rulebook/parse/route.ts` | Fetches BGG weight, stores `crunch_bgg_reference` |
+| `src/app/api/admin/games/[id]/reset-content/route.ts` | `resetCrunch` option (legacy `resetBNCS` alias) |
+| All wizard/editor components | Updated to use `crunch_*` columns |
+
+### Database Schema Changes
+
+```sql
+-- Renamed columns
+bncs_score → crunch_score (DECIMAL 3,1, range 1-10)
+bncs_breakdown → crunch_breakdown (JSONB)
+bncs_generated_at → crunch_generated_at (TIMESTAMPTZ)
+
+-- New column
+crunch_bgg_reference (DECIMAL 2,1) -- BGG weight used for calibration
+
+-- Existing scores converted: (score - 1) / 4 * 9 + 1 (maps 1-5 to 1-10)
+```
+
+### Backward Compatibility
+
+All legacy names supported via aliases:
+- `BNCSBreakdown` → `CrunchBreakdown`
+- `BNCSResult` → `CrunchResult`
+- `generateBNCS()` → `generateCrunchScore()`
+- `getBNCSPrompt()` → `getCrunchScorePrompt()`
+- `resetBNCS` API option → `resetCrunch`
+
+---
+
+## Phase 38 - AI-Powered Taxonomy Wizard (COMPLETE)
 
 Added AI-powered theme and player experience extraction to the game setup wizard. The AI analyzes parsed rulebook text and suggests taxonomy assignments for admin review.
 
@@ -41,7 +169,7 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 | Step | Name | Description |
 |------|------|-------------|
 | 1 | Rulebook | Find rulebook URL |
-| 2 | Parse | Generate BNCS + content + taxonomy extraction |
+| 2 | Parse | Generate Crunch Score + content + taxonomy extraction |
 | 3 | **Taxonomy** | **NEW** - Review AI suggestions, select themes/experiences |
 | 4 | Images | Upload artwork |
 | 5 | Relations | Game connections |
@@ -77,8 +205,8 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 - Extracts JSON from extra text
 
 **Reset Content API (`POST /api/admin/games/[id]/reset-content`):**
-- Options: `resetRulebook`, `resetBNCS`, `resetContent`, `resetTaxonomy`, `resetAll`
-- Clears: BNCS score, rules/setup/reference content, taxonomy suggestions, parse logs
+- Options: `resetRulebook`, `resetCrunch` (or `resetBNCS`), `resetContent`, `resetTaxonomy`, `resetAll`
+- Clears: Crunch Score, rules/setup/reference content, taxonomy suggestions, parse logs
 - UI: Reset dropdown in ParseGenerateStep
 
 **ReferenceContent.endGame Type Fix:**
@@ -324,10 +452,12 @@ Complete marketplace implementation:
 
 ### Admin
 - Game editor with Setup Wizard and Advanced Mode
-- Rulebook parsing + BNCS generation
+- Rulebook parsing + Crunch Score generation (1-10 scale with BGG calibration)
 - AI content generation (rules, setup, reference)
 - Publisher/Family/Taxonomy management
 - Image upload with cropping (Cover 4:3, Hero 16:9, Gallery)
+- **Data Dictionary** (`/admin/data`) - Field reference for BGG/Wikidata imports
+- Wikidata enrichment during BGG import (CC images, websites, rulebooks)
 
 ### Environments
 
@@ -342,19 +472,22 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-45 migrations in `supabase/migrations/` covering:
+54 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities, notifications
 - Content: game content, images, families, relations
 - Marketplace: listings, conversations, offers, transactions, feedback
 - Taxonomy: themes, player experiences, complexity tiers
-- Rulebook: BNCS scoring, parse logs
+- Rulebook: Crunch Score (1-10), parse logs
 
-Recent migrations (46-49):
+Recent migrations (46-54):
 - `00046_data_source_tracking.sql` - Data provenance
 - `00047_data_source_seed.sql` - Seed data enum
-- `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS
+- `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS (legacy)
 - `00049_rulebook_parsed_text.sql` - Parsed text storage
+- `00052_taxonomy_suggestions.sql` - AI taxonomy suggestions
+- `00053_crunch_score.sql` - BNCS → Crunch Score (1-10 scale, BGG calibration)
+- `00054_wikidata_game_fields.sql` - Wikidata enrichment (image, website, rulebook)
 
 ---
 

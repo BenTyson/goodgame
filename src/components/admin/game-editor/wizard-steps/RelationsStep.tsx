@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
 import { Link2 } from 'lucide-react'
@@ -16,8 +17,11 @@ export function RelationsStep({
   onComplete,
   onSkip,
 }: RelationsStepProps) {
-  // This step doesn't auto-complete - user should review relations manually
-  // The GameRelationsEditor handles its own loading state
+  // Auto-complete this step on mount since "No Family" + "No Relations" is a valid state
+  // User can still make changes, but Next button will be enabled
+  useEffect(() => {
+    onComplete()
+  }, [onComplete])
 
   return (
     <Card>

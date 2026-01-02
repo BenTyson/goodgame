@@ -12,11 +12,11 @@ import {
   PenTool,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
-import type { BNCSBreakdown } from '@/lib/rulebook/types'
+import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import {
   RulebookUrlSection,
   RulebookParseSection,
-  BNCSScoreDisplay,
+  CrunchScoreDisplay,
   ContentGenerationModal,
 } from './rulebook'
 import type { ContentResult } from './rulebook'
@@ -54,8 +54,8 @@ export function RulebookEditor({
     success: boolean
     wordCount?: number
     pageCount?: number
-    bncsScore?: number
-    bncsError?: string
+    crunchScore?: number
+    crunchError?: string
     error?: string
   } | null>(null)
 
@@ -64,9 +64,9 @@ export function RulebookEditor({
   const [contentResult, setContentResult] = useState<ContentResult | null>(null)
   const [showContentModal, setShowContentModal] = useState(false)
 
-  // Parse BNCS breakdown from game
-  const bncsBreakdown = game.bncs_breakdown as BNCSBreakdown | null
-  const bncsScore = game.bncs_score
+  // Parse Crunch breakdown from game
+  const crunchBreakdown = game.crunch_breakdown as CrunchBreakdown | null
+  const crunchScore = game.crunch_score
 
   const validateUrl = async () => {
     if (!rulebookUrl) return
@@ -154,8 +154,8 @@ export function RulebookEditor({
       const result = await response.json()
       setParseResult(result)
 
-      // Only reload if BNCS was successfully generated
-      if (result.success && result.bncsScore) {
+      // Only reload if Crunch Score was successfully generated
+      if (result.success && result.crunchScore) {
         setTimeout(() => window.location.reload(), 1500)
       }
     } catch (error) {
@@ -217,7 +217,7 @@ export function RulebookEditor({
         rulebookParsedAt={game.rulebook_parsed_at}
       />
 
-      {/* Parse & Generate BNCS */}
+      {/* Parse & Generate Crunch Score */}
       <RulebookParseSection
         gameId={game.id}
         rulebookUrl={rulebookUrl}
@@ -227,17 +227,18 @@ export function RulebookEditor({
         onParse={parseRulebook}
       />
 
-      {/* BNCS Score Display */}
-      {bncsScore && (
-        <BNCSScoreDisplay
-          score={Number(bncsScore)}
-          breakdown={bncsBreakdown}
-          generatedAt={game.bncs_generated_at}
+      {/* Crunch Score Display */}
+      {crunchScore && (
+        <CrunchScoreDisplay
+          score={Number(crunchScore)}
+          breakdown={crunchBreakdown}
+          generatedAt={game.crunch_generated_at}
+          bggReference={game.crunch_bgg_reference ? Number(game.crunch_bgg_reference) : undefined}
         />
       )}
 
       {/* Generate Content */}
-      {game.bncs_score && (
+      {game.crunch_score && (
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">

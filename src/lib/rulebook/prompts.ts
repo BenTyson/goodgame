@@ -103,9 +103,9 @@ Notes:
 }
 
 /**
- * Prompt for BNCS (Board Nomads Complexity Score) analysis
+ * Prompt for Crunch Score analysis (1-10 scale)
  */
-export function getBNCSPrompt(
+export function getCrunchScorePrompt(
   rulebookText: string,
   gameName: string,
   metrics: { pageCount: number; wordCount: number }
@@ -115,7 +115,7 @@ export function getBNCSPrompt(
     ? rulebookText.substring(0, 25000) + '\n\n[...rulebook truncated...]'
     : rulebookText
 
-  return `Analyze the complexity of "${gameName}" based on this rulebook and generate a Board Nomads Complexity Score (BNCS).
+  return `Analyze the complexity of "${gameName}" and generate a Crunch Score (Board Nomads' complexity rating).
 
 RULEBOOK METRICS:
 - Pages: ${metrics.pageCount}
@@ -126,56 +126,62 @@ RULEBOOK TEXT:
 ${truncatedText}
 ---
 
-Score each dimension from 1.0 to 5.0:
-- 1.0-2.0 = Very simple/easy
-- 2.0-3.0 = Moderate
-- 3.0-4.0 = Complex/challenging
-- 4.0-5.0 = Very complex/hardcore
+Score each dimension from 1.0 to 10.0 using our Crunch tiers:
+- 1.0-2.0 = Breezy (quick to learn, minimal rules)
+- 2.1-4.0 = Light (family-friendly depth)
+- 4.1-6.0 = Crunchy (solid complexity)
+- 6.1-8.0 = Heavy (meaty decisions)
+- 8.1-10.0 = Brain Burner (maximum crunch)
 
 Return as JSON:
 {
-  "rulesDensity": <1.0-5.0>,
-  "decisionSpace": <1.0-5.0>,
-  "learningCurve": <1.0-5.0>,
-  "strategicDepth": <1.0-5.0>,
-  "componentComplexity": <1.0-5.0>,
-  "overallScore": <1.0-5.0>,
+  "rulesDensity": <1.0-10.0>,
+  "decisionSpace": <1.0-10.0>,
+  "learningCurve": <1.0-10.0>,
+  "strategicDepth": <1.0-10.0>,
+  "componentComplexity": <1.0-10.0>,
+  "overallScore": <1.0-10.0>,
   "reasoning": "2-3 sentences explaining the overall complexity assessment",
   "confidence": "high" | "medium" | "low"
 }
 
-SCORING GUIDE:
+SCORING GUIDE (1-10 Scale):
 
 **Rules Density** - How much there is to learn
 - Consider: rulebook length, number of exceptions, edge cases, special rules
-- Short rulebook (< 10 pages) with simple rules = 1-2
-- Standard rulebook with moderate rules = 2-3
-- Long rulebook with many exceptions = 3-4
-- Dense rulebook with complex interactions = 4-5
+- Very short rulebook (< 6 pages) with simple rules = 1-2
+- Short rulebook (6-10 pages) with straightforward rules = 2-4
+- Standard rulebook (10-20 pages) with moderate rules = 4-6
+- Long rulebook (20-40 pages) with many exceptions = 6-8
+- Dense rulebook (40+ pages) with complex interactions = 8-10
 
 **Decision Space** - Choices available on a turn
-- Very limited options (1-2 choices) = 1-2
-- Several clear options (3-5 choices) = 2-3
-- Many viable options, some planning needed = 3-4
-- Vast decision tree, heavy optimization = 4-5
+- Very limited options (1-2 obvious choices) = 1-2
+- Few clear options (2-3 choices) = 2-4
+- Several clear options (3-5 choices) = 4-6
+- Many viable options, planning needed = 6-8
+- Vast decision tree, heavy optimization = 8-10
 
 **Learning Curve** - Time to competency
-- Learn in 5 minutes = 1-2
-- Learn in 15-30 minutes = 2-3
-- Takes a full game to understand = 3-4
-- Multiple plays needed to grasp = 4-5
+- Learn in 5 minutes, play immediately = 1-2
+- Learn in 10-15 minutes = 2-4
+- Learn in 20-30 minutes = 4-6
+- Takes a full game to understand = 6-8
+- Multiple plays needed to grasp = 8-10
 
 **Strategic Depth** - Mastery difficulty
-- Obvious optimal plays = 1-2
-- Some strategy, light planning = 2-3
-- Significant strategy, long-term planning = 3-4
-- Deep strategy, experts still improve = 4-5
+- Obvious optimal plays, luck-driven = 1-2
+- Some strategy, light planning = 2-4
+- Moderate strategy, short-term planning = 4-6
+- Significant strategy, long-term planning = 6-8
+- Deep strategy, experts still improve = 8-10
 
 **Component Complexity** - Game state tracking
-- Few pieces, simple board = 1-2
-- Moderate pieces, clear state = 2-3
-- Many pieces, tracking required = 3-4
-- Complex state, multiple systems = 4-5
+- Few pieces, simple or no board = 1-2
+- Modest pieces, clear state = 2-4
+- Moderate pieces, some tracking = 4-6
+- Many pieces, tracking required = 6-8
+- Complex state, multiple interlocking systems = 8-10
 
 **Overall Score** - Weighted average (Learning Curve and Rules Density weighted higher for new players)
 - Calculate: (rulesDensity * 1.5 + learningCurve * 1.5 + decisionSpace + strategicDepth + componentComplexity) / 6
@@ -184,6 +190,17 @@ SCORING GUIDE:
 - "high" if rulebook is complete and clear
 - "medium" if some information is missing or unclear
 - "low" if rulebook is incomplete or very short`
+}
+
+/**
+ * @deprecated Use getCrunchScorePrompt instead
+ */
+export function getBNCSPrompt(
+  rulebookText: string,
+  gameName: string,
+  metrics: { pageCount: number; wordCount: number }
+): string {
+  return getCrunchScorePrompt(rulebookText, gameName, metrics)
 }
 
 /**

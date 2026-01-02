@@ -24,8 +24,8 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
-import type { BNCSBreakdown } from '@/lib/rulebook/types'
-import { BNCSScoreDisplay } from '@/components/admin/rulebook'
+import type { CrunchBreakdown } from '@/lib/rulebook/types'
+import { CrunchScoreDisplay } from '@/components/admin/rulebook'
 
 interface ParseGenerateStepProps {
   game: Game
@@ -41,7 +41,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
     success: boolean
     wordCount?: number
     pageCount?: number
-    bncsScore?: number
+    crunchScore?: number
     error?: string
   } | null>(null)
   const [contentResult, setContentResult] = useState<{
@@ -51,19 +51,19 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
   const [contentModel, setContentModel] = useState<'sonnet' | 'haiku'>('sonnet')
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
-  const bncsBreakdown = game.bncs_breakdown as BNCSBreakdown | null
-  const bncsScore = game.bncs_score
+  const crunchBreakdown = game.crunch_breakdown as CrunchBreakdown | null
+  const crunchScore = game.crunch_score
   const hasContent = game.has_rules && game.has_setup_guide && game.has_reference
 
   // Check if step is already complete
   useEffect(() => {
-    if (bncsScore && hasContent) {
+    if (crunchScore && hasContent) {
       setPhase('complete')
       onComplete()
-    } else if (bncsScore) {
+    } else if (crunchScore) {
       setPhase('parsed')
     }
-  }, [bncsScore, hasContent, onComplete])
+  }, [crunchScore, hasContent, onComplete])
 
   const parseRulebook = async () => {
     if (!game.rulebook_url) return
@@ -84,9 +84,9 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
       const result = await response.json()
       setParseResult(result)
 
-      if (result.success && result.bncsScore) {
+      if (result.success && result.crunchScore) {
         setPhase('parsed')
-        // Reload to get updated BNCS data
+        // Reload to get updated Crunch Score data
         setTimeout(() => window.location.reload(), 1000)
       } else {
         setPhase('ready')
@@ -144,7 +144,8 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
 
   const resetContent = async (options: {
     resetRulebook?: boolean
-    resetBNCS?: boolean
+    resetCrunch?: boolean
+    resetBNCS?: boolean  // Legacy alias
     resetContent?: boolean
     resetTaxonomy?: boolean
     resetAll?: boolean
@@ -167,7 +168,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
       const result = await response.json()
       const parts = []
       if (result.reset.rulebook) parts.push('rulebook')
-      if (result.reset.bncs) parts.push('BNCS')
+      if (result.reset.crunch) parts.push('Crunch Score')
       if (result.reset.content) parts.push('content')
       if (result.reset.taxonomy) parts.push('taxonomy')
 
@@ -191,7 +192,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
     }
   }
 
-  const hasAnyContent = bncsScore || hasContent
+  const hasAnyContent = crunchScore || hasContent
 
   return (
     <div className="space-y-6">
@@ -238,13 +239,13 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
 
           {/* Step status badges */}
           <div className="flex flex-wrap gap-2">
-            <Badge variant={bncsScore ? 'default' : 'outline'} className="gap-1">
-              {bncsScore ? <CheckCircle2 className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+            <Badge variant={crunchScore ? 'default' : 'outline'} className="gap-1">
+              {crunchScore ? <CheckCircle2 className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
               PDF Parsed
             </Badge>
-            <Badge variant={bncsScore ? 'default' : 'outline'} className="gap-1">
-              {bncsScore ? <CheckCircle2 className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-              BNCS Score
+            <Badge variant={crunchScore ? 'default' : 'outline'} className="gap-1">
+              {crunchScore ? <CheckCircle2 className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+              Crunch Score
             </Badge>
             <Badge variant={game.has_rules ? 'default' : 'outline'} className="gap-1">
               {game.has_rules ? <CheckCircle2 className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
@@ -261,7 +262,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
           </div>
 
           {/* Model Selection (show when ready to generate content) */}
-          {bncsScore && !hasContent && (
+          {crunchScore && !hasContent && (
             <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
               <Label className="text-sm font-medium">AI Model:</Label>
               <div className="flex gap-2">
@@ -292,7 +293,7 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
-            {!bncsScore && (
+            {!crunchScore && (
               <Button
                 onClick={runFullPipeline}
                 disabled={!game.rulebook_url || phase === 'parsing' || phase === 'resetting'}
@@ -303,10 +304,10 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                Parse & Generate BNCS
+                Parse & Generate Crunch Score
               </Button>
             )}
-            {bncsScore && !hasContent && (
+            {crunchScore && !hasContent && (
               <Button
                 onClick={generateContent}
                 disabled={phase === 'generating' || phase === 'resetting'}
@@ -340,8 +341,8 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => resetContent({ resetBNCS: true })}>
-                    Reset BNCS Score Only
+                  <DropdownMenuItem onClick={() => resetContent({ resetCrunch: true })}>
+                    Reset Crunch Score Only
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => resetContent({ resetContent: true })}>
                     Reset Generated Content Only
@@ -398,12 +399,13 @@ export function ParseGenerateStep({ game, onComplete, onSkip }: ParseGenerateSte
         </CardContent>
       </Card>
 
-      {/* BNCS Score Display */}
-      {bncsScore && (
-        <BNCSScoreDisplay
-          score={Number(bncsScore)}
-          breakdown={bncsBreakdown}
-          generatedAt={game.bncs_generated_at}
+      {/* Crunch Score Display */}
+      {crunchScore && (
+        <CrunchScoreDisplay
+          score={Number(crunchScore)}
+          breakdown={crunchBreakdown}
+          generatedAt={game.crunch_generated_at}
+          bggReference={game.crunch_bgg_reference ? Number(game.crunch_bgg_reference) : undefined}
         />
       )}
     </div>

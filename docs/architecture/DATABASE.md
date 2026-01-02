@@ -162,8 +162,13 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 45. `00045_marketplace_discovery.sql` - Saved searches, wishlist alerts, similar listings
 46. `00046_data_source_tracking.sql` - Data provenance (data_source enum, wikidata_id, field_sources)
 47. `00047_data_source_seed.sql` - Add 'seed' to data_source enum
-48. `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS scoring columns
+48. `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS scoring columns (legacy)
 49. `00049_rulebook_parsed_text.sql` - Parsed text storage + latest_parse_log_id
+50. `00050_...` - (various)
+51. `00051_...` - (various)
+52. `00052_taxonomy_suggestions.sql` - AI taxonomy suggestions
+53. `00053_crunch_score.sql` - Rename BNCS → Crunch Score, 1-10 scale, BGG calibration
+54. `00054_wikidata_game_fields.sql` - Wikidata enrichment columns (image, website, rulebook)
 
 ## Core Enums
 
@@ -336,13 +341,17 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | is_new_release | BOOLEAN | Keytag: New Release |
 | data_source | data_source | Data provenance (legacy_bgg, wikidata, rulebook, publisher, community, manual, seed) |
 | wikidata_id | VARCHAR(20) | Wikidata Q-ID (e.g., Q12345) |
+| wikidata_image_url | VARCHAR(500) | CC-licensed image from Wikimedia Commons |
+| official_website | VARCHAR(500) | Official game/publisher website (from Wikidata P856) |
+| wikidata_last_synced | TIMESTAMPTZ | When Wikidata enrichment was last run |
 | field_sources | JSONB | Per-field provenance tracking |
-| rulebook_url | TEXT | URL to official rulebook PDF |
-| rulebook_source | TEXT | How rulebook was found (auto-discover, manual, publisher) |
+| rulebook_url | TEXT | URL to official rulebook PDF (Wikidata P953 or publisher) |
+| rulebook_source | TEXT | How rulebook was found (auto-discover, manual, publisher, wikidata) |
 | rulebook_parsed_at | TIMESTAMPTZ | When rulebook was last parsed |
-| bncs_score | DECIMAL(2,1) | Board Nomads Complexity Score (1.0-5.0) |
-| bncs_breakdown | JSONB | BNCS dimension scores (rulesDensity, decisionSpace, etc.) |
-| bncs_generated_at | TIMESTAMPTZ | When BNCS was generated |
+| crunch_score | DECIMAL(3,1) | Crunch Score (1.0-10.0) - AI complexity rating |
+| crunch_breakdown | JSONB | Crunch dimension scores (rulesDensity, decisionSpace, etc.) |
+| crunch_generated_at | TIMESTAMPTZ | When Crunch Score was generated |
+| crunch_bgg_reference | DECIMAL(2,1) | BGG weight used for calibration (1.0-5.0) |
 | component_list | JSONB | Components extracted from rulebook |
 | latest_parse_log_id | UUID | FK to rulebook_parse_log |
 | fts | TSVECTOR | Generated full-text search column |

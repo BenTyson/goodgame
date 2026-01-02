@@ -137,10 +137,10 @@ export interface FieldSources {
   play_time_min?: DataSource
   play_time_max?: DataSource
   description?: DataSource
-  weight?: DataSource | 'bncs' // Board Nomads Complexity Score
+  weight?: DataSource | 'crunch' // Crunch Score (Board Nomads complexity rating)
   designers?: DataSource
   publisher?: DataSource
-  [key: string]: DataSource | 'bncs' | undefined
+  [key: string]: DataSource | 'crunch' | undefined
 }
 
 export type Collection = Database['public']['Tables']['collections']['Row']

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
-import { parsePdfFromUrl, generateBNCS } from '@/lib/rulebook'
+import { parsePdfFromUrl, generateCrunchScore } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
 import { getDataExtractionPrompt, getTaxonomyExtractionPrompt, RULEBOOK_SYSTEM_PROMPT } from '@/lib/rulebook/prompts'
 import type { ExtractedGameData } from '@/lib/rulebook/types'
@@ -8,7 +8,7 @@ import type { Json, TaxonomyExtractionResult, TaxonomySuggestionInsert } from '@
 
 /**
  * POST /api/admin/rulebook/parse
- * Parse a rulebook PDF and generate BNCS score
+ * Parse a rulebook PDF and generate Crunch Score
  */
 export async function POST(request: NextRequest) {
   try {
@@ -30,10 +30,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get game info
+    // Get game info including BGG weight for calibration
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, name, slug, publisher')
+      .select('id, name, slug, publisher, weight')
       .eq('id', gameId)
       .single()
 
@@ -84,15 +84,15 @@ export async function POST(request: NextRequest) {
       // Continue without extracted data
     }
 
-    // Generate BNCS score
-    let bncs
-    let bncsError: string | undefined
+    // Generate Crunch Score (with BGG weight calibration if available)
+    let crunch
+    let crunchError: string | undefined
     try {
-      bncs = await generateBNCS(pdf, game.name)
+      crunch = await generateCrunchScore(pdf, game.name, game.weight)
     } catch (error) {
-      console.error('BNCS generation failed:', error)
-      bncsError = error instanceof Error ? error.message : 'BNCS generation failed'
-      // Continue without BNCS - will still save parsed data
+      console.error('Crunch Score generation failed:', error)
+      crunchError = error instanceof Error ? error.message : 'Crunch Score generation failed'
+      // Continue without Crunch Score - will still save parsed data
     }
 
     // Extract taxonomy suggestions (themes and player experiences)
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     const { data: parseLog } = await supabase.from('rulebook_parse_log').insert({
       game_id: gameId,
       rulebook_url: url,
-      status: bncs ? 'success' : 'partial',
+      status: crunch ? 'success' : 'partial',
       page_count: pdf.pageCount,
       word_count: pdf.wordCount,
       extracted_data: (extractedData ?? null) as Json | null,
@@ -230,11 +230,14 @@ export async function POST(request: NextRequest) {
       ...(parseLog?.id && { latest_parse_log_id: parseLog.id }),
     }
 
-    // Add BNCS if generated
-    if (bncs) {
-      updateData.bncs_score = bncs.score
-      updateData.bncs_breakdown = bncs.breakdown
-      updateData.bncs_generated_at = new Date().toISOString()
+    // Add Crunch Score if generated
+    if (crunch) {
+      updateData.crunch_score = crunch.score
+      updateData.crunch_breakdown = crunch.breakdown
+      updateData.crunch_generated_at = new Date().toISOString()
+      if (crunch.bggReference !== null) {
+        updateData.crunch_bgg_reference = crunch.bggReference
+      }
     }
 
     // Add component list if extracted
@@ -254,7 +257,8 @@ export async function POST(request: NextRequest) {
       tagline: updateData.tagline,
       description: typeof updateData.description === 'string' ? updateData.description.substring(0, 50) + '...' : undefined,
       hasComponents: !!updateData.component_list,
-      hasBncs: !!updateData.bncs_score,
+      hasCrunchScore: !!updateData.crunch_score,
+      bggReference: updateData.crunch_bgg_reference,
     })
 
     const { error: updateError } = await supabase
@@ -276,9 +280,14 @@ export async function POST(request: NextRequest) {
       success: true,
       pageCount: pdf.pageCount,
       wordCount: pdf.wordCount,
-      bncsScore: bncs?.score,
-      bncsConfidence: bncs?.confidence,
-      bncsError,
+      crunchScore: crunch?.score,
+      crunchConfidence: crunch?.confidence,
+      crunchBggReference: crunch?.bggReference,
+      crunchError,
+      // Legacy fields for backward compatibility
+      bncsScore: crunch?.score,
+      bncsConfidence: crunch?.confidence,
+      bncsError: crunchError,
       taxonomy: taxonomySuggestions ? {
         themesCount: taxonomySuggestions.themes?.length ?? 0,
         experiencesCount: taxonomySuggestions.playerExperiences?.length ?? 0,

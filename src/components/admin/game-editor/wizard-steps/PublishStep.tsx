@@ -37,7 +37,7 @@ export function PublishStep({
   saved,
 }: PublishStepProps) {
   const hasRulebook = !!game.rulebook_url
-  const hasBncs = !!game.bncs_score
+  const hasCrunchScore = !!game.crunch_score
   const hasContent = !!(game.has_rules || game.has_setup_guide || game.has_reference)
   const hasImages = images.length > 0
   const hasPrimaryImage = images.some((img) => img.is_primary)
@@ -80,9 +80,9 @@ export function PublishStep({
                 description={hasRulebook ? 'Rulebook linked' : 'No rulebook URL set'}
               />
               <ChecklistItem
-                checked={hasBncs}
-                label="BNCS Score"
-                description={hasBncs ? `Score: ${game.bncs_score}` : 'Not generated yet'}
+                checked={hasCrunchScore}
+                label="Crunch Score"
+                description={hasCrunchScore ? `Score: ${game.crunch_score}/10` : 'Not generated yet'}
               />
               <ChecklistItem
                 checked={hasContent}
@@ -195,8 +195,8 @@ export function PublishStep({
             />
             <SummaryItem
               icon={<Star className="h-4 w-4" />}
-              label="Complexity"
-              value={game.bncs_score ? `${game.bncs_score}/5` : game.weight ? `${game.weight}/5` : 'N/A'}
+              label="Crunch"
+              value={game.crunch_score ? `${game.crunch_score}/10` : game.weight ? `${game.weight}/5 BGG` : 'N/A'}
             />
             <SummaryItem
               icon={<BookOpen className="h-4 w-4" />}

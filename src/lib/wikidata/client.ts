@@ -57,6 +57,7 @@ export interface WikidataBoardGame {
   playTimeMinutes?: number;
   imageUrl?: string;
   officialWebsite?: string;
+  rulebookUrl?: string; // P953: full work available at URL
   bggId?: string;
   designers: string[];
   publishers: string[];
@@ -158,6 +159,7 @@ function parseBinding(binding: WikidataBinding): WikidataBoardGame {
     playTimeMinutes: parseValue(binding, 'playTime') as number | undefined,
     imageUrl: normalizeImageUrl(binding.image?.value),
     officialWebsite: binding.officialWebsite?.value,
+    rulebookUrl: binding.rulebookUrl?.value,
     bggId: binding.bggId?.value,
     designers: binding.designers?.value
       ? binding.designers.value.split(', ').filter(Boolean)
@@ -225,6 +227,194 @@ export async function getBoardGameCount(): Promise<number> {
   const result = await executeQuery(BOARD_GAME_COUNT_QUERY);
   const countValue = result.results.bindings[0]?.count?.value;
   return countValue ? parseInt(countValue, 10) : 0;
+}
+
+// ============================================================================
+// Publisher Enrichment
+// ============================================================================
+
+const WIKIDATA_SEARCH_API = 'https://www.wikidata.org/w/api.php'
+
+/**
+ * Publisher data from Wikidata
+ */
+export interface WikidataPublisher {
+  wikidataId: string
+  name: string
+  website: string | null
+  logoUrl: string | null
+  description: string | null
+  foundedYear: number | null
+  country: string | null
+}
+
+/**
+ * Search Wikidata for an entity by name using the search API
+ */
+async function searchEntityByName(
+  name: string,
+  limit = 5
+): Promise<Array<{ id: string; label: string; description: string }>> {
+  await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS))
+  lastRequestTime = Date.now()
+
+  const url = `${WIKIDATA_SEARCH_API}?action=wbsearchentities&search=${encodeURIComponent(name)}&language=en&format=json&limit=${limit}`
+
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'BoardNomads/1.0 (https://boardnomads.com)',
+    },
+  })
+
+  if (!response.ok) return []
+
+  const data = await response.json()
+  return (data.search || []).map(
+    (r: { id: string; label: string; description?: string }) => ({
+      id: r.id,
+      label: r.label,
+      description: r.description || '',
+    })
+  )
+}
+
+/**
+ * Search for a publisher on Wikidata and get enrichment data
+ */
+export async function enrichPublisher(
+  publisherName: string
+): Promise<WikidataPublisher | null> {
+  // Search for the publisher
+  const searchResults = await searchEntityByName(publisherName, 5)
+
+  if (searchResults.length === 0) {
+    return null
+  }
+
+  // Try each result until we find one with a website (likely the real publisher)
+  for (const result of searchResults) {
+    const query = `
+      SELECT ?website ?logo ?description ?foundedYear ?countryLabel WHERE {
+        OPTIONAL { wd:${result.id} wdt:P856 ?website . }
+        OPTIONAL { wd:${result.id} wdt:P154 ?logo . }
+        OPTIONAL { wd:${result.id} schema:description ?description . FILTER(LANG(?description) = "en") }
+        OPTIONAL { wd:${result.id} wdt:P571 ?founded . BIND(YEAR(?founded) AS ?foundedYear) }
+        OPTIONAL { wd:${result.id} wdt:P17 ?country . }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      }
+      LIMIT 1
+    `
+
+    try {
+      const queryResult = await executeQuery(query)
+      const data = queryResult.results.bindings[0]
+
+      // If we found a website, this is likely the right entity
+      if (data?.website?.value) {
+        return {
+          wikidataId: result.id,
+          name: result.label,
+          website: data.website.value,
+          logoUrl: data.logo?.value || null,
+          description: data.description?.value || null,
+          foundedYear: data.foundedYear?.value
+            ? parseInt(data.foundedYear.value)
+            : null,
+          country: data.countryLabel?.value || null,
+        }
+      }
+    } catch {
+      // Continue to next result
+    }
+  }
+
+  // Return first result even without website
+  const firstResult = searchResults[0]
+  return {
+    wikidataId: firstResult.id,
+    name: firstResult.label,
+    website: null,
+    logoUrl: null,
+    description: firstResult.description || null,
+    foundedYear: null,
+    country: null,
+  }
+}
+
+/**
+ * Batch enrich multiple publishers
+ * Returns a map of publisher name -> WikidataPublisher
+ */
+export async function enrichPublishers(
+  publisherNames: string[]
+): Promise<Map<string, WikidataPublisher>> {
+  const results = new Map<string, WikidataPublisher>()
+
+  for (const name of publisherNames) {
+    const enriched = await enrichPublisher(name)
+    if (enriched) {
+      results.set(name, enriched)
+    }
+  }
+
+  return results
+}
+
+/**
+ * Get publisher websites for a game from Wikidata
+ * Uses the game's BGG ID or name to find it, then gets publisher info
+ */
+export async function getPublisherWebsitesForGame(
+  bggId: string | null,
+  gameName: string
+): Promise<Array<{ name: string; website: string; wikidataId: string }>> {
+  // First try to find the game
+  let gameWikidataId: string | null = null
+
+  if (bggId) {
+    const game = await getGameByBggId(bggId)
+    if (game) {
+      gameWikidataId = game.wikidataId
+    }
+  }
+
+  if (!gameWikidataId) {
+    // Try searching by name
+    const searchResults = await searchEntityByName(gameName, 3)
+    for (const result of searchResults) {
+      if (
+        result.description.toLowerCase().includes('board game') ||
+        result.description.toLowerCase().includes('card game') ||
+        result.description.toLowerCase().includes('tabletop game')
+      ) {
+        gameWikidataId = result.id
+        break
+      }
+    }
+  }
+
+  if (!gameWikidataId) {
+    return []
+  }
+
+  // Query for publishers with websites
+  const query = `
+    SELECT ?publisher ?publisherLabel ?website WHERE {
+      wd:${gameWikidataId} wdt:P123 ?publisher .
+      ?publisher wdt:P856 ?website .
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    }
+  `
+
+  const result = await executeQuery(query)
+
+  return result.results.bindings
+    .filter((b) => b.website?.value)
+    .map((b) => ({
+      name: b.publisherLabel?.value || 'Unknown',
+      website: b.website!.value,
+      wikidataId: extractQNumber(b.publisher?.value || ''),
+    }))
 }
 
 /**

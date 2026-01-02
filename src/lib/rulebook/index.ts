@@ -1,6 +1,6 @@
 /**
  * Rulebook Processing Module
- * PDF parsing, AI extraction, and BNCS scoring
+ * PDF parsing, AI extraction, and Crunch Score generation
  */
 
 // Types
@@ -10,8 +10,10 @@ export type {
   ComponentList,
   TurnPhase,
   RulebookSection,
-  BNCSBreakdown,
-  BNCSResult,
+  CrunchBreakdown,
+  CrunchResult,
+  BNCSBreakdown,  // Legacy alias
+  BNCSResult,     // Legacy alias
   PublisherPattern,
   RulebookDiscoveryResult,
   RulebookParseResult,
@@ -34,15 +36,25 @@ export {
 export {
   RULEBOOK_SYSTEM_PROMPT,
   getDataExtractionPrompt,
-  getBNCSPrompt,
+  getCrunchScorePrompt,
+  getBNCSPrompt,  // Legacy alias
   getRulesSummaryPrompt,
   getSetupGuidePrompt,
   getReferenceCardPrompt,
 } from './prompts'
 
-// Complexity scoring
+// Complexity scoring (Crunch Score)
 export {
-  generateBNCS,
+  generateCrunchScore,
+  generateBNCS,  // Legacy alias
+  normalizeBGGWeight,
+  calculateCalibratedScore,
+  getCrunchLabel,
+  getCrunchColor,
+  formatCrunchBreakdown,
+  getCrunchProfile,
+  getCrunchBadgeClasses,
+  // Legacy aliases
   getComplexityLabel,
   getComplexityColor,
   formatBNCSBreakdown,

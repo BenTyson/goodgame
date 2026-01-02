@@ -1,40 +1,55 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getQueueStats } from '@/lib/bgg'
-import { getGenerationStats } from '@/lib/ai'
 import {
   CheckCircle2,
   FileEdit,
   Clock,
   ArrowRight,
   Database,
-  Sparkles,
   AlertCircle,
   ChevronRight,
-  Zap,
-  Package
+  Cog,
+  Package,
+  BookOpen,
+  Wand2,
 } from 'lucide-react'
 
 async function getGameStats() {
   const supabase = createAdminClient()
 
-  // Get total counts by status
+  // Get game counts with content fields
   const { data: games } = await supabase
     .from('games')
-    .select('is_published, content_status')
+    .select('is_published, content_status, crunch_score, rulebook_url, rules_content')
 
   if (!games) return null
 
   const published = games.filter(g => g.is_published).length
-  const draft = games.filter(g => !g.is_published && g.content_status === 'draft').length
-  const pending = games.filter(g => !g.is_published && g.content_status === 'none').length
+  const draft = games.filter(g => g.content_status === 'draft').length
+  const review = games.filter(g => g.content_status === 'review').length
+  const needsContent = games.filter(g => !g.is_published && (!g.content_status || g.content_status === 'none')).length
   const total = games.length
 
-  return { published, draft, pending, total }
+  // Content pipeline stats
+  const withCrunchScore = games.filter(g => g.crunch_score != null).length
+  const withRulebook = games.filter(g => g.rulebook_url).length
+  const withRulesContent = games.filter(g => g.rules_content).length
+
+  return {
+    published,
+    draft,
+    review,
+    needsContent,
+    total,
+    withCrunchScore,
+    withRulebook,
+    withRulesContent,
+  }
 }
 
 async function getRecentGames() {
@@ -42,7 +57,7 @@ async function getRecentGames() {
 
   const { data: games } = await supabase
     .from('games')
-    .select('id, name, slug, content_status, is_published, created_at, box_image_url, thumbnail_url')
+    .select('id, name, slug, content_status, is_published, created_at, box_image_url, thumbnail_url, crunch_score')
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -50,15 +65,15 @@ async function getRecentGames() {
 }
 
 export default async function AdminDashboard() {
-  const [gameStats, queueStats, generationStats, recentGames] = await Promise.all([
+  const [gameStats, queueStats, recentGames] = await Promise.all([
     getGameStats(),
     getQueueStats(),
-    getGenerationStats(),
     getRecentGames(),
   ])
 
   const totalGames = gameStats?.total || 0
   const publishedPercent = totalGames > 0 ? Math.round(((gameStats?.published || 0) / totalGames) * 100) : 0
+  const contentPercent = totalGames > 0 ? Math.round(((gameStats?.withRulesContent || 0) / totalGames) * 100) : 0
 
   return (
     <div className="space-y-6">
@@ -76,7 +91,7 @@ export default async function AdminDashboard() {
         </Link>
       </div>
 
-      {/* Stats Grid - Clean monochromatic design */}
+      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
@@ -88,14 +103,13 @@ export default async function AdminDashboard() {
                   {publishedPercent}% of {totalGames} games
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
               </div>
             </div>
-            {/* Progress bar */}
             <div className="mt-4 h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all"
+                className="h-full bg-green-500 rounded-full transition-all"
                 style={{ width: `${publishedPercent}%` }}
               />
             </div>
@@ -106,12 +120,27 @@ export default async function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Drafts</p>
-                <p className="text-3xl font-bold mt-1">{gameStats?.draft || 0}</p>
+                <p className="text-sm font-medium text-muted-foreground">In Review</p>
+                <p className="text-3xl font-bold mt-1">{(gameStats?.draft || 0) + (gameStats?.review || 0)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Ready for review</p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                <FileEdit className="h-6 w-6 text-muted-foreground" />
+              <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <FileEdit className="h-6 w-6 text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Needs Content</p>
+                <p className="text-3xl font-bold mt-1">{gameStats?.needsContent || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Awaiting setup</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Wand2 className="h-6 w-6 text-amber-500" />
               </div>
             </div>
           </CardContent>
@@ -131,26 +160,9 @@ export default async function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">AI Generations</p>
-                <p className="text-3xl font-bold mt-1">{generationStats.successfulGenerations}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ${generationStats.totalCost.toFixed(2)} total cost
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Pipeline Status - Simplified */}
+      {/* Pipeline Status */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-4">
@@ -194,31 +206,37 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">AI Generation</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">Content Pipeline</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{generationStats.totalGenerations}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Total</p>
+                <p className="text-2xl font-bold">{gameStats?.withRulebook || 0}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Have Rulebook</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{generationStats.successfulGenerations}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Success</p>
+                <p className="text-2xl font-bold">{gameStats?.withRulesContent || 0}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Have Content</p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{(generationStats.totalTokens / 1000).toFixed(0)}k</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Tokens</p>
+              <div className="p-3 rounded-lg bg-amber-500/10">
+                <div className="flex items-center justify-center gap-1">
+                  <Cog className="h-4 w-4 text-amber-500" />
+                  <p className="text-2xl font-bold">{gameStats?.withCrunchScore || 0}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Crunch Score</p>
               </div>
             </div>
-            {generationStats.failedGenerations > 0 && (
-              <div className="mt-3 flex items-center gap-2 p-2 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>{generationStats.failedGenerations} failed generations</span>
-              </div>
-            )}
+            <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${contentPercent}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              {contentPercent}% of games have generated content
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -271,11 +289,17 @@ export default async function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
+                  {game.crunch_score != null && (
+                    <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                      <Cog className="h-3 w-3" />
+                      {Number(game.crunch_score).toFixed(1)}
+                    </div>
+                  )}
                   <Badge
                     variant={game.is_published ? 'default' : 'outline'}
-                    className="text-xs"
+                    className={`text-xs ${game.is_published ? 'bg-green-600' : ''}`}
                   >
-                    {game.is_published ? 'Published' : game.content_status || 'No content'}
+                    {game.is_published ? 'Published' : game.content_status === 'draft' ? 'Draft' : game.content_status === 'review' ? 'Review' : 'Setup'}
                   </Badge>
                   <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>

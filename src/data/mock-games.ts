@@ -1,5 +1,5 @@
 // Mock data for development until Supabase is connected
-import type { GameRow, Category, GameImage, Collection } from '@/types/database'
+import type { GameRow, Category, GameImage, Collection, Json } from '@/types/database'
 
 export const mockCategories: Category[] = [
   {
@@ -70,17 +70,21 @@ export const mockCategories: Category[] = [
 ]
 
 // Mock games can omit the newer tracking fields
-type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id' | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at' | 'bncs_score' | 'bncs_breakdown' | 'bncs_generated_at' | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations'> & {
+type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id' | 'wikidata_image_url' | 'wikidata_last_synced' | 'official_website' | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at' | 'crunch_score' | 'crunch_breakdown' | 'crunch_generated_at' | 'crunch_bgg_reference' | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations'> & {
   data_source?: string | null
-  field_sources?: Record<string, unknown> | null
+  field_sources?: Json | null
   wikidata_id?: string | null
+  wikidata_image_url?: string | null
+  wikidata_last_synced?: string | null
+  official_website?: string | null
   rulebook_url?: string | null
   rulebook_source?: string | null
   rulebook_parsed_at?: string | null
-  bncs_score?: number | null
-  bncs_breakdown?: Record<string, unknown> | null
-  bncs_generated_at?: string | null
-  component_list?: Record<string, unknown> | null
+  crunch_score?: number | null
+  crunch_breakdown?: Json | null
+  crunch_generated_at?: string | null
+  crunch_bgg_reference?: number | null
+  component_list?: Json | null
   latest_parse_log_id?: string | null
   has_unimported_relations?: boolean | null
   categories: Pick<Category, 'slug' | 'name'>[]

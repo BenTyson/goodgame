@@ -1,5 +1,5 @@
 export { RulebookUrlSection } from './RulebookUrlSection'
 export { RulebookParseSection } from './RulebookParseSection'
-export { BNCSScoreDisplay } from './BNCSScoreDisplay'
+export { CrunchScoreDisplay, CrunchScoreDisplay as BNCSScoreDisplay } from './CrunchScoreDisplay'
 export { ContentGenerationModal } from './ContentGenerationModal'
 export type { ContentResult } from './ContentGenerationModal'

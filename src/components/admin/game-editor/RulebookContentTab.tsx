@@ -23,11 +23,11 @@ import {
   Search,
 } from 'lucide-react'
 import type { Game, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
-import type { BNCSBreakdown } from '@/lib/rulebook/types'
+import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import {
   RulebookUrlSection,
   RulebookParseSection,
-  BNCSScoreDisplay,
+  CrunchScoreDisplay,
   ContentGenerationModal,
 } from '@/components/admin/rulebook'
 import type { ContentResult } from '@/components/admin/rulebook'
@@ -77,7 +77,7 @@ export function RulebookContentTab({
     success: boolean
     wordCount?: number
     pageCount?: number
-    bncsScore?: number
+    crunchScore?: number
     error?: string
   } | null>(null)
   const [generatingContent, setGeneratingContent] = useState(false)
@@ -105,8 +105,8 @@ export function RulebookContentTab({
     quickReminders: [],
   }
 
-  const bncsBreakdown = game.bncs_breakdown as BNCSBreakdown | null
-  const bncsScore = game.bncs_score
+  const crunchBreakdown = game.crunch_breakdown as CrunchBreakdown | null
+  const crunchScore = game.crunch_score
 
   // Rulebook handlers
   const validateUrl = async () => {
@@ -185,7 +185,7 @@ export function RulebookContentTab({
       })
       const result = await response.json()
       setParseResult(result)
-      if (result.success && result.bncsScore) {
+      if (result.success && result.crunchScore) {
         setTimeout(() => window.location.reload(), 1500)
       }
     } catch (error) {
@@ -245,7 +245,7 @@ export function RulebookContentTab({
         rulebookParsedAt={game.rulebook_parsed_at}
       />
 
-      {/* Parse & Generate BNCS */}
+      {/* Parse & Generate Crunch Score */}
       <RulebookParseSection
         gameId={game.id}
         rulebookUrl={rulebookUrl}
@@ -255,17 +255,18 @@ export function RulebookContentTab({
         onParse={parseRulebook}
       />
 
-      {/* BNCS Score Display */}
-      {bncsScore && (
-        <BNCSScoreDisplay
-          score={Number(bncsScore)}
-          breakdown={bncsBreakdown}
-          generatedAt={game.bncs_generated_at}
+      {/* Crunch Score Display */}
+      {crunchScore && (
+        <CrunchScoreDisplay
+          score={Number(crunchScore)}
+          breakdown={crunchBreakdown}
+          generatedAt={game.crunch_generated_at}
+          bggReference={game.crunch_bgg_reference ? Number(game.crunch_bgg_reference) : undefined}
         />
       )}
 
       {/* Generate Content */}
-      {game.bncs_score && (
+      {game.crunch_score && (
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">

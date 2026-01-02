@@ -200,7 +200,7 @@ src/components/
 │   └── rulebook/              # RulebookEditor sub-components
 │       ├── RulebookUrlSection.tsx
 │       ├── RulebookParseSection.tsx
-│       ├── BNCSScoreDisplay.tsx
+│       ├── CrunchScoreDisplay.tsx  # Complexity score display (1-10 scale)
 │       └── ContentGenerationModal.tsx
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
@@ -274,12 +274,12 @@ src/lib/supabase/              # Database clients (client.ts, server.ts)
 src/lib/bgg/                   # BGG API client and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/recommend/             # Recommendation engine (types, scoring, archetypes, prompts)
-src/lib/rulebook/              # Rulebook parsing and BNCS
-  ├── complexity.ts            # AI-dependent BNCS generation (server-only)
-  ├── complexity-utils.ts      # Pure utilities safe for client components
+src/lib/rulebook/              # Rulebook parsing and Crunch Score
+  ├── complexity.ts            # Crunch Score generation with BGG calibration (server-only)
+  ├── complexity-utils.ts      # Pure utilities safe for client components (tier labels, colors)
   ├── parser.ts                # PDF text extraction
-  ├── prompts.ts               # AI prompts for extraction (includes getTaxonomyExtractionPrompt)
-  ├── types.ts                 # RulesContent, SetupContent, ReferenceContent types
+  ├── prompts.ts               # AI prompts for extraction (Crunch Score, taxonomy)
+  ├── types.ts                 # CrunchBreakdown, CrunchResult, RulesContent, etc.
   └── discovery.ts             # Publisher URL pattern matching
 src/lib/ai/
   ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
