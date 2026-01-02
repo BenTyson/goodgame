@@ -128,6 +128,37 @@ export async function generate(
 }
 
 /**
+ * Attempt to repair common JSON syntax issues from AI responses
+ */
+function repairJSON(str: string): string {
+  let result = str
+
+  // Remove trailing commas before } or ]
+  result = result.replace(/,(\s*[}\]])/g, '$1')
+
+  // Fix unquoted property names (simple cases)
+  result = result.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3')
+
+  // Remove comments (// style)
+  result = result.replace(/\/\/[^\n]*/g, '')
+
+  // Replace single quotes with double quotes (for property values)
+  // This is tricky - only do it for simple cases
+  result = result.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"')
+
+  // Remove any control characters except whitespace
+  result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+
+  // Try to find and extract just the JSON object if there's extra text
+  const jsonMatch = result.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    result = jsonMatch[0]
+  }
+
+  return result
+}
+
+/**
  * Generate JSON content with automatic parsing
  */
 export async function generateJSON<T>(
@@ -150,6 +181,9 @@ export async function generateJSON<T>(
     jsonStr = jsonStr.slice(0, -3)
   }
   jsonStr = jsonStr.trim()
+
+  // Attempt to repair common JSON issues from AI responses
+  jsonStr = repairJSON(jsonStr)
 
   try {
     const data = JSON.parse(jsonStr) as T

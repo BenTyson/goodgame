@@ -489,32 +489,33 @@ ${truncatedText}
 
 Based on the rulebook content, identify which themes and player experiences best describe this game.
 
-Return as JSON:
+Return ONLY valid JSON with this exact structure (no markdown, no comments):
 {
   "themes": [
     {
-      "id": "<theme UUID from list above>",
-      "confidence": <0.0-1.0>,
-      "reasoning": "<1-2 sentences explaining why this theme fits based on rulebook evidence>",
-      "isPrimary": <true for the single most defining theme, false for others>
+      "id": "uuid-from-themes-list",
+      "confidence": 0.85,
+      "reasoning": "Brief explanation of why this theme fits",
+      "isPrimary": true
     }
   ],
   "playerExperiences": [
     {
-      "id": "<experience UUID from list above>",
-      "confidence": <0.0-1.0>,
-      "reasoning": "<1-2 sentences explaining why this experience fits>"
+      "id": "uuid-from-experiences-list",
+      "confidence": 0.90,
+      "reasoning": "Brief explanation of why this experience fits"
     }
   ],
-  "newSuggestions": [
-    {
-      "type": "theme" | "player_experience",
-      "name": "<suggested new taxonomy name>",
-      "description": "<what this taxonomy covers>",
-      "reasoning": "<why existing options don't fit and this new one is needed>"
-    }
-  ]
+  "newSuggestions": []
 }
+
+FIELD REQUIREMENTS:
+- id: Must be an exact UUID copied from the lists above
+- confidence: A number between 0.0 and 1.0 (e.g., 0.75, 0.92)
+- reasoning: A short string (1-2 sentences), no special characters or line breaks
+- isPrimary: true for exactly one theme, false for all others
+- type (in newSuggestions): Either "theme" or "player_experience" as a string
+- newSuggestions: Usually empty array [], only add if existing options truly don't fit
 
 SELECTION GUIDELINES:
 
