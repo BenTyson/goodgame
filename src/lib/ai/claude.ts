@@ -133,6 +133,14 @@ export async function generate(
 function repairJSON(str: string): string {
   let result = str
 
+  // Replace smart/curly quotes with straight quotes
+  result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Double quotes
+  result = result.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")  // Single quotes
+
+  // Replace other unicode quote-like characters
+  result = result.replace(/[\u00AB\u00BB]/g, '"')  // Guillemets
+  result = result.replace(/[\u2039\u203A]/g, "'")  // Single guillemets
+
   // Remove trailing commas before } or ]
   result = result.replace(/,(\s*[}\]])/g, '$1')
 

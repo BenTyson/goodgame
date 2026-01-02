@@ -462,86 +462,36 @@ export function getTaxonomyExtractionPrompt(
   themes: { id: string; name: string; description: string | null }[],
   playerExperiences: { id: string; name: string; description: string | null }[]
 ): string {
-  const truncatedText = rulebookText.length > 25000
-    ? rulebookText.substring(0, 25000) + '\n\n[...rulebook truncated...]'
+  // Keep rulebook shorter for this extraction
+  const truncatedText = rulebookText.length > 15000
+    ? rulebookText.substring(0, 15000) + '\n[...truncated...]'
     : rulebookText
 
-  const themesSection = themes.map(t =>
-    `- ${t.name} (${t.id}): ${t.description || 'No description'}`
-  ).join('\n')
+  // Simple format for theme list
+  const themesSection = themes.map(t => `${t.id}: ${t.name}`).join('\n')
+  const experiencesSection = playerExperiences.map(e => `${e.id}: ${e.name}`).join('\n')
 
-  const experiencesSection = playerExperiences.map(e =>
-    `- ${e.name} (${e.id}): ${e.description || 'No description'}`
-  ).join('\n')
+  return `Analyze "${gameName}" and select the best matching themes and player experiences.
 
-  return `Analyze "${gameName}" and identify its themes and player experiences based on the rulebook content.
-
-AVAILABLE THEMES:
+THEMES (id: name):
 ${themesSection}
 
-AVAILABLE PLAYER EXPERIENCES:
+PLAYER EXPERIENCES (id: name):
 ${experiencesSection}
 
-RULEBOOK TEXT:
----
+RULEBOOK EXCERPT:
 ${truncatedText}
----
 
-Based on the rulebook content, identify which themes and player experiences best describe this game.
+Return valid JSON matching this structure exactly:
 
-Return ONLY valid JSON with this exact structure (no markdown, no comments):
-{
-  "themes": [
-    {
-      "id": "uuid-from-themes-list",
-      "confidence": 0.85,
-      "reasoning": "Brief explanation of why this theme fits",
-      "isPrimary": true
-    }
-  ],
-  "playerExperiences": [
-    {
-      "id": "uuid-from-experiences-list",
-      "confidence": 0.90,
-      "reasoning": "Brief explanation of why this experience fits"
-    }
-  ],
-  "newSuggestions": []
-}
+{"themes":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason","isPrimary":true}],"playerExperiences":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason"}],"newSuggestions":[]}
 
-FIELD REQUIREMENTS:
-- id: Must be an exact UUID copied from the lists above
-- confidence: A number between 0.0 and 1.0 (e.g., 0.75, 0.92)
-- reasoning: A short string (1-2 sentences), no special characters or line breaks
-- isPrimary: true for exactly one theme, false for all others
-- type (in newSuggestions): Either "theme" or "player_experience" as a string
-- newSuggestions: Usually empty array [], only add if existing options truly don't fit
-
-SELECTION GUIDELINES:
-
-**Themes** (setting, flavor, world):
-- Select 1-3 themes that best describe the game's setting and atmosphere
-- Mark exactly ONE theme as isPrimary (the most defining theme)
-- High confidence (0.8+): Theme is explicitly present (e.g., fantasy creatures, space setting)
-- Medium confidence (0.5-0.8): Theme is implied or partial (e.g., medieval setting without full fantasy elements)
-- Low confidence (<0.5): Theme is tangential or minor aspect
-
-**Player Experiences** (how it feels to play):
-- Select 1-4 experiences that describe the core interaction style
-- Consider: Is it competitive or cooperative? Does it support solo? Are there teams? Hidden information?
-- High confidence (0.8+): Experience is core to gameplay (e.g., explicit cooperative rules)
-- Medium confidence (0.5-0.8): Experience is supported but not central
-- Low confidence (<0.5): Experience is possible but not emphasized
-
-**New Suggestions**:
-- ONLY suggest new taxonomies if the existing options truly don't fit
-- Don't suggest variations of existing themes (e.g., don't suggest "High Fantasy" when "Fantasy" exists)
-- Provide clear reasoning why the existing taxonomy is insufficient
-- Leave this array empty if existing options cover the game well
-
-IMPORTANT:
-- Base your analysis on RULEBOOK EVIDENCE, not assumptions about the game
-- Quote specific elements from the rulebook in your reasoning
-- If the rulebook lacks thematic content (e.g., abstract games), reflect that in low confidence scores
-- Return valid JSON only - no markdown, no text outside the JSON`
+Rules:
+1. Select 1-3 themes, mark ONE as isPrimary:true, others isPrimary:false
+2. Select 1-3 player experiences
+3. Use exact UUIDs from lists above
+4. confidence: number 0.0-1.0
+5. reasoning: one short sentence, use only straight quotes
+6. newSuggestions: leave as empty array []
+7. Return ONLY the JSON object, no other text`
 }
