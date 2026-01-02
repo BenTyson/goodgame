@@ -138,9 +138,11 @@ export async function generate(
 function repairJSON(str: string): string {
   let result = str
 
-  // IMPORTANT: First, fix smart quotes used as apostrophes in contractions/possessives
+  // IMPORTANT: First, fix quotes used as apostrophes in contractions/possessives
   // Pattern: word"s or word"t (like Martin"s, don"t) - replace with apostrophe
-  result = result.replace(/(\w)[\u201C\u201D\u201E\u201F](\w)/g, "$1'$2")
+  // Handle both smart quotes AND straight quotes used incorrectly as apostrophes
+  result = result.replace(/(\w)[\u201C\u201D\u201E\u201F](\w)/g, "$1'$2")  // Smart quotes
+  result = result.replace(/(\w)"([a-zA-Z])/g, "$1'$2")  // Straight quotes used as apostrophe (e.g., Martin"s)
 
   // Replace remaining smart/curly double quotes with straight quotes
   result = result.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
