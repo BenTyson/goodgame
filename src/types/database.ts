@@ -246,7 +246,12 @@ export interface ReferenceContent {
   keyRules: { rule: string; detail: string }[]
   costs: { item: string; cost: string }[]
   quickReminders: string[]
-  endGame: string
+  endGame: string | {
+    triggers: string[]
+    finalRound?: string
+    winner: string
+    tiebreakers?: string[]
+  }
 }
 
 // Content status enum

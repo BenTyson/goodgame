@@ -32,6 +32,18 @@ import {
 } from '@/components/admin/rulebook'
 import type { ContentResult } from '@/components/admin/rulebook'
 
+// Helper to format endGame which can be string or object
+function formatEndGame(endGame: ReferenceContent['endGame']): string {
+  if (!endGame) return ''
+  if (typeof endGame === 'string') return endGame
+  const parts: string[] = []
+  if (endGame.triggers?.length) parts.push(`Triggers: ${endGame.triggers.join('; ')}`)
+  if (endGame.finalRound) parts.push(`Final Round: ${endGame.finalRound}`)
+  if (endGame.winner) parts.push(`Winner: ${endGame.winner}`)
+  if (endGame.tiebreakers?.length) parts.push(`Tiebreakers: ${endGame.tiebreakers.join('; ')}`)
+  return parts.join('\n')
+}
+
 interface Publisher {
   id: string
   name: string
@@ -488,7 +500,7 @@ export function RulebookContentTab({
                 <div className="space-y-2">
                   <Label>End Game Condition</Label>
                   <Textarea
-                    value={referenceContent.endGame}
+                    value={formatEndGame(referenceContent.endGame)}
                     onChange={(e) =>
                       updateField('reference_content', { ...referenceContent, endGame: e.target.value })
                     }

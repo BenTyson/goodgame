@@ -142,12 +142,6 @@ function repairJSON(str: string): string {
   // Pattern: word + any quote + letter (like Martin"s) -> word + apostrophe + letter
   // Must do this BEFORE general quote replacement to avoid breaking JSON structure
 
-  // Debug: Check if pattern exists
-  const hasApostropheQuote = /\w["'\u201C\u201D\u2018\u2019][a-zA-Z]/.test(result)
-  if (hasApostropheQuote) {
-    console.log('Found quote-as-apostrophe pattern, attempting fix...')
-  }
-
   // Replace straight double quote used as apostrophe
   result = result.replace(/(\w)"([a-zA-Z])/g, "$1'$2")
   // Replace smart double quotes used as apostrophe
@@ -173,9 +167,10 @@ function repairJSON(str: string): string {
   // Remove comments (// style)
   result = result.replace(/\/\/[^\n]*/g, '')
 
-  // Replace single quotes with double quotes (for property values)
-  // This is tricky - only do it for simple cases
-  result = result.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"')
+  // Replace single-quoted JSON string values with double quotes
+  // Only match values after a colon (to avoid breaking apostrophes in text)
+  // Pattern: `: 'value'` or `:'value'` -> `: "value"`
+  result = result.replace(/:(\s*)'([^']*?)'/g, ':$1"$2"')
 
   // Remove any control characters except whitespace
   result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
@@ -214,18 +209,7 @@ export async function generateJSON<T>(
   jsonStr = jsonStr.trim()
 
   // Attempt to repair common JSON issues from AI responses
-  // Check for Martin pattern specifically
-  const martinMatch = jsonStr.match(/Martin.{1,3}s/)
-  if (martinMatch) {
-    const chars = [...martinMatch[0]].map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join('')
-    console.log('Martin pattern BEFORE:', chars)
-  }
   jsonStr = repairJSON(jsonStr)
-  const martinMatch2 = jsonStr.match(/Martin.{1,3}s/)
-  if (martinMatch2) {
-    const chars = [...martinMatch2[0]].map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join('')
-    console.log('Martin pattern AFTER:', chars)
-  }
 
   try {
     const data = JSON.parse(jsonStr) as T

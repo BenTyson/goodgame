@@ -24,6 +24,7 @@
 | Local dev port | 3399 | User preference |
 | Image storage | Supabase Storage (planned) | Currently using BGG URLs for development |
 | Remote images | BoardGameGeek CDN | `cf.geekdo-images.com` configured in next.config.ts |
+| AI Model | `claude-3-5-haiku-20241022` | Fast, cost-effective for content generation |
 
 ## Content
 

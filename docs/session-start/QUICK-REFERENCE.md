@@ -135,6 +135,17 @@ src/app/
 │           └── refresh/route.ts
 ├── api/stripe/
 │   └── webhooks/route.ts      # Stripe webhook handler
+├── api/admin/                  # Admin API routes
+│   ├── games/
+│   │   ├── route.ts           # GET, PATCH games
+│   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
+│   │   └── [id]/
+│   │       └── reset-content/route.ts  # POST reset parsed content
+│   ├── rulebook/
+│   │   ├── parse/route.ts     # POST parse rulebook + extract taxonomy
+│   │   ├── validate/route.ts  # POST validate rulebook URL
+│   │   └── generate-content/route.ts  # POST generate rules/setup/reference
+│   └── upload/route.ts        # POST image upload
 ├── marketplace/
 │   ├── page.tsx               # Browse marketplace listings
 │   ├── listings/
@@ -174,7 +185,18 @@ src/components/
 │   ├── game-editor/           # GameEditor tab components
 │   │   ├── DetailsTab.tsx
 │   │   ├── ContentTab.tsx
-│   │   └── PublishingTab.tsx
+│   │   ├── RulebookContentTab.tsx
+│   │   ├── GameSetupWizard.tsx
+│   │   ├── WizardStepIndicator.tsx
+│   │   ├── TaxonomySelector.tsx   # Multi-select with AI badges
+│   │   └── wizard-steps/          # Wizard step components
+│   │       ├── RulebookStep.tsx
+│   │       ├── ParseGenerateStep.tsx  # Includes Reset dropdown
+│   │       ├── TaxonomyStep.tsx       # AI-powered taxonomy review
+│   │       ├── ImagesStep.tsx
+│   │       ├── RelationsStep.tsx
+│   │       ├── ReviewContentStep.tsx
+│   │       └── PublishStep.tsx
 │   └── rulebook/              # RulebookEditor sub-components
 │       ├── RulebookUrlSection.tsx
 │       ├── RulebookParseSection.tsx
@@ -230,6 +252,7 @@ src/hooks/
 └── admin/                     # Admin-specific hooks
     ├── useAsyncAction.ts      # Saving/saved/error state for async operations
     ├── useAutoSlug.ts         # Auto-generate slug from name
+    ├── useWizardProgress.ts   # localStorage-based wizard state with step tracking
     └── index.ts               # Barrel exports
 ```
 
@@ -255,8 +278,13 @@ src/lib/rulebook/              # Rulebook parsing and BNCS
   ├── complexity.ts            # AI-dependent BNCS generation (server-only)
   ├── complexity-utils.ts      # Pure utilities safe for client components
   ├── parser.ts                # PDF text extraction
-  ├── prompts.ts               # AI prompts for extraction
+  ├── prompts.ts               # AI prompts for extraction (includes getTaxonomyExtractionPrompt)
+  ├── types.ts                 # RulesContent, SetupContent, ReferenceContent types
   └── discovery.ts             # Publisher URL pattern matching
+src/lib/ai/
+  ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
+  ├── generator.ts             # Content generation orchestrator
+  └── prompts.ts               # AI prompts for content generation
 src/lib/utils/
   ├── format.ts                # formatFileSize utility
   └── image-crop.ts            # Canvas-based crop utility, aspect ratio presets
@@ -307,6 +335,14 @@ UserActivity     // Activity record
 NotificationType // 'new_follower' | 'rating' | marketplace notifications
 UserNotification // Notification record
 ReviewWithUser   // Review with user profile
+
+// Taxonomy types
+TaxonomySuggestion // AI-generated taxonomy suggestion
+TaxonomySuggestionInsert // For inserting suggestions
+TaxonomyExtractionResult // AI extraction response format
+
+// Content types (union types for AI generation)
+ReferenceContent['endGame'] // string | { triggers, finalRound?, winner, tiebreakers? }
 
 // Marketplace types (from src/types/marketplace.ts)
 ListingType      // 'sell' | 'trade' | 'want'

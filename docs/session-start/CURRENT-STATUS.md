@@ -1,6 +1,6 @@
 # Current Status
 
-> Last Updated: 2026-01-01 (AI Taxonomy Wizard)
+> Last Updated: 2026-01-01 (AI Taxonomy Wizard + JSON Repair)
 
 ## Current Phase: 38 - AI-Powered Taxonomy Wizard (COMPLETE)
 
@@ -17,6 +17,7 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 | File | Purpose |
 |------|---------|
 | `src/app/api/admin/games/taxonomy/route.ts` | API for GET/POST/PATCH taxonomy assignments |
+| `src/app/api/admin/games/[id]/reset-content/route.ts` | API to reset parsed content for testing |
 | `src/components/admin/game-editor/TaxonomySelector.tsx` | Multi-select UI with AI suggestion badges |
 | `src/components/admin/game-editor/wizard-steps/TaxonomyStep.tsx` | New wizard step (Step 3) |
 
@@ -24,11 +25,16 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 
 | File | Changes |
 |------|---------|
-| `src/types/database.ts` | Added `TaxonomySuggestion` types and `TaxonomyExtractionResult` |
+| `src/types/database.ts` | Added `TaxonomySuggestion` types, `TaxonomyExtractionResult`, updated `ReferenceContent.endGame` to union type |
 | `src/lib/rulebook/prompts.ts` | Added `getTaxonomyExtractionPrompt()` for theme/experience extraction |
+| `src/lib/ai/claude.ts` | Added `repairJSON()` function for AI response sanitization |
 | `src/app/api/admin/rulebook/parse/route.ts` | Now extracts taxonomy during parse phase |
 | `src/components/admin/game-editor/GameSetupWizard.tsx` | 7-step wizard with Taxonomy as step 3 |
 | `src/components/admin/game-editor/wizard-steps/index.ts` | Exports `TaxonomyStep` |
+| `src/components/admin/game-editor/wizard-steps/ParseGenerateStep.tsx` | Added Reset dropdown menu |
+| `src/components/admin/game-editor/wizard-steps/ReviewContentStep.tsx` | Added `formatEndGame()` helper |
+| `src/components/admin/game-editor/ContentTab.tsx` | Added `formatEndGame()` helper |
+| `src/components/admin/game-editor/RulebookContentTab.tsx` | Added `formatEndGame()` helper |
 
 ### New Wizard Flow (7 Steps)
 
@@ -59,6 +65,30 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 - Categories & Mechanics remain publisher-only (no AI suggestions)
 - Themes & Player Experiences generated from original rulebook analysis
 - No BGG data used for taxonomy assignment
+
+### Technical Improvements
+
+**JSON Repair Function (`repairJSON` in `src/lib/ai/claude.ts`):**
+- Fixes smart/curly quotes → straight quotes
+- Fixes quotes used as apostrophes (e.g., `Martin"s` → `Martin's`)
+- Removes trailing commas before `}` or `]`
+- Fixes unquoted property names
+- Removes `//` comments
+- Extracts JSON from extra text
+
+**Reset Content API (`POST /api/admin/games/[id]/reset-content`):**
+- Options: `resetRulebook`, `resetBNCS`, `resetContent`, `resetTaxonomy`, `resetAll`
+- Clears: BNCS score, rules/setup/reference content, taxonomy suggestions, parse logs
+- UI: Reset dropdown in ParseGenerateStep
+
+**ReferenceContent.endGame Type Fix:**
+- Updated from `string` to `string | { triggers: string[]; finalRound?: string; winner: string; tiebreakers?: string[] }`
+- Added `formatEndGame()` helper to render both formats
+- Fixes React "Objects are not valid as a React child" error
+
+**Claude Model ID:**
+- Working model: `claude-3-5-haiku-20241022`
+- Used for all AI calls (data extraction, BNCS, taxonomy, content generation)
 
 ---
 

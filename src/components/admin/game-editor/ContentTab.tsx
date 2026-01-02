@@ -7,6 +7,18 @@ import { Label } from '@/components/ui/label'
 import { FileText, Settings } from 'lucide-react'
 import type { Game, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
 
+// Helper to format endGame which can be string or object
+function formatEndGame(endGame: ReferenceContent['endGame']): string {
+  if (!endGame) return ''
+  if (typeof endGame === 'string') return endGame
+  const parts: string[] = []
+  if (endGame.triggers?.length) parts.push(`Triggers: ${endGame.triggers.join('; ')}`)
+  if (endGame.finalRound) parts.push(`Final Round: ${endGame.finalRound}`)
+  if (endGame.winner) parts.push(`Winner: ${endGame.winner}`)
+  if (endGame.tiebreakers?.length) parts.push(`Tiebreakers: ${endGame.tiebreakers.join('; ')}`)
+  return parts.join('\n')
+}
+
 interface ContentTabProps {
   game: Game
   updateField: <K extends keyof Game>(field: K, value: Game[K]) => void
@@ -154,7 +166,7 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
           <div className="space-y-2">
             <Label>End Game Condition</Label>
             <Textarea
-              value={referenceContent.endGame}
+              value={formatEndGame(referenceContent.endGame)}
               onChange={(e) => updateField('reference_content', {
                 ...referenceContent,
                 endGame: e.target.value
