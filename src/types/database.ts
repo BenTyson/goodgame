@@ -88,6 +88,36 @@ export type BGGTagAlias = {
 export type BGGTagAliasInsert = Omit<BGGTagAlias, 'id' | 'created_at'> & { id?: string }
 export type BGGTagAliasUpdate = Partial<BGGTagAliasInsert>
 
+// Taxonomy Suggestion types (for AI-generated taxonomy recommendations)
+export type TaxonomySuggestionType = 'theme' | 'player_experience' | 'new_theme' | 'new_experience'
+export type TaxonomySuggestionStatus = 'pending' | 'accepted' | 'rejected'
+
+// Use Supabase generated type directly
+export type TaxonomySuggestion = Database['public']['Tables']['taxonomy_suggestions']['Row']
+export type TaxonomySuggestionInsert = Database['public']['Tables']['taxonomy_suggestions']['Insert']
+export type TaxonomySuggestionUpdate = Database['public']['Tables']['taxonomy_suggestions']['Update']
+
+// AI taxonomy extraction result (from Claude API)
+export interface TaxonomyExtractionResult {
+  themes: {
+    id: string
+    confidence: number
+    reasoning: string
+    isPrimary: boolean
+  }[]
+  playerExperiences: {
+    id: string
+    confidence: number
+    reasoning: string
+  }[]
+  newSuggestions: {
+    type: 'theme' | 'player_experience'
+    name: string
+    description: string
+    reasoning: string
+  }[]
+}
+
 // Data Source types (for tracking game data provenance)
 export type DataSource =
   | 'legacy_bgg'   // Original BGG imports (pre-strategy)

@@ -1,5 +1,6 @@
 export { RulebookStep } from './RulebookStep'
 export { ParseGenerateStep } from './ParseGenerateStep'
+export { TaxonomyStep } from './TaxonomyStep'
 export { ImagesStep } from './ImagesStep'
 export { RelationsStep } from './RelationsStep'
 export { ReviewContentStep } from './ReviewContentStep'

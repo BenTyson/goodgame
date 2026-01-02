@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { parsePdfFromUrl, generateBNCS } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
-import { getDataExtractionPrompt, RULEBOOK_SYSTEM_PROMPT } from '@/lib/rulebook/prompts'
+import { getDataExtractionPrompt, getTaxonomyExtractionPrompt, RULEBOOK_SYSTEM_PROMPT } from '@/lib/rulebook/prompts'
 import type { ExtractedGameData } from '@/lib/rulebook/types'
-import type { Json } from '@/types/database'
+import type { Json, TaxonomyExtractionResult, TaxonomySuggestionInsert } from '@/types/database'
 
 /**
  * POST /api/admin/rulebook/parse
@@ -95,6 +95,103 @@ export async function POST(request: NextRequest) {
       // Continue without BNCS - will still save parsed data
     }
 
+    // Extract taxonomy suggestions (themes and player experiences)
+    let taxonomySuggestions: TaxonomyExtractionResult | null = null
+    let taxonomyError: string | undefined
+    try {
+      // Fetch all themes and player experiences
+      const [themesResult, experiencesResult] = await Promise.all([
+        supabase.from('themes').select('id, name, description').order('display_order'),
+        supabase.from('player_experiences').select('id, name, description').order('display_order'),
+      ])
+
+      if (themesResult.data && experiencesResult.data) {
+        const prompt = getTaxonomyExtractionPrompt(
+          pdf.text,
+          game.name,
+          themesResult.data,
+          experiencesResult.data
+        )
+        const result = await generateJSON<TaxonomyExtractionResult>(
+          RULEBOOK_SYSTEM_PROMPT,
+          prompt,
+          { temperature: 0.3, model: 'claude-3-haiku-20240307' }
+        )
+        taxonomySuggestions = result.data
+        console.log('Extracted taxonomy:', {
+          themes: taxonomySuggestions?.themes?.length ?? 0,
+          experiences: taxonomySuggestions?.playerExperiences?.length ?? 0,
+          newSuggestions: taxonomySuggestions?.newSuggestions?.length ?? 0,
+        })
+
+        // Clear any existing pending suggestions for this game
+        await supabase
+          .from('taxonomy_suggestions')
+          .delete()
+          .eq('game_id', gameId)
+          .eq('status', 'pending')
+
+        // Store suggestions in database
+        if (taxonomySuggestions) {
+          const suggestions: TaxonomySuggestionInsert[] = []
+
+          // Add theme suggestions
+          for (const theme of taxonomySuggestions.themes || []) {
+            suggestions.push({
+              game_id: gameId,
+              suggestion_type: 'theme',
+              target_id: theme.id,
+              confidence: theme.confidence,
+              reasoning: theme.reasoning,
+              is_primary: theme.isPrimary,
+              status: 'pending',
+            })
+          }
+
+          // Add player experience suggestions
+          for (const exp of taxonomySuggestions.playerExperiences || []) {
+            suggestions.push({
+              game_id: gameId,
+              suggestion_type: 'player_experience',
+              target_id: exp.id,
+              confidence: exp.confidence,
+              reasoning: exp.reasoning,
+              is_primary: false,
+              status: 'pending',
+            })
+          }
+
+          // Add new taxonomy suggestions
+          for (const newSugg of taxonomySuggestions.newSuggestions || []) {
+            suggestions.push({
+              game_id: gameId,
+              suggestion_type: newSugg.type === 'theme' ? 'new_theme' : 'new_experience',
+              target_id: null,
+              suggested_name: newSugg.name,
+              suggested_description: newSugg.description,
+              confidence: null,
+              reasoning: newSugg.reasoning,
+              is_primary: false,
+              status: 'pending',
+            })
+          }
+
+          if (suggestions.length > 0) {
+            const { error: insertError } = await supabase
+              .from('taxonomy_suggestions')
+              .insert(suggestions)
+            if (insertError) {
+              console.error('Failed to store taxonomy suggestions:', insertError)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Taxonomy extraction failed:', error)
+      taxonomyError = error instanceof Error ? error.message : 'Taxonomy extraction failed'
+      // Continue without taxonomy - not critical
+    }
+
     const processingTime = Date.now() - startTime
 
     // Log successful parse with the parsed text
@@ -166,6 +263,12 @@ export async function POST(request: NextRequest) {
       bncsScore: bncs?.score,
       bncsConfidence: bncs?.confidence,
       bncsError,
+      taxonomy: taxonomySuggestions ? {
+        themesCount: taxonomySuggestions.themes?.length ?? 0,
+        experiencesCount: taxonomySuggestions.playerExperiences?.length ?? 0,
+        newSuggestionsCount: taxonomySuggestions.newSuggestions?.length ?? 0,
+      } : null,
+      taxonomyError,
       processingTimeMs: processingTime,
     })
   } catch (error) {

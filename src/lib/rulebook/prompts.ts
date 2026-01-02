@@ -451,3 +451,96 @@ QUALITY CHECKLIST:
 - commonQuestions should address real confusion points
 - Keep text SHORT - this is a reference card, not a guide`
 }
+
+/**
+ * Prompt for extracting themes and player experiences from rulebook
+ * Used to suggest taxonomy assignments for admin review
+ */
+export function getTaxonomyExtractionPrompt(
+  rulebookText: string,
+  gameName: string,
+  themes: { id: string; name: string; description: string | null }[],
+  playerExperiences: { id: string; name: string; description: string | null }[]
+): string {
+  const truncatedText = rulebookText.length > 25000
+    ? rulebookText.substring(0, 25000) + '\n\n[...rulebook truncated...]'
+    : rulebookText
+
+  const themesSection = themes.map(t =>
+    `- ${t.name} (${t.id}): ${t.description || 'No description'}`
+  ).join('\n')
+
+  const experiencesSection = playerExperiences.map(e =>
+    `- ${e.name} (${e.id}): ${e.description || 'No description'}`
+  ).join('\n')
+
+  return `Analyze "${gameName}" and identify its themes and player experiences based on the rulebook content.
+
+AVAILABLE THEMES:
+${themesSection}
+
+AVAILABLE PLAYER EXPERIENCES:
+${experiencesSection}
+
+RULEBOOK TEXT:
+---
+${truncatedText}
+---
+
+Based on the rulebook content, identify which themes and player experiences best describe this game.
+
+Return as JSON:
+{
+  "themes": [
+    {
+      "id": "<theme UUID from list above>",
+      "confidence": <0.0-1.0>,
+      "reasoning": "<1-2 sentences explaining why this theme fits based on rulebook evidence>",
+      "isPrimary": <true for the single most defining theme, false for others>
+    }
+  ],
+  "playerExperiences": [
+    {
+      "id": "<experience UUID from list above>",
+      "confidence": <0.0-1.0>,
+      "reasoning": "<1-2 sentences explaining why this experience fits>"
+    }
+  ],
+  "newSuggestions": [
+    {
+      "type": "theme" | "player_experience",
+      "name": "<suggested new taxonomy name>",
+      "description": "<what this taxonomy covers>",
+      "reasoning": "<why existing options don't fit and this new one is needed>"
+    }
+  ]
+}
+
+SELECTION GUIDELINES:
+
+**Themes** (setting, flavor, world):
+- Select 1-3 themes that best describe the game's setting and atmosphere
+- Mark exactly ONE theme as isPrimary (the most defining theme)
+- High confidence (0.8+): Theme is explicitly present (e.g., fantasy creatures, space setting)
+- Medium confidence (0.5-0.8): Theme is implied or partial (e.g., medieval setting without full fantasy elements)
+- Low confidence (<0.5): Theme is tangential or minor aspect
+
+**Player Experiences** (how it feels to play):
+- Select 1-4 experiences that describe the core interaction style
+- Consider: Is it competitive or cooperative? Does it support solo? Are there teams? Hidden information?
+- High confidence (0.8+): Experience is core to gameplay (e.g., explicit cooperative rules)
+- Medium confidence (0.5-0.8): Experience is supported but not central
+- Low confidence (<0.5): Experience is possible but not emphasized
+
+**New Suggestions**:
+- ONLY suggest new taxonomies if the existing options truly don't fit
+- Don't suggest variations of existing themes (e.g., don't suggest "High Fantasy" when "Fantasy" exists)
+- Provide clear reasoning why the existing taxonomy is insufficient
+- Leave this array empty if existing options cover the game well
+
+IMPORTANT:
+- Base your analysis on RULEBOOK EVIDENCE, not assumptions about the game
+- Quote specific elements from the rulebook in your reasoning
+- If the rulebook lacks thematic content (e.g., abstract games), reflect that in low confidence scores
+- Return valid JSON only - no markdown, no text outside the JSON`
+}

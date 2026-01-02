@@ -22,6 +22,7 @@ import type { Game, GameImage } from '@/types/database'
 // Import wizard step components
 import { RulebookStep } from './wizard-steps/RulebookStep'
 import { ParseGenerateStep } from './wizard-steps/ParseGenerateStep'
+import { TaxonomyStep } from './wizard-steps/TaxonomyStep'
 import { ImagesStep } from './wizard-steps/ImagesStep'
 import { RelationsStep } from './wizard-steps/RelationsStep'
 import { ReviewContentStep } from './wizard-steps/ReviewContentStep'
@@ -44,10 +45,11 @@ interface GameSetupWizardProps {
 const WIZARD_STEPS: WizardStep[] = [
   { id: 1, title: 'Rulebook', description: 'Find rulebook URL' },
   { id: 2, title: 'Parse', description: 'Generate content' },
-  { id: 3, title: 'Images', description: 'Upload artwork' },
-  { id: 4, title: 'Relations', description: 'Game connections' },
-  { id: 5, title: 'Review', description: 'Check content' },
-  { id: 6, title: 'Publish', description: 'Go live' },
+  { id: 3, title: 'Taxonomy', description: 'Themes & experiences' },
+  { id: 4, title: 'Images', description: 'Upload artwork' },
+  { id: 5, title: 'Relations', description: 'Game connections' },
+  { id: 6, title: 'Review', description: 'Check content' },
+  { id: 7, title: 'Publish', description: 'Go live' },
 ]
 
 export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSetupWizardProps) {
@@ -73,7 +75,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     prevStep,
     completeStep,
     skipStep,
-  } = useWizardProgress(game.id, { totalSteps: 6 })
+  } = useWizardProgress(game.id, { totalSteps: 7 })
 
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
@@ -132,14 +134,14 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
 
   const handleStepComplete = () => {
     completeStep()
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       nextStep()
     }
   }
 
   const handleSkip = () => {
     skipStep()
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       nextStep()
     }
   }
@@ -165,6 +167,14 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         )
       case 3:
         return (
+          <TaxonomyStep
+            game={game}
+            onComplete={handleStepComplete}
+            onSkip={handleSkip}
+          />
+        )
+      case 4:
+        return (
           <ImagesStep
             game={game}
             images={images}
@@ -176,7 +186,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
             onSkip={handleSkip}
           />
         )
-      case 4:
+      case 5:
         return (
           <RelationsStep
             game={game}
@@ -184,7 +194,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
             onSkip={handleSkip}
           />
         )
-      case 5:
+      case 6:
         return (
           <ReviewContentStep
             game={game}
@@ -192,7 +202,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
             onComplete={handleStepComplete}
           />
         )
-      case 6:
+      case 7:
         return (
           <PublishStep
             game={game}
@@ -290,7 +300,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         </Button>
 
         <div className="flex items-center gap-2">
-          {currentStep < 6 && (
+          {currentStep < 7 && (
             <>
               <Button
                 variant="ghost"
@@ -302,7 +312,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
               </Button>
               <Button
                 onClick={handleStepComplete}
-                disabled={!canProceed && currentStep !== 5}
+                disabled={!canProceed && currentStep !== 6}
                 className="gap-2"
               >
                 Next

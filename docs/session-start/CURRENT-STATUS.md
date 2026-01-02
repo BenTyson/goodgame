@@ -1,8 +1,68 @@
 # Current Status
 
-> Last Updated: 2026-01-01 (Game Relations Pipeline)
+> Last Updated: 2026-01-01 (AI Taxonomy Wizard)
 
-## Current Phase: 37 - Game Relations Data Pipeline (COMPLETE)
+## Current Phase: 38 - AI-Powered Taxonomy Wizard (COMPLETE)
+
+Added AI-powered theme and player experience extraction to the game setup wizard. The AI analyzes parsed rulebook text and suggests taxonomy assignments for admin review.
+
+### New Migration
+
+| Migration | Purpose |
+|-----------|---------|
+| `00052_taxonomy_suggestions.sql` | Stores AI-generated taxonomy suggestions pending admin review |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/games/taxonomy/route.ts` | API for GET/POST/PATCH taxonomy assignments |
+| `src/components/admin/game-editor/TaxonomySelector.tsx` | Multi-select UI with AI suggestion badges |
+| `src/components/admin/game-editor/wizard-steps/TaxonomyStep.tsx` | New wizard step (Step 3) |
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added `TaxonomySuggestion` types and `TaxonomyExtractionResult` |
+| `src/lib/rulebook/prompts.ts` | Added `getTaxonomyExtractionPrompt()` for theme/experience extraction |
+| `src/app/api/admin/rulebook/parse/route.ts` | Now extracts taxonomy during parse phase |
+| `src/components/admin/game-editor/GameSetupWizard.tsx` | 7-step wizard with Taxonomy as step 3 |
+| `src/components/admin/game-editor/wizard-steps/index.ts` | Exports `TaxonomyStep` |
+
+### New Wizard Flow (7 Steps)
+
+| Step | Name | Description |
+|------|------|-------------|
+| 1 | Rulebook | Find rulebook URL |
+| 2 | Parse | Generate BNCS + content + taxonomy extraction |
+| 3 | **Taxonomy** | **NEW** - Review AI suggestions, select themes/experiences |
+| 4 | Images | Upload artwork |
+| 5 | Relations | Game connections |
+| 6 | Review | Check content |
+| 7 | Publish | Go live |
+
+### Key Features
+
+**AI Taxonomy Extraction:**
+- Analyzes parsed rulebook text to suggest themes and player experiences
+- Returns confidence scores (0-100%) and reasoning for each suggestion
+- Suggests new taxonomies when existing ones don't fit
+
+**Admin Review UI:**
+- AI suggestions pre-selected with confidence badges
+- Two-section layout: Themes + Player Experiences
+- Primary selection toggle for themes
+- Full list of available options for manual additions
+
+**Legal Compliance:**
+- Categories & Mechanics remain publisher-only (no AI suggestions)
+- Themes & Player Experiences generated from original rulebook analysis
+- No BGG data used for taxonomy assignment
+
+---
+
+## Phase 37 - Game Relations Data Pipeline (COMPLETE)
 
 Enhanced game relation management with retroactive sync, family auto-detection, and admin UI improvements.
 

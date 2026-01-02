@@ -2383,6 +2383,62 @@ export type Database = {
           },
         ]
       }
+      taxonomy_suggestions: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          game_id: string
+          id: string
+          is_primary: boolean | null
+          processed_at: string | null
+          processed_by: string | null
+          reasoning: string | null
+          status: string | null
+          suggested_description: string | null
+          suggested_name: string | null
+          suggestion_type: string
+          target_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          game_id: string
+          id?: string
+          is_primary?: boolean | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reasoning?: string | null
+          status?: string | null
+          suggested_description?: string | null
+          suggested_name?: string | null
+          suggestion_type: string
+          target_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          is_primary?: boolean | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reasoning?: string | null
+          status?: string | null
+          suggested_description?: string | null
+          suggested_name?: string | null
+          suggestion_type?: string
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxonomy_suggestions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       themes: {
         Row: {
           bgg_id: number | null
