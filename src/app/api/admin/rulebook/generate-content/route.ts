@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Map model choice to actual model ID
     const modelId = model === 'haiku'
-      ? 'claude-haiku-4-5-latest'
+      ? 'claude-3-5-haiku-20241022'
       : 'claude-sonnet-4-20250514'
     const temperature = model === 'haiku' ? 0.4 : 0.6
 

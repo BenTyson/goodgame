@@ -8,18 +8,20 @@ import Anthropic from '@anthropic-ai/sdk'
 // Initialize client (uses ANTHROPIC_API_KEY env var automatically)
 const anthropic = new Anthropic()
 
-// Model configuration - using Claude 4.5 model aliases (auto-updated to latest)
-const DEFAULT_MODEL = 'claude-haiku-4-5-latest'
+// Model configuration
+// Claude 3.5 models use format: claude-3-5-{model}-{date}
+// Claude 4.5 models use format: claude-{model}-4-5 (no -latest suffix)
+const DEFAULT_MODEL = 'claude-3-5-haiku-20241022'
 const MAX_TOKENS = 4096
 
-// Cost per 1M tokens (as of late 2025)
+// Cost per 1M tokens
 const COSTS: Record<string, { input: number; output: number }> = {
-  // Claude 4.5 models - aliases
-  'claude-haiku-4-5-latest': { input: 1.00, output: 5.00 },
-  'claude-sonnet-4-5-latest': { input: 3.00, output: 15.00 },
-  'claude-opus-4-5-latest': { input: 15.00, output: 75.00 },
-  // Claude 4.5 models - specific versions
-  'claude-sonnet-4-5-20250929': { input: 3.00, output: 15.00 },
+  // Claude 3.5 models
+  'claude-3-5-haiku-20241022': { input: 1.00, output: 5.00 },
+  'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
+  // Claude 4.5 models (if available)
+  'claude-haiku-4-5': { input: 1.00, output: 5.00 },
+  'claude-sonnet-4-5': { input: 3.00, output: 15.00 },
 }
 
 export interface GenerationResult {

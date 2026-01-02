@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       const result = await generateJSON<ExtractedGameData>(
         RULEBOOK_SYSTEM_PROMPT,
         prompt,
-        { temperature: 0.3, model: 'claude-haiku-4-5-latest' }
+        { temperature: 0.3, model: 'claude-3-5-haiku-20241022' }
       )
       extractedData = result.data
       console.log('Extracted data keys:', Object.keys(result.data || {}))
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         const result = await generateJSON<TaxonomyExtractionResult>(
           RULEBOOK_SYSTEM_PROMPT,
           prompt,
-          { temperature: 0.2, model: 'claude-sonnet-4-5-latest', maxTokens: 2048 }
+          { temperature: 0.2, model: 'claude-3-5-sonnet-20241022', maxTokens: 2048 }
         )
         taxonomySuggestions = result.data
         console.log('AI taxonomy extraction result:', JSON.stringify(taxonomySuggestions, null, 2))
