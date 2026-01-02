@@ -663,15 +663,19 @@ Game series/family groupings (e.g., Catan, Pandemic, Ticket to Ride).
 | name | VARCHAR(255) | Family name |
 | description | TEXT | Family description |
 | hero_image_url | VARCHAR(500) | Banner image for family page |
+| base_game_id | UUID | FK to games - the primary/original game in family |
 | bgg_family_id | INTEGER | BGG family ID (for import matching) |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
 **Notes:**
 - Games link to families via `games.family_id`
-- Auto-created during BGG import from "Game:" and "Series:" family types
+- `base_game_id` identifies the original game (used for thumbnails, canonical reference)
+- Auto-created during BGG import from game name patterns (colons, parentheses, en-dashes)
+- Example: "CATAN: Seafarers" auto-creates "CATAN" family
 - Public pages at `/families` and `/families/[slug]`
 - Admin management at `/admin/families`
+- When querying games in a family, use explicit FK: `games!games_family_id_fkey` to avoid PGRST201 ambiguity
 
 ### game_relations
 Explicit relationships between games (expansions, sequels, etc.).
@@ -698,9 +702,13 @@ Explicit relationships between games (expansions, sequels, etc.).
 | `standalone_in_series` | Frosthaven (standalone in Gloomhaven series) |
 
 **Notes:**
-- Store relations in one direction only (expansion → base)
+- Store relations in one direction only (child → parent, e.g., expansion → base)
 - Query bidirectionally and display inverse labels
-- Auto-created during BGG import for expansions
+- Created via:
+  1. BGG import when both games exist (`process-import-queue.ts`)
+  2. Retroactive sync from `bgg_raw_data` (`sync-game-relations.ts`)
+- `bgg_raw_data` stores BGG references in `expansions[]`, `implementations[]`, `expandsGame`, `implementsGame`
+- Sync script creates relations when target game exists in DB
 
 ### publisher_rulebook_patterns
 URL patterns for auto-discovering publisher rulebooks.

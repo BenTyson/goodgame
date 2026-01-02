@@ -23,6 +23,7 @@ import type { Game, GameImage } from '@/types/database'
 import { RulebookStep } from './wizard-steps/RulebookStep'
 import { ParseGenerateStep } from './wizard-steps/ParseGenerateStep'
 import { ImagesStep } from './wizard-steps/ImagesStep'
+import { RelationsStep } from './wizard-steps/RelationsStep'
 import { ReviewContentStep } from './wizard-steps/ReviewContentStep'
 import { PublishStep } from './wizard-steps/PublishStep'
 
@@ -44,8 +45,9 @@ const WIZARD_STEPS: WizardStep[] = [
   { id: 1, title: 'Rulebook', description: 'Find rulebook URL' },
   { id: 2, title: 'Parse', description: 'Generate content' },
   { id: 3, title: 'Images', description: 'Upload artwork' },
-  { id: 4, title: 'Review', description: 'Check content' },
-  { id: 5, title: 'Publish', description: 'Go live' },
+  { id: 4, title: 'Relations', description: 'Game connections' },
+  { id: 5, title: 'Review', description: 'Check content' },
+  { id: 6, title: 'Publish', description: 'Go live' },
 ]
 
 export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSetupWizardProps) {
@@ -71,7 +73,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     prevStep,
     completeStep,
     skipStep,
-  } = useWizardProgress(game.id, { totalSteps: 5 })
+  } = useWizardProgress(game.id, { totalSteps: 6 })
 
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
@@ -130,14 +132,14 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
 
   const handleStepComplete = () => {
     completeStep()
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       nextStep()
     }
   }
 
   const handleSkip = () => {
     skipStep()
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       nextStep()
     }
   }
@@ -176,13 +178,21 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         )
       case 4:
         return (
+          <RelationsStep
+            game={game}
+            onComplete={handleStepComplete}
+            onSkip={handleSkip}
+          />
+        )
+      case 5:
+        return (
           <ReviewContentStep
             game={game}
             updateField={updateField}
             onComplete={handleStepComplete}
           />
         )
-      case 5:
+      case 6:
         return (
           <PublishStep
             game={game}
@@ -280,7 +290,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         </Button>
 
         <div className="flex items-center gap-2">
-          {currentStep < 5 && (
+          {currentStep < 6 && (
             <>
               <Button
                 variant="ghost"
@@ -292,7 +302,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
               </Button>
               <Button
                 onClick={handleStepComplete}
-                disabled={!canProceed && currentStep !== 4}
+                disabled={!canProceed && currentStep !== 5}
                 className="gap-2"
               >
                 Next

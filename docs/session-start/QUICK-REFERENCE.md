@@ -41,6 +41,14 @@ npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types
 railway environment staging && railway service goodgame-staging
 railway environment production && railway service goodgame
 railway logs
+
+# Game Import & Relations Scripts
+npx tsx scripts/process-import-queue.ts --limit=10     # Process BGG import queue
+npx tsx scripts/import-missing-relations.ts --dry-run  # Find missing related games
+npx tsx scripts/import-missing-relations.ts --skip-fan --skip-promos  # Skip unofficial content
+npx tsx scripts/sync-game-relations.ts --dry-run       # Sync relations from bgg_raw_data
+npx tsx scripts/sync-game-relations.ts --family=CATAN  # Sync specific family only
+npx tsx scripts/backfill-bgg-images.ts --limit=10      # Backfill missing BGG thumbnails
 ```
 
 ## Supabase Projects
@@ -223,6 +231,16 @@ src/hooks/
     ├── useAsyncAction.ts      # Saving/saved/error state for async operations
     ├── useAutoSlug.ts         # Auto-generate slug from name
     └── index.ts               # Barrel exports
+```
+
+### Scripts
+```
+scripts/
+├── process-import-queue.ts     # Process pending BGG imports (--limit, --all)
+├── import-missing-relations.ts # Find/queue missing related games (--dry-run, --skip-fan, --skip-promos)
+├── sync-game-relations.ts      # Sync relations from bgg_raw_data (--family, --type, --dry-run)
+├── backfill-bgg-images.ts      # Backfill missing reference_images (--limit, --name)
+└── detect-family-base-games.ts # Auto-detect base games for families (--dry-run)
 ```
 
 ### Data & Types

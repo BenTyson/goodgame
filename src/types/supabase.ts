@@ -719,6 +719,7 @@ export type Database = {
       }
       game_families: {
         Row: {
+          base_game_id: string | null
           bgg_family_id: number | null
           created_at: string | null
           description: string | null
@@ -729,6 +730,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          base_game_id?: string | null
           bgg_family_id?: number | null
           created_at?: string | null
           description?: string | null
@@ -739,6 +741,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          base_game_id?: string | null
           bgg_family_id?: number | null
           created_at?: string | null
           description?: string | null
@@ -748,7 +751,15 @@ export type Database = {
           slug?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "game_families_base_game_id_fkey"
+            columns: ["base_game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       game_images: {
         Row: {
@@ -1015,6 +1026,7 @@ export type Database = {
           has_rules: boolean | null
           has_score_sheet: boolean | null
           has_setup_guide: boolean | null
+          has_unimported_relations: boolean | null
           hero_image_url: string | null
           id: string
           is_featured: boolean | null
@@ -1024,6 +1036,7 @@ export type Database = {
           is_staff_pick: boolean | null
           is_top_rated: boolean | null
           is_trending: boolean | null
+          latest_parse_log_id: string | null
           meta_description: string | null
           meta_title: string | null
           min_age: number | null
@@ -1077,6 +1090,7 @@ export type Database = {
           has_rules?: boolean | null
           has_score_sheet?: boolean | null
           has_setup_guide?: boolean | null
+          has_unimported_relations?: boolean | null
           hero_image_url?: string | null
           id?: string
           is_featured?: boolean | null
@@ -1086,6 +1100,7 @@ export type Database = {
           is_staff_pick?: boolean | null
           is_top_rated?: boolean | null
           is_trending?: boolean | null
+          latest_parse_log_id?: string | null
           meta_description?: string | null
           meta_title?: string | null
           min_age?: number | null
@@ -1139,6 +1154,7 @@ export type Database = {
           has_rules?: boolean | null
           has_score_sheet?: boolean | null
           has_setup_guide?: boolean | null
+          has_unimported_relations?: boolean | null
           hero_image_url?: string | null
           id?: string
           is_featured?: boolean | null
@@ -1148,6 +1164,7 @@ export type Database = {
           is_staff_pick?: boolean | null
           is_top_rated?: boolean | null
           is_trending?: boolean | null
+          latest_parse_log_id?: string | null
           meta_description?: string | null
           meta_title?: string | null
           min_age?: number | null
@@ -1186,6 +1203,13 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "game_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_latest_parse_log_id_fkey"
+            columns: ["latest_parse_log_id"]
+            isOneToOne: false
+            referencedRelation: "rulebook_parse_log"
             referencedColumns: ["id"]
           },
         ]
@@ -2130,6 +2154,7 @@ export type Database = {
           game_id: string | null
           id: string
           page_count: number | null
+          parsed_text: string | null
           processing_time_ms: number | null
           rulebook_url: string
           status: string
@@ -2142,6 +2167,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           page_count?: number | null
+          parsed_text?: string | null
           processing_time_ms?: number | null
           rulebook_url: string
           status: string
@@ -2154,6 +2180,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           page_count?: number | null
+          parsed_text?: string | null
           processing_time_ms?: number | null
           rulebook_url?: string
           status?: string
@@ -3480,6 +3507,7 @@ export type Database = {
           has_rules: boolean | null
           has_score_sheet: boolean | null
           has_setup_guide: boolean | null
+          has_unimported_relations: boolean | null
           hero_image_url: string | null
           id: string
           is_featured: boolean | null
@@ -3489,6 +3517,7 @@ export type Database = {
           is_staff_pick: boolean | null
           is_top_rated: boolean | null
           is_trending: boolean | null
+          latest_parse_log_id: string | null
           meta_description: string | null
           meta_title: string | null
           min_age: number | null

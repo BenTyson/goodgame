@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
   Users2,
@@ -26,7 +26,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { GamePicker } from './GamePicker'
 import { useAsyncAction } from '@/hooks/admin'
-import type { Database } from '@/types/supabase'
 import type {
   Game,
   GameFamily,
@@ -66,14 +65,13 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
   const { saving, execute } = useAsyncAction()
   const [newRelationType, setNewRelationType] = useState<RelationType>('expansion_of')
 
-  // Memoize supabase client to prevent infinite loops
-  const supabase = useMemo(() => createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ), [])
+  // Use singleton browser client
+  const supabase = createClient()
 
   // Load families and relations
   useEffect(() => {
+    let isMounted = true
+
     const loadData = async () => {
       setLoading(true)
       try {
@@ -83,7 +81,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           .select('*')
           .order('name')
 
-        setFamilies(familiesData || [])
+        if (isMounted) setFamilies(familiesData || [])
 
         // Load relations where this game is the source
         const { data: relationsData } = await supabase
@@ -94,7 +92,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           `)
           .eq('source_game_id', game.id)
 
-        setRelations((relationsData as unknown as RelationWithGame[]) || [])
+        if (isMounted) setRelations((relationsData as unknown as RelationWithGame[]) || [])
 
         // Load inverse relations where this game is the target
         const { data: inverseData } = await supabase
@@ -105,15 +103,19 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           `)
           .eq('target_game_id', game.id)
 
-        setInverseRelations((inverseData as unknown as InverseRelationWithGame[]) || [])
+        if (isMounted) setInverseRelations((inverseData as unknown as InverseRelationWithGame[]) || [])
       } catch (error) {
-        console.error('Error loading data:', error)
+        console.error('Error loading relations data:', error)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
     loadData()
+
+    return () => {
+      isMounted = false
+    }
   }, [game.id, supabase])
 
   // Handle family change

@@ -13,6 +13,7 @@ import {
   Gamepad2,
   ChevronLeft,
   ChevronRight,
+  Link2,
 } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 60
@@ -34,6 +35,8 @@ async function getGames(filter?: string, search?: string, page: number = 1) {
     query = query.eq('is_published', false).or('content_status.is.null,content_status.eq.none')
   } else if (filter === 'unpublished') {
     query = query.eq('is_published', false)
+  } else if (filter === 'needs-relations') {
+    query = query.eq('has_unimported_relations', true)
   }
 
   if (search) {
@@ -61,12 +64,14 @@ async function getGameCounts() {
     { count: unpublished },
     { count: draft },
     { count: pending },
+    { count: needsRelations },
   ] = await Promise.all([
     supabase.from('games').select('*', { count: 'exact', head: true }),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', true),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).eq('content_status', 'draft'),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).or('content_status.is.null,content_status.eq.none'),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('has_unimported_relations', true),
   ])
 
   return {
@@ -75,6 +80,7 @@ async function getGameCounts() {
     unpublished: unpublished || 0,
     draft: draft || 0,
     pending: pending || 0,
+    needsRelations: needsRelations || 0,
   }
 }
 
@@ -97,6 +103,7 @@ export default async function AdminGamesPage({
     { label: 'Unpublished', value: 'unpublished', icon: Clock, color: 'text-orange-500', count: counts.unpublished },
     { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500', count: counts.draft },
     { label: 'Pending', value: 'pending', icon: Clock, color: 'text-gray-500', count: counts.pending },
+    { label: 'Needs Relations', value: 'needs-relations', icon: Link2, color: 'text-blue-500', count: counts.needsRelations },
   ]
 
   // Build pagination URL helper

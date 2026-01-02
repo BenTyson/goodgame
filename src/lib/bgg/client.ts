@@ -84,6 +84,8 @@ export interface BGGRawGame {
   families: BGGLink[]
   expansions: BGGLink[]
   expandsGame: BGGLink | null // If this is an expansion
+  implementations: BGGLink[]  // Games that are reimplementations of this one
+  implementsGame: BGGLink | null // The game this reimplements (if this is a newer edition)
 }
 
 /**
@@ -163,6 +165,24 @@ function parseLinkWithId(
 }
 
 /**
+ * Parse links with inbound attribute (for implementation links)
+ * BGG marks links as inbound="true" when the link points TO this game
+ */
+function parseLinkWithInbound(
+  links: Array<{ $: { type: string; id: string; value: string; inbound?: string } }> | undefined,
+  type: string
+): { id: number; name: string; inbound: boolean }[] {
+  if (!links || !Array.isArray(links)) return []
+  return links
+    .filter(link => link.$ && link.$.type === type)
+    .map(link => ({
+      id: parseInt(link.$.id, 10),
+      name: link.$.value,
+      inbound: link.$.inbound === 'true'
+    }))
+}
+
+/**
  * Fetch a single game from BGG by ID
  */
 export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
@@ -216,6 +236,21 @@ export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
       ? parseLinkWithId(item.link, 'boardgameexpansion')
       : []
 
+    // Get implementation relationship (reimplementations/editions)
+    // inbound=true means that game reimplements THIS game
+    // inbound=false/missing means THIS game reimplements that game
+    const implLinks = parseLinkWithInbound(item.link, 'boardgameimplementation')
+
+    // This game reimplements another (outgoing - we're the newer version)
+    const implementsGame = implLinks.find(link => !link.inbound)
+      ? { id: implLinks.find(link => !link.inbound)!.id, name: implLinks.find(link => !link.inbound)!.name }
+      : null
+
+    // Games that reimplement this one (inbound - we're the original)
+    const implementations = implLinks
+      .filter(link => link.inbound)
+      .map(({ id, name }) => ({ id, name }))
+
     const game: BGGRawGame = {
       id: parseInt(item.$.id, 10),
       type,
@@ -245,6 +280,8 @@ export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
       families: parseLinkWithId(item.link, 'boardgamefamily'),
       expansions,
       expandsGame,
+      implementations,
+      implementsGame,
     }
 
     return game
@@ -316,7 +353,7 @@ async function parseBGGItem(item: Record<string, unknown>): Promise<BGGRawGame |
     const ranks = (stats?.ranks as Array<{ rank: Array<{ $: { name: string; value: string } }> }>)?.[0]?.rank || []
     const overallRank = ranks.find(r => r.$.name === 'boardgame')
 
-    const links = item.link as Array<{ $: { type: string; id: string; value: string } }>
+    const links = item.link as Array<{ $: { type: string; id: string; value: string; inbound?: string } }>
     const expandsLinks = parseLinkWithId(links, 'boardgameexpansion')
     const expandsGame = type === 'boardgameexpansion' && expandsLinks.length > 0
       ? expandsLinks[0]
@@ -324,6 +361,15 @@ async function parseBGGItem(item: Record<string, unknown>): Promise<BGGRawGame |
     const expansions = type === 'boardgame'
       ? parseLinkWithId(links, 'boardgameexpansion')
       : []
+
+    // Parse implementation links
+    const implLinks = parseLinkWithInbound(links, 'boardgameimplementation')
+    const implementsGame = implLinks.find(link => !link.inbound)
+      ? { id: implLinks.find(link => !link.inbound)!.id, name: implLinks.find(link => !link.inbound)!.name }
+      : null
+    const implementations = implLinks
+      .filter(link => link.inbound)
+      .map(({ id, name }) => ({ id, name }))
 
     return {
       id: parseInt((item.$ as { id: string }).id, 10),
@@ -354,6 +400,8 @@ async function parseBGGItem(item: Record<string, unknown>): Promise<BGGRawGame |
       families: parseLinkWithId(links, 'boardgamefamily'),
       expansions,
       expandsGame,
+      implementations,
+      implementsGame,
     }
   } catch (error) {
     console.error('Error parsing BGG item:', error)

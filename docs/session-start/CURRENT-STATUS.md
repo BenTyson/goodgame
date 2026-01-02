@@ -1,8 +1,69 @@
 # Current Status
 
-> Last Updated: 2026-01-01 (Image Cropper Feature)
+> Last Updated: 2026-01-01 (Game Relations Pipeline)
 
-## Current Phase: 36 - Admin Image Cropper (COMPLETE)
+## Current Phase: 37 - Game Relations Data Pipeline (COMPLETE)
+
+Enhanced game relation management with retroactive sync, family auto-detection, and admin UI improvements.
+
+### New Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/sync-game-relations.ts` | Sync relations from `bgg_raw_data` to `game_relations` table |
+| `scripts/backfill-bgg-images.ts` | Backfill `reference_images` for games missing thumbnails |
+
+### Modified Scripts
+
+| Script | Changes |
+|--------|---------|
+| `scripts/process-import-queue.ts` | Added family auto-detection from game names, stores `reference_images` in `bgg_raw_data` |
+| `scripts/import-missing-relations.ts` | Added `--skip-promos` flag to filter promotional items |
+
+### Key Features
+
+**Relation Sync Script (`sync-game-relations.ts`):**
+```bash
+npx tsx scripts/sync-game-relations.ts --dry-run          # Preview changes
+npx tsx scripts/sync-game-relations.ts --family=CATAN     # Sync specific family
+npx tsx scripts/sync-game-relations.ts --type=expansions  # Only expansion relations
+npx tsx scripts/sync-game-relations.ts --limit=10         # Limit games processed
+```
+
+**Family Auto-Detection:**
+- Games with colons create families automatically (e.g., "CATAN: Seafarers" → CATAN family)
+- Also detects parentheses and en-dash patterns
+- Minimum 3 characters for family name
+
+**Relation Direction:**
+- Relations point FROM child TO parent (e.g., "Seafarers expansion_of CATAN")
+- Sync script processes both `expandsGame`/`implementsGame` (direct) and `expansions`/`implementations` arrays (reverse)
+
+### Admin Families Page Redesign
+
+| Change | Description |
+|--------|-------------|
+| Thumbnail images | Shows base game thumbnail (oldest by year or explicit `base_game_id`) |
+| Relation counts | Displays "3 Expansions", "2 Reimplementations", etc. |
+| Filter buttons | Filter by relation type (Expansions, Sequels, Reimplementations, Spin-offs) |
+| Compact cards | Removed icon, moved badges to image overlay, `padding="none"` |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/admin/(dashboard)/families/page.tsx` | Complete redesign with thumbnails, filters, relation counts |
+
+### Database Notes
+
+- `game_relations` stores explicit parent-child relationships
+- `bgg_raw_data.expansions[]` and `bgg_raw_data.implementations[]` contain BGG references
+- Sync script creates `game_relations` entries when both games exist in DB
+- Fixed PostgreSQL PGRST201 error by specifying FK: `games!games_family_id_fkey`
+
+---
+
+## Phase 36 - Admin Image Cropper (COMPLETE)
 
 Added image cropping functionality to the admin game image uploader with preset aspect ratios.
 

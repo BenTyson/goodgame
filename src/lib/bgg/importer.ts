@@ -16,6 +16,18 @@ type GameInsert = Database['public']['Tables']['games']['Insert']
 type ImportQueueRow = Database['public']['Tables']['import_queue']['Row']
 
 /**
+ * Options for game import
+ */
+export interface ImportOptions {
+  /** Import parent games (base game for expansions, original for reimplementations) first */
+  importParents?: boolean
+  /** Maximum depth for parent chasing (default: 3) */
+  maxDepth?: number
+  /** Track which BGG IDs are currently being imported (to prevent circular imports) */
+  importingSet?: Set<number>
+}
+
+/**
  * BGG Family types we care about for game series
  * BGG has many family types (themes, components, etc) - we only want game series
  */
@@ -333,6 +345,88 @@ async function linkBaseGameExpansions(
 }
 
 /**
+ * Create reimplementation relation if the original game exists in our database
+ */
+async function linkImplementationRelation(
+  supabase: SupabaseClient<Database>,
+  reimplementationGameId: string,
+  originalGameBggId: number
+): Promise<void> {
+  // Find the original game by BGG ID
+  const { data: originalGame } = await supabase
+    .from('games')
+    .select('id')
+    .eq('bgg_id', originalGameBggId)
+    .single()
+
+  if (!originalGame) {
+    // Original game not in our DB yet - relation will be created when it's imported
+    return
+  }
+
+  // Check if relation already exists
+  const { data: existing } = await supabase
+    .from('game_relations')
+    .select('id')
+    .eq('source_game_id', reimplementationGameId)
+    .eq('target_game_id', originalGame.id)
+    .eq('relation_type', 'reimplementation_of')
+    .single()
+
+  if (existing) return
+
+  // Create reimplementation_of relation
+  await supabase
+    .from('game_relations')
+    .insert({
+      source_game_id: reimplementationGameId,
+      target_game_id: originalGame.id,
+      relation_type: 'reimplementation_of' as RelationType,
+    })
+}
+
+/**
+ * Create relations for an original game's reimplementations that already exist in our DB
+ */
+async function linkOriginalGameImplementations(
+  supabase: SupabaseClient<Database>,
+  originalGameId: string,
+  reimplementationBggIds: number[]
+): Promise<void> {
+  if (reimplementationBggIds.length === 0) return
+
+  // Find reimplementations that exist in our DB
+  const { data: reimplementations } = await supabase
+    .from('games')
+    .select('id, bgg_id')
+    .in('bgg_id', reimplementationBggIds)
+
+  if (!reimplementations || reimplementations.length === 0) return
+
+  for (const reimplementation of reimplementations) {
+    // Check if relation already exists (reimplementation -> original)
+    const { data: existing } = await supabase
+      .from('game_relations')
+      .select('id')
+      .eq('source_game_id', reimplementation.id)
+      .eq('target_game_id', originalGameId)
+      .eq('relation_type', 'reimplementation_of')
+      .single()
+
+    if (existing) continue
+
+    // Create reimplementation_of relation (reimplementation is source, original is target)
+    await supabase
+      .from('game_relations')
+      .insert({
+        source_game_id: reimplementation.id,
+        target_game_id: originalGameId,
+        relation_type: 'reimplementation_of' as RelationType,
+      })
+  }
+}
+
+/**
  * Link a game to its designers
  */
 async function linkGameDesigners(
@@ -447,6 +541,170 @@ function cleanDescription(description: string): string {
 // BGG category mappings are defined in @/lib/config/bgg-mappings.ts
 
 /**
+ * Check if a game exists in our database by BGG ID
+ */
+async function gameExistsByBggId(
+  supabase: SupabaseClient<Database>,
+  bggId: number
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('games')
+    .select('id')
+    .eq('bgg_id', bggId)
+    .single()
+  return !!data
+}
+
+/**
+ * Import parent games first (base game for expansions, original for reimplementations)
+ * This ensures relations can be created properly during the main import
+ */
+async function importParentGamesFirst(
+  bggData: BGGRawGame,
+  options: ImportOptions
+): Promise<void> {
+  const { maxDepth = 3, importingSet = new Set() } = options
+
+  // Prevent infinite recursion
+  if (maxDepth <= 0) {
+    console.log(`[Importer] Max depth reached, skipping parent import for ${bggData.name}`)
+    return
+  }
+
+  // Mark current game as being imported to prevent circular imports
+  importingSet.add(bggData.id)
+
+  const supabase = await createClient()
+  const parentsToImport: number[] = []
+
+  // Check if this is an expansion and base game doesn't exist
+  if (bggData.expandsGame) {
+    const baseGameBggId = bggData.expandsGame.id
+    if (!importingSet.has(baseGameBggId)) {
+      const exists = await gameExistsByBggId(supabase, baseGameBggId)
+      if (!exists) {
+        console.log(`[Importer] Will import base game "${bggData.expandsGame.name}" (BGG ${baseGameBggId}) first`)
+        parentsToImport.push(baseGameBggId)
+      }
+    }
+  }
+
+  // Check if this reimplements another game and original doesn't exist
+  if (bggData.implementsGame) {
+    const originalBggId = bggData.implementsGame.id
+    if (!importingSet.has(originalBggId)) {
+      const exists = await gameExistsByBggId(supabase, originalBggId)
+      if (!exists) {
+        console.log(`[Importer] Will import original game "${bggData.implementsGame.name}" (BGG ${originalBggId}) first`)
+        parentsToImport.push(originalBggId)
+      }
+    }
+  }
+
+  // Import parent games recursively
+  for (const parentBggId of parentsToImport) {
+    console.log(`[Importer] Recursively importing parent game BGG ${parentBggId}...`)
+    await importGameFromBGG(parentBggId, {
+      importParents: true,
+      maxDepth: maxDepth - 1,
+      importingSet,
+    })
+  }
+}
+
+/**
+ * Check for unimported relations and update the has_unimported_relations flag
+ */
+async function updateUnimportedRelationsFlag(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  bggData: BGGRawGame
+): Promise<void> {
+  // Collect all BGG IDs of related games
+  const relatedBggIds: number[] = []
+
+  // Expansions of this game (if this is a base game)
+  if (bggData.expansions && bggData.expansions.length > 0) {
+    relatedBggIds.push(...bggData.expansions.map(e => e.id))
+  }
+
+  // Reimplementations of this game (if this is the original)
+  if (bggData.implementations && bggData.implementations.length > 0) {
+    relatedBggIds.push(...bggData.implementations.map(i => i.id))
+  }
+
+  if (relatedBggIds.length === 0) {
+    // No child relations, flag should be false
+    await supabase
+      .from('games')
+      .update({ has_unimported_relations: false })
+      .eq('id', gameId)
+    return
+  }
+
+  // Check how many of these related games exist in our DB
+  const { data: existingGames } = await supabase
+    .from('games')
+    .select('bgg_id')
+    .in('bgg_id', relatedBggIds)
+
+  const existingBggIds = new Set(existingGames?.map(g => g.bgg_id) || [])
+  const hasUnimported = relatedBggIds.some(id => !existingBggIds.has(id))
+
+  await supabase
+    .from('games')
+    .update({ has_unimported_relations: hasUnimported })
+    .eq('id', gameId)
+
+  if (hasUnimported) {
+    const unimportedCount = relatedBggIds.filter(id => !existingBggIds.has(id)).length
+    console.log(`[Importer] Game has ${unimportedCount} unimported related games`)
+  }
+}
+
+/**
+ * Update has_unimported_relations flag for all games related to a newly imported game
+ * This should be called after importing a game to update parent games' flags
+ */
+async function updateParentGameFlags(
+  supabase: SupabaseClient<Database>,
+  bggData: BGGRawGame
+): Promise<void> {
+  const parentBggIds: number[] = []
+
+  // If this is an expansion, update the base game's flag
+  if (bggData.expandsGame) {
+    parentBggIds.push(bggData.expandsGame.id)
+  }
+
+  // If this is a reimplementation, update the original game's flag
+  if (bggData.implementsGame) {
+    parentBggIds.push(bggData.implementsGame.id)
+  }
+
+  if (parentBggIds.length === 0) return
+
+  // Find parent games in our DB
+  const { data: parentGames } = await supabase
+    .from('games')
+    .select('id, bgg_id, bgg_raw_data')
+    .in('bgg_id', parentBggIds)
+
+  if (!parentGames || parentGames.length === 0) return
+
+  // Update each parent's flag
+  for (const parent of parentGames) {
+    if (parent.bgg_raw_data) {
+      await updateUnimportedRelationsFlag(
+        supabase,
+        parent.id,
+        parent.bgg_raw_data as unknown as BGGRawGame
+      )
+    }
+  }
+}
+
+/**
  * Get the complexity tier ID for a given weight value
  */
 async function getComplexityTierIdForWeight(weight: number | undefined): Promise<string | null> {
@@ -514,8 +772,14 @@ export function transformBGGToGame(bgg: BGGRawGame): GameInsert {
 
 /**
  * Import a single game from BGG
+ * @param bggId - The BGG ID of the game to import
+ * @param options - Import options (importParents, maxDepth, etc.)
  */
-export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
+export async function importGameFromBGG(
+  bggId: number,
+  options: ImportOptions = {}
+): Promise<ImportResult> {
+  const { importParents = true, maxDepth = 3, importingSet = new Set() } = options
   const supabase = await createClient()
 
   // Check if already imported
@@ -544,6 +808,11 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
       bggId,
       error: 'Failed to fetch from BGG'
     }
+  }
+
+  // Import parent games first if enabled (base game for expansions, original for reimplementations)
+  if (importParents && maxDepth > 0) {
+    await importParentGamesFirst(bggData, { importParents, maxDepth, importingSet })
   }
 
   // Transform data
@@ -627,6 +896,24 @@ export async function importGameFromBGG(bggId: number): Promise<ImportResult> {
     const expansionBggIds = bggData.expansions.map(e => e.id)
     await linkBaseGameExpansions(supabase, newGame.id, expansionBggIds)
   }
+
+  // Create implementation/reimplementation relations
+  // If this game reimplements another, link to original
+  if (bggData.implementsGame) {
+    await linkImplementationRelation(supabase, newGame.id, bggData.implementsGame.id)
+  }
+
+  // If this is an original game, link any existing reimplementations in our DB
+  if (bggData.implementations.length > 0) {
+    const implementationBggIds = bggData.implementations.map(i => i.id)
+    await linkOriginalGameImplementations(supabase, newGame.id, implementationBggIds)
+  }
+
+  // Update has_unimported_relations flag for this game
+  await updateUnimportedRelationsFlag(supabase, newGame.id, bggData)
+
+  // Update parent games' flags (they may now have fewer unimported relations)
+  await updateParentGameFlags(supabase, bggData)
 
   return {
     success: true,
