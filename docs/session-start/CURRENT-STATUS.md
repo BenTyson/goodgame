@@ -1,8 +1,62 @@
 # Current Status
 
-> Last Updated: 2026-01-02 (Wizard Modular Refactor)
+> Last Updated: 2026-01-03 (Wizard UI Polish V2)
 
-## Current Phase: 42 - Wizard Modular Refactor + Performance (COMPLETE)
+## Current Phase: 43 - Wizard UI Polish V2 (COMPLETE)
+
+Comprehensive UI polish for the admin wizard, making it cleaner and more cohesive for frequent admin use.
+
+### Bug Fix
+
+- **Step-skipping after image upload** - Separated `handleMarkComplete` (just marks step complete) from `handleStepComplete` (marks complete AND navigates). Steps now use `handleMarkComplete` for auto-detection, preventing auto-navigation when RelationsStep mounts.
+
+### New Shared Components
+
+| File | Purpose |
+|------|---------|
+| `WizardStepHeader.tsx` | Unified step header with consistent color theming per step number |
+| `StatusAlert.tsx` | Unified success/error/warning/info/reset alerts |
+| `InfoPanel.tsx` | Metadata displays (model info, Wikidata enrichment, etc.) |
+
+### UI Improvements
+
+| Component | Changes |
+|-----------|---------|
+| `WizardStepIndicator` | Larger circles (h-9), cleaner design, SkipForward icon for skipped steps |
+| `GameSetupWizard` | Smaller header with truncation, sticky nav footer with backdrop blur |
+| `ContentSection` | Cleaner collapsible header, Ready/Empty status badges, animated chevron |
+| `CrunchScoreDisplay` | Color-coded score bars (green→blue→amber→red), cleaner card layout |
+| `ImageUpload` | Visual type selector cards, polished upload zone with rounded corners |
+| All 8 wizard steps | Consistent styling via `WizardStepHeader` |
+
+### Step Color Theming
+
+| Step | Color |
+|------|-------|
+| 1 Rulebook | Violet |
+| 2 Analyze | Blue |
+| 3 Taxonomy | Indigo |
+| 4 Content | Cyan |
+| 5 Images | Emerald |
+| 6 Relations | Teal |
+| 7 Review | Amber |
+| 8 Publish | Green |
+
+### Files Changed
+
+- `src/components/admin/game-editor/GameSetupWizard.tsx` - Navigation fix, UI polish
+- `src/components/admin/game-editor/WizardStepIndicator.tsx` - Cleaner design
+- `src/components/admin/game-editor/wizard-steps/WizardStepHeader.tsx` - **NEW**
+- `src/components/admin/game-editor/wizard-steps/StatusAlert.tsx` - **NEW**
+- `src/components/admin/game-editor/wizard-steps/InfoPanel.tsx` - **NEW**
+- `src/components/admin/game-editor/wizard-steps/review-content/ContentSection.tsx` - Polish
+- `src/components/admin/rulebook/CrunchScoreDisplay.tsx` - Polish
+- `src/components/admin/ImageUpload.tsx` - Polish
+- All 8 wizard step components - Use WizardStepHeader, StatusAlert, InfoPanel
+
+---
+
+## Phase 42 - Wizard Modular Refactor + Performance (COMPLETE)
 
 Major refactor of GameSetupWizard focusing on stability, performance, and maintainability.
 
