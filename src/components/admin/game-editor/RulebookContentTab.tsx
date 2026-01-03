@@ -22,7 +22,7 @@ import {
   ExternalLink,
   Search,
 } from 'lucide-react'
-import type { Game, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
+import type { Game } from '@/types/database'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import {
   RulebookUrlSection,
@@ -31,25 +31,7 @@ import {
   ContentGenerationModal,
 } from '@/components/admin/rulebook'
 import type { ContentResult } from '@/components/admin/rulebook'
-
-// Helper to format endGame which can be string or object
-function formatEndGame(endGame: ReferenceContent['endGame']): string {
-  if (!endGame) return ''
-  if (typeof endGame === 'string') return endGame
-  const parts: string[] = []
-  if (endGame.triggers?.length) parts.push(`Triggers: ${endGame.triggers.join('; ')}`)
-  if (endGame.finalRound) parts.push(`Final Round: ${endGame.finalRound}`)
-  if (endGame.winner) parts.push(`Winner: ${endGame.winner}`)
-  if (endGame.tiebreakers?.length) parts.push(`Tiebreakers: ${endGame.tiebreakers.join('; ')}`)
-  return parts.join('\n')
-}
-
-interface Publisher {
-  id: string
-  name: string
-  slug: string
-  website: string | null
-}
+import { formatEndGame, parseGameContent, type Publisher } from '@/lib/admin/wizard'
 
 interface RulebookContentTabProps {
   game: Game & { publishers_list?: Publisher[] }
@@ -88,23 +70,8 @@ export function RulebookContentTab({
   // Content section collapse state
   const [contentExpanded, setContentExpanded] = useState(true)
 
-  // Parse JSONB content with fallbacks
-  const rulesContent = (game.rules_content as unknown as RulesContent) || {
-    quickStart: [],
-    overview: '',
-    tips: [],
-  }
-
-  const setupContent = (game.setup_content as unknown as SetupContent) || {
-    firstPlayerRule: '',
-    quickTips: [],
-  }
-
-  const referenceContent = (game.reference_content as unknown as ReferenceContent) || {
-    endGame: '',
-    quickReminders: [],
-  }
-
+  // Parse JSONB content with type-safe fallbacks
+  const { rulesContent, setupContent, referenceContent } = parseGameContent(game)
   const crunchBreakdown = game.crunch_breakdown as CrunchBreakdown | null
   const crunchScore = game.crunch_score
 

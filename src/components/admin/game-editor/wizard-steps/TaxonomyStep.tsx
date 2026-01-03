@@ -8,11 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TaxonomySelector } from '../TaxonomySelector'
 import { Tags, Sparkles, Users, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Game, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
-
-interface SelectedItem {
-  id: string
-  isPrimary: boolean
-}
+import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
 
 interface TaxonomyStepProps {
   game: Game
@@ -35,8 +31,8 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
   const [data, setData] = useState<TaxonomyData | null>(null)
 
   // Selected state
-  const [selectedThemes, setSelectedThemes] = useState<SelectedItem[]>([])
-  const [selectedExperiences, setSelectedExperiences] = useState<SelectedItem[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<SelectedTaxonomyItem[]>([])
+  const [selectedExperiences, setSelectedExperiences] = useState<SelectedTaxonomyItem[]>([])
 
   // Track which suggestions were originally suggested by AI
   const [themeSuggestionIds, setThemeSuggestionIds] = useState<Set<string>>(new Set())

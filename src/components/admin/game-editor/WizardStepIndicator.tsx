@@ -2,12 +2,9 @@
 
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { WizardStep } from '@/lib/admin/wizard'
 
-export interface WizardStep {
-  id: number
-  title: string
-  description?: string
-}
+export type { WizardStep }
 
 interface WizardStepIndicatorProps {
   steps: WizardStep[]

@@ -5,19 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { FileText, Settings } from 'lucide-react'
-import type { Game, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
-
-// Helper to format endGame which can be string or object
-function formatEndGame(endGame: ReferenceContent['endGame']): string {
-  if (!endGame) return ''
-  if (typeof endGame === 'string') return endGame
-  const parts: string[] = []
-  if (endGame.triggers?.length) parts.push(`Triggers: ${endGame.triggers.join('; ')}`)
-  if (endGame.finalRound) parts.push(`Final Round: ${endGame.finalRound}`)
-  if (endGame.winner) parts.push(`Winner: ${endGame.winner}`)
-  if (endGame.tiebreakers?.length) parts.push(`Tiebreakers: ${endGame.tiebreakers.join('; ')}`)
-  return parts.join('\n')
-}
+import type { Game } from '@/types/database'
+import { formatEndGame, parseGameContent } from '@/lib/admin/wizard'
 
 interface ContentTabProps {
   game: Game
@@ -25,31 +14,8 @@ interface ContentTabProps {
 }
 
 export function ContentTab({ game, updateField }: ContentTabProps) {
-  // Parse JSONB content with fallbacks
-  const rulesContent = (game.rules_content as unknown as RulesContent) || {
-    quickStart: [],
-    overview: '',
-    setup: [],
-    turnStructure: [],
-    scoring: [],
-    tips: []
-  }
-
-  const setupContent = (game.setup_content as unknown as SetupContent) || {
-    playerSetup: [],
-    boardSetup: [],
-    componentChecklist: [],
-    firstPlayerRule: '',
-    quickTips: []
-  }
-
-  const referenceContent = (game.reference_content as unknown as ReferenceContent) || {
-    turnSummary: [],
-    keyRules: [],
-    costs: [],
-    quickReminders: [],
-    endGame: ''
-  }
+  // Parse JSONB content with type-safe fallbacks
+  const { rulesContent, setupContent, referenceContent } = parseGameContent(game)
 
   return (
     <div className="space-y-6">

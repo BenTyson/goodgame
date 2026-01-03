@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +35,7 @@ interface GenerateContentStepProps {
 type StepPhase = 'ready' | 'generating' | 'complete' | 'resetting'
 
 export function GenerateContentStep({ game, onComplete, onSkip }: GenerateContentStepProps) {
+  const router = useRouter()
   const [phase, setPhase] = useState<StepPhase>('ready')
   const [contentModel, setContentModel] = useState<'sonnet' | 'haiku'>('sonnet')
   const [contentResult, setContentResult] = useState<{
@@ -56,7 +58,7 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
     }
   }, [hasAllContent, onComplete])
 
-  const generateContent = async () => {
+  const generateContent = useCallback(async () => {
     setPhase('generating')
     setContentResult(null)
 
@@ -76,9 +78,8 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
 
       if (result.success) {
         setPhase('complete')
-        onComplete()
-        // Reload to get updated content
-        setTimeout(() => window.location.reload(), 1000)
+        // Refresh server data - useEffect will call onComplete when content flags update
+        router.refresh()
       } else {
         setPhase('ready')
       }
@@ -89,10 +90,9 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
       })
       setPhase('ready')
     }
-  }
+  }, [game.id, contentModel, router])
 
-  const resetContent = async () => {
-    const previousPhase = phase
+  const resetContent = useCallback(async () => {
     setPhase('resetting')
     setResetMessage(null)
 
@@ -107,13 +107,14 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
         throw new Error('Reset failed')
       }
 
-      setResetMessage('Reset content successfully. Reloading...')
-      setTimeout(() => window.location.reload(), 1000)
+      setResetMessage('Reset content successfully.')
+      setPhase('ready')
+      router.refresh()
     } catch (error) {
       setResetMessage('Reset failed. Please try again.')
-      setPhase(previousPhase)
+      setPhase('ready')
     }
-  }
+  }, [game.id, router])
 
   return (
     <Card>

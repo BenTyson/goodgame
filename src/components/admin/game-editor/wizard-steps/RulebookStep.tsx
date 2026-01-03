@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,13 +18,7 @@ import {
   ImageIcon,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
-
-interface Publisher {
-  id: string
-  name: string
-  slug: string
-  website: string | null
-}
+import type { Publisher } from '@/lib/admin/wizard'
 
 interface RulebookStepProps {
   game: Game & { publishers_list?: Publisher[] }
@@ -53,7 +47,7 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
     }
   }, [isComplete, onComplete])
 
-  const validateUrl = async () => {
+  const validateUrl = useCallback(async () => {
     if (!rulebookUrl) return
 
     setValidating(true)
@@ -81,9 +75,9 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
     } finally {
       setValidating(false)
     }
-  }
+  }, [rulebookUrl, updateField, onComplete])
 
-  const discoverUrl = async () => {
+  const discoverUrl = useCallback(async () => {
     setDiscovering(true)
     setValidationResult(null)
 
@@ -120,7 +114,7 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
     } finally {
       setDiscovering(false)
     }
-  }
+  }, [game.id, game.name, game.publisher, updateField, onComplete])
 
   return (
     <Card>

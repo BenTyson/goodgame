@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -44,11 +45,11 @@ export function PublishStep({
 
   const readyToPublish = hasImages && hasContent
 
-  const handlePublish = async () => {
+  const handlePublish = useCallback(async () => {
     updateField('is_published', true)
     updateField('content_status', 'published')
     await onSave()
-  }
+  }, [updateField, onSave])
 
   return (
     <div className="space-y-6">

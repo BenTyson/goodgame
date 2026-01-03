@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface WizardProgress {
   currentStep: number
@@ -71,6 +71,10 @@ export function useWizardProgress(
   const [skippedSteps, setSkippedSteps] = useState<number[]>([])
   const [hasRestoredProgress, setHasRestoredProgress] = useState(false)
 
+  // Ref to access current step in stable callbacks without causing re-renders
+  const currentStepRef = useRef(currentStep)
+  currentStepRef.current = currentStep
+
   // Load progress from localStorage on mount
   useEffect(() => {
     try {
@@ -140,34 +144,40 @@ export function useWizardProgress(
   )
 
   const nextStep = useCallback(() => {
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1)
-    }
-  }, [currentStep, totalSteps])
+    setCurrentStep((prev) => {
+      if (prev < totalSteps) {
+        return prev + 1
+      }
+      return prev
+    })
+  }, [totalSteps])
 
   const prevStep = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1)
-    }
-  }, [currentStep])
+    setCurrentStep((prev) => {
+      if (prev > 1) {
+        return prev - 1
+      }
+      return prev
+    })
+  }, [])
 
   const completeStep = useCallback((step?: number) => {
-    const stepToComplete = step ?? currentStep
+    const stepToComplete = step ?? currentStepRef.current
     setCompletedSteps((prev) => {
       if (prev.includes(stepToComplete)) return prev
       return [...prev, stepToComplete]
     })
     // Remove from skipped if it was there
     setSkippedSteps((prev) => prev.filter((s) => s !== stepToComplete))
-  }, [currentStep])
+  }, [])
 
   const skipStep = useCallback((step?: number) => {
-    const stepToSkip = step ?? currentStep
+    const stepToSkip = step ?? currentStepRef.current
     setSkippedSteps((prev) => {
       if (prev.includes(stepToSkip)) return prev
       return [...prev, stepToSkip]
     })
-  }, [currentStep])
+  }, [])
 
   const resetProgress = useCallback(() => {
     setCurrentStep(1)

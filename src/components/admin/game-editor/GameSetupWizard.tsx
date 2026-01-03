@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { WizardStepIndicator, type WizardStep } from './WizardStepIndicator'
+import { WizardStepIndicator } from './WizardStepIndicator'
 import { useWizardProgress } from '@/hooks/admin/useWizardProgress'
 import { useAsyncAction } from '@/hooks/admin'
 import {
@@ -18,6 +18,7 @@ import {
   SkipForward,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
+import type { GameWithRelations, WizardStep } from '@/lib/admin/wizard'
 
 // Import wizard step components
 import { RulebookStep } from './wizard-steps/RulebookStep'
@@ -29,17 +30,8 @@ import { RelationsStep } from './wizard-steps/RelationsStep'
 import { ReviewContentStep } from './wizard-steps/ReviewContentStep'
 import { PublishStep } from './wizard-steps/PublishStep'
 
-interface Publisher {
-  id: string
-  name: string
-  slug: string
-  website: string | null
-}
-
-type GameWithImages = Game & { images: GameImage[]; publishers_list?: Publisher[] }
-
 interface GameSetupWizardProps {
-  game: GameWithImages
+  game: GameWithRelations
   onExitToAdvanced: () => void
 }
 
@@ -137,19 +129,15 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     })
   }
 
-  const handleStepComplete = () => {
+  const handleStepComplete = useCallback(() => {
     completeStep()
-    if (currentStep < 8) {
-      nextStep()
-    }
-  }
+    nextStep()
+  }, [completeStep, nextStep])
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     skipStep()
-    if (currentStep < 8) {
-      nextStep()
-    }
-  }
+    nextStep()
+  }, [skipStep, nextStep])
 
   const renderStep = () => {
     switch (currentStep) {

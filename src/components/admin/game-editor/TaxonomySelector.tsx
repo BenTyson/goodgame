@@ -1,12 +1,14 @@
 'use client'
 
+import { useMemo, useCallback } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Star, Sparkles, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
+import type { TaxonomySuggestion } from '@/types/database'
+import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
 
 interface TaxonomyItem {
   id: string
@@ -15,16 +17,11 @@ interface TaxonomyItem {
   icon?: string | null
 }
 
-interface SelectedItem {
-  id: string
-  isPrimary: boolean
-}
-
 interface TaxonomySelectorProps<T extends TaxonomyItem> {
   items: T[]
-  selected: SelectedItem[]
+  selected: SelectedTaxonomyItem[]
   suggestions: TaxonomySuggestion[]
-  onChange: (selected: SelectedItem[]) => void
+  onChange: (selected: SelectedTaxonomyItem[]) => void
   type: 'theme' | 'player_experience'
   allowPrimary?: boolean
   className?: string
@@ -49,34 +46,40 @@ export function TaxonomySelector<T extends TaxonomyItem>({
   allowPrimary = true,
   className,
 }: TaxonomySelectorProps<T>) {
-  const suggestionMap = new Map(
+  // Memoize suggestion map - only recalculate when suggestions or type change
+  const suggestionMap = useMemo(() => new Map(
     suggestions
       .filter(s => s.suggestion_type === type && s.target_id)
       .map(s => [s.target_id!, s])
-  )
+  ), [suggestions, type])
 
-  const isSelected = (id: string) => selected.some(s => s.id === id)
-  const isPrimary = (id: string) => selected.find(s => s.id === id)?.isPrimary ?? false
+  // Memoize selected state lookups - create a Set for O(1) lookups
+  const selectedIds = useMemo(() => new Set(selected.map(s => s.id)), [selected])
+  const primaryId = useMemo(() => selected.find(s => s.isPrimary)?.id, [selected])
 
-  const handleToggle = (id: string) => {
-    if (isSelected(id)) {
+  const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds])
+  const isPrimary = useCallback((id: string) => id === primaryId, [primaryId])
+
+  // Memoize handlers
+  const handleToggle = useCallback((id: string) => {
+    if (selectedIds.has(id)) {
       onChange(selected.filter(s => s.id !== id))
     } else {
       onChange([...selected, { id, isPrimary: false }])
     }
-  }
+  }, [selectedIds, selected, onChange])
 
-  const handleSetPrimary = (id: string) => {
+  const handleSetPrimary = useCallback((id: string) => {
     onChange(
       selected.map(s => ({
         ...s,
         isPrimary: s.id === id,
       }))
     )
-  }
+  }, [selected, onChange])
 
-  // Sort items: AI-suggested first (by confidence), then alphabetically
-  const sortedItems = [...items].sort((a, b) => {
+  // Memoize sorted items - only recalculate when items or suggestionMap change
+  const sortedItems = useMemo(() => [...items].sort((a, b) => {
     const aSuggestion = suggestionMap.get(a.id)
     const bSuggestion = suggestionMap.get(b.id)
 
@@ -91,10 +94,17 @@ export function TaxonomySelector<T extends TaxonomyItem>({
 
     // Non-suggestions sorted alphabetically
     return a.name.localeCompare(b.name)
-  })
+  }), [items, suggestionMap])
 
-  const suggestedItems = sortedItems.filter(item => suggestionMap.has(item.id))
-  const otherItems = sortedItems.filter(item => !suggestionMap.has(item.id))
+  // Memoize filtered item lists
+  const suggestedItems = useMemo(
+    () => sortedItems.filter(item => suggestionMap.has(item.id)),
+    [sortedItems, suggestionMap]
+  )
+  const otherItems = useMemo(
+    () => sortedItems.filter(item => !suggestionMap.has(item.id)),
+    [sortedItems, suggestionMap]
+  )
 
   return (
     <div className={cn('space-y-4', className)}>

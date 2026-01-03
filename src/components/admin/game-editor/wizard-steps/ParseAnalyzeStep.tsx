@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +36,7 @@ interface ParseAnalyzeStepProps {
 type StepPhase = 'ready' | 'parsing' | 'complete' | 'resetting'
 
 export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepProps) {
+  const router = useRouter()
   const [phase, setPhase] = useState<StepPhase>('ready')
   const [parseResult, setParseResult] = useState<{
     success: boolean
@@ -61,7 +63,7 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
     }
   }, [crunchScore, onComplete])
 
-  const parseRulebook = async () => {
+  const parseRulebook = useCallback(async () => {
     if (!game.rulebook_url) return
 
     setPhase('parsing')
@@ -82,9 +84,8 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
 
       if (result.success && result.crunchScore) {
         setPhase('complete')
-        onComplete()
-        // Reload to get updated data
-        setTimeout(() => window.location.reload(), 1000)
+        // Refresh server data - useEffect will call onComplete when crunchScore updates
+        router.refresh()
       } else {
         setPhase('ready')
       }
@@ -95,14 +96,13 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
       })
       setPhase('ready')
     }
-  }
+  }, [game.id, game.rulebook_url, router])
 
-  const resetContent = async (options: {
+  const resetContent = useCallback(async (options: {
     resetCrunch?: boolean
     resetTaxonomy?: boolean
     resetAll?: boolean
   }) => {
-    const previousPhase = phase
     setPhase('resetting')
     setResetMessage(null)
 
@@ -122,13 +122,14 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
       if (result.reset.crunch) parts.push('Crunch Score')
       if (result.reset.taxonomy) parts.push('taxonomy')
 
-      setResetMessage(`Reset ${parts.join(', ')} successfully. Reloading...`)
-      setTimeout(() => window.location.reload(), 1000)
+      setResetMessage(`Reset ${parts.join(', ')} successfully.`)
+      setPhase('ready')
+      router.refresh()
     } catch (error) {
       setResetMessage('Reset failed. Please try again.')
-      setPhase(previousPhase)
+      setPhase('ready')
     }
-  }
+  }, [game.id, router])
 
   return (
     <div className="space-y-6">
