@@ -1,13 +1,18 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { FamilyEditor } from '@/components/admin/FamilyEditor'
-import type { GameFamily, Game } from '@/types/database'
+import type { GameFamily, Game, GameRelation } from '@/types/database'
 
 interface FamilyPageProps {
   params: Promise<{ id: string }>
 }
 
-async function getFamily(id: string): Promise<(GameFamily & { games: Game[] }) | null> {
+interface FamilyWithRelations extends GameFamily {
+  games: Game[]
+  relations: GameRelation[]
+}
+
+async function getFamily(id: string): Promise<FamilyWithRelations | null> {
   // Handle "new" as a special case
   if (id === 'new') {
     return null
@@ -30,11 +35,28 @@ async function getFamily(id: string): Promise<(GameFamily & { games: Game[] }) |
     .from('games')
     .select('*')
     .eq('family_id', id)
-    .order('name')
+    .order('year_published', { ascending: true, nullsFirst: false })
+
+  const gameIds = games?.map(g => g.id) || []
+
+  // Get all relations where BOTH source and target are in this family
+  // (We only want to show relations within the family tree)
+  let relations: GameRelation[] = []
+  if (gameIds.length > 0) {
+    // First get all relations where source is in family
+    const { data: sourceRelations } = await supabase
+      .from('game_relations')
+      .select('*')
+      .in('source_game_id', gameIds)
+
+    // Filter to only include relations where target is also in family
+    relations = (sourceRelations || []).filter(r => gameIds.includes(r.target_game_id))
+  }
 
   return {
     ...family,
     games: games || [],
+    relations,
   }
 }
 

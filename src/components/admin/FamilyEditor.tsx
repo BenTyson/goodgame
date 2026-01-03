@@ -13,8 +13,6 @@ import {
   Plus,
   Users2,
   Gamepad2,
-  X,
-  ExternalLink,
   CheckCircle2,
 } from 'lucide-react'
 
@@ -23,7 +21,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -34,12 +31,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { GamePicker } from './GamePicker'
+import { FamilyTreeView } from './FamilyTreeView'
 import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
-import type { Game, GameFamily } from '@/types/database'
+import type { Game, GameFamily, GameRelation } from '@/types/database'
 
 interface FamilyEditorProps {
-  family?: GameFamily & { games?: Game[] }
+  family?: GameFamily & { games?: Game[]; relations?: GameRelation[] }
   isNew?: boolean
 }
 
@@ -52,11 +50,13 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
       slug: '',
       description: null,
       hero_image_url: null,
+      base_game_id: null,
       created_at: null,
       updated_at: null,
     }
   )
   const [games, setGames] = useState<Game[]>(initialFamily?.games || [])
+  const [relations, setRelations] = useState<GameRelation[]>(initialFamily?.relations || [])
   const { saving, saved, execute, markUnsaved } = useAsyncAction()
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -72,21 +72,44 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Load games if editing existing family
+  // Load games and relations if editing existing family
+  // Note: Initial data comes from server, this is for refreshing after edits
   useEffect(() => {
+    // Skip if we already have data from server
+    if (initialFamily?.games && initialFamily.games.length > 0) {
+      return
+    }
+
     if (!isNew && initialFamily?.id) {
-      const loadGames = async () => {
-        const { data } = await supabase
+      const loadGamesAndRelations = async () => {
+        // Load games
+        const { data: gamesData } = await supabase
           .from('games')
           .select('*')
           .eq('family_id', initialFamily.id)
-          .order('name')
+          .order('year_published', { ascending: true, nullsFirst: false })
 
-        setGames(data || [])
+        setGames(gamesData || [])
+
+        // Load relations between games in this family
+        if (gamesData && gamesData.length > 0) {
+          const gameIds = gamesData.map(g => g.id)
+          // First get relations where source is in family
+          const { data: sourceRelations } = await supabase
+            .from('game_relations')
+            .select('*')
+            .in('source_game_id', gameIds)
+
+          // Filter to only include relations where target is also in family
+          const filteredRelations = (sourceRelations || []).filter(r =>
+            gameIds.includes(r.target_game_id)
+          )
+          setRelations(filteredRelations)
+        }
       }
-      loadGames()
+      loadGamesAndRelations()
     }
-  }, [initialFamily?.id, isNew, supabase])
+  }, [initialFamily?.id, initialFamily?.games, isNew, supabase])
 
   const updateField = <K extends keyof typeof family>(
     field: K,
@@ -374,24 +397,15 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
 
       {/* Games in Family - only show for existing families */}
       {!isNew && (
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Gamepad2 className="h-4 w-4 text-green-500" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Games in Family</CardTitle>
-                  <CardDescription>Manage which games belong to this family</CardDescription>
-                </div>
-              </div>
-              <Badge variant="secondary">
-                {games.length} {games.length === 1 ? 'game' : 'games'}
-              </Badge>
+        <div className="space-y-4">
+          {/* Add Game Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="h-5 w-5 text-muted-foreground" />
+              <span className="font-medium">
+                {games.length} {games.length === 1 ? 'game' : 'games'} in family
+              </span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <GamePicker
               onSelect={addGameToFamily}
               excludeGameIds={excludedGameIds}
@@ -402,48 +416,30 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
                 </>
               }
             />
+          </div>
 
-            {games.length > 0 ? (
-              <div className="space-y-2">
-                {games.map((game) => (
-                  <div
-                    key={game.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
-                  >
-                    <Gamepad2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Link
-                      href={`/admin/games/${game.id}`}
-                      className="font-medium hover:text-primary transition-colors flex-1 truncate"
-                    >
-                      {game.name}
-                    </Link>
-                    {game.is_published && (
-                      <Link
-                        href={`/games/${game.slug}`}
-                        target="_blank"
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeGameFromFamily(game.id)}
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No games in this family yet. Use the button above to add games.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+          {/* Family Tree Visualization */}
+          <FamilyTreeView
+            games={games}
+            relations={relations}
+            baseGameId={family.base_game_id}
+            onRelationCreated={async () => {
+              // Refresh relations after a new one is created
+              if (games.length > 0) {
+                const gameIds = games.map(g => g.id)
+                const { data: sourceRelations } = await supabase
+                  .from('game_relations')
+                  .select('*')
+                  .in('source_game_id', gameIds)
+
+                const filteredRelations = (sourceRelations || []).filter(r =>
+                  gameIds.includes(r.target_game_id)
+                )
+                setRelations(filteredRelations)
+              }
+            }}
+          />
+        </div>
       )}
     </div>
   )

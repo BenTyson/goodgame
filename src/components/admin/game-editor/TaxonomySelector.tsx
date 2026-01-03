@@ -17,14 +17,25 @@ interface TaxonomyItem {
   icon?: string | null
 }
 
+type TaxonomyType = 'category' | 'mechanic' | 'theme' | 'player_experience'
+
 interface TaxonomySelectorProps<T extends TaxonomyItem> {
   items: T[]
   selected: SelectedTaxonomyItem[]
-  suggestions: TaxonomySuggestion[]
+  suggestions?: TaxonomySuggestion[]
   onChange: (selected: SelectedTaxonomyItem[]) => void
-  type: 'theme' | 'player_experience'
+  type: TaxonomyType
   allowPrimary?: boolean
   className?: string
+}
+
+function getTypeLabel(type: TaxonomyType): string {
+  switch (type) {
+    case 'category': return 'categories'
+    case 'mechanic': return 'mechanics'
+    case 'theme': return 'themes'
+    case 'player_experience': return 'player experiences'
+  }
 }
 
 function getConfidenceLabel(confidence: number): { label: string; color: string } {
@@ -40,7 +51,7 @@ function getConfidencePercent(confidence: number): string {
 export function TaxonomySelector<T extends TaxonomyItem>({
   items,
   selected,
-  suggestions,
+  suggestions = [],
   onChange,
   type,
   allowPrimary = true,
@@ -250,7 +261,7 @@ export function TaxonomySelector<T extends TaxonomyItem>({
       {items.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <HelpCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No {type === 'theme' ? 'themes' : 'player experiences'} available</p>
+          <p>No {getTypeLabel(type)} available</p>
         </div>
       )}
     </div>

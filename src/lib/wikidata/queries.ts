@@ -173,6 +173,7 @@ LIMIT 500
 
 /**
  * Get games by BGG ID (for cross-referencing)
+ * Includes Wikipedia URL, series membership, and sequel relationships
  */
 export const GAME_BY_BGG_ID_QUERY = `
 SELECT DISTINCT
@@ -187,6 +188,15 @@ SELECT DISTINCT
   ?officialWebsite
   ?rulebookUrl
   ?bggId
+  ?wikipediaUrl
+  ?series
+  ?seriesLabel
+  ?follows
+  ?followsLabel
+  ?followsBggId
+  ?followedBy
+  ?followedByLabel
+  ?followedByBggId
   (GROUP_CONCAT(DISTINCT ?designerLabel; separator=", ") AS ?designers)
   (GROUP_CONCAT(DISTINCT ?publisherLabel; separator=", ") AS ?publishers)
 WHERE {
@@ -202,6 +212,28 @@ WHERE {
   OPTIONAL { ?game wdt:P953 ?rulebookUrl . }
   OPTIONAL { ?game wdt:P2339 ?bggId . }
 
+  # Wikipedia article URL (English)
+  OPTIONAL {
+    ?wikipediaArticle schema:about ?game .
+    ?wikipediaArticle schema:isPartOf <https://en.wikipedia.org/> .
+    BIND(STR(?wikipediaArticle) AS ?wikipediaUrl)
+  }
+
+  # Series membership (P179)
+  OPTIONAL { ?game wdt:P179 ?series . }
+
+  # Follows (P155) - this game is a sequel TO
+  OPTIONAL {
+    ?game wdt:P155 ?follows .
+    OPTIONAL { ?follows wdt:P2339 ?followsBggId . }
+  }
+
+  # Followed by (P156) - this game HAS a sequel
+  OPTIONAL {
+    ?game wdt:P156 ?followedBy .
+    OPTIONAL { ?followedBy wdt:P2339 ?followedByBggId . }
+  }
+
   OPTIONAL {
     ?game wdt:P287 ?designer .
     ?designer rdfs:label ?designerLabel .
@@ -216,8 +248,31 @@ WHERE {
 
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
 }
-GROUP BY ?game ?gameLabel ?gameDescription ?yearPublished ?minPlayers ?maxPlayers ?playTime ?image ?officialWebsite ?rulebookUrl ?bggId
+GROUP BY ?game ?gameLabel ?gameDescription ?yearPublished ?minPlayers ?maxPlayers ?playTime ?image ?officialWebsite ?rulebookUrl ?bggId ?wikipediaUrl ?series ?seriesLabel ?follows ?followsLabel ?followsBggId ?followedBy ?followedByLabel ?followedByBggId
 LIMIT 1
+`;
+
+/**
+ * Get all games in a Wikidata series
+ * Used to discover related games when importing
+ */
+export const GAMES_IN_SERIES_QUERY = `
+SELECT DISTINCT
+  ?game
+  ?gameLabel
+  ?bggId
+  ?yearPublished
+WHERE {
+  ?game wdt:P31/wdt:P279* wd:Q131436 .
+  ?game wdt:P179 wd:$SERIES_ID .
+
+  OPTIONAL { ?game wdt:P2339 ?bggId . }
+  OPTIONAL { ?game wdt:P571 ?inception . BIND(YEAR(?inception) AS ?yearPublished) }
+
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+}
+ORDER BY ?yearPublished
+LIMIT 100
 `;
 
 /**

@@ -76,3 +76,46 @@ export async function PATCH(request: NextRequest) {
     return ApiErrors.internal(error, { route: 'PATCH /api/admin/games' })
   }
 }
+
+// DELETE /api/admin/games - Delete a game by ID
+export async function DELETE(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
+  if (!await isAdmin()) {
+    return ApiErrors.unauthorized()
+  }
+
+  try {
+    const { gameId } = await request.json()
+
+    if (!gameId) {
+      return ApiErrors.validation('Game ID is required')
+    }
+
+    const adminClient = createAdminClient()
+
+    // Get game info for logging
+    const { data: game } = await adminClient
+      .from('games')
+      .select('name, slug')
+      .eq('id', gameId)
+      .single()
+
+    // Delete the game (cascades to related tables via FK constraints)
+    const { error } = await adminClient
+      .from('games')
+      .delete()
+      .eq('id', gameId)
+
+    if (error) {
+      return ApiErrors.database(error, { route: 'DELETE /api/admin/games' })
+    }
+
+    console.log(`[Admin] Deleted game: ${game?.name} (${gameId})`)
+
+    return NextResponse.json({ success: true, deleted: game?.name })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'DELETE /api/admin/games' })
+  }
+}

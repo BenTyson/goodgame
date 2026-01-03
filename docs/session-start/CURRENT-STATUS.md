@@ -1,8 +1,79 @@
 # Current Status
 
-> Last Updated: 2026-01-03 (Wizard Bug Fixes & Polish)
+> Last Updated: 2026-01-03 (Wikipedia/Wikidata Series Integration)
 
-## Current Phase: 44 - Wizard Bug Fixes & Polish (COMPLETE)
+## Current Phase: 45 - Wikipedia & Wikidata Series Integration (COMPLETE)
+
+Enhanced Wikidata integration during BGG import to capture Wikipedia URLs, series membership, and sequel relationships. Added admin review workflow for families with unlinked games.
+
+### Database Changes
+
+| Migration | Purpose |
+|-----------|---------|
+| `00055_wikipedia_url.sql` | Add `wikipedia_url`, `wikidata_series_id` to games |
+| `00056_game_families_wikidata_series.sql` | Add `wikidata_series_id` to game_families |
+
+### New Data Captured During Import
+
+| Field | Source | Example |
+|-------|--------|---------|
+| `wikipedia_url` | Wikidata sitelinks | `https://en.wikipedia.org/wiki/Gloomhaven` |
+| `wikidata_series_id` | Wikidata P179 | `Q99748715` (Gloomhaven series) |
+| Series membership | Wikidata | All 3 Gloomhaven games linked to same series |
+| Sequel relations | Wikidata P155/P156 | Auto-creates `sequel_to` relations |
+
+### Wikidata Query Enhancements
+
+- **Wikipedia URL** - Now fetched via sitelinks (English Wikipedia)
+- **Series membership (P179)** - Detects game series (e.g., "Gloomhaven" series)
+- **Sequel relationships** - P155 (follows) and P156 (followed by) properties
+- **New query** - `GAMES_IN_SERIES_QUERY` fetches all games in a series with BGG IDs
+
+### Auto-Family Creation
+
+During import, the system now:
+1. Checks if game is part of a Wikidata series
+2. Creates/links family from series if BGG didn't create one
+3. Stores `wikidata_series_id` on family for future matching
+4. Creates sequel relations when P155/P156 properties exist
+
+### Admin Review Workflow
+
+| Feature | Description |
+|---------|-------------|
+| **"Needs Review" filter** | Families list shows filter for families with unlinked games |
+| **"X unlinked" badge** | Amber badge on family cards showing orphan count |
+| **Link dialog** | Click "Link" on orphan games to assign relations |
+| **Orphan calculation** | Games not connected to family tree are identified |
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/lib/wikidata/queries.ts` | Added Wikipedia URL, series, sequel properties to GAME_BY_BGG_ID_QUERY; new GAMES_IN_SERIES_QUERY |
+| `src/lib/wikidata/client.ts` | Parse new fields, added `getGamesInSeries()`, new types |
+| `src/lib/wikidata/index.ts` | Export new functions and types |
+| `src/lib/bgg/importer.ts` | `enrichGameFromWikidata()` now stores Wikipedia URL, creates families from series, creates sequel relations |
+| `src/app/admin/(dashboard)/families/page.tsx` | Added orphan count, "Needs Review" filter, unlinked badge |
+| `src/components/admin/FamilyTreeView.tsx` | Added "Link" button for orphan games with relation dialog |
+
+### Test Results
+
+```
+Game: Gloomhaven
+Wikipedia URL: https://en.wikipedia.org/wiki/Gloomhaven
+Series ID: Q99748715
+Series Name: Gloomhaven
+
+Series Members (all with BGG IDs):
+  - Gloomhaven [BGG: 174430]
+  - Gloomhaven: Jaws of the Lion [BGG: 291457]
+  - Frosthaven [BGG: 295770]
+```
+
+---
+
+## Phase 44 - Wizard Bug Fixes & Polish (COMPLETE)
 
 Critical bug fixes for the admin wizard navigation and data loading issues.
 
@@ -431,7 +502,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-54 migrations in `supabase/migrations/` covering:
+56 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities, notifications
 - Content: game content, images, families, relations
@@ -439,14 +510,14 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 - Taxonomy: themes, player experiences, complexity tiers
 - Rulebook: Crunch Score (1-10), parse logs
 
-Recent migrations (46-54):
-- `00046_data_source_tracking.sql` - Data provenance
-- `00047_data_source_seed.sql` - Seed data enum
-- `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS (legacy)
-- `00049_rulebook_parsed_text.sql` - Parsed text storage
+Recent migrations (50-56):
+- `00050_game_families_base_game.sql` - Add base_game_id to game_families
+- `00051_has_unimported_relations.sql` - Track games with unimported relations
 - `00052_taxonomy_suggestions.sql` - AI taxonomy suggestions
 - `00053_crunch_score.sql` - BNCS → Crunch Score (1-10 scale, BGG calibration)
 - `00054_wikidata_game_fields.sql` - Wikidata enrichment (image, website, rulebook)
+- `00055_wikipedia_url.sql` - Wikipedia URL + Wikidata series ID on games
+- `00056_game_families_wikidata_series.sql` - Wikidata series ID on game_families
 
 ---
 

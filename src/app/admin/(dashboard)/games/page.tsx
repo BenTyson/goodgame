@@ -1,10 +1,9 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { SourcedImage } from '@/components/admin/TempImage'
+import { GameCard } from '@/components/admin/GameCard'
 import {
   CheckCircle2,
   FileEdit,
@@ -116,31 +115,6 @@ export default async function AdminGamesPage({
     return `/admin/games${qs ? `?${qs}` : ''}`
   }
 
-  const getStatusBadge = (game: typeof games[0]) => {
-    if (game.is_published) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-green-600 text-white">
-          <CheckCircle2 className="h-3 w-3" />
-          Published
-        </span>
-      )
-    }
-    if (game.content_status === 'draft') {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-yellow-500 text-white">
-          <FileEdit className="h-3 w-3" />
-          Draft
-        </span>
-      )
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-        <Clock className="h-3 w-3" />
-        {game.content_status || 'No content'}
-      </span>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -222,46 +196,20 @@ export default async function AdminGamesPage({
       {/* Games Grid */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {games.map((game) => (
-          <Link key={game.id} href={`/admin/games/${game.id}`}>
-            <Card padding="none" className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group cursor-pointer h-full">
-              <div className="relative aspect-[4/3] bg-muted">
-                {game.wikidata_image_url ? (
-                  <SourcedImage
-                    src={game.wikidata_image_url}
-                    alt={game.name}
-                    source="wikidata"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  />
-                ) : game.thumbnail_url ? (
-                  <SourcedImage
-                    src={game.thumbnail_url}
-                    alt={game.name}
-                    source="uploaded"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  />
-                ) : (game.bgg_raw_data as { reference_images?: { thumbnail?: string } })?.reference_images?.thumbnail ? (
-                  <SourcedImage
-                    src={(game.bgg_raw_data as { reference_images?: { thumbnail?: string } }).reference_images!.thumbnail!}
-                    alt={game.name}
-                    source="bgg"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Dices className="h-8 w-8 text-muted-foreground/30" />
-                  </div>
-                )}
-                <div className="absolute top-1.5 right-1.5">
-                  {getStatusBadge(game)}
-                </div>
-              </div>
-              <CardContent className="p-2.5">
-                <h3 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-                  {game.name}
-                </h3>
-              </CardContent>
-            </Card>
-          </Link>
+          <GameCard
+            key={game.id}
+            game={{
+              id: game.id,
+              name: game.name,
+              slug: game.slug,
+              content_status: game.content_status,
+              is_published: game.is_published ?? false,
+              bgg_id: game.bgg_id,
+              thumbnail_url: game.thumbnail_url,
+              wikidata_image_url: game.wikidata_image_url,
+              bgg_raw_data: game.bgg_raw_data as { thumbnail?: string | null; image?: string | null } | null,
+            }}
+          />
         ))}
       </div>
 

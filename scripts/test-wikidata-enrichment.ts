@@ -1,92 +1,57 @@
-import { config } from 'dotenv'
-config({ path: '.env.local' })
+import * as dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
 
-import { enrichPublisher, getGameByBggId } from '../src/lib/wikidata'
-import { fetchBGGGame } from '../src/lib/bgg'
+import { getGameByBggId, getGamesInSeries } from '../src/lib/wikidata'
 
-async function test() {
-  const bggId = parseInt(process.argv[2] || '138161', 10)
+async function main() {
+  // Gloomhaven BGG ID
+  const bggId = '174430'
 
-  console.log(`Fetching BGG data for ID: ${bggId}`)
-  console.log('='.repeat(60))
+  console.log('=== TESTING WIKIDATA ENRICHMENT ===\n')
+  console.log(`Looking up Gloomhaven (BGG ID: ${bggId})...\n`)
 
-  const bggData = await fetchBGGGame(bggId)
+  const game = await getGameByBggId(bggId)
 
-  if (!bggData) {
-    console.log('Game not found on BGG')
+  if (!game) {
+    console.log('No game found!')
     return
   }
 
-  console.log(`\nGame: ${bggData.name}`)
-  console.log(`Year: ${bggData.yearPublished}`)
-  console.log(`Players: ${bggData.minPlayers}-${bggData.maxPlayers}`)
-  console.log(`Play Time: ${bggData.playingTime} min`)
+  console.log('Game:', game.name)
+  console.log('Wikidata ID:', game.wikidataId)
+  console.log('BGG ID:', game.bggId)
+  console.log('')
+  console.log('=== NEW FIELDS ===')
+  console.log('Wikipedia URL:', game.wikipediaUrl || '(none)')
+  console.log('Series ID:', game.seriesId || '(none)')
+  console.log('Series Name:', game.seriesName || '(none)')
+  console.log('')
+  console.log('=== SEQUEL RELATIONSHIPS ===')
+  console.log('Follows (sequel to):', game.followsName || '(none)')
+  console.log('  - Follows BGG ID:', game.followsBggId || '(none)')
+  console.log('Followed by (has sequel):', game.followedByName || '(none)')
+  console.log('  - Followed by BGG ID:', game.followedByBggId || '(none)')
 
-  // Test game-level Wikidata enrichment
-  console.log('\n' + '='.repeat(60))
-  console.log('Testing game-level Wikidata enrichment:')
-  console.log('='.repeat(60))
-
-  const wikidataGame = await getGameByBggId(String(bggId))
-
-  if (wikidataGame) {
-    console.log(`\n✓ Found on Wikidata: ${wikidataGame.name}`)
-    console.log(`  Wikidata ID: ${wikidataGame.wikidataId}`)
-    console.log(`  Year: ${wikidataGame.yearPublished || '(none)'}`)
-    console.log(`  Players: ${wikidataGame.minPlayers || '?'}-${wikidataGame.maxPlayers || '?'}`)
-    console.log(`  Play Time: ${wikidataGame.playTimeMinutes || '(none)'} min`)
-    console.log(`  Image: ${wikidataGame.imageUrl ? '✓ CC-licensed image available' : '(none)'}`)
-    console.log(`  Website: ${wikidataGame.officialWebsite || '(none)'}`)
-
-    // Check for discrepancies
-    const discrepancies: string[] = []
-    if (bggData.yearPublished && wikidataGame.yearPublished && bggData.yearPublished !== wikidataGame.yearPublished) {
-      discrepancies.push(`Year: BGG=${bggData.yearPublished}, Wikidata=${wikidataGame.yearPublished}`)
+  // If there's a series, get all members
+  if (game.seriesId) {
+    console.log('\n=== SERIES MEMBERS ===')
+    const members = await getGamesInSeries(game.seriesId)
+    console.log(`Found ${members.length} games in "${game.seriesName}" series:`)
+    for (const member of members) {
+      console.log(`  - ${member.name} (${member.yearPublished || '?'})`, member.bggId ? `[BGG: ${member.bggId}]` : '')
     }
-    if (bggData.minPlayers && wikidataGame.minPlayers && bggData.minPlayers !== wikidataGame.minPlayers) {
-      discrepancies.push(`MinPlayers: BGG=${bggData.minPlayers}, Wikidata=${wikidataGame.minPlayers}`)
-    }
-    if (bggData.maxPlayers && wikidataGame.maxPlayers && bggData.maxPlayers !== wikidataGame.maxPlayers) {
-      discrepancies.push(`MaxPlayers: BGG=${bggData.maxPlayers}, Wikidata=${wikidataGame.maxPlayers}`)
-    }
-
-    if (discrepancies.length > 0) {
-      console.log('\n  ⚠️  Discrepancies found:')
-      discrepancies.forEach(d => console.log(`    - ${d}`))
-    } else {
-      console.log('\n  ✓ No discrepancies between sources')
-    }
-  } else {
-    console.log(`\n✗ Game not found on Wikidata`)
   }
 
-  // Test publisher enrichment
-  const publishers = bggData.publishers || []
-  console.log('\n' + '='.repeat(60))
-  console.log(`Testing publisher enrichment (${publishers.length} publishers):`)
-  console.log('='.repeat(60))
-
-  for (const pubName of publishers.slice(0, 3)) {
-    console.log(`\nSearching for: "${pubName}"`)
-
-    try {
-      const wikidata = await enrichPublisher(pubName)
-      if (wikidata?.website) {
-        console.log(`  ✓ Found website: ${wikidata.website}`)
-      } else if (wikidata) {
-        console.log(`  ~ Found on Wikidata but no website`)
-      } else {
-        console.log(`  ✗ Not found`)
-      }
-    } catch (err) {
-      console.log(`  ✗ Error: ${err}`)
-    }
-
-    await new Promise((r) => setTimeout(r, 500))
+  // Also test Frosthaven to check sequel relations
+  console.log('\n\n=== TESTING FROSTHAVEN ===')
+  const frosthaven = await getGameByBggId('295770')
+  if (frosthaven) {
+    console.log('Game:', frosthaven.name)
+    console.log('Wikidata ID:', frosthaven.wikidataId)
+    console.log('Wikipedia URL:', frosthaven.wikipediaUrl || '(none)')
+    console.log('Follows (sequel to):', frosthaven.followsName || '(none)')
+    console.log('  - Follows BGG ID:', frosthaven.followsBggId || '(none)')
   }
-
-  console.log('\n' + '='.repeat(60))
-  console.log('Test complete!')
 }
 
-test().catch(console.error)
+main().catch(console.error)

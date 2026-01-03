@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Sparkles,
   ImageIcon,
+  AlertCircle,
 } from 'lucide-react'
 
 // Relation type display config
@@ -46,6 +47,7 @@ interface FamilyWithStats {
   has_unimported_content: boolean
   relation_counts: RelationCounts
   base_game_thumbnail: string | null
+  orphan_count: number // Games in family but not connected in the tree
 }
 
 async function getFamilies(search?: string, relationFilter?: string): Promise<FamilyWithStats[]> {
@@ -85,7 +87,12 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
 
   // Build a map of game_id -> relation counts
   const gameRelationCounts = new Map<string, RelationCounts>()
+  // Also track which games are connected (either as source or target in a relation)
+  const connectedGames = new Set<string>()
+
   for (const rel of relations || []) {
+    connectedGames.add(rel.source_game_id)
+    // We need target game IDs too - track them for later
     if (!gameRelationCounts.has(rel.source_game_id)) {
       gameRelationCounts.set(rel.source_game_id, {
         expansion_of: 0,
@@ -103,6 +110,73 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
     }
   }
 
+  // Get all relations (need target_game_id too for orphan calculation)
+  const { data: allRelations } = await supabase
+    .from('game_relations')
+    .select('source_game_id, target_game_id, relation_type')
+    .in('target_game_id', allGameIds)
+
+  // Add targets to connected set
+  for (const rel of allRelations || []) {
+    if (allGameIds.includes(rel.source_game_id)) {
+      connectedGames.add(rel.target_game_id)
+    }
+  }
+
+  // Build a map of family_id -> set of connected game IDs
+  // A game is connected if it appears as source or target in any intra-family relation
+  const familyConnectedGames = new Map<string, Set<string>>()
+
+  // Initialize with empty sets
+  for (const f of families) {
+    familyConnectedGames.set(f.id, new Set())
+  }
+
+  // Build map of game_id -> family_id for quick lookup
+  const gameToFamily = new Map<string, string>()
+  for (const f of families) {
+    const games = (f.games as unknown as { id: string }[]) || []
+    for (const g of games) {
+      gameToFamily.set(g.id, f.id)
+    }
+  }
+
+  // Mark games as connected if they appear in any intra-family relation
+  for (const rel of relations || []) {
+    const sourceFamilyId = gameToFamily.get(rel.source_game_id)
+    const targetFamilyId = allRelations?.find(
+      r => r.source_game_id === rel.source_game_id
+    )
+      ? gameToFamily.get(
+          allRelations.find(r => r.source_game_id === rel.source_game_id)?.target_game_id || ''
+        )
+      : undefined
+
+    // If source has a relation, check if target is in same family
+    if (sourceFamilyId) {
+      // Need to get target from the full relation
+      const fullRel = allRelations?.find(
+        r => r.source_game_id === rel.source_game_id
+      )
+      if (fullRel && gameToFamily.get(fullRel.target_game_id) === sourceFamilyId) {
+        familyConnectedGames.get(sourceFamilyId)?.add(rel.source_game_id)
+        familyConnectedGames.get(sourceFamilyId)?.add(fullRel.target_game_id)
+      }
+    }
+  }
+
+  // Also use allRelations to mark connected games (needed for complete picture)
+  for (const rel of allRelations || []) {
+    const sourceFamilyId = gameToFamily.get(rel.source_game_id)
+    const targetFamilyId = gameToFamily.get(rel.target_game_id)
+
+    // If both source and target are in the same family, both are connected
+    if (sourceFamilyId && sourceFamilyId === targetFamilyId) {
+      familyConnectedGames.get(sourceFamilyId)?.add(rel.source_game_id)
+      familyConnectedGames.get(sourceFamilyId)?.add(rel.target_game_id)
+    }
+  }
+
   // Build family stats
   const familyStats: FamilyWithStats[] = families.map(f => {
     const games = (f.games as unknown as {
@@ -110,7 +184,7 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
       name: string
       has_unimported_relations: boolean
       thumbnail_url: string | null
-      bgg_raw_data: { reference_images?: { thumbnail?: string } } | null
+      bgg_raw_data: { thumbnail?: string | null } | null
       year_published: number | null
     }[]) || []
 
@@ -136,12 +210,36 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
       }
     }
 
+    // Calculate orphan count
+    // For single-game families, there are no orphans (the one game is the base)
+    // For multi-game families, orphans are games not connected to any other game
+    let orphanCount = 0
+    if (games.length > 1) {
+      const connectedSet = familyConnectedGames.get(f.id) || new Set()
+      // Find the base game (oldest or explicit)
+      const baseGameId = f.base_game_id || [...games].sort((a, b) => {
+        if (a.year_published && b.year_published) {
+          return a.year_published - b.year_published
+        }
+        return a.name.length - b.name.length
+      })[0]?.id
+
+      // An orphan is a game that:
+      // 1. Is not the base game, AND
+      // 2. Is not connected to any other game in the family
+      for (const game of games) {
+        if (game.id !== baseGameId && !connectedSet.has(game.id)) {
+          orphanCount++
+        }
+      }
+    }
+
     // Find base game thumbnail - prefer explicit base_game_id, else oldest game by year
     let baseGameThumbnail: string | null = null
     if (f.base_game_id) {
       const baseGame = games.find(g => g.id === f.base_game_id)
       if (baseGame) {
-        baseGameThumbnail = baseGame.thumbnail_url || baseGame.bgg_raw_data?.reference_images?.thumbnail || null
+        baseGameThumbnail = baseGame.thumbnail_url || baseGame.bgg_raw_data?.thumbnail || null
       }
     }
     if (!baseGameThumbnail && games.length > 0) {
@@ -153,7 +251,7 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
         return a.name.length - b.name.length
       })
       const baseGame = sorted[0]
-      baseGameThumbnail = baseGame.thumbnail_url || baseGame.bgg_raw_data?.reference_images?.thumbnail || null
+      baseGameThumbnail = baseGame.thumbnail_url || baseGame.bgg_raw_data?.thumbnail || null
     }
 
     return {
@@ -165,11 +263,16 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
       has_unimported_content: games.some(g => g.has_unimported_relations),
       relation_counts: relationCounts,
       base_game_thumbnail: baseGameThumbnail,
+      orphan_count: orphanCount,
     }
   })
 
-  // Filter by relation type if specified
+  // Filter by relation type or needs_review
   if (relationFilter && relationFilter !== 'all') {
+    if (relationFilter === 'needs_review') {
+      // Show families that have orphan games needing review
+      return familyStats.filter(f => f.orphan_count > 0)
+    }
     return familyStats.filter(f => {
       const key = relationFilter as keyof RelationCounts
       return f.relation_counts[key] > 0
@@ -187,7 +290,7 @@ export default async function AdminFamiliesPage({
   const { q, relation } = await searchParams
   const families = await getFamilies(q, relation)
 
-  // Get total relation counts for filter badges
+  // Get total relation counts and orphan counts for filter badges
   const totalCounts = families.reduce(
     (acc, f) => ({
       expansion_of: acc.expansion_of + f.relation_counts.expansion_of,
@@ -200,8 +303,12 @@ export default async function AdminFamiliesPage({
     { expansion_of: 0, sequel_to: 0, prequel_to: 0, reimplementation_of: 0, spin_off_of: 0, standalone_in_series: 0 }
   )
 
+  // Count families that need review (have orphan games)
+  const familiesNeedingReview = families.filter(f => f.orphan_count > 0).length
+
   const filters = [
     { key: 'all', label: 'All', count: families.length },
+    { key: 'needs_review', label: 'Needs Review', count: familiesNeedingReview, icon: AlertCircle, highlight: true },
     { key: 'expansion_of', label: 'Expansions', count: totalCounts.expansion_of, icon: Layers },
     { key: 'sequel_to', label: 'Sequels', count: totalCounts.sequel_to, icon: GitBranch },
     { key: 'reimplementation_of', label: 'Reimplementations', count: totalCounts.reimplementation_of, icon: RefreshCw },
@@ -245,14 +352,15 @@ export default async function AdminFamiliesPage({
         {filters.map((f) => {
           const isActive = relation === f.key || (!relation && f.key === 'all')
           const Icon = f.icon
+          const isHighlight = 'highlight' in f && f.highlight && f.count > 0
           return (
             <Link key={f.key} href={buildUrl(f.key)}>
               <Button
                 variant={isActive ? 'default' : 'outline'}
                 size="sm"
-                className="gap-1.5"
+                className={`gap-1.5 ${isHighlight && !isActive ? 'border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700' : ''}`}
               >
-                {Icon && <Icon className="h-3.5 w-3.5" />}
+                {Icon && <Icon className={`h-3.5 w-3.5 ${isHighlight && !isActive ? 'text-amber-500' : ''}`} />}
                 {f.label}
                 {f.count > 0 && (
                   <span className="ml-1 text-xs opacity-70">({f.count})</span>
@@ -309,6 +417,12 @@ export default async function AdminFamiliesPage({
                   )}
                   {/* Badges overlay */}
                   <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                    {family.orphan_count > 0 && (
+                      <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50/90 text-xs px-1.5 py-0.5 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {family.orphan_count} unlinked
+                      </Badge>
+                    )}
                     {family.has_unimported_content && (
                       <Badge variant="outline" className="text-orange-600 border-orange-400 bg-orange-50/90 text-xs px-1.5 py-0.5">
                         Incomplete

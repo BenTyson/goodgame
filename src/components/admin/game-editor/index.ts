@@ -2,6 +2,7 @@
 export { DetailsTab } from './DetailsTab'
 export { ContentTab } from './ContentTab'
 export { RulebookContentTab } from './RulebookContentTab'
+export { TaxonomyTab } from './TaxonomyTab'
 
 // Wizard components
 export { GameSetupWizard } from './GameSetupWizard'

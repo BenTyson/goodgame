@@ -28,11 +28,13 @@ export {
   getAwardWinningGames,
   getBoardGameCount,
   getGamesByBggIds,
+  getGamesInSeries,
   // Publisher enrichment
   enrichPublisher,
   enrichPublishers,
   getPublisherWebsitesForGame,
   type WikidataBoardGame,
+  type WikidataSeriesMember,
   type WikidataSparqlResult,
   type WikidataBinding,
   type WikidataPublisher,
@@ -57,5 +59,6 @@ export {
   AWARD_WINNING_GAMES_QUERY,
   BOARD_GAME_COUNT_QUERY,
   GAMES_WITH_MECHANICS_QUERY,
+  GAMES_IN_SERIES_QUERY,
   buildQuery,
 } from './queries';

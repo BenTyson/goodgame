@@ -753,6 +753,7 @@ export type Database = {
           name: string
           slug: string
           updated_at: string | null
+          wikidata_series_id: string | null
         }
         Insert: {
           base_game_id?: string | null
@@ -764,6 +765,7 @@ export type Database = {
           name: string
           slug: string
           updated_at?: string | null
+          wikidata_series_id?: string | null
         }
         Update: {
           base_game_id?: string | null
@@ -775,6 +777,7 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string | null
+          wikidata_series_id?: string | null
         }
         Relationships: [
           {
@@ -1089,6 +1092,8 @@ export type Database = {
           wikidata_id: string | null
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
+          wikidata_series_id: string | null
+          wikipedia_url: string | null
           year_published: number | null
         }
         Insert: {
@@ -1157,6 +1162,8 @@ export type Database = {
           wikidata_id?: string | null
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
+          wikidata_series_id?: string | null
+          wikipedia_url?: string | null
           year_published?: number | null
         }
         Update: {
@@ -1225,6 +1232,8 @@ export type Database = {
           wikidata_id?: string | null
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
+          wikidata_series_id?: string | null
+          wikipedia_url?: string | null
           year_published?: number | null
         }
         Relationships: [
@@ -3638,6 +3647,8 @@ export type Database = {
           wikidata_id: string | null
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
+          wikidata_series_id: string | null
+          wikipedia_url: string | null
           year_published: number | null
         }[]
         SetofOptions: {

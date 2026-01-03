@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
 import { SourcedImage } from '@/components/admin/TempImage'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
-import { DetailsTab, RulebookContentTab, GameSetupWizard } from './game-editor'
+import { DetailsTab, RulebookContentTab, TaxonomyTab, GameSetupWizard } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   ImageIcon,
   BookOpen,
   Link2,
+  Tags,
   Wand2,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
@@ -193,12 +194,16 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - Consolidated to 4 tabs */}
+      {/* Editor Tabs - 5 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
+          </TabsTrigger>
+          <TabsTrigger value="taxonomy" className="gap-2">
+            <Tags className="h-4 w-4 hidden sm:block" />
+            Taxonomy
           </TabsTrigger>
           <TabsTrigger value="rulebook" className="gap-2">
             <BookOpen className="h-4 w-4 hidden sm:block" />
@@ -217,6 +222,11 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         {/* Details Tab (includes Publishing) */}
         <TabsContent value="details">
           <DetailsTab game={game} updateField={updateField} />
+        </TabsContent>
+
+        {/* Taxonomy Tab */}
+        <TabsContent value="taxonomy">
+          <TaxonomyTab game={game} />
         </TabsContent>
 
         {/* Rulebook & Content Tab */}
@@ -279,7 +289,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
               )}
 
               {/* Show BGG reference image when no Wikidata image and no images uploaded */}
-              {images.length === 0 && !game.wikidata_image_url && (game.bgg_raw_data as { reference_images?: { box?: string } })?.reference_images?.box && (
+              {images.length === 0 && !game.wikidata_image_url && (game.bgg_raw_data as { image?: string | null })?.image && (
                 <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm text-amber-600 dark:text-amber-400">
@@ -291,7 +301,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                   </CardHeader>
                   <CardContent>
                     <SourcedImage
-                      src={(game.bgg_raw_data as { reference_images: { box: string } }).reference_images.box}
+                      src={(game.bgg_raw_data as { image: string }).image}
                       alt={`${game.name} reference`}
                       source="bgg"
                       aspectRatio="4/3"

@@ -164,11 +164,13 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 47. `00047_data_source_seed.sql` - Add 'seed' to data_source enum
 48. `00048_rulebook_bncs.sql` - Rulebook parsing + BNCS scoring columns (legacy)
 49. `00049_rulebook_parsed_text.sql` - Parsed text storage + latest_parse_log_id
-50. `00050_...` - (various)
-51. `00051_...` - (various)
+50. `00050_game_families_base_game.sql` - Add base_game_id to game_families
+51. `00051_has_unimported_relations.sql` - Track games with unimported relations
 52. `00052_taxonomy_suggestions.sql` - AI taxonomy suggestions
 53. `00053_crunch_score.sql` - Rename BNCS → Crunch Score, 1-10 scale, BGG calibration
 54. `00054_wikidata_game_fields.sql` - Wikidata enrichment columns (image, website, rulebook)
+55. `00055_wikipedia_url.sql` - Add wikipedia_url, wikidata_series_id to games
+56. `00056_game_families_wikidata_series.sql` - Add wikidata_series_id to game_families
 
 ## Core Enums
 
@@ -354,6 +356,8 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | crunch_bgg_reference | DECIMAL(2,1) | BGG weight used for calibration (1.0-5.0) |
 | component_list | JSONB | Components extracted from rulebook |
 | latest_parse_log_id | UUID | FK to rulebook_parse_log |
+| wikipedia_url | VARCHAR(500) | English Wikipedia article URL |
+| wikidata_series_id | VARCHAR(20) | Wikidata Q-number for the game series (P179 property) |
 | fts | TSVECTOR | Generated full-text search column |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
@@ -674,6 +678,7 @@ Game series/family groupings (e.g., Catan, Pandemic, Ticket to Ride).
 | hero_image_url | VARCHAR(500) | Banner image for family page |
 | base_game_id | UUID | FK to games - the primary/original game in family |
 | bgg_family_id | INTEGER | BGG family ID (for import matching) |
+| wikidata_series_id | VARCHAR(20) | Wikidata Q-number for series (P179), used for import matching |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
@@ -681,9 +686,12 @@ Game series/family groupings (e.g., Catan, Pandemic, Ticket to Ride).
 - Games link to families via `games.family_id`
 - `base_game_id` identifies the original game (used for thumbnails, canonical reference)
 - Auto-created during BGG import from game name patterns (colons, parentheses, en-dashes)
+- Auto-created from Wikidata series (P179) when detected during import
 - Example: "CATAN: Seafarers" auto-creates "CATAN" family
+- Example: Games in Wikidata "Gloomhaven" series (Q99748715) auto-link to family
 - Public pages at `/families` and `/families/[slug]`
 - Admin management at `/admin/families`
+- "Needs Review" filter shows families with unlinked games
 - When querying games in a family, use explicit FK: `games!games_family_id_fkey` to avoid PGRST201 ambiguity
 
 ### game_relations

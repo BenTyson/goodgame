@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { ApiErrors } from '@/lib/api/errors'
 import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
-import type { Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
+import type { Category, Mechanic, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
 
 interface TaxonomyResponse {
+  categories: Category[]
+  mechanics: Mechanic[]
   themes: Theme[]
   playerExperiences: PlayerExperience[]
+  currentCategories: { category_id: string; is_primary: boolean | null }[]
+  currentMechanics: { mechanic_id: string }[]
   currentThemes: { theme_id: string; is_primary: boolean | null }[]
   currentExperiences: { player_experience_id: string; is_primary: boolean | null }[]
   suggestions: TaxonomySuggestion[]
@@ -14,7 +18,7 @@ interface TaxonomyResponse {
 
 /**
  * GET /api/admin/games/taxonomy?gameId=xxx
- * Fetch all themes/experiences + game's current assignments + AI suggestions
+ * Fetch all taxonomy items + game's current assignments + AI suggestions
  */
 export async function GET(request: NextRequest) {
   const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
@@ -36,14 +40,22 @@ export async function GET(request: NextRequest) {
 
     // Fetch all data in parallel
     const [
+      categoriesResult,
+      mechanicsResult,
       themesResult,
       experiencesResult,
+      currentCategoriesResult,
+      currentMechanicsResult,
       currentThemesResult,
       currentExperiencesResult,
       suggestionsResult,
     ] = await Promise.all([
+      adminClient.from('categories').select('*').order('display_order'),
+      adminClient.from('mechanics').select('*').order('name'),
       adminClient.from('themes').select('*').order('display_order'),
       adminClient.from('player_experiences').select('*').order('display_order'),
+      adminClient.from('game_categories').select('category_id, is_primary').eq('game_id', gameId),
+      adminClient.from('game_mechanics').select('mechanic_id').eq('game_id', gameId),
       adminClient.from('game_themes').select('theme_id, is_primary').eq('game_id', gameId),
       adminClient.from('game_player_experiences').select('player_experience_id, is_primary').eq('game_id', gameId),
       adminClient
@@ -55,8 +67,12 @@ export async function GET(request: NextRequest) {
     ])
 
     const response: TaxonomyResponse = {
+      categories: categoriesResult.data || [],
+      mechanics: mechanicsResult.data || [],
       themes: themesResult.data || [],
       playerExperiences: experiencesResult.data || [],
+      currentCategories: currentCategoriesResult.data || [],
+      currentMechanics: currentMechanicsResult.data || [],
       currentThemes: currentThemesResult.data || [],
       currentExperiences: currentExperiencesResult.data || [],
       suggestions: suggestionsResult.data || [],
@@ -70,8 +86,10 @@ export async function GET(request: NextRequest) {
 
 interface SaveTaxonomyRequest {
   gameId: string
-  themes: { themeId: string; isPrimary: boolean }[]
-  experiences: { experienceId: string; isPrimary: boolean }[]
+  categories?: { categoryId: string; isPrimary: boolean }[]
+  mechanics?: { mechanicId: string }[]
+  themes?: { themeId: string; isPrimary: boolean }[]
+  experiences?: { experienceId: string; isPrimary: boolean }[]
   acceptedSuggestionIds?: string[]
   rejectedSuggestionIds?: string[]
 }
@@ -90,7 +108,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: SaveTaxonomyRequest = await request.json()
-    const { gameId, themes, experiences, acceptedSuggestionIds, rejectedSuggestionIds } = body
+    const { gameId, categories, mechanics, themes, experiences, acceptedSuggestionIds, rejectedSuggestionIds } = body
 
     if (!gameId) {
       return ApiErrors.validation('Missing required field: gameId')
@@ -98,62 +116,118 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Start a transaction-like operation
-    // 1. Delete existing theme assignments
-    const { error: deleteThemesError } = await adminClient
-      .from('game_themes')
-      .delete()
-      .eq('game_id', gameId)
+    // Save categories if provided
+    if (categories !== undefined) {
+      const { error: deleteCategoriesError } = await adminClient
+        .from('game_categories')
+        .delete()
+        .eq('game_id', gameId)
 
-    if (deleteThemesError) {
-      return ApiErrors.database(deleteThemesError, { route: 'POST /api/admin/games/taxonomy - delete themes' })
+      if (deleteCategoriesError) {
+        return ApiErrors.database(deleteCategoriesError, { route: 'POST /api/admin/games/taxonomy - delete categories' })
+      }
+
+      if (categories.length > 0) {
+        const categoryInserts = categories.map(c => ({
+          game_id: gameId,
+          category_id: c.categoryId,
+          is_primary: c.isPrimary,
+        }))
+
+        const { error: insertCategoriesError } = await adminClient
+          .from('game_categories')
+          .insert(categoryInserts)
+
+        if (insertCategoriesError) {
+          return ApiErrors.database(insertCategoriesError, { route: 'POST /api/admin/games/taxonomy - insert categories' })
+        }
+      }
     }
 
-    // 2. Insert new theme assignments
-    if (themes && themes.length > 0) {
-      const themeInserts = themes.map(t => ({
-        game_id: gameId,
-        theme_id: t.themeId,
-        is_primary: t.isPrimary,
-      }))
+    // Save mechanics if provided
+    if (mechanics !== undefined) {
+      const { error: deleteMechanicsError } = await adminClient
+        .from('game_mechanics')
+        .delete()
+        .eq('game_id', gameId)
 
-      const { error: insertThemesError } = await adminClient
+      if (deleteMechanicsError) {
+        return ApiErrors.database(deleteMechanicsError, { route: 'POST /api/admin/games/taxonomy - delete mechanics' })
+      }
+
+      if (mechanics.length > 0) {
+        const mechanicInserts = mechanics.map(m => ({
+          game_id: gameId,
+          mechanic_id: m.mechanicId,
+        }))
+
+        const { error: insertMechanicsError } = await adminClient
+          .from('game_mechanics')
+          .insert(mechanicInserts)
+
+        if (insertMechanicsError) {
+          return ApiErrors.database(insertMechanicsError, { route: 'POST /api/admin/games/taxonomy - insert mechanics' })
+        }
+      }
+    }
+
+    // Save themes if provided
+    if (themes !== undefined) {
+      const { error: deleteThemesError } = await adminClient
         .from('game_themes')
-        .insert(themeInserts)
+        .delete()
+        .eq('game_id', gameId)
 
-      if (insertThemesError) {
-        return ApiErrors.database(insertThemesError, { route: 'POST /api/admin/games/taxonomy - insert themes' })
+      if (deleteThemesError) {
+        return ApiErrors.database(deleteThemesError, { route: 'POST /api/admin/games/taxonomy - delete themes' })
+      }
+
+      if (themes.length > 0) {
+        const themeInserts = themes.map(t => ({
+          game_id: gameId,
+          theme_id: t.themeId,
+          is_primary: t.isPrimary,
+        }))
+
+        const { error: insertThemesError } = await adminClient
+          .from('game_themes')
+          .insert(themeInserts)
+
+        if (insertThemesError) {
+          return ApiErrors.database(insertThemesError, { route: 'POST /api/admin/games/taxonomy - insert themes' })
+        }
       }
     }
 
-    // 3. Delete existing experience assignments
-    const { error: deleteExperiencesError } = await adminClient
-      .from('game_player_experiences')
-      .delete()
-      .eq('game_id', gameId)
-
-    if (deleteExperiencesError) {
-      return ApiErrors.database(deleteExperiencesError, { route: 'POST /api/admin/games/taxonomy - delete experiences' })
-    }
-
-    // 4. Insert new experience assignments
-    if (experiences && experiences.length > 0) {
-      const experienceInserts = experiences.map(e => ({
-        game_id: gameId,
-        player_experience_id: e.experienceId,
-        is_primary: e.isPrimary,
-      }))
-
-      const { error: insertExperiencesError } = await adminClient
+    // Save experiences if provided
+    if (experiences !== undefined) {
+      const { error: deleteExperiencesError } = await adminClient
         .from('game_player_experiences')
-        .insert(experienceInserts)
+        .delete()
+        .eq('game_id', gameId)
 
-      if (insertExperiencesError) {
-        return ApiErrors.database(insertExperiencesError, { route: 'POST /api/admin/games/taxonomy - insert experiences' })
+      if (deleteExperiencesError) {
+        return ApiErrors.database(deleteExperiencesError, { route: 'POST /api/admin/games/taxonomy - delete experiences' })
+      }
+
+      if (experiences.length > 0) {
+        const experienceInserts = experiences.map(e => ({
+          game_id: gameId,
+          player_experience_id: e.experienceId,
+          is_primary: e.isPrimary,
+        }))
+
+        const { error: insertExperiencesError } = await adminClient
+          .from('game_player_experiences')
+          .insert(experienceInserts)
+
+        if (insertExperiencesError) {
+          return ApiErrors.database(insertExperiencesError, { route: 'POST /api/admin/games/taxonomy - insert experiences' })
+        }
       }
     }
 
-    // 5. Update suggestion statuses
+    // Update suggestion statuses
     const now = new Date().toISOString()
 
     if (acceptedSuggestionIds && acceptedSuggestionIds.length > 0) {

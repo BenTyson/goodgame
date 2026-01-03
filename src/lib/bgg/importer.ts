@@ -3,12 +3,12 @@
  * Transforms BGG data and imports into our database
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchBGGGame, type BGGRawGame, type BGGLink } from './client'
 import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
-import { enrichPublisher, getGameByBggId, type WikidataBoardGame } from '@/lib/wikidata'
+import { enrichPublisher, getGameByBggId, getGamesInSeries, type WikidataBoardGame, type WikidataSeriesMember } from '@/lib/wikidata'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -174,7 +174,7 @@ async function upsertPublisher(
 
 /**
  * Enrich a game with Wikidata data
- * Fetches additional fields and logs discrepancies between BGG and Wikidata
+ * Fetches additional fields, logs discrepancies, and handles series/family detection
  */
 async function enrichGameFromWikidata(
   supabase: SupabaseClient<Database>,
@@ -196,10 +196,15 @@ async function enrichGameFromWikidata(
     logDataDiscrepancies(bggData, wikidata)
 
     // Update game with Wikidata fields
-    // Wikidata image is preferred (CC-licensed), BGG image is fallback
     const updateData: Record<string, unknown> = {
       wikidata_id: wikidata.wikidataId,
       wikidata_last_synced: new Date().toISOString(),
+    }
+
+    // Wikipedia URL (English)
+    if (wikidata.wikipediaUrl) {
+      updateData.wikipedia_url = wikidata.wikipediaUrl
+      console.log(`  [Wikidata] Found Wikipedia URL: ${wikidata.wikipediaUrl}`)
     }
 
     // Wikidata image (CC-licensed, safe for public display)
@@ -221,13 +226,186 @@ async function enrichGameFromWikidata(
       console.log(`  [Wikidata] Found rulebook URL: ${wikidata.rulebookUrl}`)
     }
 
+    // Series membership (P179)
+    if (wikidata.seriesId) {
+      updateData.wikidata_series_id = wikidata.seriesId
+      console.log(`  [Wikidata] Part of series: ${wikidata.seriesName} (${wikidata.seriesId})`)
+
+      // Try to create/link family from Wikidata series if not already linked via BGG
+      await linkFamilyFromWikidataSeries(supabase, gameId, wikidata.seriesId, wikidata.seriesName || 'Unknown Series')
+    }
+
     await supabase
       .from('games')
       .update(updateData)
       .eq('id', gameId)
 
+    // Create sequel relationships from Wikidata P155/P156
+    await createWikidataSequelRelations(supabase, gameId, wikidata)
+
   } catch (err) {
     console.warn(`  [Wikidata] Failed to enrich game ${bggId}:`, err)
+  }
+}
+
+/**
+ * Link a game to a family based on Wikidata series (P179)
+ * Only creates family if game doesn't already have a family from BGG
+ */
+async function linkFamilyFromWikidataSeries(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  seriesId: string,
+  seriesName: string
+): Promise<void> {
+  // Check if game already has a family (from BGG)
+  const { data: game } = await supabase
+    .from('games')
+    .select('family_id')
+    .eq('id', gameId)
+    .single()
+
+  if (game?.family_id) {
+    console.log(`  [Wikidata] Game already has family from BGG, skipping series family creation`)
+    return
+  }
+
+  // Try to find existing family by Wikidata series ID
+  const { data: existingFamily } = await supabase
+    .from('game_families')
+    .select('id')
+    .eq('wikidata_series_id', seriesId)
+    .single()
+
+  if (existingFamily) {
+    // Link to existing family
+    await supabase
+      .from('games')
+      .update({ family_id: existingFamily.id })
+      .eq('id', gameId)
+    console.log(`  [Wikidata] Linked to existing Wikidata series family`)
+    return
+  }
+
+  // Create new family from Wikidata series
+  const slug = generateSlug(seriesName)
+
+  // Check if slug already exists
+  const { data: familyBySlug } = await supabase
+    .from('game_families')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (familyBySlug) {
+    // Update existing family with Wikidata series ID and link game
+    await supabase
+      .from('game_families')
+      .update({ wikidata_series_id: seriesId })
+      .eq('id', familyBySlug.id)
+
+    await supabase
+      .from('games')
+      .update({ family_id: familyBySlug.id })
+      .eq('id', gameId)
+
+    console.log(`  [Wikidata] Linked to existing family by slug, added Wikidata series ID`)
+    return
+  }
+
+  // Create new family
+  const { data: newFamily, error } = await supabase
+    .from('game_families')
+    .insert({
+      slug,
+      name: seriesName,
+      wikidata_series_id: seriesId,
+    })
+    .select('id')
+    .single()
+
+  if (error || !newFamily) {
+    console.warn(`  [Wikidata] Failed to create family from series:`, error?.message)
+    return
+  }
+
+  // Link game to new family
+  await supabase
+    .from('games')
+    .update({ family_id: newFamily.id })
+    .eq('id', gameId)
+
+  console.log(`  [Wikidata] Created new family from series: ${seriesName}`)
+}
+
+/**
+ * Create sequel relationships based on Wikidata P155/P156 properties
+ */
+async function createWikidataSequelRelations(
+  supabase: SupabaseClient<Database>,
+  gameId: string,
+  wikidata: WikidataBoardGame
+): Promise<void> {
+  // If this game follows another (is a sequel to)
+  if (wikidata.followsBggId) {
+    const { data: targetGame } = await supabase
+      .from('games')
+      .select('id')
+      .eq('bgg_id', parseInt(wikidata.followsBggId))
+      .single()
+
+    if (targetGame) {
+      // Check if relation already exists
+      const { data: existing } = await supabase
+        .from('game_relations')
+        .select('id')
+        .eq('source_game_id', gameId)
+        .eq('target_game_id', targetGame.id)
+        .eq('relation_type', 'sequel_to')
+        .single()
+
+      if (!existing) {
+        await supabase
+          .from('game_relations')
+          .insert({
+            source_game_id: gameId,
+            target_game_id: targetGame.id,
+            relation_type: 'sequel_to' as RelationType,
+          })
+        console.log(`  [Wikidata] Created sequel_to relation: ${wikidata.name} → ${wikidata.followsName}`)
+      }
+    }
+  }
+
+  // If this game is followed by another (has a sequel)
+  if (wikidata.followedByBggId) {
+    const { data: sourceGame } = await supabase
+      .from('games')
+      .select('id')
+      .eq('bgg_id', parseInt(wikidata.followedByBggId))
+      .single()
+
+    if (sourceGame) {
+      // Check if relation already exists (sequel_to from the other game)
+      const { data: existing } = await supabase
+        .from('game_relations')
+        .select('id')
+        .eq('source_game_id', sourceGame.id)
+        .eq('target_game_id', gameId)
+        .eq('relation_type', 'sequel_to')
+        .single()
+
+      if (!existing) {
+        await supabase
+          .from('game_relations')
+          .insert({
+            source_game_id: sourceGame.id,
+            target_game_id: gameId,
+            relation_type: 'sequel_to' as RelationType,
+          })
+        console.log(`  [Wikidata] Created sequel_to relation: ${wikidata.followedByName} → ${wikidata.name}`)
+      }
+    }
   }
 }
 
@@ -706,16 +884,19 @@ async function importParentGamesFirst(
 ): Promise<void> {
   const { maxDepth = 3, importingSet = new Set() } = options
 
-  // Prevent infinite recursion
-  if (maxDepth <= 0) {
+  // Prevent infinite recursion (maxDepth of 0 means unlimited)
+  if (maxDepth < 0) {
     console.log(`[Importer] Max depth reached, skipping parent import for ${bggData.name}`)
     return
   }
 
+  // Use effective depth: 0 means unlimited (use large number)
+  const effectiveDepth = maxDepth === 0 ? 999 : maxDepth
+
   // Mark current game as being imported to prevent circular imports
   importingSet.add(bggData.id)
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const parentsToImport: number[] = []
 
   // Check if this is an expansion and base game doesn't exist
@@ -747,7 +928,7 @@ async function importParentGamesFirst(
     console.log(`[Importer] Recursively importing parent game BGG ${parentBggId}...`)
     await importGameFromBGG(parentBggId, {
       importParents: true,
-      maxDepth: maxDepth - 1,
+      maxDepth: effectiveDepth - 1,
       importingSet,
     })
   }
@@ -851,7 +1032,7 @@ async function updateParentGameFlags(
 async function getComplexityTierIdForWeight(weight: number | undefined): Promise<string | null> {
   if (!weight || weight <= 0) return null
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('complexity_tiers')
@@ -921,7 +1102,7 @@ export async function importGameFromBGG(
   options: ImportOptions = {}
 ): Promise<ImportResult> {
   const { importParents = true, maxDepth = 3, importingSet = new Set() } = options
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Check if already imported
   const { data: existing } = await supabase
@@ -1073,7 +1254,7 @@ export async function importGameFromBGG(
  * Uses alias system (BGG ID lookup) with fallback to name-based mapping
  */
 async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[]): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get our categories
   const { data: categories } = await supabase
@@ -1125,7 +1306,7 @@ async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[],
  * Uses alias system (BGG ID lookup) with fallback to name-based mapping
  */
 async function linkGameToThemes(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[]): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get all themes
   const { data: themes } = await supabase
@@ -1181,7 +1362,7 @@ async function linkGameToPlayerExperiences(
   bggCategories: string[],
   bggMechanics: string[]
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get all player experiences
   const { data: experiences } = await supabase
@@ -1231,7 +1412,7 @@ async function linkGameToPlayerExperiences(
  * Process the import queue - import next batch of pending games
  */
 export async function importNextBatch(limit: number = 5): Promise<ImportResult[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get next pending items, ordered by priority (lower = higher priority)
   const { data: queue, error: queueError } = await supabase
@@ -1292,7 +1473,7 @@ export async function importNextBatch(limit: number = 5): Promise<ImportResult[]
  * Update an existing game with fresh BGG data
  */
 export async function syncGameWithBGG(gameId: string): Promise<ImportResult> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Get game's BGG ID
   const { data: game, error: gameError } = await supabase
@@ -1357,7 +1538,7 @@ export async function getQueueStats(): Promise<{
   imported: number
   failed: number
 }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('import_queue')

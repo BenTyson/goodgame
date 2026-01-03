@@ -14,6 +14,7 @@ import {
   GAME_BY_BGG_ID_QUERY,
   AWARD_WINNING_GAMES_QUERY,
   BOARD_GAME_COUNT_QUERY,
+  GAMES_IN_SERIES_QUERY,
   buildQuery,
 } from './queries';
 
@@ -61,6 +62,27 @@ export interface WikidataBoardGame {
   bggId?: string;
   designers: string[];
   publishers: string[];
+  // New fields for family/series detection
+  wikipediaUrl?: string; // English Wikipedia article URL
+  seriesId?: string; // Wikidata Q-number for the series (P179)
+  seriesName?: string; // Name of the series
+  // Sequel relationships
+  followsId?: string; // Q-number of game this is a sequel to (P155)
+  followsName?: string;
+  followsBggId?: string;
+  followedById?: string; // Q-number of game that is a sequel to this (P156)
+  followedByName?: string;
+  followedByBggId?: string;
+}
+
+/**
+ * Series member from Wikidata
+ */
+export interface WikidataSeriesMember {
+  wikidataId: string;
+  name: string;
+  bggId?: string;
+  yearPublished?: number;
 }
 
 /**
@@ -148,6 +170,9 @@ function normalizeImageUrl(url: string | undefined): string | undefined {
  */
 function parseBinding(binding: WikidataBinding): WikidataBoardGame {
   const gameUri = binding.game?.value || '';
+  const seriesUri = binding.series?.value;
+  const followsUri = binding.follows?.value;
+  const followedByUri = binding.followedBy?.value;
 
   return {
     wikidataId: extractQNumber(gameUri),
@@ -167,6 +192,16 @@ function parseBinding(binding: WikidataBinding): WikidataBoardGame {
     publishers: binding.publishers?.value
       ? binding.publishers.value.split(', ').filter(Boolean)
       : [],
+    // New fields
+    wikipediaUrl: binding.wikipediaUrl?.value,
+    seriesId: seriesUri ? extractQNumber(seriesUri) : undefined,
+    seriesName: binding.seriesLabel?.value,
+    followsId: followsUri ? extractQNumber(followsUri) : undefined,
+    followsName: binding.followsLabel?.value,
+    followsBggId: binding.followsBggId?.value,
+    followedById: followedByUri ? extractQNumber(followedByUri) : undefined,
+    followedByName: binding.followedByLabel?.value,
+    followedByBggId: binding.followedByBggId?.value,
   };
 }
 
@@ -227,6 +262,24 @@ export async function getBoardGameCount(): Promise<number> {
   const result = await executeQuery(BOARD_GAME_COUNT_QUERY);
   const countValue = result.results.bindings[0]?.count?.value;
   return countValue ? parseInt(countValue, 10) : 0;
+}
+
+/**
+ * Get all games in a Wikidata series
+ * @param seriesId - Wikidata Q-number for the series (e.g., "Q23899819")
+ */
+export async function getGamesInSeries(
+  seriesId: string
+): Promise<WikidataSeriesMember[]> {
+  const query = buildQuery(GAMES_IN_SERIES_QUERY, { SERIES_ID: seriesId });
+  const result = await executeQuery(query);
+
+  return result.results.bindings.map((binding) => ({
+    wikidataId: extractQNumber(binding.game?.value || ''),
+    name: binding.gameLabel?.value || 'Unknown',
+    bggId: binding.bggId?.value,
+    yearPublished: parseValue(binding, 'yearPublished') as number | undefined,
+  }));
 }
 
 // ============================================================================

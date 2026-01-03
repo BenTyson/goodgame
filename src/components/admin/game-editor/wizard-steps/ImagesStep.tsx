@@ -32,8 +32,7 @@ export function ImagesStep({
     }
   }, [hasImages, onComplete])
 
-  const bggReferenceImage = (game.bgg_raw_data as { reference_images?: { box?: string } })
-    ?.reference_images?.box
+  const bggReferenceImage = (game.bgg_raw_data as { image?: string | null })?.image
 
   return (
     <Card>
