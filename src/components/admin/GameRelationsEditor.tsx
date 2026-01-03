@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
@@ -11,6 +11,7 @@ import {
   Loader2,
   ExternalLink,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,8 @@ import { RELATION_TYPE_LABELS } from '@/types/database'
 interface GameRelationsEditorProps {
   game: Game
   onFamilyChange?: (familyId: string | null) => void
+  /** Called when data finishes loading (for wizard step completion) */
+  onDataLoaded?: () => void
 }
 
 interface RelationWithGame extends GameRelation {
@@ -56,24 +59,37 @@ const RELATION_TYPES: RelationType[] = [
   'standalone_in_series',
 ]
 
-export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEditorProps) {
+export function GameRelationsEditor({ game, onFamilyChange, onDataLoaded }: GameRelationsEditorProps) {
+
   const [families, setFamilies] = useState<GameFamily[]>([])
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(game.family_id || null)
   const [relations, setRelations] = useState<RelationWithGame[]>([])
   const [inverseRelations, setInverseRelations] = useState<InverseRelationWithGame[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { saving, execute } = useAsyncAction()
   const [newRelationType, setNewRelationType] = useState<RelationType>('expansion_of')
 
-  // Use memoized singleton browser client to prevent infinite re-renders
-  const supabase = useMemo(() => createClient(), [])
+  // Use ref for callback to avoid triggering re-fetches when callback changes
+  const onDataLoadedRef = useRef(onDataLoaded)
+  onDataLoadedRef.current = onDataLoaded
+
+  // Get singleton browser client
+  const supabase = createClient()
 
   // Load families and relations
   useEffect(() => {
     let isMounted = true
 
+    // Reset state for new game
+    setLoading(true)
+    setError(null)
+    setFamilies([])
+    setRelations([])
+    setInverseRelations([])
+    setSelectedFamilyId(game.family_id || null)
+
     const loadData = async () => {
-      setLoading(true)
       try {
         // Load all families
         const { data: familiesData, error: familiesError } = await supabase
@@ -81,21 +97,16 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           .select('*')
           .order('name')
 
-        if (familiesError) {
-          console.error('Error loading families:', familiesError)
-        }
+        if (familiesError) console.error('Error loading families:', familiesError)
         if (isMounted) setFamilies(familiesData || [])
 
         // Load relations where this game is the source
-        // First get the relations
         const { data: relationsData, error: relationsError } = await supabase
           .from('game_relations')
           .select('*')
           .eq('source_game_id', game.id)
 
-        if (relationsError) {
-          console.error('Error loading relations:', relationsError)
-        }
+        if (relationsError) console.error('Error loading relations:', relationsError)
 
         // Then fetch the target games separately
         if (relationsData && relationsData.length > 0) {
@@ -105,9 +116,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
             .select('*')
             .in('id', targetIds)
 
-          if (targetError) {
-            console.error('Error loading target games:', targetError)
-          }
+          if (targetError) console.error('Error loading target games:', targetError)
 
           const gamesMap = new Map(targetGames?.map(g => [g.id, g]) || [])
           const relationsWithGames = relationsData.map(r => ({
@@ -126,9 +135,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
           .select('*')
           .eq('target_game_id', game.id)
 
-        if (inverseError) {
-          console.error('Error loading inverse relations:', inverseError)
-        }
+        if (inverseError) console.error('Error loading inverse relations:', inverseError)
 
         // Then fetch the source games separately
         if (inverseData && inverseData.length > 0) {
@@ -138,9 +145,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
             .select('*')
             .in('id', sourceIds)
 
-          if (sourceError) {
-            console.error('Error loading source games:', sourceError)
-          }
+          if (sourceError) console.error('Error loading source games:', sourceError)
 
           const gamesMap = new Map(sourceGames?.map(g => [g.id, g]) || [])
           const inverseWithGames = inverseData.map(r => ({
@@ -152,8 +157,14 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
         } else {
           if (isMounted) setInverseRelations([])
         }
-      } catch (error) {
-        console.error('Error loading relations data:', error)
+
+        // Notify parent that data loaded successfully (for wizard step completion)
+        if (isMounted) onDataLoadedRef.current?.()
+      } catch (err) {
+        console.error('Error loading relations data:', err)
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load relations data')
+        }
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -164,7 +175,7 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
     return () => {
       isMounted = false
     }
-  }, [game.id, supabase])
+  }, [game.id])
 
   // Handle family change
   const handleFamilyChange = useCallback(
@@ -270,6 +281,27 @@ export function GameRelationsEditor({ game, onFamilyChange }: GameRelationsEdito
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError(null)
+            setLoading(true)
+            // Re-trigger the useEffect by forcing a state change
+            window.location.reload()
+          }}
+        >
+          Retry
+        </Button>
       </div>
     )
   }

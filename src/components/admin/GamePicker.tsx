@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -41,38 +39,27 @@ export function GamePicker({
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Use singleton browser client
-  const supabase = createClient()
-
-  // Debounced search
+  // Debounced search using admin API (bypasses RLS to see all games)
   useEffect(() => {
     if (!open) return
 
     const searchGames = async () => {
       setLoading(true)
       try {
-        if (search.length < 2) {
-          // Show recent/popular games when no search
-          const { data } = await supabase
-            .from('games')
-            .select('*')
-            .order('name')
-            .limit(20)
-
-          setGames(data?.filter(g => !excludeGameIds.includes(g.id)) || [])
-        } else {
-          // Search by name
-          const { data } = await supabase
-            .from('games')
-            .select('*')
-            .ilike('name', `%${search}%`)
-            .order('name')
-            .limit(20)
-
-          setGames(data?.filter(g => !excludeGameIds.includes(g.id)) || [])
+        const params = new URLSearchParams()
+        if (search.length >= 2) {
+          params.set('search', search)
         }
+        params.set('limit', '30')
+
+        const response = await fetch(`/api/admin/games?${params}`)
+        if (!response.ok) throw new Error('Search failed')
+
+        const { games: data } = await response.json()
+        setGames(data?.filter((g: Game) => !excludeGameIds.includes(g.id)) || [])
       } catch (error) {
         console.error('Search error:', error)
+        setGames([])
       } finally {
         setLoading(false)
       }
@@ -80,7 +67,7 @@ export function GamePicker({
 
     const timer = setTimeout(searchGames, 300)
     return () => clearTimeout(timer)
-  }, [search, open, excludeGameIds, supabase])
+  }, [search, open, excludeGameIds])
 
   const handleSelect = useCallback(
     (game: Game) => {
@@ -135,8 +122,15 @@ export function GamePicker({
                     onSelect={() => handleSelect(game)}
                     className="cursor-pointer"
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{game.name}</span>
+                    <div className="flex flex-col flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{game.name}</span>
+                        {!game.is_published && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                            Draft
+                          </span>
+                        )}
+                      </div>
                       {game.year_published && (
                         <span className="text-xs text-muted-foreground">
                           {game.year_published}

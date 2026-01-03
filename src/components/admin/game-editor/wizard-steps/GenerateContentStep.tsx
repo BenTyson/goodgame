@@ -83,7 +83,9 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
 
       if (result.success) {
         setPhase('complete')
-        // Refresh server data - useEffect will call onComplete when content flags update
+        // Call onComplete immediately - don't wait for refresh
+        onComplete()
+        // Also refresh server data for consistency
         router.refresh()
       } else {
         setPhase('ready')
@@ -95,7 +97,7 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
       })
       setPhase('ready')
     }
-  }, [game.id, contentModel, router])
+  }, [game.id, contentModel, router, onComplete])
 
   const resetContent = useCallback(async () => {
     setPhase('resetting')

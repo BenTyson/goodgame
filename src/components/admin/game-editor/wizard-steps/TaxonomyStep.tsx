@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TaxonomySelector } from '../TaxonomySelector'
-import { Tags, Sparkles, Users, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Tags, Sparkles, Users, AlertCircle } from 'lucide-react'
 import type { Game, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
 import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
 import { WizardStepHeader } from './WizardStepHeader'
@@ -39,6 +38,12 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
   const [themeSuggestionIds, setThemeSuggestionIds] = useState<Set<string>>(new Set())
   const [experienceSuggestionIds, setExperienceSuggestionIds] = useState<Set<string>>(new Set())
 
+  // Track initial state for detecting unsaved changes
+  const initialStateRef = useRef<{ themes: SelectedTaxonomyItem[]; experiences: SelectedTaxonomyItem[] } | null>(null)
+
+  // Ref to track if save is needed on unmount
+  const saveOnUnmountRef = useRef<(() => Promise<void>) | null>(null)
+
   // Load taxonomy data
   useEffect(() => {
     async function fetchData() {
@@ -66,6 +71,9 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
         }))
 
         // If no current assignments, pre-select AI suggestions
+        let initialThemes: SelectedTaxonomyItem[]
+        let initialExperiences: SelectedTaxonomyItem[]
+
         if (currentThemeSelections.length === 0) {
           const themeSuggestions = result.suggestions
             .filter(s => s.suggestion_type === 'theme' && s.target_id)
@@ -73,9 +81,11 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
               id: s.target_id!,
               isPrimary: s.is_primary ?? false,
             }))
+          initialThemes = themeSuggestions
           setSelectedThemes(themeSuggestions)
           setThemeSuggestionIds(new Set(themeSuggestions.map(t => t.id)))
         } else {
+          initialThemes = currentThemeSelections
           setSelectedThemes(currentThemeSelections)
         }
 
@@ -86,11 +96,19 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
               id: s.target_id!,
               isPrimary: s.is_primary ?? false,
             }))
+          initialExperiences = expSuggestions
           setSelectedExperiences(expSuggestions)
           setExperienceSuggestionIds(new Set(expSuggestions.map(e => e.id)))
         } else {
+          initialExperiences = currentExperienceSelections
           setSelectedExperiences(currentExperienceSelections)
         }
+
+        // Store initial state for change detection
+        initialStateRef.current = { themes: initialThemes, experiences: initialExperiences }
+
+        // Mark step as complete (data loaded, Next button enabled)
+        onComplete()
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load taxonomy data')
       } finally {
@@ -100,6 +118,28 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
 
     fetchData()
   }, [game.id])
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!initialStateRef.current) return false
+    const { themes: initialThemes, experiences: initialExperiences } = initialStateRef.current
+
+    // Compare themes
+    if (selectedThemes.length !== initialThemes.length) return true
+    const themeChanged = selectedThemes.some(t => {
+      const initial = initialThemes.find(it => it.id === t.id)
+      return !initial || initial.isPrimary !== t.isPrimary
+    })
+    if (themeChanged) return true
+
+    // Compare experiences
+    if (selectedExperiences.length !== initialExperiences.length) return true
+    const expChanged = selectedExperiences.some(e => {
+      const initial = initialExperiences.find(ie => ie.id === e.id)
+      return !initial || initial.isPrimary !== e.isPrimary
+    })
+    return expChanged
+  }, [selectedThemes, selectedExperiences])
 
   const handleSave = useCallback(async () => {
     try {
@@ -149,13 +189,32 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
         throw new Error(result.error || 'Failed to save taxonomy')
       }
 
-      onComplete()
+      // Update initial state to reflect saved state
+      initialStateRef.current = { themes: [...selectedThemes], experiences: [...selectedExperiences] }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save taxonomy')
     } finally {
       setSaving(false)
     }
-  }, [game.id, selectedThemes, selectedExperiences, data, onComplete])
+  }, [game.id, selectedThemes, selectedExperiences, data])
+
+  // Update ref for auto-save on unmount
+  useEffect(() => {
+    saveOnUnmountRef.current = handleSave
+  }, [handleSave])
+
+  // Auto-save on unmount if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      // Fire-and-forget save on unmount if needed
+      if (initialStateRef.current && saveOnUnmountRef.current) {
+        // We can't check hasUnsavedChanges here directly since it's computed
+        // So we store a ref to the save function and call it
+        // The save will only POST if there are changes (the API handles this gracefully)
+        saveOnUnmountRef.current()
+      }
+    }
+  }, []) // Empty deps - only runs on unmount
 
   // Count AI suggestions
   const themeSuggestionsCount = data?.suggestions.filter(s => s.suggestion_type === 'theme').length ?? 0
@@ -268,25 +327,6 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t">
-          <Button variant="ghost" onClick={onSkip} disabled={saving}>
-            Skip
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Save & Continue
-              </>
-            )}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   )

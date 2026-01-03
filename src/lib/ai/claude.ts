@@ -234,6 +234,10 @@ export async function generateJSON<T>(
       console.error('Character codes:', charCodes)
     }
     console.error('Failed to parse JSON response:', jsonStr.substring(0, 500))
-    throw new Error(`Invalid JSON response: ${parseError}`)
+
+    // Create error with raw response for downstream analysis
+    const error = new Error(`Invalid JSON response: ${parseError}`) as Error & { rawResponse?: string }
+    error.rawResponse = jsonStr.substring(0, 1000)
+    throw error
   }
 }

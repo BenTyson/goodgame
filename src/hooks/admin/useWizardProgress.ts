@@ -44,6 +44,8 @@ export interface UseWizardProgressReturn {
   saveProgress: () => void
   /** Whether progress was loaded from storage */
   hasRestoredProgress: boolean
+  /** Whether client-side hydration is complete (safe to trust state) */
+  isHydrated: boolean
 }
 
 /**
@@ -59,6 +61,20 @@ export interface UseWizardProgressReturn {
  * }
  * ```
  */
+// Helper to load progress from localStorage synchronously
+function loadProgressFromStorage(storageKey: string): WizardProgress | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem(storageKey)
+    if (stored) {
+      return JSON.parse(stored) as WizardProgress
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null
+}
+
 export function useWizardProgress(
   gameId: string,
   options: UseWizardProgressOptions
@@ -66,29 +82,27 @@ export function useWizardProgress(
   const { totalSteps, onProgressChange } = options
   const storageKey = `wizard-progress-${gameId}`
 
+  // Start with defaults - will load from localStorage after hydration
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [skippedSteps, setSkippedSteps] = useState<number[]>([])
   const [hasRestoredProgress, setHasRestoredProgress] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
 
   // Ref to access current step in stable callbacks without causing re-renders
   const currentStepRef = useRef(currentStep)
   currentStepRef.current = currentStep
 
-  // Load progress from localStorage on mount
+  // Load from localStorage AFTER hydration to avoid SSR mismatch
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored) {
-        const progress: WizardProgress = JSON.parse(stored)
-        setCurrentStep(progress.currentStep)
-        setCompletedSteps(progress.completedSteps || [])
-        setSkippedSteps(progress.skippedSteps || [])
-        setHasRestoredProgress(true)
-      }
-    } catch {
-      // Ignore parse errors
+    const saved = loadProgressFromStorage(storageKey)
+    if (saved) {
+      setCurrentStep(saved.currentStep)
+      setCompletedSteps(saved.completedSteps || [])
+      setSkippedSteps(saved.skippedSteps || [])
+      setHasRestoredProgress(true)
     }
+    setIsHydrated(true)
   }, [storageKey])
 
   // Notify on progress change
@@ -144,21 +158,11 @@ export function useWizardProgress(
   )
 
   const nextStep = useCallback(() => {
-    setCurrentStep((prev) => {
-      if (prev < totalSteps) {
-        return prev + 1
-      }
-      return prev
-    })
+    setCurrentStep((prev) => prev < totalSteps ? prev + 1 : prev)
   }, [totalSteps])
 
   const prevStep = useCallback(() => {
-    setCurrentStep((prev) => {
-      if (prev > 1) {
-        return prev - 1
-      }
-      return prev
-    })
+    setCurrentStep((prev) => prev > 1 ? prev - 1 : prev)
   }, [])
 
   const completeStep = useCallback((step?: number) => {
@@ -205,5 +209,6 @@ export function useWizardProgress(
     resetProgress,
     saveProgress,
     hasRestoredProgress,
+    isHydrated,
   }
 }

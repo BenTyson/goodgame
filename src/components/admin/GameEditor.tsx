@@ -51,9 +51,14 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     setImages(initialGame.images)
   }, [initialGame])
 
-  // Wizard mode: show for unpublished games unless user exits to advanced
-  const [forceAdvanced, setForceAdvanced] = useState(false)
-  const showWizard = !game.is_published && !forceAdvanced
+  // Editor mode: wizard vs advanced
+  // - Unpublished games default to wizard mode
+  // - Published games default to advanced mode
+  // - User can toggle between modes
+  const [editorMode, setEditorMode] = useState<'wizard' | 'advanced'>(
+    initialGame.is_published ? 'advanced' : 'wizard'
+  )
+  const showWizard = editorMode === 'wizard'
 
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
@@ -114,12 +119,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     })
   }
 
-  // Show wizard for unpublished games
+  // Show wizard mode
   if (showWizard) {
     return (
       <GameSetupWizard
         game={{ ...game, images }}
-        onExitToAdvanced={() => setForceAdvanced(true)}
+        onExitToAdvanced={() => setEditorMode('advanced')}
       />
     )
   }
@@ -148,17 +153,15 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
-          {!game.is_published && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setForceAdvanced(false)}
-              className="gap-2"
-            >
-              <Wand2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Setup Wizard</span>
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditorMode('wizard')}
+            className="gap-2"
+          >
+            <Wand2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Setup Wizard</span>
+          </Button>
           <Link href={`/admin/games/${game.id}/preview`} target="_blank">
             <Button variant="outline" size="sm" className="gap-2">
               <Eye className="h-4 w-4" />
@@ -304,6 +307,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         {/* Relations Tab */}
         <TabsContent value="relations" className="space-y-6">
           <GameRelationsEditor
+            key={game.id}
             game={game}
             onFamilyChange={(familyId) => updateField('family_id', familyId)}
           />

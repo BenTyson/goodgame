@@ -16,9 +16,18 @@ import {
   CheckCircle2,
   PanelRightOpen,
   SkipForward,
+  RotateCcw,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { Game, GameImage } from '@/types/database'
 import type { GameWithRelations, WizardStep } from '@/lib/admin/wizard'
+
 
 // Import wizard step components
 import { RulebookStep } from './wizard-steps/RulebookStep'
@@ -47,6 +56,7 @@ const WIZARD_STEPS: WizardStep[] = [
 ]
 
 export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSetupWizardProps) {
+
   const router = useRouter()
   const [game, setGame] = useState(initialGame)
   const [images, setImages] = useState(initialGame.images)
@@ -69,7 +79,11 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     prevStep,
     completeStep,
     skipStep,
+    resetProgress,
+    isHydrated,
   } = useWizardProgress(game.id, { totalSteps: 8 })
+
+  const [resetting, setResetting] = useState(false)
 
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
@@ -145,6 +159,32 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     nextStep()
   }, [skipStep, nextStep])
 
+  // Reset wizard - clears progress and optionally all game data
+  const resetWizard = useCallback(async (resetData: boolean = false) => {
+    setResetting(true)
+    try {
+      if (resetData) {
+        // Reset all game data via API
+        const response = await fetch(`/api/admin/games/${game.id}/reset-content`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resetAll: true }),
+        })
+        if (!response.ok) {
+          throw new Error('Failed to reset game data')
+        }
+      }
+      // Reset wizard progress (localStorage)
+      resetProgress()
+      // Refresh to get clean state
+      router.refresh()
+    } catch (error) {
+      console.error('Reset failed:', error)
+    } finally {
+      setResetting(false)
+    }
+  }, [game.id, resetProgress, router])
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -168,7 +208,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         return (
           <TaxonomyStep
             game={game}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -228,6 +268,16 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
   // Check if current step can proceed
   const canProceed = isStepComplete(currentStep)
 
+  // Show loading state until client-side hydration completes
+  // This prevents flash of incorrect state from SSR
+  if (!isHydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -248,6 +298,37 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
           <p className="text-muted-foreground text-xs mt-0.5 font-mono">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={resetting}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                {resetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Reset</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => resetWizard(false)}>
+                Reset Progress Only
+                <span className="ml-2 text-xs text-muted-foreground">Go back to step 1</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => resetWizard(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                Reset Everything
+                <span className="ml-2 text-xs text-muted-foreground">Clear all data</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="ghost"
             size="sm"

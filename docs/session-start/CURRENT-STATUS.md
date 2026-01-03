@@ -1,8 +1,51 @@
 # Current Status
 
-> Last Updated: 2026-01-03 (Wizard UI Polish V2)
+> Last Updated: 2026-01-03 (Wizard Bug Fixes & Polish)
 
-## Current Phase: 43 - Wizard UI Polish V2 (COMPLETE)
+## Current Phase: 44 - Wizard Bug Fixes & Polish (COMPLETE)
+
+Critical bug fixes for the admin wizard navigation and data loading issues.
+
+### Bug Fixes
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| **TaxonomyStep duplicate footer** | Internal "Skip + Save & Continue" buttons duplicated wizard footer | Removed internal footer, added auto-save on unmount |
+| **GenerateContentStep Next greyed** | `onComplete()` not called after successful generation | Call `onComplete()` immediately after success |
+| **RelationsStep infinite spinner** | `onDataLoaded` in useEffect deps caused re-render loop | Use ref for callback, removed from deps |
+| **ParseAnalyzeStep Next greyed** | Required `crunchScore` but AI sometimes fails to return valid JSON | Check `wordCount > 0` instead (PDF parsed = success) |
+| **Auto-navigation skipping steps** | TaxonomyStep used `handleStepComplete` (navigates) instead of `handleMarkComplete` | Fixed callback usage |
+| **Can't re-enter wizard for published games** | `showWizard` condition excluded published games | Changed to `editorMode` state, always show wizard button |
+| **GamePicker only shows few games** | RLS restricting results to published games | New admin API endpoint bypasses RLS |
+
+### New Features
+
+| Feature | Description |
+|---------|-------------|
+| **Reset Wizard button** | Dropdown with "Reset Progress Only" or "Reset Everything" options |
+| **Crunch error messages** | Specific errors: "Wrong rulebook", "Reference card detected", "Too short", etc. |
+| **GamePicker "Draft" badge** | Shows amber badge for unpublished games in relation picker |
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `GameSetupWizard.tsx` | Reset dropdown, `editorMode` state, fixed callbacks |
+| `GameEditor.tsx` | Always show "Setup Wizard" button, `editorMode` toggle |
+| `TaxonomyStep.tsx` | Removed internal footer, auto-save on unmount |
+| `GenerateContentStep.tsx` | Immediate `onComplete()` call |
+| `RelationsStep.tsx` | Removed auto-completion useEffect |
+| `ParseAnalyzeStep.tsx` | Success = `wordCount > 0`, show crunch error separately |
+| `GameRelationsEditor.tsx` | Ref for `onDataLoaded`, removed from deps |
+| `GamePicker.tsx` | Uses admin API, shows Draft badge |
+| `useWizardProgress.ts` | Added `resetProgress` export |
+| `complexity.ts` | `analyzeCrunchError()` for specific messages |
+| `claude.ts` | Include raw response in JSON parse errors |
+| `/api/admin/games/route.ts` | New GET endpoint for game search |
+
+---
+
+## Phase 43 - Wizard UI Polish V2 (COMPLETE)
 
 Comprehensive UI polish for the admin wizard, making it cleaner and more cohesive for frequent admin use.
 

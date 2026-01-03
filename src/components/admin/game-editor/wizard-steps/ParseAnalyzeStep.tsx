@@ -46,6 +46,7 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
     wordCount?: number
     pageCount?: number
     crunchScore?: number
+    crunchError?: string
     taxonomy?: {
       themesCount: number
       experiencesCount: number
@@ -85,9 +86,12 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
       const result = await response.json()
       setParseResult(result)
 
-      if (result.success && result.crunchScore) {
+      // Consider step complete if PDF was successfully parsed (wordCount exists)
+      const parsedSuccessfully = result.success && result.wordCount > 0
+
+      if (parsedSuccessfully) {
         setPhase('complete')
-        // Refresh server data - useEffect will call onComplete when crunchScore updates
+        onComplete()
         router.refresh()
       } else {
         setPhase('ready')
@@ -99,7 +103,7 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
       })
       setPhase('ready')
     }
-  }, [game.id, game.rulebook_url, router])
+  }, [game.id, game.rulebook_url, router, onComplete])
 
   const resetContent = useCallback(async (options: {
     resetCrunch?: boolean
@@ -271,12 +275,20 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
 
           {/* Parse success info */}
           {parseResult?.success && (
-            <StatusAlert variant="success" title="Analysis complete!">
+            <StatusAlert
+              variant={parseResult.crunchError ? 'warning' : 'success'}
+              title={parseResult.crunchError ? 'PDF parsed (crunch score failed)' : 'Analysis complete!'}
+            >
               <div className="space-y-1">
                 <p>{parseResult.pageCount} pages, {parseResult.wordCount?.toLocaleString()} words</p>
                 {parseResult.taxonomy && (
                   <p>
                     Found {parseResult.taxonomy.themesCount} themes, {parseResult.taxonomy.experiencesCount} experiences
+                  </p>
+                )}
+                {parseResult.crunchError && (
+                  <p className="text-xs opacity-80 mt-1">
+                    Crunch score calculation failed. You can retry or proceed without it.
                   </p>
                 )}
               </div>

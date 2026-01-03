@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
 import { Link2 } from 'lucide-react'
@@ -18,9 +18,8 @@ export function RelationsStep({
   onComplete,
   onSkip,
 }: RelationsStepProps) {
-  // Auto-complete this step on mount since "No Family" + "No Relations" is a valid state
-  // User can still make changes, but Next button will be enabled
-  useEffect(() => {
+  // Handler called when GameRelationsEditor finishes loading data
+  const handleDataLoaded = useCallback(() => {
     onComplete()
   }, [onComplete])
 
@@ -33,7 +32,7 @@ export function RelationsStep({
         icon={<Link2 className="h-5 w-5" />}
       />
       <CardContent className="pt-0">
-        <GameRelationsEditor game={game} />
+        <GameRelationsEditor key={game.id} game={game} onDataLoaded={handleDataLoaded} />
       </CardContent>
     </Card>
   )
