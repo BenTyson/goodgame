@@ -136,7 +136,16 @@ export default async function GamePage({ params }: GamePageProps) {
             <ImageGallery images={game.images} gameName={game.name} />
           ) : (
             <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-              {game.box_image_url ? (
+              {game.wikidata_image_url ? (
+                <Image
+                  src={game.wikidata_image_url}
+                  alt={game.name}
+                  fill
+                  className="object-cover"
+                  priority
+                  unoptimized
+                />
+              ) : game.box_image_url ? (
                 <Image
                   src={game.box_image_url}
                   alt={game.name}
@@ -461,7 +470,7 @@ export default async function GamePage({ params }: GamePageProps) {
       />
 
       {/* External links */}
-      {game.bgg_id && (
+      {(game.bgg_id || game.official_website || game.rulebook_url) && (
         <>
           <Separator className="my-10" />
           <div>
@@ -469,17 +478,46 @@ export default async function GamePage({ params }: GamePageProps) {
               External Links
             </h2>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" asChild>
-                <a
-                  href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="gap-2"
-                >
-                  BoardGameGeek
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
+              {game.official_website && (
+                <Button variant="outline" asChild>
+                  <a
+                    href={game.official_website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="gap-2"
+                  >
+                    Official Website
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+              {game.rulebook_url && (
+                <Button variant="outline" asChild>
+                  <a
+                    href={game.rulebook_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="gap-2"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Official Rulebook
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+              {game.bgg_id && (
+                <Button variant="outline" asChild>
+                  <a
+                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="gap-2"
+                  >
+                    BoardGameGeek
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
         </>

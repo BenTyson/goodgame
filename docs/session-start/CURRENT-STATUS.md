@@ -1,8 +1,70 @@
 # Current Status
 
-> Last Updated: 2026-01-02 (Wikidata Game Enrichment)
+> Last Updated: 2026-01-02 (Admin Wizard & Wikidata Integration)
 
-## Current Phase: 40 - Wikidata Game Enrichment (COMPLETE)
+## Current Phase: 41 - Admin Wizard Split & Wikidata Data Flow (COMPLETE)
+
+Split the wizard's Parse & Generate step into two focused steps, added Wikidata data visibility throughout the admin UI, and connected Wikidata fields to the public game pages.
+
+### Wizard Flow (8 Steps)
+
+| Step | Name | Description |
+|------|------|-------------|
+| 1 | Rulebook | Find rulebook URL |
+| 2 | **Analyze** | Parse PDF, Crunch Score, taxonomy extraction (Haiku) |
+| 3 | Taxonomy | Review AI suggestions |
+| 4 | **Content** | Generate guides with model choice (Sonnet/Haiku) |
+| 5 | Images | Upload artwork |
+| 6 | Relations | Game connections |
+| 7 | Review | Check content |
+| 8 | Publish | Go live |
+
+### New Components
+
+| File | Purpose |
+|------|---------|
+| `wizard-steps/ParseAnalyzeStep.tsx` | **NEW** - Parse PDF, Crunch Score, taxonomy (uses Haiku) |
+| `wizard-steps/GenerateContentStep.tsx` | **NEW** - Generate rules/setup/reference with model choice |
+
+### Wikidata Data Flow
+
+**Game Detail Page (`/games/[slug]`):**
+- Image priority: `wikidata_image_url` > `box_image_url` > placeholder
+- External Links section now shows: Official Website, Official Rulebook, BGG link
+
+**Admin Image Badges (`SourcedImage` component):**
+- Blue "Wiki" badge for Wikidata CC-licensed images
+- Green "Uploaded" badge for user uploads
+- Red "BGG" badge (with dim overlay) for reference-only images
+
+**Wizard RulebookStep:**
+- Shows "Wikidata Enrichment Available" box when data exists
+- Displays badges: Rulebook from Wikidata, Official Website link, CC Image Available
+- Rulebook status shows source badge (e.g., "from Wikidata")
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/app/games/[slug]/page.tsx` | Added official_website + rulebook_url to External Links, prioritize wikidata images |
+| `src/components/admin/TempImage.tsx` | Renamed to `SourcedImage` with source badges (bgg/wikidata/uploaded) |
+| `src/components/admin/AdminSidebar.tsx` | Changed Games icon from Gamepad2 to Dices |
+| `src/app/admin/(dashboard)/games/page.tsx` | Updated to use SourcedImage with source detection |
+| `src/components/admin/GameEditor.tsx` | Show Wikidata CC image card when available |
+| `src/components/admin/game-editor/wizard-steps/ImagesStep.tsx` | Show Wikidata image with badge |
+| `src/components/admin/game-editor/wizard-steps/RulebookStep.tsx` | Wikidata status section, source badges |
+| `src/components/admin/game-editor/GameSetupWizard.tsx` | 8 steps, new component imports |
+
+### Deprecated
+
+| Item | Replacement |
+|------|-------------|
+| `ParseGenerateStep` | `ParseAnalyzeStep` + `GenerateContentStep` |
+| `TempImage` | `SourcedImage` (alias kept for compatibility) |
+
+---
+
+## Phase 40 - Wikidata Game Enrichment (COMPLETE)
 
 Added game-level Wikidata enrichment to the BGG import pipeline, including CC-licensed images, official websites, and rulebook URLs.
 
@@ -164,17 +226,20 @@ Added AI-powered theme and player experience extraction to the game setup wizard
 | `src/components/admin/game-editor/ContentTab.tsx` | Added `formatEndGame()` helper |
 | `src/components/admin/game-editor/RulebookContentTab.tsx` | Added `formatEndGame()` helper |
 
-### New Wizard Flow (7 Steps)
+### Wizard Flow (as of Phase 38, now 8 steps)
 
 | Step | Name | Description |
 |------|------|-------------|
 | 1 | Rulebook | Find rulebook URL |
-| 2 | Parse | Generate Crunch Score + content + taxonomy extraction |
+| 2 | Parse | Generate Crunch Score + taxonomy extraction |
 | 3 | **Taxonomy** | **NEW** - Review AI suggestions, select themes/experiences |
-| 4 | Images | Upload artwork |
-| 5 | Relations | Game connections |
-| 6 | Review | Check content |
-| 7 | Publish | Go live |
+| 4 | Content | Generate rules/setup/reference guides |
+| 5 | Images | Upload artwork |
+| 6 | Relations | Game connections |
+| 7 | Review | Check content |
+| 8 | Publish | Go live |
+
+*Note: Step 2 was split into "Analyze" (step 2) and "Content" (step 4) in Phase 41.*
 
 ### Key Features
 

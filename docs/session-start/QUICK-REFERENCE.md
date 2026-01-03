@@ -182,6 +182,7 @@ src/components/
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
 │   ├── ImageUpload.tsx        # Image uploader with type selector + crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
+│   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wiki/Uploaded)
 │   ├── game-editor/           # GameEditor tab components
 │   │   ├── DetailsTab.tsx
 │   │   ├── ContentTab.tsx
@@ -189,14 +190,15 @@ src/components/
 │   │   ├── GameSetupWizard.tsx
 │   │   ├── WizardStepIndicator.tsx
 │   │   ├── TaxonomySelector.tsx   # Multi-select with AI badges
-│   │   └── wizard-steps/          # Wizard step components
-│   │       ├── RulebookStep.tsx
-│   │       ├── ParseGenerateStep.tsx  # Includes Reset dropdown
-│   │       ├── TaxonomyStep.tsx       # AI-powered taxonomy review
-│   │       ├── ImagesStep.tsx
-│   │       ├── RelationsStep.tsx
-│   │       ├── ReviewContentStep.tsx
-│   │       └── PublishStep.tsx
+│   │   └── wizard-steps/          # Wizard step components (8 steps)
+│   │       ├── RulebookStep.tsx        # Step 1: Find rulebook URL
+│   │       ├── ParseAnalyzeStep.tsx    # Step 2: Parse PDF, Crunch Score (Haiku)
+│   │       ├── TaxonomyStep.tsx        # Step 3: AI-powered taxonomy review
+│   │       ├── GenerateContentStep.tsx # Step 4: Generate guides (Sonnet/Haiku)
+│   │       ├── ImagesStep.tsx          # Step 5: Upload images
+│   │       ├── RelationsStep.tsx       # Step 6: Game connections
+│   │       ├── ReviewContentStep.tsx   # Step 7: Review content
+│   │       └── PublishStep.tsx         # Step 8: Publish game
 │   └── rulebook/              # RulebookEditor sub-components
 │       ├── RulebookUrlSection.tsx
 │       ├── RulebookParseSection.tsx

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { TempImage } from '@/components/admin/TempImage'
+import { SourcedImage } from '@/components/admin/TempImage'
 import { ImageIcon, CheckCircle2 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
 
@@ -69,8 +69,31 @@ export function ImagesStep({
           onImagesChange={onImagesChange}
         />
 
+        {/* Wikidata CC-licensed image */}
+        {!hasImages && game.wikidata_image_url && (
+          <Card className="border-dashed border-blue-500/50 bg-blue-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-blue-600 dark:text-blue-400">
+                Wikidata Image (CC Licensed)
+              </CardTitle>
+              <CardDescription className="text-xs">
+                This CC-licensed image from Wikimedia Commons is safe for production use.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SourcedImage
+                src={game.wikidata_image_url}
+                alt={`${game.name}`}
+                source="wikidata"
+                aspectRatio="4/3"
+                className="max-w-md rounded-lg overflow-hidden"
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {/* BGG Reference Image */}
-        {!hasImages && bggReferenceImage && (
+        {!hasImages && !game.wikidata_image_url && bggReferenceImage && (
           <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-amber-600 dark:text-amber-400">
@@ -81,9 +104,10 @@ export function ImagesStep({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TempImage
+              <SourcedImage
                 src={bggReferenceImage}
                 alt={`${game.name} reference`}
+                source="bgg"
                 aspectRatio="4/3"
                 className="max-w-md rounded-lg overflow-hidden"
               />

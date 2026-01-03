@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { TempImage } from '@/components/admin/TempImage'
+import { SourcedImage } from '@/components/admin/TempImage'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
 import { DetailsTab, RulebookContentTab, GameSetupWizard } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
@@ -252,8 +252,31 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 }}
               />
 
-              {/* Show BGG reference image when no images uploaded */}
-              {images.length === 0 && (game.bgg_raw_data as { reference_images?: { box?: string } })?.reference_images?.box && (
+              {/* Show Wikidata CC-licensed image if available */}
+              {images.length === 0 && game.wikidata_image_url && (
+                <Card className="border-dashed border-blue-500/50 bg-blue-500/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-blue-600 dark:text-blue-400">
+                      Wikidata Image (CC Licensed)
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      This CC-licensed image from Wikimedia Commons is safe for production use.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SourcedImage
+                      src={game.wikidata_image_url}
+                      alt={`${game.name}`}
+                      source="wikidata"
+                      aspectRatio="4/3"
+                      className="max-w-md rounded-lg overflow-hidden"
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Show BGG reference image when no Wikidata image and no images uploaded */}
+              {images.length === 0 && !game.wikidata_image_url && (game.bgg_raw_data as { reference_images?: { box?: string } })?.reference_images?.box && (
                 <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm text-amber-600 dark:text-amber-400">
@@ -264,9 +287,10 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <TempImage
+                    <SourcedImage
                       src={(game.bgg_raw_data as { reference_images: { box: string } }).reference_images.box}
                       alt={`${game.name} reference`}
+                      source="bgg"
                       aspectRatio="4/3"
                       className="max-w-md rounded-lg overflow-hidden"
                     />

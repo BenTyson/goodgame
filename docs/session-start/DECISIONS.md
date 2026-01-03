@@ -106,7 +106,7 @@
 | BGG data | **Never scrape** | ToS violation, legal risk |
 | BGG IDs | Keep for linking only | Cross-reference, "View on BGG" links |
 | Image strategy | Publisher partnerships + user uploads | No BGG image scraping |
-| Complexity score | **Board Nomads Complexity Score (BNCS)** | AI-generated from rulebooks (differentiator) |
+| Complexity score | **Crunch Score** (1-10 scale) | AI-generated from rulebooks, calibrated with BGG weight |
 | User BGG data | Collection import via API | User-initiated, their own data |
 | Data provenance | Track per-game `data_source` field | Legal audit trail |
 | Seed data import | Factual data only (names, player counts, etc.) | Facts not copyrightable |

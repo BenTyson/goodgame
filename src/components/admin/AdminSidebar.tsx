@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Settings, LayoutDashboard, Gamepad2, ListTodo, Users2, Building2, Tags, Globe, Database } from 'lucide-react'
+import { X, Settings, LayoutDashboard, Dices, ListTodo, Users2, Building2, Tags, Globe, Database } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 
 const adminNav = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
-  { name: 'Games', href: '/admin/games', icon: Gamepad2, exact: false },
+  { name: 'Games', href: '/admin/games', icon: Dices, exact: false },
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: Tags, exact: false },
   { name: 'Families', href: '/admin/families', icon: Users2, exact: false },
   { name: 'Publishers', href: '/admin/publishers', icon: Building2, exact: false },

@@ -4,13 +4,13 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { TempImage } from '@/components/admin/TempImage'
+import { SourcedImage } from '@/components/admin/TempImage'
 import {
   CheckCircle2,
   FileEdit,
   Clock,
   Search,
-  Gamepad2,
+  Dices,
   ChevronLeft,
   ChevronRight,
   Link2,
@@ -24,7 +24,7 @@ async function getGames(filter?: string, search?: string, page: number = 1) {
 
   let query = supabase
     .from('games')
-    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max, thumbnail_url, tagline, bgg_raw_data', { count: 'exact' })
+    .select('id, name, slug, content_status, is_published, bgg_id, created_at, weight, player_count_min, player_count_max, thumbnail_url, wikidata_image_url, tagline, bgg_raw_data', { count: 'exact' })
     .order('name', { ascending: true })
 
   if (filter === 'published') {
@@ -98,7 +98,7 @@ export default async function AdminGamesPage({
   ])
 
   const filters = [
-    { label: 'All', value: undefined, icon: Gamepad2, count: counts.total },
+    { label: 'All', value: undefined, icon: Dices, count: counts.total },
     { label: 'Published', value: 'published', icon: CheckCircle2, color: 'text-green-500', count: counts.published },
     { label: 'Unpublished', value: 'unpublished', icon: Clock, color: 'text-orange-500', count: counts.unpublished },
     { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500', count: counts.draft },
@@ -225,23 +225,30 @@ export default async function AdminGamesPage({
           <Link key={game.id} href={`/admin/games/${game.id}`}>
             <Card padding="none" className="overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 group cursor-pointer h-full">
               <div className="relative aspect-[4/3] bg-muted">
-                {game.thumbnail_url ? (
-                  <Image
+                {game.wikidata_image_url ? (
+                  <SourcedImage
+                    src={game.wikidata_image_url}
+                    alt={game.name}
+                    source="wikidata"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  />
+                ) : game.thumbnail_url ? (
+                  <SourcedImage
                     src={game.thumbnail_url}
                     alt={game.name}
-                    fill
-                    className="object-cover transition-transform group-hover:scale-105"
+                    source="uploaded"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (game.bgg_raw_data as { reference_images?: { thumbnail?: string } })?.reference_images?.thumbnail ? (
-                  <TempImage
+                  <SourcedImage
                     src={(game.bgg_raw_data as { reference_images?: { thumbnail?: string } }).reference_images!.thumbnail!}
                     alt={game.name}
+                    source="bgg"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Gamepad2 className="h-8 w-8 text-muted-foreground/30" />
+                    <Dices className="h-8 w-8 text-muted-foreground/30" />
                   </div>
                 )}
                 <div className="absolute top-1.5 right-1.5">
@@ -306,7 +313,7 @@ export default async function AdminGamesPage({
       {games.length === 0 && (
         <Card className="p-12">
           <div className="text-center">
-            <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/50" />
+            <Dices className="h-12 w-12 mx-auto text-muted-foreground/50" />
             <h3 className="mt-4 text-lg font-semibold">No games found</h3>
             <p className="text-muted-foreground mt-1">
               {q ? `No games matching "${q}"` : 'Try adjusting your filters'}

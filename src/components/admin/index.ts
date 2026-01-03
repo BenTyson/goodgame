@@ -13,7 +13,7 @@ export { LogoUpload } from './LogoUpload'
 
 // UI components
 export { GamePicker } from './GamePicker'
-export { TempImage } from './TempImage'
+export { SourcedImage, TempImage } from './TempImage'
 export { LogoutButton } from './LogoutButton'
 
 // Layout components

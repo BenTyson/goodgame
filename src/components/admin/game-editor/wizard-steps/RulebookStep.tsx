@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   BookOpen,
   CheckCircle2,
@@ -13,6 +14,8 @@ import {
   ExternalLink,
   Search,
   Sparkles,
+  Globe,
+  ImageIcon,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 
@@ -173,6 +176,44 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
           </div>
         ) : null}
 
+        {/* Wikidata Status */}
+        {(game.wikidata_id || game.official_website || game.wikidata_image_url) && (
+          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                Wikidata Enrichment Available
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 text-sm">
+              {game.rulebook_source === 'wikidata' && game.rulebook_url && (
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                  <BookOpen className="h-3 w-3 mr-1" />
+                  Rulebook from Wikidata
+                </Badge>
+              )}
+              {game.official_website && (
+                <a
+                  href={game.official_website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 transition-colors"
+                >
+                  <Globe className="h-3 w-3" />
+                  Official Website
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+              {game.wikidata_image_url && (
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                  <ImageIcon className="h-3 w-3 mr-1" />
+                  CC Image Available
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* URL Input */}
         <div className="space-y-3">
           <Label htmlFor="rulebook-url">Rulebook PDF URL</Label>
@@ -282,6 +323,11 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <span>Rulebook URL saved</span>
+            {game.rulebook_source && (
+              <Badge variant="outline" className="text-xs">
+                {game.rulebook_source === 'wikidata' ? 'from Wikidata' : game.rulebook_source}
+              </Badge>
+            )}
             {game.rulebook_parsed_at && (
               <span className="text-xs">
                 • Parsed {new Date(game.rulebook_parsed_at).toLocaleDateString()}

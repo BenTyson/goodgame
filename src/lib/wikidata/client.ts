@@ -418,6 +418,95 @@ export async function getPublisherWebsitesForGame(
 }
 
 /**
+ * Get a game by BGG ID, falling back to name search if not found
+ * Useful when Wikidata entry exists but doesn't have P2339 (BGG ID) set
+ */
+export async function getGameByBggIdOrName(
+  bggId: string,
+  gameName: string
+): Promise<WikidataBoardGame | null> {
+  // First try by BGG ID
+  const byId = await getGameByBggId(bggId)
+  if (byId) {
+    return byId
+  }
+
+  console.log(`  [Wikidata] No BGG ID match, trying name search: "${gameName}"`)
+
+  // Fall back to name search
+  const searchResults = await searchEntityByName(gameName, 5)
+
+  for (const result of searchResults) {
+    // Check if this is a board/card/tabletop game
+    const desc = result.description.toLowerCase()
+    if (
+      desc.includes('board game') ||
+      desc.includes('card game') ||
+      desc.includes('tabletop game') ||
+      desc.includes('party game')
+    ) {
+      console.log(`  [Wikidata] Found by name: ${result.label} (${result.id})`)
+
+      // Fetch full game data
+      const query = `
+        SELECT DISTINCT
+          ?game
+          ?gameLabel
+          ?gameDescription
+          ?yearPublished
+          ?minPlayers
+          ?maxPlayers
+          ?playTime
+          ?image
+          ?officialWebsite
+          ?rulebookUrl
+          ?bggId
+          (GROUP_CONCAT(DISTINCT ?designerLabel; separator=", ") AS ?designers)
+          (GROUP_CONCAT(DISTINCT ?publisherLabel; separator=", ") AS ?publishers)
+        WHERE {
+          BIND(wd:${result.id} AS ?game)
+
+          OPTIONAL { ?game wdt:P571 ?inception . BIND(YEAR(?inception) AS ?yearPublished) }
+          OPTIONAL { ?game wdt:P1872 ?minPlayers . }
+          OPTIONAL { ?game wdt:P1873 ?maxPlayers . }
+          OPTIONAL { ?game wdt:P2047 ?playTime . }
+          OPTIONAL { ?game wdt:P18 ?image . }
+          OPTIONAL { ?game wdt:P856 ?officialWebsite . }
+          OPTIONAL { ?game wdt:P953 ?rulebookUrl . }
+          OPTIONAL { ?game wdt:P2339 ?bggId . }
+
+          OPTIONAL {
+            ?game wdt:P287 ?designer .
+            ?designer rdfs:label ?designerLabel .
+            FILTER(LANG(?designerLabel) = "en")
+          }
+
+          OPTIONAL {
+            ?game wdt:P123 ?publisher .
+            ?publisher rdfs:label ?publisherLabel .
+            FILTER(LANG(?publisherLabel) = "en")
+          }
+
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+        }
+        GROUP BY ?game ?gameLabel ?gameDescription ?yearPublished ?minPlayers ?maxPlayers ?playTime ?image ?officialWebsite ?rulebookUrl ?bggId
+      `
+
+      try {
+        const queryResult = await executeQuery(query)
+        if (queryResult.results.bindings.length > 0) {
+          return parseBinding(queryResult.results.bindings[0])
+        }
+      } catch (err) {
+        console.warn(`  [Wikidata] Error fetching game data:`, err)
+      }
+    }
+  }
+
+  return null
+}
+
+/**
  * Batch fetch games by a list of BGG IDs
  * Returns a map of BGG ID -> WikidataBoardGame
  */
