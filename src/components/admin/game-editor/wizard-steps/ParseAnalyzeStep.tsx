@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -15,18 +15,20 @@ import {
 import {
   FileSearch,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   FileText,
   Sparkles,
   Tags,
   RotateCcw,
   ChevronDown,
+  Cpu,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { CrunchScoreDisplay } from '@/components/admin/rulebook'
 import { WizardStepHeader } from './WizardStepHeader'
+import { StatusAlert } from './StatusAlert'
+import { InfoPanel } from './InfoPanel'
 
 interface ParseAnalyzeStepProps {
   game: Game
@@ -149,35 +151,55 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
         <CardContent className="space-y-5 pt-0">
           {/* No rulebook warning */}
           {!game.rulebook_url && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium">No rulebook URL set</p>
-                <p>Go back to Step 1 to add a rulebook URL, or skip this step.</p>
-              </div>
-            </div>
+            <StatusAlert variant="warning" title="No rulebook URL set">
+              Go back to Step 1 to add a rulebook URL, or skip this step.
+            </StatusAlert>
           )}
 
           {/* Status badges */}
           <div className="flex flex-wrap gap-2">
-            <Badge variant={crunchScore ? 'default' : 'outline'} className="gap-1">
-              {crunchScore ? <CheckCircle2 className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+            <Badge
+              variant={crunchScore ? 'default' : 'outline'}
+              className="gap-1.5 px-3 py-1"
+            >
+              {crunchScore ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <FileText className="h-3.5 w-3.5" />
+              )}
               PDF Parsed
             </Badge>
-            <Badge variant={crunchScore ? 'default' : 'outline'} className="gap-1">
-              {crunchScore ? <CheckCircle2 className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+            <Badge
+              variant={crunchScore ? 'default' : 'outline'}
+              className="gap-1.5 px-3 py-1"
+            >
+              {crunchScore ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
               Crunch Score
             </Badge>
-            <Badge variant={game.rulebook_parsed_at ? 'default' : 'outline'} className="gap-1">
-              {game.rulebook_parsed_at ? <CheckCircle2 className="h-3 w-3" /> : <Tags className="h-3 w-3" />}
-              Taxonomy Extracted
+            <Badge
+              variant={game.rulebook_parsed_at ? 'default' : 'outline'}
+              className="gap-1.5 px-3 py-1"
+            >
+              {game.rulebook_parsed_at ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <Tags className="h-3.5 w-3.5" />
+              )}
+              Taxonomy
             </Badge>
           </div>
 
           {/* Model info */}
-          <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-            <span className="font-medium">Using:</span> Claude Haiku (fast, ~$0.02)
-          </div>
+          <InfoPanel
+            icon={<Cpu className="h-4 w-4 text-muted-foreground" />}
+            title="Claude Haiku"
+          >
+            Fast analysis, ~$0.02 per rulebook
+          </InfoPanel>
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
@@ -235,36 +257,30 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
 
           {/* Reset message */}
           {resetMessage && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-              <RotateCcw className="h-5 w-5 shrink-0 mt-0.5" />
-              <div className="text-sm">{resetMessage}</div>
-            </div>
+            <StatusAlert variant="reset">
+              {resetMessage}
+            </StatusAlert>
           )}
 
           {/* Error messages */}
           {parseResult && !parseResult.success && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200">
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-              <div className="text-sm">{parseResult.error}</div>
-            </div>
+            <StatusAlert variant="error" title="Analysis failed">
+              {parseResult.error}
+            </StatusAlert>
           )}
 
           {/* Parse success info */}
           {parseResult?.success && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200">
-              <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-              <div className="text-sm space-y-1">
-                <p className="font-medium">Analysis complete!</p>
-                <p>
-                  {parseResult.pageCount} pages, {parseResult.wordCount?.toLocaleString()} words
-                </p>
+            <StatusAlert variant="success" title="Analysis complete!">
+              <div className="space-y-1">
+                <p>{parseResult.pageCount} pages, {parseResult.wordCount?.toLocaleString()} words</p>
                 {parseResult.taxonomy && (
                   <p>
                     Found {parseResult.taxonomy.themesCount} themes, {parseResult.taxonomy.experiencesCount} experiences
                   </p>
                 )}
               </div>
-            </div>
+            </StatusAlert>
           )}
         </CardContent>
       </Card>

@@ -1,10 +1,11 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Cog, Calculator } from 'lucide-react'
+import { Cog, Calculator, Info } from 'lucide-react'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { getCrunchLabel, getCrunchBadgeClasses } from '@/lib/rulebook/complexity-utils'
+import { cn } from '@/lib/utils'
 
 interface CrunchScoreDisplayProps {
   score: number
@@ -49,15 +50,23 @@ function ScoreBar({
   // 1-10 scale: percentage = (value - 1) / 9 * 100
   const percentage = ((value - 1) / 9) * 100
 
+  // Color based on value
+  const getBarColor = (val: number) => {
+    if (val <= 3) return 'bg-emerald-500'
+    if (val <= 5) return 'bg-blue-500'
+    if (val <= 7) return 'bg-amber-500'
+    return 'bg-red-500'
+  }
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{value.toFixed(1)}</span>
+        <span className="tabular-nums text-muted-foreground">{value.toFixed(1)}</span>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary transition-all"
+          className={cn('h-full rounded-full transition-all', getBarColor(value))}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -73,124 +82,103 @@ export function CrunchScoreDisplay({ score, breakdown, generatedAt, bggReference
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-            <Cog className="h-4 w-4 text-amber-500" />
-          </div>
-          <div>
-            <CardTitle className="text-lg">Crunch Score</CardTitle>
-            <CardDescription>
-              AI-generated complexity rating from rulebook
-            </CardDescription>
-          </div>
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b">
+        <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+          <Cog className="h-5 w-5 text-amber-600 dark:text-amber-400" />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Overall Score */}
+        <div className="flex-1">
+          <h3 className="font-semibold">Crunch Score</h3>
+          <p className="text-sm text-muted-foreground">AI complexity analysis</p>
+        </div>
+      </div>
+
+      <CardContent className="pt-5 space-y-5">
+        {/* Score Display */}
         <div className="flex items-center gap-4">
-          <div className="text-4xl font-bold text-primary">
-            {Number(score).toFixed(1)}
+          <div className="relative">
+            <div className="text-5xl font-bold tabular-nums text-primary">
+              {Number(score).toFixed(1)}
+            </div>
+            <div className="text-xs text-muted-foreground text-center mt-1">/ 10</div>
           </div>
-          <div>
-            <Badge className={getCrunchBadgeClasses(Number(score))}>
+          <div className="flex-1">
+            <Badge className={cn('text-sm px-3 py-1', getCrunchBadgeClasses(Number(score)))}>
               {getCrunchLabel(Number(score))}
             </Badge>
-            <p className="text-sm text-muted-foreground mt-1">
-              out of 10.0
-            </p>
+            {generatedAt && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Generated {new Date(generatedAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* BGG Calibration Breakdown - show when BGG reference was used */}
+        {/* Calibration Info */}
         {aiScore !== null && bggReference != null && bggNormalized !== null && (
-          <div className="p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
               <Calculator className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Score Calculation</span>
+              Score Calculation
             </div>
-            <div className="font-mono text-sm space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">AI Analysis:</span>
-                <span className="font-semibold">{aiScore.toFixed(1)}</span>
-                <span className="text-muted-foreground">× 85%</span>
-                <span>=</span>
-                <span>{(aiScore * 0.85).toFixed(2)}</span>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">AI Analysis</span>
+                <span className="font-mono">{aiScore.toFixed(1)} × 85%</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">BGG Weight:</span>
-                <span className="font-semibold">{bggReference.toFixed(1)}</span>
-                <span className="text-muted-foreground">→ {bggNormalized.toFixed(1)}</span>
-                <span className="text-muted-foreground">× 15%</span>
-                <span>=</span>
-                <span>{(bggNormalized * 0.15).toFixed(2)}</span>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t mt-1">
-                <span className="text-muted-foreground">Final Score:</span>
-                <span className="font-bold text-primary">{Number(score).toFixed(1)}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">BGG Weight</span>
+                <span className="font-mono">{bggNormalized.toFixed(1)} × 15%</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Show pure AI score notice if no BGG reference */}
+        {/* Pure AI notice */}
         {aiScore !== null && bggReference == null && (
-          <div className="p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2">
-              <Calculator className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                Pure AI analysis (no BGG calibration available)
-              </span>
-            </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border text-sm text-muted-foreground">
+            <Info className="h-4 w-4 shrink-0" />
+            Pure AI analysis (no BGG calibration)
           </div>
         )}
 
         {/* Breakdown */}
         {breakdown && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-medium">Complexity Breakdown</h4>
-            <div className="grid gap-3">
+          <div className="space-y-4 pt-4 border-t">
+            <h4 className="text-sm font-semibold">Complexity Dimensions</h4>
+            <div className="grid gap-4">
               <ScoreBar
                 label="Rules Density"
                 value={breakdown.rulesDensity}
-                description="Amount of rules to learn"
+                description="Volume of rules to learn"
               />
               <ScoreBar
                 label="Decision Space"
                 value={breakdown.decisionSpace}
-                description="Choices per turn"
+                description="Choices available per turn"
               />
               <ScoreBar
                 label="Learning Curve"
                 value={breakdown.learningCurve}
-                description="Time to understand"
+                description="Time to understand basics"
               />
               <ScoreBar
                 label="Strategic Depth"
                 value={breakdown.strategicDepth}
-                description="Mastery difficulty"
+                description="Difficulty to master"
               />
               <ScoreBar
                 label="Component Complexity"
                 value={breakdown.componentComplexity}
-                description="Game state tracking"
+                description="Game state tracking overhead"
               />
             </div>
 
             {breakdown.reasoning && (
-              <div className="pt-3">
-                <p className="text-sm text-muted-foreground italic">
-                  {breakdown.reasoning}
-                </p>
-              </div>
+              <p className="text-sm text-muted-foreground italic pt-2 border-t">
+                {breakdown.reasoning}
+              </p>
             )}
-          </div>
-        )}
-
-        {/* Footer info */}
-        {generatedAt && (
-          <div className="text-xs text-muted-foreground pt-2 border-t">
-            Generated {new Date(generatedAt).toLocaleDateString()}
           </div>
         )}
       </CardContent>

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useCallback, type ReactNode } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
+import { ChevronDown, Edit2, Eye, CheckCircle2, Circle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ContentSectionProps {
   title: string
@@ -40,38 +40,74 @@ export function ContentSection({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={toggleExpanded}>
-      <Card>
-        <CardHeader className="pb-3">
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80">
-              <div className={`h-8 w-8 rounded-lg ${iconBgClass} flex items-center justify-center`}>
-                {icon}
+      <Card className={cn(
+        'transition-shadow',
+        isExpanded && 'shadow-sm'
+      )}>
+        {/* Header */}
+        <CollapsibleTrigger asChild>
+          <div className={cn(
+            'flex items-center gap-3 p-4 cursor-pointer transition-colors',
+            'hover:bg-muted/30',
+            isExpanded && 'border-b'
+          )}>
+            {/* Icon */}
+            <div className={cn(
+              'h-10 w-10 rounded-xl flex items-center justify-center ring-1 ring-inset ring-black/5',
+              iconBgClass
+            )}>
+              {icon}
+            </div>
+
+            {/* Title + Status */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">{title}</h3>
+                {hasContent ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Ready
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Circle className="h-3.5 w-3.5" />
+                    Empty
+                  </span>
+                )}
               </div>
-              <div className="flex-1">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {title}
-                  {hasContent && <Badge variant="outline" className="text-xs">Has content</Badge>}
-                </CardTitle>
-              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant={isEditing ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={toggleEditing}
-                className="gap-1"
+                className="gap-1.5 h-8"
               >
-                <Edit2 className="h-3 w-3" />
-                {isEditing ? 'View' : 'Edit'}
+                {isEditing ? (
+                  <>
+                    <Eye className="h-3.5 w-3.5" />
+                    Preview
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Edit
+                  </>
+                )}
               </Button>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
+              <ChevronDown className={cn(
+                'h-4 w-4 text-muted-foreground transition-transform',
+                isExpanded && 'rotate-180'
+              )} />
             </div>
-          </CollapsibleTrigger>
-        </CardHeader>
+          </div>
+        </CollapsibleTrigger>
+
+        {/* Content */}
         <CollapsibleContent>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-4 pb-5">
             {isEditing ? editContent : viewContent}
           </CardContent>
         </CollapsibleContent>

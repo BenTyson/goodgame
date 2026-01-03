@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Upload, X, Star, Loader2, ImageIcon } from 'lucide-react'
+import { Upload, X, Star, Loader2, ImageIcon, CloudUpload, AlertCircle } from 'lucide-react'
 import type { Database } from '@/types/supabase'
 import type { GameImage } from '@/types/database'
+import { cn } from '@/lib/utils'
 
 import { ImageCropper } from './ImageCropper'
 import { readFileAsDataURL, type ImageType } from '@/lib/utils/image-crop'
@@ -209,53 +210,75 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   const secondaryImages = images.filter(img => !img.is_primary)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Error message */}
       {error && (
-        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
       {/* Image Type Selector */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Image Type</Label>
+      <div className="space-y-3">
+        <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+          Image Type
+        </Label>
         <RadioGroup
           value={selectedImageType}
           onValueChange={(value) => setSelectedImageType(value as ImageType)}
-          className="flex gap-6"
+          className="grid grid-cols-3 gap-3"
         >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="cover" id="type-cover" />
-            <Label htmlFor="type-cover" className="cursor-pointer text-sm">
-              Cover (4:3)
-              <span className="block text-xs text-muted-foreground">Game cards & thumbnails</span>
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="hero" id="type-hero" />
-            <Label htmlFor="type-hero" className="cursor-pointer text-sm">
-              Hero (16:9)
-              <span className="block text-xs text-muted-foreground">Banner images</span>
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="gallery" id="type-gallery" />
-            <Label htmlFor="type-gallery" className="cursor-pointer text-sm">
-              Gallery
-              <span className="block text-xs text-muted-foreground">Any aspect ratio</span>
-            </Label>
-          </div>
+          <label
+            htmlFor="type-cover"
+            className={cn(
+              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
+              selectedImageType === 'cover'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-border hover:border-primary/50'
+            )}
+          >
+            <RadioGroupItem value="cover" id="type-cover" className="sr-only" />
+            <span className="text-sm font-medium">Cover</span>
+            <span className="text-xs text-muted-foreground text-center">4:3 ratio</span>
+          </label>
+          <label
+            htmlFor="type-hero"
+            className={cn(
+              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
+              selectedImageType === 'hero'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-border hover:border-primary/50'
+            )}
+          >
+            <RadioGroupItem value="hero" id="type-hero" className="sr-only" />
+            <span className="text-sm font-medium">Hero</span>
+            <span className="text-xs text-muted-foreground text-center">16:9 ratio</span>
+          </label>
+          <label
+            htmlFor="type-gallery"
+            className={cn(
+              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
+              selectedImageType === 'gallery'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-border hover:border-primary/50'
+            )}
+          >
+            <RadioGroupItem value="gallery" id="type-gallery" className="sr-only" />
+            <span className="text-sm font-medium">Gallery</span>
+            <span className="text-xs text-muted-foreground text-center">Free crop</span>
+          </label>
         </RadioGroup>
       </div>
 
       {/* Upload Zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+        className={cn(
+          'relative border-2 border-dashed rounded-xl p-8 transition-all',
           dragOver
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-        }`}
+            ? 'border-primary bg-primary/5 scale-[1.02]'
+            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'
+        )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -269,69 +292,81 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           disabled={uploading}
         />
         <label htmlFor="image-upload" className="cursor-pointer">
-          <div className="flex flex-col items-center gap-2">
-            {uploading ? (
-              <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
-            ) : (
-              <Upload className="h-10 w-10 text-muted-foreground" />
-            )}
-            <p className="text-sm font-medium">
-              {uploading ? 'Uploading...' : 'Drop an image here or click to upload'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              JPG, PNG, WebP, or GIF up to 5MB
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <div className={cn(
+              'h-14 w-14 rounded-2xl flex items-center justify-center transition-colors',
+              dragOver ? 'bg-primary/20' : 'bg-muted'
+            )}>
+              {uploading ? (
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              ) : (
+                <CloudUpload className={cn(
+                  'h-6 w-6 transition-colors',
+                  dragOver ? 'text-primary' : 'text-muted-foreground'
+                )} />
+              )}
+            </div>
+            <div className="text-center">
+              <p className="font-medium">
+                {uploading ? 'Uploading...' : 'Drop an image or click to upload'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                JPG, PNG, WebP, or GIF up to 5MB
+              </p>
+            </div>
           </div>
         </label>
       </div>
 
       {/* Primary Image */}
       {primaryImage && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-            Primary Image
-          </h3>
-          <Card className="relative overflow-hidden">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+            <span className="text-sm font-medium">Primary Image</span>
+          </div>
+          <Card className="relative overflow-hidden group">
             <img
               src={primaryImage.url}
               alt="Primary"
               className="w-full h-64 object-cover"
             />
-            <div className="absolute top-2 right-2 flex gap-1">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute top-3 right-3">
               <Button
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => deleteImage(primaryImage)}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+            <div className="absolute bottom-3 left-3 right-3">
               <p className="text-white text-sm font-medium">
-                This image appears on game cards and as the hero image
+                Appears on game cards and as hero image
               </p>
             </div>
           </Card>
         </div>
       )}
 
-      {/* Secondary Images */}
+      {/* Gallery Images */}
       {secondaryImages.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <ImageIcon className="h-4 w-4" />
-            Gallery Images ({secondaryImages.length})
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Gallery</span>
+            <span className="text-xs text-muted-foreground">({secondaryImages.length})</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {secondaryImages.map((image) => (
-              <Card key={image.id} className="relative overflow-hidden group">
+              <Card key={image.id} className="relative overflow-hidden group aspect-[4/3]">
                 <img
                   src={image.url}
                   alt="Gallery"
-                  className="w-full h-32 object-cover"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button
@@ -361,10 +396,11 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         </div>
       )}
 
+      {/* Empty state */}
       {images.length === 0 && !uploading && (
-        <div className="text-center py-8 text-muted-foreground">
-          <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No images uploaded yet</p>
+        <div className="text-center py-6 text-muted-foreground">
+          <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-40" />
+          <p className="font-medium">No images yet</p>
           <p className="text-sm">Upload an image to get started</p>
         </div>
       )}

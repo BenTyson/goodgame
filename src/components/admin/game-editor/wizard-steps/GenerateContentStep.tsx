@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,6 @@ import {
 import {
   PenTool,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   BookOpen,
   ListChecks,
@@ -23,9 +22,14 @@ import {
   Sparkles,
   RotateCcw,
   ChevronDown,
+  Cpu,
+  Zap,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import { WizardStepHeader } from './WizardStepHeader'
+import { StatusAlert } from './StatusAlert'
+import { InfoPanel } from './InfoPanel'
+import { cn } from '@/lib/utils'
 
 interface GenerateContentStepProps {
   game: Game
@@ -129,65 +133,83 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
       <CardContent className="space-y-5 pt-0">
         {/* No parsed text warning */}
         {!hasParsedText && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">Rulebook not parsed yet</p>
-              <p>Go back to Step 2 to parse the rulebook first, or skip this step.</p>
-            </div>
-          </div>
+          <StatusAlert variant="warning" title="Rulebook not parsed yet">
+            Go back to Step 2 to parse the rulebook first, or skip this step.
+          </StatusAlert>
         )}
 
         {/* Status badges */}
         <div className="flex flex-wrap gap-2">
-          <Badge variant={hasRules ? 'default' : 'outline'} className="gap-1">
-            {hasRules ? <CheckCircle2 className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+          <Badge
+            variant={hasRules ? 'default' : 'outline'}
+            className="gap-1.5 px-3 py-1"
+          >
+            {hasRules ? <CheckCircle2 className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
             Rules Summary
           </Badge>
-          <Badge variant={hasSetup ? 'default' : 'outline'} className="gap-1">
-            {hasSetup ? <CheckCircle2 className="h-3 w-3" /> : <ListChecks className="h-3 w-3" />}
+          <Badge
+            variant={hasSetup ? 'default' : 'outline'}
+            className="gap-1.5 px-3 py-1"
+          >
+            {hasSetup ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ListChecks className="h-3.5 w-3.5" />}
             Setup Guide
           </Badge>
-          <Badge variant={hasReference ? 'default' : 'outline'} className="gap-1">
-            {hasReference ? <CheckCircle2 className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+          <Badge
+            variant={hasReference ? 'default' : 'outline'}
+            className="gap-1.5 px-3 py-1"
+          >
+            {hasReference ? <CheckCircle2 className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
             Quick Reference
           </Badge>
         </div>
 
         {/* Model Selection */}
         {!hasAllContent && hasParsedText && (
-          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-            <Label className="text-sm font-medium">AI Model:</Label>
-            <div className="flex gap-2">
-              <Button
+          <div className="space-y-3">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+              AI Model
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
                 type="button"
-                size="sm"
-                variant={contentModel === 'sonnet' ? 'default' : 'outline'}
                 onClick={() => setContentModel('sonnet')}
-                className="gap-1.5"
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
+                  contentModel === 'sonnet'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                Sonnet
-                <span className="text-xs opacity-70">(Recommended)</span>
-              </Button>
-              <Button
+                <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-violet-500" />
+                </div>
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    Sonnet
+                    <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">~$0.23, highest quality</div>
+                </div>
+              </button>
+              <button
                 type="button"
-                size="sm"
-                variant={contentModel === 'haiku' ? 'default' : 'outline'}
                 onClick={() => setContentModel('haiku')}
-                className="gap-1.5"
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
+                  contentModel === 'haiku'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
               >
-                Haiku
-                <span className="text-xs opacity-70">(Faster)</span>
-              </Button>
+                <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-cyan-500" />
+                </div>
+                <div>
+                  <div className="font-medium">Haiku</div>
+                  <div className="text-xs text-muted-foreground">~$0.02, faster</div>
+                </div>
+              </button>
             </div>
-          </div>
-        )}
-
-        {/* Cost estimate */}
-        {!hasAllContent && hasParsedText && (
-          <div className="text-sm text-muted-foreground">
-            Estimated cost: <span className="font-medium">{contentModel === 'sonnet' ? '~$0.23' : '~$0.02'}</span>
           </div>
         )}
 
@@ -240,40 +262,30 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
 
         {/* Reset message */}
         {resetMessage && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-            <RotateCcw className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="text-sm">{resetMessage}</div>
-          </div>
+          <StatusAlert variant="reset">
+            {resetMessage}
+          </StatusAlert>
         )}
 
         {/* Error messages */}
         {contentResult && !contentResult.success && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200">
-            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="text-sm">{contentResult.error}</div>
-          </div>
+          <StatusAlert variant="error" title="Generation failed">
+            {contentResult.error}
+          </StatusAlert>
         )}
 
         {/* Success message */}
         {contentResult?.success && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200">
-            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">Content generated successfully!</p>
-              <p>Rules summary, setup guide, and quick reference are ready.</p>
-            </div>
-          </div>
+          <StatusAlert variant="success" title="Content generated successfully!">
+            Rules summary, setup guide, and quick reference are ready.
+          </StatusAlert>
         )}
 
         {/* Complete state */}
         {hasAllContent && !contentResult && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200">
-            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">All content generated</p>
-              <p>You can review the content in the next steps.</p>
-            </div>
-          </div>
+          <StatusAlert variant="success" title="All content generated">
+            You can review the content in the next steps.
+          </StatusAlert>
         )}
       </CardContent>
     </Card>

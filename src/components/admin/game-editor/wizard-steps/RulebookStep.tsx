@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import {
   BookOpen,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   ExternalLink,
   Search,
@@ -20,6 +19,8 @@ import {
 import type { Game } from '@/types/database'
 import type { Publisher } from '@/lib/admin/wizard'
 import { WizardStepHeader } from './WizardStepHeader'
+import { StatusAlert } from './StatusAlert'
+import { InfoPanel } from './InfoPanel'
 
 interface RulebookStepProps {
   game: Game & { publishers_list?: Publisher[] }
@@ -142,7 +143,7 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
                       href={publisher.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
                     >
                       {publisher.name}
                       <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
@@ -150,14 +151,14 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
                   ) : (
                     <span
                       key={publisher.id}
-                      className="inline-flex items-center px-3 py-1.5 rounded-md bg-muted text-sm font-medium"
+                      className="inline-flex items-center px-3 py-1.5 rounded-lg bg-muted text-sm font-medium"
                     >
                       {publisher.name}
                     </span>
                   )
                 )
               ) : (
-                <span className="inline-flex items-center px-3 py-1.5 rounded-md bg-muted text-sm font-medium">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-muted text-sm font-medium">
                   {game.publisher}
                 </span>
               )}
@@ -167,14 +168,12 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
 
         {/* Wikidata Status */}
         {(game.wikidata_id || game.official_website || game.wikidata_image_url) && (
-          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                Wikidata Enrichment Available
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2 text-sm">
+          <InfoPanel
+            variant="accent"
+            icon={<Globe className="h-4 w-4 text-blue-500" />}
+            title="Wikidata Enrichment Available"
+          >
+            <div className="flex flex-wrap gap-2 mt-2">
               {game.rulebook_source === 'wikidata' && game.rulebook_url && (
                 <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-300">
                   <BookOpen className="h-3 w-3 mr-1" />
@@ -186,7 +185,7 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
                   href={game.official_website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 transition-colors text-xs font-medium"
                 >
                   <Globe className="h-3 w-3" />
                   Official Website
@@ -200,7 +199,7 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
                 </Badge>
               )}
             </div>
-          </div>
+          </InfoPanel>
         )}
 
         {/* URL Input */}
@@ -259,58 +258,45 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
 
         {/* Validation Result */}
         {validationResult && (
-          <div
-            className={`flex items-start gap-3 p-4 rounded-lg ${
-              validationResult.valid
-                ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200'
-                : 'bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200'
-            }`}
-          >
-            {validationResult.valid ? (
-              <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-            )}
-            <div className="text-sm space-y-1">
-              {validationResult.valid ? (
-                <>
-                  <p className="font-medium">Valid PDF found!</p>
-                  {validationResult.contentLength && (
-                    <p className="text-green-600 dark:text-green-300">
-                      Size: {(validationResult.contentLength / 1024 / 1024).toFixed(1)} MB
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="font-medium">{validationResult.error}</p>
-                  {validationResult.searchQuery && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      asChild
-                      className="h-auto p-0 text-red-600 dark:text-red-300"
-                    >
-                      <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(validationResult.searchQuery)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Search className="h-3 w-3 mr-1" />
-                        Search manually
-                      </a>
-                    </Button>
-                  )}
-                </>
+          validationResult.valid ? (
+            <StatusAlert variant="success" title="Valid PDF found!">
+              {validationResult.contentLength && (
+                <span>Size: {(validationResult.contentLength / 1024 / 1024).toFixed(1)} MB</span>
               )}
-            </div>
-          </div>
+            </StatusAlert>
+          ) : (
+            <StatusAlert
+              variant="error"
+              title={validationResult.error}
+              action={
+                validationResult.searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="gap-1 h-8"
+                  >
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(validationResult.searchQuery)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      Search
+                    </a>
+                  </Button>
+                )
+              }
+            >
+              Try searching manually or enter a different URL.
+            </StatusAlert>
+          )
         )}
 
         {/* Current rulebook status */}
-        {game.rulebook_url && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+        {game.rulebook_url && !validationResult && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-muted/30">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             <span>Rulebook URL saved</span>
             {game.rulebook_source && (
               <Badge variant="outline" className="text-xs">
