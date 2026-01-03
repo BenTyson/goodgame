@@ -1,8 +1,54 @@
 # Current Status
 
-> Last Updated: 2026-01-02 (Admin Wizard & Wikidata Integration)
+> Last Updated: 2026-01-02 (Wizard Modular Refactor)
 
-## Current Phase: 41 - Admin Wizard Split & Wikidata Data Flow (COMPLETE)
+## Current Phase: 42 - Wizard Modular Refactor + Performance (COMPLETE)
+
+Major refactor of GameSetupWizard focusing on stability, performance, and maintainability.
+
+### Bug Fixes
+
+- **Step-skipping bug** - Fixed unstable callback references causing wizard to jump from step 5 to step 8
+- **Race conditions** - Replaced `window.location.reload()` with `router.refresh()` in ParseAnalyzeStep and GenerateContentStep
+
+### New Module: `src/lib/admin/wizard/`
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Barrel exports |
+| `types.ts` | Shared types: `Publisher`, `GameWithRelations`, `SelectedTaxonomyItem`, `WizardStepProps` |
+| `content-utils.ts` | Shared utilities: `formatEndGame`, `parseGameContent`, `hasGeneratedContent` |
+| `WizardContext.tsx` | Context provider (infrastructure for future migration) |
+
+### New Module: `src/components/.../review-content/`
+
+| File | Purpose |
+|------|---------|
+| `ContentSection.tsx` | Reusable collapsible section with view/edit toggle |
+| `RulesContentSection.tsx` | Rules content display/edit |
+| `SetupContentSection.tsx` | Setup content display/edit |
+| `ReferenceContentSection.tsx` | Reference content display/edit |
+
+### Performance Optimizations
+
+| Component | Changes |
+|-----------|---------|
+| `useWizardProgress.ts` | Stable callbacks via `useRef` + functional state updates |
+| `TaxonomySelector.tsx` | `useMemo` for sorted items, suggestion maps; `useCallback` for handlers |
+| All wizard steps | `useCallback` wrapped handlers for stable references |
+| `ReviewContentStep.tsx` | Split into modular components (382 → 115 lines, 70% reduction) |
+
+### Files Modified (21 total)
+
+- `src/hooks/admin/useWizardProgress.ts` - Stable callbacks fix
+- `src/components/admin/game-editor/GameSetupWizard.tsx` - useCallback handlers
+- `src/components/admin/game-editor/TaxonomySelector.tsx` - Full memoization
+- All 8 wizard step components - useCallback optimization
+- Content display components - Using shared utilities
+
+---
+
+## Phase 41 - Admin Wizard Split & Wikidata Data Flow (COMPLETE)
 
 Split the wizard's Parse & Generate step into two focused steps, added Wikidata data visibility throughout the admin UI, and connected Wikidata fields to the public game pages.
 
@@ -192,269 +238,20 @@ All legacy names supported via aliases:
 
 ---
 
-## Phase 38 - AI-Powered Taxonomy Wizard (COMPLETE)
+## Recent Phases (35-38) - Admin Wizard & AI Taxonomy
 
-Added AI-powered theme and player experience extraction to the game setup wizard. The AI analyzes parsed rulebook text and suggests taxonomy assignments for admin review.
+> Full details: [PHASES-35-38.md](../archive/phases/PHASES-35-38.md)
 
-### New Migration
-
-| Migration | Purpose |
-|-----------|---------|
-| `00052_taxonomy_suggestions.sql` | Stores AI-generated taxonomy suggestions pending admin review |
-
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `src/app/api/admin/games/taxonomy/route.ts` | API for GET/POST/PATCH taxonomy assignments |
-| `src/app/api/admin/games/[id]/reset-content/route.ts` | API to reset parsed content for testing |
-| `src/components/admin/game-editor/TaxonomySelector.tsx` | Multi-select UI with AI suggestion badges |
-| `src/components/admin/game-editor/wizard-steps/TaxonomyStep.tsx` | New wizard step (Step 3) |
-
-### Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/types/database.ts` | Added `TaxonomySuggestion` types, `TaxonomyExtractionResult`, updated `ReferenceContent.endGame` to union type |
-| `src/lib/rulebook/prompts.ts` | Added `getTaxonomyExtractionPrompt()` for theme/experience extraction |
-| `src/lib/ai/claude.ts` | Added `repairJSON()` function for AI response sanitization |
-| `src/app/api/admin/rulebook/parse/route.ts` | Now extracts taxonomy during parse phase |
-| `src/components/admin/game-editor/GameSetupWizard.tsx` | 7-step wizard with Taxonomy as step 3 |
-| `src/components/admin/game-editor/wizard-steps/index.ts` | Exports `TaxonomyStep` |
-| `src/components/admin/game-editor/wizard-steps/ParseGenerateStep.tsx` | Added Reset dropdown menu |
-| `src/components/admin/game-editor/wizard-steps/ReviewContentStep.tsx` | Added `formatEndGame()` helper |
-| `src/components/admin/game-editor/ContentTab.tsx` | Added `formatEndGame()` helper |
-| `src/components/admin/game-editor/RulebookContentTab.tsx` | Added `formatEndGame()` helper |
-
-### Wizard Flow (as of Phase 38, now 8 steps)
-
-| Step | Name | Description |
-|------|------|-------------|
-| 1 | Rulebook | Find rulebook URL |
-| 2 | Parse | Generate Crunch Score + taxonomy extraction |
-| 3 | **Taxonomy** | **NEW** - Review AI suggestions, select themes/experiences |
-| 4 | Content | Generate rules/setup/reference guides |
-| 5 | Images | Upload artwork |
-| 6 | Relations | Game connections |
-| 7 | Review | Check content |
-| 8 | Publish | Go live |
-
-*Note: Step 2 was split into "Analyze" (step 2) and "Content" (step 4) in Phase 41.*
-
-### Key Features
-
-**AI Taxonomy Extraction:**
-- Analyzes parsed rulebook text to suggest themes and player experiences
-- Returns confidence scores (0-100%) and reasoning for each suggestion
-- Suggests new taxonomies when existing ones don't fit
-
-**Admin Review UI:**
-- AI suggestions pre-selected with confidence badges
-- Two-section layout: Themes + Player Experiences
-- Primary selection toggle for themes
-- Full list of available options for manual additions
-
-**Legal Compliance:**
-- Categories & Mechanics remain publisher-only (no AI suggestions)
-- Themes & Player Experiences generated from original rulebook analysis
-- No BGG data used for taxonomy assignment
-
-### Technical Improvements
-
-**JSON Repair Function (`repairJSON` in `src/lib/ai/claude.ts`):**
-- Fixes smart/curly quotes → straight quotes
-- Fixes quotes used as apostrophes (e.g., `Martin"s` → `Martin's`)
-- Removes trailing commas before `}` or `]`
-- Fixes unquoted property names
-- Removes `//` comments
-- Extracts JSON from extra text
-
-**Reset Content API (`POST /api/admin/games/[id]/reset-content`):**
-- Options: `resetRulebook`, `resetCrunch` (or `resetBNCS`), `resetContent`, `resetTaxonomy`, `resetAll`
-- Clears: Crunch Score, rules/setup/reference content, taxonomy suggestions, parse logs
-- UI: Reset dropdown in ParseGenerateStep
-
-**ReferenceContent.endGame Type Fix:**
-- Updated from `string` to `string | { triggers: string[]; finalRound?: string; winner: string; tiebreakers?: string[] }`
-- Added `formatEndGame()` helper to render both formats
-- Fixes React "Objects are not valid as a React child" error
-
-**Claude Model ID:**
-- Working model: `claude-3-5-haiku-20241022`
-- Used for all AI calls (data extraction, BNCS, taxonomy, content generation)
+| Phase | Summary |
+|-------|---------|
+| **38** | AI-Powered Taxonomy Wizard - Theme/experience extraction from rulebooks |
+| **37** | Game Relations Pipeline - Sync scripts, family auto-detection |
+| **36** | Admin Image Cropper - Preset aspect ratios (4:3, 16:9) |
+| **35** | Game Editor UX Overhaul - Setup Wizard, tab consolidation |
 
 ---
 
-## Phase 37 - Game Relations Data Pipeline (COMPLETE)
-
-Enhanced game relation management with retroactive sync, family auto-detection, and admin UI improvements.
-
-### New Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `scripts/sync-game-relations.ts` | Sync relations from `bgg_raw_data` to `game_relations` table |
-| `scripts/backfill-bgg-images.ts` | Backfill `reference_images` for games missing thumbnails |
-
-### Modified Scripts
-
-| Script | Changes |
-|--------|---------|
-| `scripts/process-import-queue.ts` | Added family auto-detection from game names, stores `reference_images` in `bgg_raw_data` |
-| `scripts/import-missing-relations.ts` | Added `--skip-promos` flag to filter promotional items |
-
-### Key Features
-
-**Relation Sync Script (`sync-game-relations.ts`):**
-```bash
-npx tsx scripts/sync-game-relations.ts --dry-run          # Preview changes
-npx tsx scripts/sync-game-relations.ts --family=CATAN     # Sync specific family
-npx tsx scripts/sync-game-relations.ts --type=expansions  # Only expansion relations
-npx tsx scripts/sync-game-relations.ts --limit=10         # Limit games processed
-```
-
-**Family Auto-Detection:**
-- Games with colons create families automatically (e.g., "CATAN: Seafarers" → CATAN family)
-- Also detects parentheses and en-dash patterns
-- Minimum 3 characters for family name
-
-**Relation Direction:**
-- Relations point FROM child TO parent (e.g., "Seafarers expansion_of CATAN")
-- Sync script processes both `expandsGame`/`implementsGame` (direct) and `expansions`/`implementations` arrays (reverse)
-
-### Admin Families Page Redesign
-
-| Change | Description |
-|--------|-------------|
-| Thumbnail images | Shows base game thumbnail (oldest by year or explicit `base_game_id`) |
-| Relation counts | Displays "3 Expansions", "2 Reimplementations", etc. |
-| Filter buttons | Filter by relation type (Expansions, Sequels, Reimplementations, Spin-offs) |
-| Compact cards | Removed icon, moved badges to image overlay, `padding="none"` |
-
-### Files Modified
-
-| File | Changes |
-|------|---------|
-| `src/app/admin/(dashboard)/families/page.tsx` | Complete redesign with thumbnails, filters, relation counts |
-
-### Database Notes
-
-- `game_relations` stores explicit parent-child relationships
-- `bgg_raw_data.expansions[]` and `bgg_raw_data.implementations[]` contain BGG references
-- Sync script creates `game_relations` entries when both games exist in DB
-- Fixed PostgreSQL PGRST201 error by specifying FK: `games!games_family_id_fkey`
-
----
-
-## Phase 36 - Admin Image Cropper (COMPLETE)
-
-Added image cropping functionality to the admin game image uploader with preset aspect ratios.
-
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `src/lib/utils/image-crop.ts` | Canvas-based crop utility with aspect ratio presets |
-| `src/components/admin/ImageCropper.tsx` | Modal dialog with react-easy-crop integration |
-
-### Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/components/admin/ImageUpload.tsx` | Added image type selector, crop flow, cropper modal |
-| `src/app/api/admin/upload/route.ts` | Accepts `imageType` param, syncs to games table by type |
-| `src/components/admin/index.ts` | Added ImageCropper export |
-
-### Image Type Options
-
-| Type | Default Ratio | Syncs To |
-|------|---------------|----------|
-| **Cover** | 4:3 | `box_image_url`, `thumbnail_url` |
-| **Hero** | 16:9 | `hero_image_url` |
-| **Gallery** | 4:3 | `game_images` table only |
-
-### Upload Flow
-
-1. Select image type (Cover/Hero/Gallery)
-2. Select or drop an image file
-3. Cropper modal opens with default aspect ratio for type
-4. User can change ratio (1:1, 4:3, 16:9, 3:2)
-5. Adjust zoom and position
-6. Apply crop → uploads cropped image to Supabase
-
-### Dependencies Added
-
-- `react-easy-crop` - Lightweight image cropping library
-
----
-
-## Phase 35 - Admin Game Editor UX Overhaul (COMPLETE)
-
-Redesigned the admin game editor with a Setup Wizard for new games and consolidated tabs for power users.
-
-### Setup Wizard (2025-12-31)
-
-**New Hook:**
-| File | Purpose |
-|------|---------|
-| `src/hooks/admin/useWizardProgress.ts` | localStorage-based wizard state with step tracking |
-
-**New Components:**
-| File | Purpose |
-|------|---------|
-| `GameSetupWizard.tsx` | Main wizard orchestrator |
-| `WizardStepIndicator.tsx` | Visual step indicator with checkmarks |
-| `wizard-steps/RulebookStep.tsx` | Step 1: Find/validate rulebook URL |
-| `wizard-steps/ParseGenerateStep.tsx` | Step 2: Parse PDF + generate BNCS + content |
-| `wizard-steps/ImagesStep.tsx` | Step 3: Upload primary and gallery images |
-| `wizard-steps/ReviewContentStep.tsx` | Step 4: Review generated content |
-| `wizard-steps/PublishStep.tsx` | Step 5: Final review + publish |
-| `wizard-steps/index.ts` | Barrel exports |
-
-### Tab Consolidation (2025-12-31)
-
-**Before (6 tabs):** Details, Publishing, Rulebook, Content, Images, Relations
-
-**After (4 tabs):** Details, Rulebook & Content, Images, Relations
-
-**Created:**
-| File | Purpose |
-|------|---------|
-| `RulebookContentTab.tsx` | Merged Rulebook + Content tabs |
-
-**Modified:**
-| File | Changes |
-|------|---------|
-| `DetailsTab.tsx` | Added Visibility Settings, Collection Tags, Content Status |
-| `GameEditor.tsx` | Added wizard/advanced mode toggle |
-| `src/components/admin/game-editor/index.ts` | Updated exports |
-| `src/hooks/admin/index.ts` | Added useWizardProgress export |
-
-**Deleted:**
-| File | Reason |
-|------|--------|
-| `PublishingTab.tsx` | Merged into DetailsTab |
-
-### Wizard Flow
-
-| Step | Complete When |
-|------|---------------|
-| 1. Rulebook | URL validated OR skipped |
-| 2. Parse & Generate | BNCS score exists AND content generated |
-| 3. Images | At least 1 image uploaded OR skipped |
-| 4. Review | User clicks "Looks Good" |
-| 5. Publish | User clicks "Publish Game" |
-
-### UX Behavior
-
-- **Unpublished games**: Wizard auto-starts, can exit to tabs via "Exit to Advanced"
-- **Published games**: Always show tab-based Advanced Editor
-- **Wizard header**: Progress bar, step indicator, exit button
-- **Progress persistence**: localStorage keyed by `wizard-progress-{gameId}`
-
----
-
-## Recent Phases (29-34) - Summaries
+## Earlier Phases (29-34) - Summaries
 
 > Full details: [PHASES-29-34.md](../archive/phases/PHASES-29-34.md)
 

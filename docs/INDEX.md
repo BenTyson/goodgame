@@ -32,7 +32,8 @@ Historical documentation for reference:
 
 | Document | Contents |
 |----------|----------|
-| [PHASES-29-34](archive/phases/PHASES-29-34.md) | Recent phases (admin, rulebook, data sourcing) |
+| [PHASES-35-38](archive/phases/PHASES-35-38.md) | Admin wizard, AI taxonomy, image cropper |
+| [PHASES-29-34](archive/phases/PHASES-29-34.md) | Admin cleanup, rulebook pipeline, data sourcing |
 | [PHASES-21-28](archive/phases/PHASES-21-28.md) | Marketplace build (8 phases) |
 | [AGENT-WORKFLOW](archive/deprecated/AGENT-WORKFLOW.md) | Git workflow template (superseded by DEPLOYMENT.md) |
 
