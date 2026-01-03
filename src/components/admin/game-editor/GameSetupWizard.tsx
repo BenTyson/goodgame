@@ -129,6 +129,12 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
     })
   }
 
+  // Mark step complete (enables Next button) - does NOT navigate
+  const handleMarkComplete = useCallback(() => {
+    completeStep()
+  }, [completeStep])
+
+  // Complete step AND navigate to next - used by Next button
   const handleStepComplete = useCallback(() => {
     completeStep()
     nextStep()
@@ -146,7 +152,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
           <RulebookStep
             game={game}
             updateField={updateField}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -154,7 +160,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         return (
           <ParseAnalyzeStep
             game={game}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -170,7 +176,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         return (
           <GenerateContentStep
             game={game}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -183,7 +189,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
               setImages(newImages)
               markUnsaved()
             }}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -191,7 +197,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
         return (
           <RelationsStep
             game={game}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
             onSkip={handleSkip}
           />
         )
@@ -200,7 +206,7 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
           <ReviewContentStep
             game={game}
             updateField={updateField}
-            onComplete={handleStepComplete}
+            onComplete={handleMarkComplete}
           />
         )
       case 8:
