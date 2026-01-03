@@ -25,6 +25,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface GenerateContentStepProps {
   game: Game
@@ -118,20 +119,14 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <PenTool className="h-5 w-5 text-purple-500" />
-          </div>
-          <div>
-            <CardTitle>Generate Content</CardTitle>
-            <CardDescription>
-              Create rules summary, setup guide, and quick reference from the parsed rulebook.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <WizardStepHeader
+        stepNumber={4}
+        title="Generate Content"
+        description="Create rules summary, setup guide, and quick reference from the parsed rulebook."
+        icon={<PenTool className="h-5 w-5" />}
+        isComplete={!!hasAllContent}
+      />
+      <CardContent className="space-y-5 pt-0">
         {/* No parsed text warning */}
         {!hasParsedText && (
           <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">

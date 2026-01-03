@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
 import { Link2 } from 'lucide-react'
 import type { Game } from '@/types/database'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface RelationsStepProps {
   game: Game
@@ -25,20 +26,13 @@ export function RelationsStep({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <Link2 className="h-5 w-5 text-blue-500" />
-          </div>
-          <div>
-            <CardTitle>Game Relations</CardTitle>
-            <CardDescription>
-              Assign this game to a family and define relationships with other games (expansions, sequels, etc.).
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+      <WizardStepHeader
+        stepNumber={6}
+        title="Game Relations"
+        description="Assign this game to a family and define relationships with other games (expansions, sequels, etc.)."
+        icon={<Link2 className="h-5 w-5" />}
+      />
+      <CardContent className="pt-0">
         <GameRelationsEditor game={game} />
       </CardContent>
     </Card>

@@ -26,6 +26,7 @@ import {
 import type { Game } from '@/types/database'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { CrunchScoreDisplay } from '@/components/admin/rulebook'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface ParseAnalyzeStepProps {
   game: Game
@@ -131,24 +132,21 @@ export function ParseAnalyzeStep({ game, onComplete, onSkip }: ParseAnalyzeStepP
     }
   }, [game.id, router])
 
+  const isComplete = !!crunchScore
+
   return (
     <div className="space-y-6">
       {/* Main Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <FileSearch className="h-5 w-5 text-blue-500" />
-            </div>
-            <div>
-              <CardTitle>Parse & Analyze Rulebook</CardTitle>
-              <CardDescription>
-                Extract text from the PDF, calculate complexity score, and identify themes.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <WizardStepHeader
+          stepNumber={2}
+          title="Parse & Analyze Rulebook"
+          description="Extract text from the PDF, calculate complexity score, and identify themes."
+          icon={<FileSearch className="h-5 w-5" />}
+          isComplete={isComplete}
+          badge={crunchScore ? `Score: ${crunchScore}/10` : undefined}
+        />
+        <CardContent className="space-y-5 pt-0">
           {/* No rulebook warning */}
           {!game.rulebook_url && (
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">

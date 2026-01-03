@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import type { Publisher } from '@/lib/admin/wizard'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface RulebookStepProps {
   game: Game & { publishers_list?: Publisher[] }
@@ -118,20 +119,14 @@ export function RulebookStep({ game, updateField, onComplete, onSkip }: Rulebook
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <BookOpen className="h-5 w-5 text-purple-500" />
-          </div>
-          <div>
-            <CardTitle>Find the Official Rulebook</CardTitle>
-            <CardDescription>
-              Enter the URL to the official PDF rulebook, or let us try to find it automatically.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <WizardStepHeader
+        stepNumber={1}
+        title="Find the Official Rulebook"
+        description="Enter the URL to the official PDF rulebook, or let us try to find it automatically."
+        icon={<BookOpen className="h-5 w-5" />}
+        isComplete={isComplete}
+      />
+      <CardContent className="space-y-5 pt-0">
         {/* Publisher info */}
         {(game.publishers_list && game.publishers_list.length > 0) || game.publisher ? (
           <div className="space-y-2">

@@ -227,51 +227,52 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <Link href="/admin/games" className="self-start">
-          <Button variant="ghost" size="sm" className="gap-2">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Games
+            Games
           </Button>
         </Link>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{game.name}</h1>
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-              Setup Wizard
+            <h1 className="text-xl font-semibold tracking-tight truncate">{game.name}</h1>
+            <span className="shrink-0 inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
+              Wizard
             </span>
           </div>
-          <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
+          <p className="text-muted-foreground text-xs mt-0.5 font-mono">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onExitToAdvanced}
-            className="gap-2"
+            className="gap-2 text-muted-foreground hover:text-foreground"
           >
             <PanelRightOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Advanced Editor</span>
+            <span className="hidden sm:inline">Advanced</span>
           </Button>
           <Button
             onClick={saveGame}
             disabled={saving}
             size="sm"
-            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+            variant={saved ? 'default' : 'outline'}
+            className={saved ? 'bg-green-600 hover:bg-green-700 border-green-600' : ''}
           >
             {saving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : saved ? (
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <CheckCircle2 className="h-4 w-4" />
             ) : (
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4" />
             )}
-            {saved ? 'Saved!' : 'Save'}
+            <span className="ml-1.5">{saved ? 'Saved' : 'Save'}</span>
           </Button>
         </div>
       </div>
 
       {/* Step Indicator */}
-      <Card>
-        <CardContent className="py-6">
+      <Card className="border-0 shadow-sm bg-card/50">
+        <CardContent className="py-5 px-4 sm:px-6">
           <WizardStepIndicator
             steps={WIZARD_STEPS}
             currentStep={currentStep}
@@ -289,38 +290,40 @@ export function GameSetupWizard({ game: initialGame, onExitToAdvanced }: GameSet
       </div>
 
       {/* Navigation Footer */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Previous
-        </Button>
+      <div className="sticky bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t">
+        <div className="flex items-center justify-between max-w-none">
+          <Button
+            variant="ghost"
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Previous</span>
+          </Button>
 
-        <div className="flex items-center gap-2">
-          {currentStep < 8 && (
-            <>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                className="gap-2 text-muted-foreground"
-              >
-                <SkipForward className="h-4 w-4" />
-                Skip
-              </Button>
-              <Button
-                onClick={handleStepComplete}
-                disabled={!canProceed && currentStep !== 7}
-                className="gap-2"
-              >
-                Next
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+          <div className="flex items-center gap-3">
+            {currentStep < 8 && (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={handleStepComplete}
+                  disabled={!canProceed && currentStep !== 7}
+                  className="gap-2 min-w-[100px]"
+                >
+                  {currentStep === 7 ? 'Continue' : 'Next'}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -19,6 +19,7 @@ import {
   Star,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface PublishStepProps {
   game: Game
@@ -55,20 +56,14 @@ export function PublishStep({
     <div className="space-y-6">
       {/* Main Publish Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Rocket className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="flex-1">
-              <CardTitle>Ready to Publish?</CardTitle>
-              <CardDescription>
-                Review the game details and make it live on the site.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <WizardStepHeader
+          stepNumber={8}
+          title="Ready to Publish?"
+          description="Review the game details and make it live on the site."
+          icon={<Rocket className="h-5 w-5" />}
+          isComplete={game.is_published || false}
+        />
+        <CardContent className="space-y-5 pt-0">
           {/* Readiness Checklist */}
           <div className="space-y-3">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">

@@ -9,6 +9,7 @@ import { TaxonomySelector } from '../TaxonomySelector'
 import { Tags, Sparkles, Users, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Game, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
 import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface TaxonomyStepProps {
   game: Game
@@ -197,30 +198,18 @@ export function TaxonomyStep({ game, onComplete, onSkip }: TaxonomyStepProps) {
     )
   }
 
+  const totalSuggestions = themeSuggestionsCount + expSuggestionsCount
+
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <Tags className="h-5 w-5 text-purple-500" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <CardTitle>Taxonomy</CardTitle>
-              {(themeSuggestionsCount > 0 || expSuggestionsCount > 0) && (
-                <Badge variant="outline" className="text-primary border-primary/30">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {themeSuggestionsCount + expSuggestionsCount} AI suggestions
-                </Badge>
-              )}
-            </div>
-            <CardDescription>
-              Assign themes and player experiences to this game. AI suggestions are pre-selected based on rulebook analysis.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-8">
+      <WizardStepHeader
+        stepNumber={3}
+        title="Taxonomy"
+        description="Assign themes and player experiences to this game. AI suggestions are pre-selected based on rulebook analysis."
+        icon={<Tags className="h-5 w-5" />}
+        badge={totalSuggestions > 0 ? `${totalSuggestions} AI suggestions` : undefined}
+      />
+      <CardContent className="space-y-6 pt-0">
         {error && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
             <AlertCircle className="h-4 w-4" />

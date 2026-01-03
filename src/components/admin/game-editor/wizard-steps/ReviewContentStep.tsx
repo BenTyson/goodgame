@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BookOpen, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Game, Json, RulesContent, SetupContent, ReferenceContent } from '@/types/database'
 import { parseGameContent, hasGeneratedContent } from '@/lib/admin/wizard'
+import { WizardStepHeader } from './WizardStepHeader'
 import {
   RulesContentSection,
   SetupContentSection,
@@ -53,23 +54,18 @@ export function ReviewContentStep({ game, updateField, onComplete }: ReviewConte
     <div className="space-y-6">
       {/* Header Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-amber-500" />
-            </div>
-            <div className="flex-1">
-              <CardTitle>Review Generated Content</CardTitle>
-              <CardDescription>
-                Review the AI-generated content and make any necessary edits before publishing.
-              </CardDescription>
-            </div>
-            <Button onClick={onComplete} className="gap-2">
+        <WizardStepHeader
+          stepNumber={7}
+          title="Review Generated Content"
+          description="Review the AI-generated content and make any necessary edits before publishing."
+          icon={<BookOpen className="h-5 w-5" />}
+          action={
+            <Button onClick={onComplete} size="sm" className="gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              Content Looks Good
+              Looks Good
             </Button>
-          </div>
-        </CardHeader>
+          }
+        />
       </Card>
 
       {/* No content warning */}

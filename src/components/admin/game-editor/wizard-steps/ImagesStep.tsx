@@ -6,6 +6,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload'
 import { SourcedImage } from '@/components/admin/TempImage'
 import { ImageIcon, CheckCircle2 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
+import { WizardStepHeader } from './WizardStepHeader'
 
 interface ImagesStepProps {
   game: Game
@@ -36,30 +37,15 @@ export function ImagesStep({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-            <ImageIcon className="h-5 w-5 text-green-500" />
-          </div>
-          <div>
-            <CardTitle>Upload Game Images</CardTitle>
-            <CardDescription>
-              Add cover art and gallery images. The primary image will appear on game cards and as the hero.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Status indicator */}
-        {hasImages && (
-          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>
-              {images.length} image{images.length !== 1 ? 's' : ''} uploaded
-              {images.some((img) => img.is_primary) && ' • Primary set'}
-            </span>
-          </div>
-        )}
+      <WizardStepHeader
+        stepNumber={5}
+        title="Upload Game Images"
+        description="Add cover art and gallery images. The primary image will appear on game cards and as the hero."
+        icon={<ImageIcon className="h-5 w-5" />}
+        isComplete={hasImages}
+        badge={hasImages ? `${images.length} image${images.length !== 1 ? 's' : ''}` : undefined}
+      />
+      <CardContent className="space-y-5 pt-0">
 
         {/* Image Upload */}
         <ImageUpload
