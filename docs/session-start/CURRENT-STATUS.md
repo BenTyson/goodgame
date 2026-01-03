@@ -2,9 +2,37 @@
 
 > Last Updated: 2026-01-03 (Wikipedia/Wikidata Series Integration)
 
-## Current Phase: 45 - Wikipedia & Wikidata Series Integration (COMPLETE)
+## Current Phase: 45 - Admin Import Page & Wikidata Series Integration (COMPLETE)
 
-Enhanced Wikidata integration during BGG import to capture Wikipedia URLs, series membership, and sequel relationships. Added admin review workflow for families with unlinked games.
+New admin import wizard for BGG game imports with real-time progress. Enhanced Wikidata integration to capture Wikipedia URLs, series membership, and sequel relationships. Added admin review workflow for families with unlinked games.
+
+### Admin Import Page (`/admin/import`)
+
+New wizard-based import interface for importing games from BoardGameGeek.
+
+| Step | Description |
+|------|-------------|
+| **Input** | Enter BGG IDs (comma/newline separated), select relation mode |
+| **Preview** | Shows analysis of games to import (new vs existing), related games count |
+| **Progress** | Real-time SSE streaming of import progress with status updates |
+| **Report** | Final summary with success/failure counts and links to imported games |
+
+**Features:**
+- Relation modes: `all` (expansions + base games + reimplementations), `upstream` (just base games), `none`
+- Max depth control for recursive relation fetching
+- Re-sync existing games option
+- Real-time progress via Server-Sent Events (SSE)
+- Links to imported games in final report
+
+**New Files:**
+- `src/app/admin/(dashboard)/import/page.tsx` - Import page
+- `src/app/api/admin/import/analyze/route.ts` - Analyze BGG IDs before import
+- `src/app/api/admin/import/execute/route.ts` - Execute import with SSE progress
+- `src/components/admin/import/ImportWizard.tsx` - Main wizard component
+- `src/components/admin/import/ImportInput.tsx` - BGG ID input step
+- `src/components/admin/import/ImportPreview.tsx` - Preview step with analysis
+- `src/components/admin/import/ImportProgress.tsx` - Real-time progress display
+- `src/components/admin/import/ImportReport.tsx` - Final report with summary
 
 ### Database Changes
 
@@ -481,13 +509,15 @@ Complete marketplace implementation:
 - Seller Dashboard with sidebar layout
 
 ### Admin
+- **Import Wizard** (`/admin/import`) - BGG game import with real-time SSE progress
 - Game editor with Setup Wizard and Advanced Mode
 - Rulebook parsing + Crunch Score generation (1-10 scale with BGG calibration)
 - AI content generation (rules, setup, reference)
 - Publisher/Family/Taxonomy management
+- Family tree visualization with orphan detection and "Needs Review" filter
 - Image upload with cropping (Cover 4:3, Hero 16:9, Gallery)
 - **Data Dictionary** (`/admin/data`) - Field reference for BGG/Wikidata imports
-- Wikidata enrichment during BGG import (CC images, websites, rulebooks)
+- Wikidata enrichment during BGG import (CC images, websites, Wikipedia URLs, series detection)
 
 ### Environments
 
