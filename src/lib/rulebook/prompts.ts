@@ -205,15 +205,33 @@ export function getBNCSPrompt(
 
 /**
  * Prompt for generating original rules summary from rulebook
+ * @param rulebookText - The parsed rulebook text
+ * @param gameName - Name of the game
+ * @param wikipediaContext - Optional Wikipedia summary for additional context
  */
-export function getRulesSummaryPrompt(rulebookText: string, gameName: string): string {
+export function getRulesSummaryPrompt(
+  rulebookText: string,
+  gameName: string,
+  wikipediaContext?: string
+): string {
   const truncatedText = rulebookText.length > 40000
     ? rulebookText.substring(0, 40000) + '\n\n[...rulebook truncated...]'
     : rulebookText
 
-  return `You're writing the rules guide for "${gameName}" on Board Nomads. This will be the first thing new players read - make it count!
+  // Include Wikipedia context if available
+  const wikiSection = wikipediaContext
+    ? `
+WIKIPEDIA CONTEXT (use for background info, theme context, and designer intent - NOT as rules source):
+---
+${wikipediaContext}
+---
 
-RULEBOOK TEXT:
+`
+    : ''
+
+  return `You're writing the rules guide for "${gameName}" on Board Nomads. This will be the first thing new players read - make it count!
+${wikiSection}
+RULEBOOK TEXT (primary source for all rules):
 ---
 ${truncatedText}
 ---
@@ -292,15 +310,33 @@ QUALITY CHECKLIST:
 
 /**
  * Prompt for generating setup guide from rulebook
+ * @param rulebookText - The parsed rulebook text
+ * @param gameName - Name of the game
+ * @param wikipediaContext - Optional Wikipedia summary for additional context
  */
-export function getSetupGuidePrompt(rulebookText: string, gameName: string): string {
+export function getSetupGuidePrompt(
+  rulebookText: string,
+  gameName: string,
+  wikipediaContext?: string
+): string {
   const truncatedText = rulebookText.length > 35000
     ? rulebookText.substring(0, 35000) + '\n\n[...rulebook truncated...]'
     : rulebookText
 
-  return `You're writing the setup guide for "${gameName}" on Board Nomads. Someone's about to crack open this box - help them get playing smoothly!
+  // Include Wikipedia context if available
+  const wikiSection = wikipediaContext
+    ? `
+WIKIPEDIA CONTEXT (use for component context and background - NOT as setup instructions):
+---
+${wikipediaContext}
+---
 
-RULEBOOK TEXT:
+`
+    : ''
+
+  return `You're writing the setup guide for "${gameName}" on Board Nomads. Someone's about to crack open this box - help them get playing smoothly!
+${wikiSection}
+RULEBOOK TEXT (primary source for setup instructions):
 ---
 ${truncatedText}
 ---
@@ -375,15 +411,33 @@ QUALITY CHECKLIST:
 
 /**
  * Prompt for generating quick reference card from rulebook
+ * @param rulebookText - The parsed rulebook text
+ * @param gameName - Name of the game
+ * @param wikipediaContext - Optional Wikipedia summary for additional context
  */
-export function getReferenceCardPrompt(rulebookText: string, gameName: string): string {
+export function getReferenceCardPrompt(
+  rulebookText: string,
+  gameName: string,
+  wikipediaContext?: string
+): string {
   const truncatedText = rulebookText.length > 35000
     ? rulebookText.substring(0, 35000) + '\n\n[...rulebook truncated...]'
     : rulebookText
 
-  return `You're creating the quick reference for "${gameName}" on Board Nomads. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
+  // Include Wikipedia context if available (lighter usage for reference cards)
+  const wikiSection = wikipediaContext
+    ? `
+WIKIPEDIA CONTEXT (for iconography and terminology context only):
+---
+${wikipediaContext}
+---
 
-RULEBOOK TEXT:
+`
+    : ''
+
+  return `You're creating the quick reference for "${gameName}" on Board Nomads. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
+${wikiSection}
+RULEBOOK TEXT (primary source for all reference content):
 ---
 ${truncatedText}
 ---

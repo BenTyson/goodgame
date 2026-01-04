@@ -22,8 +22,10 @@ import {
   Sparkles,
   RotateCcw,
   ChevronDown,
-  Cpu,
   Zap,
+  Globe,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import { WizardStepHeader } from './WizardStepHeader'
@@ -39,6 +41,13 @@ interface GenerateContentStepProps {
 
 type StepPhase = 'ready' | 'generating' | 'complete' | 'resetting'
 
+interface WikipediaStatus {
+  hasUrl: boolean
+  hasSummary: boolean
+  isFetching: boolean
+  error?: string
+}
+
 export function GenerateContentStep({ game, onComplete, onSkip }: GenerateContentStepProps) {
   const router = useRouter()
   const [phase, setPhase] = useState<StepPhase>('ready')
@@ -46,8 +55,14 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
   const [contentResult, setContentResult] = useState<{
     success: boolean
     error?: string
+    usedWikipediaContext?: boolean
   } | null>(null)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
+  const [wikiStatus, setWikiStatus] = useState<WikipediaStatus>({
+    hasUrl: !!(game as { wikipedia_url?: string }).wikipedia_url,
+    hasSummary: !!(game as { wikipedia_summary?: unknown }).wikipedia_summary,
+    isFetching: false,
+  })
 
   const hasRules = game.has_rules
   const hasSetup = game.has_setup_guide
@@ -62,6 +77,49 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
       onComplete()
     }
   }, [hasAllContent, onComplete])
+
+  // Fetch Wikipedia summary
+  const fetchWikipediaSummary = useCallback(async () => {
+    setWikiStatus(prev => ({ ...prev, isFetching: true, error: undefined }))
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}/wikipedia`, {
+        method: 'POST',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setWikiStatus({
+          hasUrl: true,
+          hasSummary: true,
+          isFetching: false,
+        })
+        router.refresh()
+      } else {
+        setWikiStatus(prev => ({
+          ...prev,
+          isFetching: false,
+          error: result.error || 'Failed to fetch Wikipedia summary',
+        }))
+      }
+    } catch (error) {
+      setWikiStatus(prev => ({
+        ...prev,
+        isFetching: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch Wikipedia summary',
+      }))
+    }
+  }, [game.id, router])
+
+  // Auto-fetch Wikipedia summary if URL exists but no summary
+  useEffect(() => {
+    if (wikiStatus.hasUrl && !wikiStatus.hasSummary && !wikiStatus.isFetching) {
+      fetchWikipediaSummary()
+    }
+    // Only run on mount - use empty deps to prevent re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const generateContent = useCallback(async () => {
     setPhase('generating')
@@ -164,6 +222,67 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
             Quick Reference
           </Badge>
         </div>
+
+        {/* Wikipedia Context Section */}
+        {wikiStatus.hasUrl && (
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Wikipedia Context
+            </Label>
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
+              {wikiStatus.isFetching ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  <span className="text-sm">Fetching Wikipedia context...</span>
+                </>
+              ) : wikiStatus.error ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm text-muted-foreground flex-1">
+                    {wikiStatus.error}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={fetchWikipediaSummary}
+                    className="h-7 px-2"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Retry
+                  </Button>
+                </>
+              ) : wikiStatus.hasSummary ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm flex-1">Wikipedia context loaded</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={fetchWikipediaSummary}
+                    className="h-7 px-2"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Wikipedia available - will auto-fetch
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* No Wikipedia URL info */}
+        {!wikiStatus.hasUrl && hasParsedText && (
+          <InfoPanel variant="muted">
+            No Wikipedia URL available. Content will be generated from rulebook only.
+          </InfoPanel>
+        )}
 
         {/* Model Selection */}
         {!hasAllContent && hasParsedText && (
@@ -280,6 +399,11 @@ export function GenerateContentStep({ game, onComplete, onSkip }: GenerateConten
         {contentResult?.success && (
           <StatusAlert variant="success" title="Content generated successfully!">
             Rules summary, setup guide, and quick reference are ready.
+            {contentResult.usedWikipediaContext && (
+              <span className="block mt-1 text-xs opacity-80">
+                Wikipedia context was used to enhance the content.
+              </span>
+            )}
           </StatusAlert>
         )}
 

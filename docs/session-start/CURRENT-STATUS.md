@@ -1,8 +1,72 @@
 # Current Status
 
-> Last Updated: 2026-01-03 (Wikipedia AI Enrichment & Auto-Link)
+> Last Updated: 2026-01-03 (Wikipedia Context for Content Generation)
 
-## Current Phase: 46 - Wikipedia AI Enrichment & Family Auto-Link (COMPLETE)
+## Next Up: Wikimedia API Authentication
+
+Exploring proper Wikimedia API token authentication for higher rate limits and better production compliance. Current implementation uses the public MediaWiki API which works but has lower rate limits.
+
+---
+
+## Current Phase: 47 - Wikipedia Context for Game Wizard (COMPLETE)
+
+Added Wikipedia article context to enhance AI-generated content (rules, setup, reference) in the game wizard. When a game has a Wikipedia URL, the system automatically fetches and summarizes the article, then includes this context when generating content.
+
+### Wikipedia Context in Content Generation
+
+The GenerateContentStep (Step 4) now:
+- Auto-fetches Wikipedia summary when entering the step (if URL exists but no summary stored)
+- Shows status UI: fetching spinner, loaded checkmark, or error with retry
+- Stores AI-summarized Wikipedia content in database for reuse
+- Passes Wikipedia context to all three content generation prompts
+
+### Database Changes
+
+| Migration | Purpose |
+|-----------|---------|
+| `00057_wikipedia_summary.sql` | Add `wikipedia_summary` (JSONB), `wikipedia_fetched_at` to games |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/wikipedia/index.ts` | Shared utilities: `fetchWikipediaContent()`, `summarizeWikipediaContent()`, `formatSummaryForPrompt()` |
+| `src/app/api/admin/games/[id]/wikipedia/route.ts` | GET: status, POST: fetch and store Wikipedia summary |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/lib/rulebook/prompts.ts` | Added optional `wikipediaContext` parameter to `getRulesSummaryPrompt()`, `getSetupGuidePrompt()`, `getReferenceCardPrompt()` |
+| `src/app/api/admin/rulebook/generate-content/route.ts` | Fetches `wikipedia_summary`, formats it, passes to prompts |
+| `src/components/admin/game-editor/wizard-steps/GenerateContentStep.tsx` | Added Wikipedia status UI, auto-fetch on mount, refresh button |
+| `src/data/mock-games.ts` | Added new fields to type definition |
+
+### Wikipedia Summary Structure
+
+The AI-summarized Wikipedia content includes:
+```json
+{
+  "summary": "300-500 word summary of theme, gameplay, what makes it notable",
+  "themes": ["theme1", "theme2"],
+  "mechanics": ["mechanic1", "mechanic2"],
+  "reception": "Critical reception paragraph or null",
+  "awards": ["award1", "award2"]
+}
+```
+
+### UX Flow
+
+1. User enters Step 4 (Generate Content)
+2. If `wikipedia_url` exists but no `wikipedia_summary`: auto-fetch with spinner
+3. If already summarized: show "Wikipedia context loaded" with refresh button
+4. If no Wikipedia URL: show info message
+5. Content generation includes Wikipedia context when available
+6. Success message indicates if Wikipedia context was used
+
+---
+
+## Phase 46 - Wikipedia AI Enrichment & Family Auto-Link (COMPLETE)
 
 Added AI-powered Wikipedia enrichment to the families admin page. Admins can now automatically discover related games and create relationships between unlinked games using Wikipedia content parsed by Claude Haiku.
 

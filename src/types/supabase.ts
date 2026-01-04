@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1093,6 +1068,8 @@ export type Database = {
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
           wikidata_series_id: string | null
+          wikipedia_fetched_at: string | null
+          wikipedia_summary: Json | null
           wikipedia_url: string | null
           year_published: number | null
         }
@@ -1163,6 +1140,8 @@ export type Database = {
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
           wikidata_series_id?: string | null
+          wikipedia_fetched_at?: string | null
+          wikipedia_summary?: Json | null
           wikipedia_url?: string | null
           year_published?: number | null
         }
@@ -1233,6 +1212,8 @@ export type Database = {
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
           wikidata_series_id?: string | null
+          wikipedia_fetched_at?: string | null
+          wikipedia_summary?: Json | null
           wikipedia_url?: string | null
           year_published?: number | null
         }
@@ -3648,6 +3629,8 @@ export type Database = {
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
           wikidata_series_id: string | null
+          wikipedia_fetched_at: string | null
+          wikipedia_summary: Json | null
           wikipedia_url: string | null
           year_published: number | null
         }[]
@@ -4011,9 +3994,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_type: [

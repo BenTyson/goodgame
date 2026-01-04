@@ -140,7 +140,8 @@ src/app/
 │   │   ├── route.ts           # GET, PATCH games
 │   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
 │   │   └── [id]/
-│   │       └── reset-content/route.ts  # POST reset parsed content
+│   │       ├── reset-content/route.ts  # POST reset parsed content
+│   │       └── wikipedia/route.ts      # GET status, POST fetch Wikipedia summary
 │   ├── families/
 │   │   └── [id]/
 │   │       ├── wikipedia/route.ts  # POST fetch Wikipedia, PATCH link games
@@ -297,9 +298,11 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
   ├── complexity.ts            # Crunch Score generation with BGG calibration (server-only)
   ├── complexity-utils.ts      # Pure utilities safe for client components (tier labels, colors)
   ├── parser.ts                # PDF text extraction
-  ├── prompts.ts               # AI prompts for extraction (Crunch Score, taxonomy)
+  ├── prompts.ts               # AI prompts for extraction (Crunch Score, taxonomy, content generation)
   ├── types.ts                 # CrunchBreakdown, CrunchResult, RulesContent, etc.
   └── discovery.ts             # Publisher URL pattern matching
+src/lib/wikipedia/             # Wikipedia integration utilities
+  └── index.ts                 # fetchWikipediaContent(), summarizeWikipediaContent(), formatSummaryForPrompt()
 src/lib/ai/
   ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
   ├── generator.ts             # Content generation orchestrator
@@ -321,7 +324,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (44 files)
+supabase/migrations/           # Database schema (57 files)
 ```
 
 ### Type Definitions

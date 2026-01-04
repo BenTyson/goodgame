@@ -70,7 +70,7 @@ export const mockCategories: Category[] = [
 ]
 
 // Mock games can omit the newer tracking fields
-type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id' | 'wikidata_image_url' | 'wikidata_last_synced' | 'official_website' | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at' | 'crunch_score' | 'crunch_breakdown' | 'crunch_generated_at' | 'crunch_bgg_reference' | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations'> & {
+type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id' | 'wikidata_image_url' | 'wikidata_last_synced' | 'official_website' | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at' | 'crunch_score' | 'crunch_breakdown' | 'crunch_generated_at' | 'crunch_bgg_reference' | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations' | 'wikipedia_summary' | 'wikipedia_fetched_at'> & {
   data_source?: string | null
   field_sources?: Json | null
   wikidata_id?: string | null
@@ -87,6 +87,8 @@ type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikid
   component_list?: Json | null
   latest_parse_log_id?: string | null
   has_unimported_relations?: boolean | null
+  wikipedia_summary?: Json | null
+  wikipedia_fetched_at?: string | null
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

@@ -13,6 +13,7 @@ import type {
   ReferenceContent,
 } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
+import { formatSummaryForPrompt, type WikipediaSummary } from '@/lib/wikipedia'
 import type { Json } from '@/types/database'
 
 /**
@@ -45,13 +46,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get game info including rulebook URL
+    // Get game info including rulebook URL and Wikipedia summary
     // Note: latest_parse_log_id is selected but cast to unknown due to type sync issues
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, name, slug, rulebook_url')
+      .select('id, name, slug, rulebook_url, wikipedia_summary')
       .eq('id', gameId)
-      .single() as { data: { id: string; name: string; slug: string; rulebook_url: string | null; latest_parse_log_id?: string } | null; error: unknown }
+      .single() as { data: { id: string; name: string; slug: string; rulebook_url: string | null; latest_parse_log_id?: string; wikipedia_summary?: WikipediaSummary | null } | null; error: unknown }
 
     // Get latest_parse_log_id separately since types may not be synced
     let latestParseLogId: string | null = null
@@ -111,6 +112,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Format Wikipedia context if available
+    const wikipediaContext = game.wikipedia_summary
+      ? formatSummaryForPrompt(game.wikipedia_summary)
+      : undefined
+
+    if (wikipediaContext) {
+      console.log('Using Wikipedia context for content generation')
+    }
+
     // Generate content in parallel where possible
     const results: {
       rules?: RulesContent
@@ -126,7 +136,7 @@ export async function POST(request: NextRequest) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getRulesSummaryPrompt(rulebookText, game.name)
+            const prompt = getRulesSummaryPrompt(rulebookText, game.name, wikipediaContext)
             const result = await generateJSON<RulesContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -149,7 +159,7 @@ export async function POST(request: NextRequest) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getSetupGuidePrompt(rulebookText, game.name)
+            const prompt = getSetupGuidePrompt(rulebookText, game.name, wikipediaContext)
             const result = await generateJSON<SetupContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -172,7 +182,7 @@ export async function POST(request: NextRequest) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getReferenceCardPrompt(rulebookText, game.name)
+            const prompt = getReferenceCardPrompt(rulebookText, game.name, wikipediaContext)
             const result = await generateJSON<ReferenceContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -237,6 +247,7 @@ export async function POST(request: NextRequest) {
         setup: !!results.setup,
         reference: !!results.reference,
       },
+      usedWikipediaContext: !!wikipediaContext,
       // Include content summaries for the modal
       content: {
         rules: results.rules ? {
