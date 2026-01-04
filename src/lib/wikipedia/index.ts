@@ -1,12 +1,104 @@
 /**
  * Wikipedia Integration Utilities
- * Shared functions for fetching and processing Wikipedia content
+ *
+ * Comprehensive Wikipedia integration for board game enrichment.
+ * Includes search, validation, infobox parsing, section extraction,
+ * category mapping, and relation detection.
  */
 
 import { generateJSON, type GenerationResult } from '@/lib/ai/claude'
+import type { Json } from '@/types/supabase'
 
 // =====================================================
+// Re-exports from sub-modules
+// =====================================================
+
 // Types
+export * from './types'
+
+// Client utilities
+export {
+  buildApiUrl,
+  openSearch,
+  fullTextSearch,
+  getPageProperties,
+  getPageExtract,
+  getPageCategories,
+  getPageLinks,
+  getExternalLinks,
+  getPageImages,
+  getImageInfo,
+  getPageWikitext,
+  getPageSections,
+  getSectionWikitext,
+  getSectionHtml,
+  extractTitleFromUrl,
+  buildWikipediaUrl,
+  getFirstPage,
+} from './client'
+
+// Search
+export { searchWikipediaArticle, batchSearchWikipediaArticles } from './search'
+
+// Validation
+export {
+  isDisambiguationPage,
+  validateArticleMatch,
+  isLikelyBoardGameTitle,
+} from './validation'
+
+// Infobox parsing
+export { extractInfobox, parseInfoboxWikitext, parseWikiLinks, parsePublishersWithRegion, getPrimaryPublisher } from './infobox'
+
+// Section extraction
+export {
+  extractKnownSections,
+  getArticleSections,
+  analyzeSections,
+} from './sections'
+
+// Category mapping
+export {
+  getArticleCategories,
+  mapCategoriesToTaxonomy,
+  extractAndMapCategories,
+  batchExtractCategories,
+  groupMappingsByType,
+} from './categories'
+
+// Relation detection
+export {
+  extractInfoboxRelations,
+  extractSeeAlsoRelations,
+  extractArticleLinks,
+  extractGameRelations,
+  groupRelationsByType,
+  getHighConfidenceRelations,
+} from './relations'
+
+// Image extraction
+export {
+  extractArticleImages,
+  getPrimaryImage,
+} from './images'
+
+// External links extraction
+export {
+  extractExternalLinks,
+  getLinksByType,
+  getOfficialSiteLink,
+  getRulebookLinks,
+} from './external-links'
+
+// Awards extraction
+export {
+  extractAwardsFromText,
+  getWinningAwards,
+  getMostNotableAward,
+} from './awards'
+
+// =====================================================
+// Legacy Types (kept for backwards compatibility)
 // =====================================================
 
 export interface WikipediaFetchResult {
@@ -188,4 +280,235 @@ export function formatSummaryForPrompt(summary: WikipediaSummary): string {
   }
 
   return parts.join('\n\n')
+}
+
+// =====================================================
+// Main Enrichment Function
+// =====================================================
+
+import { searchWikipediaArticle } from './search'
+import { extractInfobox } from './infobox'
+import { extractKnownSections } from './sections'
+import { extractAndMapCategories } from './categories'
+import { extractGameRelations } from './relations'
+import { extractArticleImages } from './images'
+import { extractExternalLinks } from './external-links'
+import { extractAwardsFromText } from './awards'
+import type { WikipediaEnrichmentResult, WikipediaInfobox, WikipediaSections, CategoryMapping, WikipediaRelation, WikipediaImage, WikipediaExternalLink, WikipediaAward } from './types'
+
+/**
+ * Full Wikipedia enrichment for a board game
+ *
+ * Orchestrates the complete enrichment pipeline:
+ * 1. Search for Wikipedia article (or use existing URL from Wikidata)
+ * 2. Extract structured infobox data
+ * 3. Extract Origins/History and Reception sections
+ * 4. Generate AI summary (themes, mechanics, reception, awards)
+ * 5. Map Wikipedia categories to taxonomy
+ * 6. Detect expansion/sequel relations
+ *
+ * This function is designed to be called during BGG import, after Wikidata enrichment.
+ * It never throws errors - failures are logged and partial results returned.
+ *
+ * @param gameName - Name of the board game
+ * @param yearPublished - Year the game was published (optional, for validation)
+ * @param designers - List of designer names (optional, for validation)
+ * @param existingWikipediaUrl - Wikipedia URL from Wikidata (optional, skips search if provided)
+ * @returns Enrichment result with all extracted data
+ */
+export async function enrichGameFromWikipedia(
+  gameName: string,
+  yearPublished?: number,
+  designers?: string[],
+  existingWikipediaUrl?: string
+): Promise<WikipediaEnrichmentResult> {
+  const result: WikipediaEnrichmentResult = {
+    found: false,
+    url: null,
+    articleTitle: null,
+    infobox: null,
+    sections: null,
+    categories: [],
+    relations: [],
+    categoryMappings: [],
+    searchConfidence: undefined,
+    error: null,
+    // New Tier 1 fields
+    images: [],
+    externalLinks: [],
+    awards: [],
+    gameplay: undefined,
+  }
+
+  try {
+    console.log(`  [Wikipedia] Enriching: ${gameName}`)
+
+    // Step 1: Search for article (or use existing URL)
+    const searchResult = await searchWikipediaArticle(
+      gameName,
+      yearPublished,
+      designers,
+      existingWikipediaUrl
+    )
+
+    if (!searchResult) {
+      console.log(`  [Wikipedia] No article found for: ${gameName}`)
+      return result
+    }
+
+    result.found = true
+    result.url = searchResult.url
+    result.articleTitle = searchResult.title
+    result.searchConfidence = searchResult.confidence
+
+    // Step 2: Extract infobox (structured data)
+    try {
+      result.infobox = await extractInfobox(searchResult.url)
+      if (result.infobox) {
+        console.log(`  [Wikipedia] Extracted infobox data`)
+      }
+    } catch (error) {
+      console.warn(`  [Wikipedia] Infobox extraction failed:`, error)
+    }
+
+    // Step 3: Extract known sections (Origins, Reception)
+    try {
+      result.sections = await extractKnownSections(searchResult.url)
+      const sectionCount = Object.values(result.sections).filter(Boolean).length
+      if (sectionCount > 0) {
+        console.log(`  [Wikipedia] Extracted ${sectionCount} sections`)
+      }
+    } catch (error) {
+      console.warn(`  [Wikipedia] Section extraction failed:`, error)
+    }
+
+    // Step 4: Generate AI summary (only if we have content to summarize)
+    // Note: This reuses the existing summarizeWikipediaContent function
+    // The summary gets stored separately via the existing API endpoint
+    // Here we focus on structured extraction
+
+    // Step 5: Extract and map categories
+    try {
+      const categoryResult = await extractAndMapCategories(searchResult.url)
+      result.categories = categoryResult.rawCategories
+      result.categoryMappings = categoryResult.mappings
+    } catch (error) {
+      console.warn(`  [Wikipedia] Category extraction failed:`, error)
+    }
+
+    // Step 6: Detect game relations
+    try {
+      result.relations = await extractGameRelations(searchResult.url, gameName)
+    } catch (error) {
+      console.warn(`  [Wikipedia] Relation extraction failed:`, error)
+    }
+
+    // =====================================================
+    // New Tier 1 Extractions
+    // =====================================================
+
+    // Step 7: Extract article images
+    try {
+      result.images = await extractArticleImages(searchResult.url, 5)
+    } catch (error) {
+      console.warn(`  [Wikipedia] Image extraction failed:`, error)
+    }
+
+    // Step 8: Extract external links (rulebook, official site, etc.)
+    try {
+      result.externalLinks = await extractExternalLinks(searchResult.url)
+    } catch (error) {
+      console.warn(`  [Wikipedia] External links extraction failed:`, error)
+    }
+
+    // Step 9: Extract structured awards from Reception section
+    try {
+      result.awards = extractAwardsFromText(result.sections?.reception)
+    } catch (error) {
+      console.warn(`  [Wikipedia] Awards extraction failed:`, error)
+    }
+
+    // Step 10: Store Gameplay section for content generation
+    if (result.sections?.gameplay) {
+      result.gameplay = result.sections.gameplay
+    }
+
+    console.log(`  [Wikipedia] Enrichment complete for: ${gameName}`)
+    return result
+  } catch (error) {
+    console.warn(`  [Wikipedia] Enrichment failed for ${gameName}:`, error)
+    result.error = error instanceof Error ? error.message : 'Unknown error'
+    return result
+  }
+}
+
+/**
+ * Store Wikipedia enrichment results in the database
+ * Helper function for use in the BGG importer
+ * Uses Json type for JSONB fields to match Supabase types
+ */
+export interface WikipediaStorageData {
+  wikipedia_url?: string
+  wikipedia_infobox?: Json
+  wikipedia_summary?: Json
+  wikipedia_origins?: string
+  wikipedia_reception?: string
+  wikipedia_fetched_at?: string
+  wikipedia_search_confidence?: 'high' | 'medium' | 'low'
+  // New Tier 1 fields
+  wikipedia_images?: Json
+  wikipedia_external_links?: Json
+  wikipedia_awards?: Json
+  wikipedia_gameplay?: string
+}
+
+export function prepareWikipediaStorageData(
+  enrichmentResult: WikipediaEnrichmentResult,
+  existingSummary?: WikipediaSummary
+): WikipediaStorageData {
+  const data: WikipediaStorageData = {}
+
+  if (enrichmentResult.url) {
+    data.wikipedia_url = enrichmentResult.url
+  }
+
+  if (enrichmentResult.infobox) {
+    data.wikipedia_infobox = enrichmentResult.infobox as unknown as Json
+  }
+
+  if (existingSummary) {
+    data.wikipedia_summary = existingSummary as unknown as Json
+    data.wikipedia_fetched_at = new Date().toISOString()
+  }
+
+  if (enrichmentResult.sections?.origins) {
+    data.wikipedia_origins = enrichmentResult.sections.origins
+  }
+
+  if (enrichmentResult.sections?.reception) {
+    data.wikipedia_reception = enrichmentResult.sections.reception
+  }
+
+  if (enrichmentResult.searchConfidence) {
+    data.wikipedia_search_confidence = enrichmentResult.searchConfidence
+  }
+
+  // New Tier 1 fields
+  if (enrichmentResult.images && enrichmentResult.images.length > 0) {
+    data.wikipedia_images = enrichmentResult.images as unknown as Json
+  }
+
+  if (enrichmentResult.externalLinks && enrichmentResult.externalLinks.length > 0) {
+    data.wikipedia_external_links = enrichmentResult.externalLinks as unknown as Json
+  }
+
+  if (enrichmentResult.awards && enrichmentResult.awards.length > 0) {
+    data.wikipedia_awards = enrichmentResult.awards as unknown as Json
+  }
+
+  if (enrichmentResult.gameplay) {
+    data.wikipedia_gameplay = enrichmentResult.gameplay
+  }
+
+  return data
 }

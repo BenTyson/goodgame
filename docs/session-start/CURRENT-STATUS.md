@@ -1,14 +1,72 @@
 # Current Status
 
-> Last Updated: 2026-01-03 (Wikipedia Context for Content Generation)
+> Last Updated: 2026-01-04 (Wikipedia Tier 1 Extraction + Vecna Spec)
 
-## Next Up: Wikimedia API Authentication
+## Next Up: Vecna Implementation
 
-Exploring proper Wikimedia API token authentication for higher rate limits and better production compliance. Current implementation uses the public MediaWiki API which works but has lower rate limits.
+**Vecna** is a new unified admin page that automates the entire game content pipeline from BGG import through publication. See full specification at [VECNA-SPEC.md](../VECNA-SPEC.md).
+
+### Why Vecna?
+
+| Current State | Vecna Goal |
+|---------------|------------|
+| Fragmented: `/import` → `/families` → `/games/[id]/wizard` | Single page: `/admin/vecna` |
+| Rulebook discovery rarely works | Wikipedia external links as primary source |
+| AI uses only `wikipedia_summary` | Full context: gameplay, origins, awards, infobox |
+| Review UI shows ~30% of fields | Three-column UI: Source → Generated → Final |
+| ~20% of Wikipedia data used | ~80% utilization |
+
+### Implementation Phases
+
+1. **Foundation** (2 sessions) - Page structure, unified data view
+2. **Automation** (2 sessions) - Auto-enrichment, Wikipedia rulebook discovery
+3. **Enhanced AI** (2 sessions) - Full Wikipedia context, family inheritance
+4. **Polish** (2 sessions) - Review UI, compliance checklist
 
 ---
 
-## Current Phase: 47 - Wikipedia Context for Game Wizard (COMPLETE)
+## Current Phase: 48 - Wikipedia Tier 1 Extraction (COMPLETE)
+
+Enhanced Wikipedia extraction with images, external links, and structured awards. Created comprehensive Vecna specification based on full system audit.
+
+### New Wikipedia Extraction Modules
+
+| Module | Purpose |
+|--------|---------|
+| `src/lib/wikipedia/images.ts` | Article images with Commons metadata, licensing |
+| `src/lib/wikipedia/external-links.ts` | Categorized links (rulebook, official, publisher, store, video) |
+| `src/lib/wikipedia/awards.ts` | Structured awards from Reception section (25+ known awards) |
+
+### New Database Fields
+
+```sql
+-- Migration: 00059_wikipedia_tier1_fields.sql
+games.wikipedia_images        -- JSONB: Article images with URLs, dimensions, licenses
+games.wikipedia_external_links -- JSONB: Categorized links (rulebook, official, etc.)
+games.wikipedia_awards        -- JSONB: Parsed awards (name, year, winner/nominated)
+games.wikipedia_gameplay      -- TEXT: Gameplay section for AI content
+```
+
+### Admin Data Dictionary Reorganization
+
+Reorganized `/admin/data` into 8 logical data blocks:
+- Core Game Info, Taxonomy, Relations, Media
+- External References, Ratings & Awards, People, Content Generation
+
+### Vecna Specification
+
+Created comprehensive spec at `/docs/VECNA-SPEC.md` covering:
+- Full system audit findings
+- 5-stage pipeline architecture
+- Family context inheritance for expansions
+- Data priority rankings
+- UI mockups and component design
+- Database migration needed
+- 8-session implementation plan
+
+---
+
+## Phase 47 - Wikipedia Context for Game Wizard (COMPLETE)
 
 Added Wikipedia article context to enhance AI-generated content (rules, setup, reference) in the game wizard. When a game has a Wikipedia URL, the system automatically fetches and summarizes the article, then includes this context when generating content.
 

@@ -23,6 +23,7 @@ Read these files in order:
 
 | Document | Purpose |
 |----------|---------|
+| [VECNA-SPEC](VECNA-SPEC.md) | **Automated content pipeline** - Full spec for Vecna implementation |
 | [EXPANSION-ROADMAP](EXPANSION-ROADMAP.md) | Future phases (TCGs, RPGs, etc.) |
 | [MARKETPLACE-PAYMENTS-UX](plans/MARKETPLACE-PAYMENTS-UX.md) | Payment UX improvements |
 
@@ -42,6 +43,7 @@ Historical documentation for reference:
 ```
 docs/
 ├── INDEX.md                    # This file
+├── VECNA-SPEC.md               # Automated content pipeline spec
 ├── DEPLOYMENT.md               # Environment setup
 ├── EXPANSION-ROADMAP.md        # Future phases
 ├── STRIPE-SETUP.md             # Payment integration

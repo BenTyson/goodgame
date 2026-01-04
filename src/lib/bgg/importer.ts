@@ -9,6 +9,7 @@ import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
 import { enrichPublisher, getGameByBggId, getGamesInSeries, type WikidataBoardGame, type WikidataSeriesMember } from '@/lib/wikidata'
+import { enrichGameFromWikipedia, prepareWikipediaStorageData } from '@/lib/wikipedia'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -1249,6 +1250,32 @@ export async function importGameFromBGG(
 
   // Enrich with Wikidata data (image, official website, etc.)
   await enrichGameFromWikidata(supabase, newGame.id, bggId, bggData)
+
+  // Enrich with Wikipedia data (infobox, sections, categories, relations)
+  // Get the current game state to check if Wikidata provided a Wikipedia URL
+  const { data: gameWithWikipedia } = await supabase
+    .from('games')
+    .select('wikipedia_url')
+    .eq('id', newGame.id)
+    .single()
+
+  const wikipediaResult = await enrichGameFromWikipedia(
+    bggData.name,
+    bggData.yearPublished ?? undefined,
+    bggData.designers,
+    gameWithWikipedia?.wikipedia_url ?? undefined
+  )
+
+  if (wikipediaResult.found) {
+    // Store Wikipedia enrichment data
+    const wikipediaData = prepareWikipediaStorageData(wikipediaResult)
+    if (Object.keys(wikipediaData).length > 0) {
+      await supabase
+        .from('games')
+        .update(wikipediaData)
+        .eq('id', newGame.id)
+    }
+  }
 
   // Update has_unimported_relations flag for this game
   await updateUnimportedRelationsFlag(supabase, newGame.id, bggData)
