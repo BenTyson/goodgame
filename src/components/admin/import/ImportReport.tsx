@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   List,
+  Users2,
 } from 'lucide-react'
 import type { ImportSummary, ImportProgress } from './ImportWizard'
 
@@ -33,6 +34,14 @@ export function ImportReport({ summary, items, onStartOver }: ImportReportProps)
   const syncedItems = items.filter((i) => i.status === 'success' && i.gameId)
   const failedItems = items.filter((i) => i.status === 'failed')
   const skippedItems = items.filter((i) => i.status === 'skipped')
+
+  // Check if all successful items belong to the same family
+  const itemsWithFamily = successfulItems.filter((i) => i.familyId)
+  const uniqueFamilyIds = new Set(itemsWithFamily.map((i) => i.familyId))
+  const hasSingleFamily = uniqueFamilyIds.size === 1 && itemsWithFamily.length > 0
+  const primaryFamily = hasSingleFamily
+    ? { id: itemsWithFamily[0].familyId!, name: itemsWithFamily[0].familyName! }
+    : null
 
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds.toFixed(1)}s`
@@ -245,12 +254,22 @@ export function ImportReport({ summary, items, onStartOver }: ImportReportProps)
           <Plus className="h-4 w-4" />
           Import More
         </Button>
-        <Link href="/admin/games">
-          <Button className="gap-2">
-            <List className="h-4 w-4" />
-            Go to Games List
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {primaryFamily && (
+            <Link href={`/admin/families/${primaryFamily.id}`}>
+              <Button className="gap-2">
+                <Users2 className="h-4 w-4" />
+                Configure Family
+              </Button>
+            </Link>
+          )}
+          <Link href="/admin/games">
+            <Button variant={primaryFamily ? 'outline' : 'default'} className="gap-2">
+              <List className="h-4 w-4" />
+              Games List
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   )

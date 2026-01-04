@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { AutoLinkRelations } from './AutoLinkRelations'
 import type { Game, GameRelation, RelationType } from '@/types/database'
 
 interface TreeNode {
@@ -49,6 +50,7 @@ interface FamilyTreeViewProps {
   games: Game[]
   relations: GameRelation[]
   baseGameId: string | null
+  familyId?: string
   onRelationCreated?: () => void
 }
 
@@ -392,7 +394,7 @@ function TreeNodeComponent({
   )
 }
 
-export function FamilyTreeView({ games, relations, baseGameId, onRelationCreated }: FamilyTreeViewProps) {
+export function FamilyTreeView({ games, relations, baseGameId, familyId, onRelationCreated }: FamilyTreeViewProps) {
   const [treeKey, setTreeKey] = useState(0) // Used to force re-render for expand/collapse all
   const [defaultExpanded, setDefaultExpanded] = useState(true)
 
@@ -525,10 +527,20 @@ export function FamilyTreeView({ games, relations, baseGameId, onRelationCreated
       {orphans.length > 0 && (
         <Card className="border-dashed border-amber-500/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              Unlinked Games ({orphans.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Unlinked Games ({orphans.length})
+              </CardTitle>
+              {familyId && (
+                <AutoLinkRelations
+                  familyId={familyId}
+                  unlinkedCount={orphans.length}
+                  hasWikipediaUrl={games.some(g => g.wikipedia_url)}
+                  onRelationsCreated={onRelationCreated}
+                />
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               These games are in the family but have no defined relations. Click &quot;Link&quot; to connect them.
             </p>

@@ -250,7 +250,8 @@ async function enrichGameFromWikidata(
 
 /**
  * Link a game to a family based on Wikidata series (P179)
- * Only creates family if game doesn't already have a family from BGG
+ * If game already has a family from BGG, updates that family's wikidata_series_id
+ * Otherwise creates/links a new family from the Wikidata series
  */
 async function linkFamilyFromWikidataSeries(
   supabase: SupabaseClient<Database>,
@@ -266,7 +267,22 @@ async function linkFamilyFromWikidataSeries(
     .single()
 
   if (game?.family_id) {
-    console.log(`  [Wikidata] Game already has family from BGG, skipping series family creation`)
+    // Game has BGG family - update that family's wikidata_series_id if not set
+    const { data: existingFamily } = await supabase
+      .from('game_families')
+      .select('id, wikidata_series_id')
+      .eq('id', game.family_id)
+      .single()
+
+    if (existingFamily && !existingFamily.wikidata_series_id) {
+      await supabase
+        .from('game_families')
+        .update({ wikidata_series_id: seriesId })
+        .eq('id', existingFamily.id)
+      console.log(`  [Wikidata] Updated BGG family with Wikidata series ID: ${seriesId}`)
+    } else {
+      console.log(`  [Wikidata] Game already has family from BGG (series ID already set or family not found)`)
+    }
     return
   }
 

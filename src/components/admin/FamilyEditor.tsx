@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog'
 import { GamePicker } from './GamePicker'
 import { FamilyTreeView } from './FamilyTreeView'
+import { WikipediaEnrichment } from './WikipediaEnrichment'
 import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
 import type { Game, GameFamily, GameRelation } from '@/types/database'
@@ -395,6 +396,24 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
         </CardContent>
       </Card>
 
+      {/* Wikipedia Enrichment - only show for existing families */}
+      {!isNew && (
+        <WikipediaEnrichment
+          familyId={family.id}
+          familyName={family.name}
+          hasWikipediaUrl={games.some(g => g.wikipedia_url)}
+          onGamesLinked={async () => {
+            // Refresh games list after linking
+            const { data: gamesData } = await supabase
+              .from('games')
+              .select('*')
+              .eq('family_id', family.id)
+              .order('year_published', { ascending: true, nullsFirst: false })
+            setGames(gamesData || [])
+          }}
+        />
+      )}
+
       {/* Games in Family - only show for existing families */}
       {!isNew && (
         <div className="space-y-4">
@@ -423,6 +442,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
             games={games}
             relations={relations}
             baseGameId={family.base_game_id}
+            familyId={family.id}
             onRelationCreated={async () => {
               // Refresh relations after a new one is created
               if (games.length > 0) {

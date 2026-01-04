@@ -45,9 +45,12 @@ const gameFields: DataField[] = [
   { field: 'Artists', bgg: true, wikidata: false, dbColumn: 'game_artists', notes: 'Junction table' },
   { field: 'Categories', bgg: true, wikidata: false, dbColumn: 'game_categories', notes: 'Alias-mapped to our taxonomy' },
   { field: 'Mechanics', bgg: true, wikidata: true, dbColumn: 'game_mechanics', notes: 'Alias-mapped to our taxonomy' },
-  { field: 'Families', bgg: true, wikidata: false, dbColumn: 'game_families', notes: 'Junction table' },
+  { field: 'Families', bgg: true, wikidata: true, dbColumn: 'games.family_id', notes: 'FK to game_families' },
+  { field: 'Wikidata Series ID', bgg: false, wikidata: true, dbColumn: 'games.wikidata_series_id', notes: 'P179 series membership' },
+  { field: 'Wikipedia URL', bgg: false, wikidata: true, dbColumn: 'games.wikipedia_url', notes: 'English Wikipedia sitelink' },
   { field: 'Expansions', bgg: true, wikidata: false, dbColumn: 'game_relations', notes: 'Relation type' },
   { field: 'Reimplementations', bgg: true, wikidata: false, dbColumn: 'game_relations', notes: 'Relation type' },
+  { field: 'Sequel Relations', bgg: false, wikidata: true, dbColumn: 'game_relations', notes: 'P155/P156 follows/followed by' },
   { field: 'Awards', bgg: false, wikidata: true, dbColumn: '—', notes: 'Not stored yet' },
 ]
 
@@ -59,6 +62,16 @@ const publisherFields: DataField[] = [
   { field: 'Founded Year', bgg: false, wikidata: true, dbColumn: '—', notes: 'Not stored' },
   { field: 'Country', bgg: false, wikidata: true, dbColumn: '—', notes: 'Not stored' },
   { field: 'Wikidata ID', bgg: false, wikidata: true, dbColumn: 'publishers.wikidata_id' },
+]
+
+const familyFields: DataField[] = [
+  { field: 'Name', bgg: true, wikidata: true, dbColumn: 'game_families.name' },
+  { field: 'Slug', bgg: true, wikidata: true, dbColumn: 'game_families.slug', notes: 'Auto-generated from name' },
+  { field: 'Description', bgg: false, wikidata: false, dbColumn: 'game_families.description', notes: 'Manual entry' },
+  { field: 'BGG Family ID', bgg: true, wikidata: false, dbColumn: 'game_families.bgg_family_id' },
+  { field: 'Wikidata Series ID', bgg: false, wikidata: true, dbColumn: 'game_families.wikidata_series_id', notes: 'P179 series' },
+  { field: 'Base Game', bgg: false, wikidata: false, dbColumn: 'game_families.base_game_id', notes: 'Manual/auto-detected' },
+  { field: 'Hero Image', bgg: false, wikidata: false, dbColumn: 'game_families.hero_image_url', notes: 'Manual upload' },
 ]
 
 const designerFields: DataField[] = [
@@ -158,11 +171,17 @@ export default function DataPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{gameFields.length}</div>
             <p className="text-xs text-muted-foreground">Game fields</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{familyFields.length}</div>
+            <p className="text-xs text-muted-foreground">Family fields</p>
           </CardContent>
         </Card>
         <Card>
@@ -175,6 +194,7 @@ export default function DataPage() {
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600">
               {gameFields.filter(f => f.bgg && f.wikidata).length +
+               familyFields.filter(f => f.bgg && f.wikidata).length +
                publisherFields.filter(f => f.bgg && f.wikidata).length +
                designerFields.filter(f => f.bgg && f.wikidata).length}
             </div>
@@ -185,6 +205,7 @@ export default function DataPage() {
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-purple-600">
               {gameFields.filter(f => !f.bgg && f.wikidata).length +
+               familyFields.filter(f => !f.bgg && f.wikidata).length +
                publisherFields.filter(f => !f.bgg && f.wikidata).length}
             </div>
             <p className="text-xs text-muted-foreground">Wikidata-only enrichment</p>
@@ -194,6 +215,7 @@ export default function DataPage() {
 
       <div className="space-y-6">
         <DataTable fields={gameFields} title="Game Fields" />
+        <DataTable fields={familyFields} title="Family Fields" />
         <DataTable fields={publisherFields} title="Publisher Fields" />
         <DataTable fields={designerFields} title="Designer Fields" />
       </div>

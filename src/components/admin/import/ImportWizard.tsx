@@ -47,6 +47,8 @@ export interface ImportProgress {
   error?: string
   gameId?: string
   slug?: string
+  familyId?: string
+  familyName?: string
 }
 
 export interface ImportSummary {

@@ -18,6 +18,8 @@ interface ProgressEvent {
   error?: string
   gameId?: string
   slug?: string
+  familyId?: string
+  familyName?: string
 }
 
 interface CompleteEvent {
@@ -287,6 +289,13 @@ export async function POST(request: NextRequest) {
               const result = await syncGameWithBGG(existing.id)
               if (result.success) {
                 synced++
+                // Get family info
+                const { data: gameWithFamily } = await supabase
+                  .from('games')
+                  .select('family_id, game_families(id, name)')
+                  .eq('id', existing.id)
+                  .single()
+                const family = gameWithFamily?.game_families as { id: string; name: string } | null
                 sendEvent({
                   type: 'progress',
                   bggId,
@@ -294,6 +303,8 @@ export async function POST(request: NextRequest) {
                   status: 'success',
                   gameId: existing.id,
                   slug: existing.slug,
+                  familyId: family?.id,
+                  familyName: family?.name,
                 })
               } else {
                 failed++
@@ -351,6 +362,19 @@ export async function POST(request: NextRequest) {
 
           if (result.success) {
             imported++
+            // Get family info
+            let familyId: string | undefined
+            let familyName: string | undefined
+            if (result.gameId) {
+              const { data: gameWithFamily } = await supabase
+                .from('games')
+                .select('family_id, game_families(id, name)')
+                .eq('id', result.gameId)
+                .single()
+              const family = gameWithFamily?.game_families as { id: string; name: string } | null
+              familyId = family?.id
+              familyName = family?.name
+            }
             sendEvent({
               type: 'progress',
               bggId,
@@ -358,6 +382,8 @@ export async function POST(request: NextRequest) {
               status: 'success',
               gameId: result.gameId,
               slug: result.slug,
+              familyId,
+              familyName,
             })
           } else {
             failed++

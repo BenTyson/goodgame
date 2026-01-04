@@ -1,8 +1,70 @@
 # Current Status
 
-> Last Updated: 2026-01-03 (Wikipedia/Wikidata Series Integration)
+> Last Updated: 2026-01-03 (Wikipedia AI Enrichment & Auto-Link)
 
-## Current Phase: 45 - Admin Import Page & Wikidata Series Integration (COMPLETE)
+## Current Phase: 46 - Wikipedia AI Enrichment & Family Auto-Link (COMPLETE)
+
+Added AI-powered Wikipedia enrichment to the families admin page. Admins can now automatically discover related games and create relationships between unlinked games using Wikipedia content parsed by Claude Haiku.
+
+### Wikipedia Enrichment (`/admin/families/[id]`)
+
+New "Enrich from Wikipedia" card on family detail pages that:
+- Fetches Wikipedia article content via MediaWiki API
+- Uses Claude Haiku to extract related games (expansions, sequels, spin-offs)
+- Matches extracted games to our database (exact, fuzzy, BGG ID matching)
+- Shows games that can be linked to the family
+
+### Auto-Link Relations
+
+New "Auto-Link with AI" button in the Unlinked Games section that:
+- Analyzes Wikipedia to determine relationships between games in the family
+- Extracts relation types: `expansion_of`, `sequel_to`, `reimplementation_of`, `spin_off_of`, `standalone_in_series`
+- Shows confidence levels (high/medium/low) with reasoning
+- Auto-selects high-confidence relations for quick approval
+- Creates `game_relations` entries with one click
+
+### Import → Family Navigation
+
+After importing games, the report now:
+- Detects if all imported games belong to the same family
+- Shows "Configure Family" as the primary action button
+- Routes admins to the family page for immediate configuration
+
+### Bug Fix: Wikidata Family Series ID
+
+Fixed `linkFamilyFromWikidataSeries()` to update the BGG family's `wikidata_series_id` even when games already have a `family_id` from BGG.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/families/[id]/wikipedia/route.ts` | Wikipedia enrichment API (POST: analyze, PATCH: link games) |
+| `src/app/api/admin/families/[id]/auto-link/route.ts` | Auto-link relations API (POST: analyze, PUT: create relations) |
+| `src/components/admin/WikipediaEnrichment.tsx` | Wikipedia enrichment UI component |
+| `src/components/admin/AutoLinkRelations.tsx` | Auto-link relations dialog component |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/lib/bgg/importer.ts` | Fixed `linkFamilyFromWikidataSeries()` to update family's `wikidata_series_id` |
+| `src/app/admin/(dashboard)/data/page.tsx` | Added Family Fields section, Wikidata series fields |
+| `src/components/admin/FamilyEditor.tsx` | Added WikipediaEnrichment component |
+| `src/components/admin/FamilyTreeView.tsx` | Added AutoLinkRelations button, `familyId` prop |
+| `src/app/api/admin/import/execute/route.ts` | Added `familyId`, `familyName` to progress events |
+| `src/components/admin/import/ImportWizard.tsx` | Added family fields to ImportProgress interface |
+| `src/components/admin/import/ImportReport.tsx` | Added "Configure Family" button for single-family imports |
+
+### Data Dictionary Updates
+
+Added to `/admin/data`:
+- **Family Fields** section (7 fields including `wikidata_series_id`)
+- Game fields: `Wikidata Series ID`, `Wikipedia URL`, `Sequel Relations`
+- Updated field counts in stats cards
+
+---
+
+## Phase 45 - Admin Import Page & Wikidata Series Integration (COMPLETE)
 
 New admin import wizard for BGG game imports with real-time progress. Enhanced Wikidata integration to capture Wikipedia URLs, series membership, and sequel relationships. Added admin review workflow for families with unlinked games.
 

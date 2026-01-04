@@ -141,6 +141,13 @@ src/app/
 │   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
 │   │   └── [id]/
 │   │       └── reset-content/route.ts  # POST reset parsed content
+│   ├── families/
+│   │   └── [id]/
+│   │       ├── wikipedia/route.ts  # POST fetch Wikipedia, PATCH link games
+│   │       └── auto-link/route.ts  # POST analyze relations, PUT create relations
+│   ├── import/
+│   │   ├── analyze/route.ts   # POST analyze BGG IDs before import
+│   │   └── execute/route.ts   # POST execute import with SSE progress
 │   ├── rulebook/
 │   │   ├── parse/route.ts     # POST parse rulebook + extract taxonomy
 │   │   ├── validate/route.ts  # POST validate rulebook URL
@@ -179,6 +186,10 @@ src/components/
 │   ├── AdminSidebar.tsx       # Sidebar with hamburger drawer (matches GamesSidebar)
 │   ├── AdminLayoutClient.tsx  # Client wrapper for mobile state management
 │   ├── GameEditor.tsx         # Game editor (uses tab components)
+│   ├── FamilyEditor.tsx       # Family editor with tree view
+│   ├── FamilyTreeView.tsx     # Visual family tree with relations
+│   ├── WikipediaEnrichment.tsx # AI-powered Wikipedia game discovery
+│   ├── AutoLinkRelations.tsx  # AI-powered relation creation from Wikipedia
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
 │   ├── ImageUpload.tsx        # Image uploader with type selector + crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
@@ -199,11 +210,17 @@ src/components/
 │   │       ├── RelationsStep.tsx       # Step 6: Game connections
 │   │       ├── ReviewContentStep.tsx   # Step 7: Review content
 │   │       └── PublishStep.tsx         # Step 8: Publish game
-│   └── rulebook/              # RulebookEditor sub-components
-│       ├── RulebookUrlSection.tsx
-│       ├── RulebookParseSection.tsx
-│       ├── CrunchScoreDisplay.tsx  # Complexity score display (1-10 scale)
-│       └── ContentGenerationModal.tsx
+│   ├── rulebook/              # RulebookEditor sub-components
+│   │   ├── RulebookUrlSection.tsx
+│   │   ├── RulebookParseSection.tsx
+│   │   ├── CrunchScoreDisplay.tsx  # Complexity score display (1-10 scale)
+│   │   └── ContentGenerationModal.tsx
+│   └── import/                # Import wizard components
+│       ├── ImportWizard.tsx   # Main import orchestrator with SSE
+│       ├── ImportInput.tsx    # BGG ID input step
+│       ├── ImportPreview.tsx  # Preview games to import
+│       ├── ImportProgress.tsx # Real-time progress display
+│       └── ImportReport.tsx   # Import summary with family navigation
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload

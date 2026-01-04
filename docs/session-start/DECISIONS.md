@@ -72,6 +72,19 @@
 | Theme question | Skip for social games | Party games are theme-light |
 | Nav placement | Featured pill button after Shelf | Prominent but not intrusive |
 
+## AI-Powered Data Enrichment
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Wikipedia enrichment | Family admin page (not import) | Interactive review before linking |
+| Wikipedia AI model | Claude Haiku | Fast, cost-effective for extraction |
+| Wikipedia API | MediaWiki API | Official, well-documented |
+| Game matching | Exact → Fuzzy → BGG ID | Multiple strategies for accuracy |
+| Auto-link relations | AI analyzes Wikipedia article | Extracts expansion_of, sequel_to, etc. |
+| Relation confidence | High/Medium/Low levels | Admin reviews before creating |
+| Auto-select | High confidence only | Safe default, admin can add more |
+| Import → Family nav | Single-family imports route to family page | Family config before game wizard |
+
 ## Marketplace UI/UX
 
 | Decision | Choice | Rationale |
