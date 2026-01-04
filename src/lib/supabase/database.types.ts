@@ -653,16 +653,19 @@ export type Database = {
           category_id: string
           game_id: string
           is_primary: boolean | null
+          source: string | null
         }
         Insert: {
           category_id: string
           game_id: string
           is_primary?: boolean | null
+          source?: string | null
         }
         Update: {
           category_id?: string
           game_id?: string
           is_primary?: boolean | null
+          source?: string | null
         }
         Relationships: [
           {
@@ -830,14 +833,17 @@ export type Database = {
         Row: {
           game_id: string
           mechanic_id: string
+          source: string | null
         }
         Insert: {
           game_id: string
           mechanic_id: string
+          source?: string | null
         }
         Update: {
           game_id?: string
           mechanic_id?: string
+          source?: string | null
         }
         Relationships: [
           {
@@ -974,16 +980,19 @@ export type Database = {
         Row: {
           game_id: string
           is_primary: boolean | null
+          source: string | null
           theme_id: string
         }
         Insert: {
           game_id: string
           is_primary?: boolean | null
+          source?: string | null
           theme_id: string
         }
         Update: {
           game_id?: string
           is_primary?: boolean | null
+          source?: string | null
           theme_id?: string
         }
         Relationships: [

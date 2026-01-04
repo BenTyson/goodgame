@@ -23,7 +23,7 @@ Read these files in order:
 
 | Document | Purpose |
 |----------|---------|
-| [VECNA-SPEC](VECNA-SPEC.md) | **Automated content pipeline** - Full spec for Vecna implementation |
+| [VECNA-SPEC](VECNA-SPEC.md) | **Automated content pipeline** - Phase 1 complete, spec + implementation status |
 | [EXPANSION-ROADMAP](EXPANSION-ROADMAP.md) | Future phases (TCGs, RPGs, etc.) |
 | [MARKETPLACE-PAYMENTS-UX](plans/MARKETPLACE-PAYMENTS-UX.md) | Payment UX improvements |
 

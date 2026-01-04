@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import {
   parsePdfFromUrl,
-  getRulesSummaryPrompt,
-  getSetupGuidePrompt,
-  getReferenceCardPrompt,
+  getEnhancedRulesSummaryPrompt,
+  getEnhancedSetupGuidePrompt,
+  getEnhancedReferenceCardPrompt,
   RULEBOOK_SYSTEM_PROMPT,
 } from '@/lib/rulebook'
 import type {
@@ -13,7 +13,7 @@ import type {
   ReferenceContent,
 } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
-import { formatSummaryForPrompt, type WikipediaSummary } from '@/lib/wikipedia'
+import { buildAIContext, parseGameContextFromDb, type FamilyContext } from '@/lib/vecna'
 import type { Json } from '@/types/database'
 
 /**
@@ -46,30 +46,69 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get game info including rulebook URL and Wikipedia summary
-    // Note: latest_parse_log_id is selected but cast to unknown due to type sync issues
+    // Get game info including rulebook URL and all Wikipedia data
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, name, slug, rulebook_url, wikipedia_summary')
+      .select(`
+        id, name, slug, rulebook_url, year_published,
+        wikipedia_summary, wikipedia_gameplay, wikipedia_origins,
+        wikipedia_reception, wikipedia_awards, wikipedia_infobox,
+        latest_parse_log_id
+      `)
       .eq('id', gameId)
-      .single() as { data: { id: string; name: string; slug: string; rulebook_url: string | null; latest_parse_log_id?: string; wikipedia_summary?: WikipediaSummary | null } | null; error: unknown }
-
-    // Get latest_parse_log_id separately since types may not be synced
-    let latestParseLogId: string | null = null
-    if (game?.id) {
-      const { data: gameWithLog } = await supabase
-        .from('games')
-        .select('latest_parse_log_id')
-        .eq('id', gameId)
-        .single()
-      latestParseLogId = (gameWithLog as { latest_parse_log_id?: string } | null)?.latest_parse_log_id ?? null
-    }
+      .single()
 
     if (gameError || !game) {
       return NextResponse.json(
         { error: 'Game not found' },
         { status: 404 }
       )
+    }
+
+    const latestParseLogId = game.latest_parse_log_id as string | null
+
+    // Check if this game is an expansion and get family context
+    let familyContext: FamilyContext | null = null
+    let isExpansion = false
+    let relationToBase: string | undefined
+
+    // Query game_relations to find if this game is an expansion
+    // source_game_id = expansion, target_game_id = base game
+    const { data: gameRelation } = await supabase
+      .from('game_relations')
+      .select('relation_type, target_game_id')
+      .eq('source_game_id', gameId)
+      .in('relation_type', ['expansion_of', 'standalone_expansion_of'])
+      .limit(1)
+      .single()
+
+    if (gameRelation?.target_game_id) {
+      isExpansion = true
+      relationToBase = gameRelation.relation_type
+
+      // Fetch the base game data separately
+      const { data: baseGame } = await supabase
+        .from('games')
+        .select('id, name, rules_content, setup_content, wikipedia_summary, wikipedia_gameplay')
+        .eq('id', gameRelation.target_game_id)
+        .single()
+
+      if (baseGame) {
+        // Build family context from base game
+        const rulesContent = baseGame.rules_content as RulesContent | null
+        const setupContent = baseGame.setup_content as SetupContent | null
+        const wikiSummary = baseGame.wikipedia_summary as { themes?: string[]; mechanics?: string[] } | null
+
+        familyContext = {
+          baseGameId: baseGame.id,
+          baseGameName: baseGame.name,
+          coreMechanics: wikiSummary?.mechanics || rulesContent?.coreRules?.slice(0, 3).map(r => r.title) || [],
+          coreTheme: wikiSummary?.themes?.[0] || null,
+          baseRulesOverview: rulesContent?.quickStart?.join(' ') || null,
+          baseSetupSummary: setupContent?.steps?.slice(0, 3).map(s => s.step).join('. ') || null,
+          componentTypes: setupContent?.components?.map(c => c.name) || [],
+        }
+      }
     }
 
     if (!game.rulebook_url) {
@@ -112,13 +151,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Format Wikipedia context if available
-    const wikipediaContext = game.wikipedia_summary
-      ? formatSummaryForPrompt(game.wikipedia_summary)
-      : undefined
+    // Build enhanced AI context using all available data
+    const gameContextData = {
+      ...parseGameContextFromDb(game as Parameters<typeof parseGameContextFromDb>[0]),
+      familyContext,
+      isExpansion,
+      relationToBase,
+    }
+    const aiContext = buildAIContext(gameContextData)
 
-    if (wikipediaContext) {
-      console.log('Using Wikipedia context for content generation')
+    const hasWikipediaContext = !!aiContext.wikipediaContext
+    const hasFamilyContext = !!aiContext.familyContext
+
+    if (hasWikipediaContext) {
+      console.log('Using enhanced Wikipedia context for content generation')
+    }
+    if (hasFamilyContext) {
+      console.log('Using family context for expansion content generation')
     }
 
     // Generate content in parallel where possible
@@ -131,12 +180,12 @@ export async function POST(request: NextRequest) {
 
     const generatePromises: Promise<void>[] = []
 
-    // Generate rules content
+    // Generate rules content with enhanced prompts
     if (contentTypes.includes('rules')) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getRulesSummaryPrompt(rulebookText, game.name, wikipediaContext)
+            const prompt = getEnhancedRulesSummaryPrompt(rulebookText, game.name, aiContext)
             const result = await generateJSON<RulesContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -144,8 +193,6 @@ export async function POST(request: NextRequest) {
             )
             results.rules = result.data
             console.log('Generated rules content keys:', Object.keys(result.data || {}))
-            console.log('endGameConditions:', (result.data as RulesContent)?.endGameConditions)
-            console.log('winCondition:', (result.data as RulesContent)?.winCondition)
           } catch (error) {
             console.error('Rules generation failed:', error)
             results.errors.rules = error instanceof Error ? error.message : 'Failed to generate rules'
@@ -154,12 +201,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate setup content
+    // Generate setup content with enhanced prompts
     if (contentTypes.includes('setup')) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getSetupGuidePrompt(rulebookText, game.name, wikipediaContext)
+            const prompt = getEnhancedSetupGuidePrompt(rulebookText, game.name, aiContext)
             const result = await generateJSON<SetupContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -167,8 +214,6 @@ export async function POST(request: NextRequest) {
             )
             results.setup = result.data
             console.log('Generated setup content keys:', Object.keys(result.data || {}))
-            console.log('firstPlayerRule:', (result.data as SetupContent)?.firstPlayerRule)
-            console.log('quickTips:', (result.data as SetupContent)?.quickTips)
           } catch (error) {
             console.error('Setup generation failed:', error)
             results.errors.setup = error instanceof Error ? error.message : 'Failed to generate setup'
@@ -177,12 +222,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate reference content
+    // Generate reference content with enhanced prompts
     if (contentTypes.includes('reference')) {
       generatePromises.push(
         (async () => {
           try {
-            const prompt = getReferenceCardPrompt(rulebookText, game.name, wikipediaContext)
+            const prompt = getEnhancedReferenceCardPrompt(rulebookText, game.name, aiContext)
             const result = await generateJSON<ReferenceContent>(
               RULEBOOK_SYSTEM_PROMPT,
               prompt,
@@ -247,7 +292,9 @@ export async function POST(request: NextRequest) {
         setup: !!results.setup,
         reference: !!results.reference,
       },
-      usedWikipediaContext: !!wikipediaContext,
+      usedWikipediaContext: hasWikipediaContext,
+      usedFamilyContext: hasFamilyContext,
+      isExpansion,
       // Include content summaries for the modal
       content: {
         rules: results.rules ? {

@@ -1,8 +1,9 @@
 # Vecna: Automated Game Content Pipeline
 
-**Version:** 1.0
+**Version:** 1.1
 **Created:** 2026-01-04
-**Status:** Specification (Ready for Implementation)
+**Updated:** 2026-01-04
+**Status:** Phase 1 Complete - Foundation Implemented
 
 ## Overview
 
@@ -574,3 +575,66 @@ interface ReferenceContent {
   quickReminders: string[]
 }
 ```
+
+---
+
+## Implementation Status
+
+### Phase 1: Foundation (COMPLETE)
+
+**Implemented:**
+- `/admin/vecna` page with family sidebar
+- `VecnaPipeline` component with state management
+- `VecnaFamilySidebar` with search, filter, and collapse functionality
+- `VecnaGameView` with three tabs (Overview, Taxonomy, Data Sources)
+- Processing state enum and tracking columns
+- Family context storage in `game_families`
+- Taxonomy source tracking (bgg, wikidata, wikipedia, ai, manual)
+
+**Files Created:**
+```
+src/app/admin/(dashboard)/vecna/
+├── page.tsx                    # Main page with data fetching
+└── components/
+    ├── VecnaPipeline.tsx       # Pipeline orchestrator
+    ├── VecnaFamilySidebar.tsx  # Collapsible family tree
+    ├── VecnaGameView.tsx       # Game detail view with tabs
+    ├── VecnaEmptyState.tsx     # Empty state with stats
+    ├── StateActions.tsx        # State transition actions
+    ├── RulebookDiscovery.tsx   # Rulebook URL discovery UI
+    └── index.ts                # Barrel exports
+
+src/lib/vecna/
+├── types.ts                    # VecnaState, VecnaGame, VecnaFamily, etc.
+├── pipeline.ts                 # Pipeline orchestration logic
+├── context.ts                  # Family context utilities
+└── index.ts                    # Barrel exports
+```
+
+**Migrations:**
+- `00060_vecna_state.sql` - `vecna_state` enum and columns
+- `00061_taxonomy_source.sql` - `source` column on junction tables
+- `00062_fix_taxonomy_source_default.sql` - Backfill BGG as source
+
+### Phase 2: Automation (NOT STARTED)
+
+**To Implement:**
+- Auto-enrichment after import
+- Rulebook discovery priority chain (Wikidata → Wikipedia → Pattern)
+- Batch processing for families
+- State transition APIs
+
+### Phase 3: Enhanced AI (PLANNED)
+
+**To Implement:**
+- Full Wikipedia context in prompts (gameplay, origins, awards)
+- Family context inheritance for expansions
+- Improved taxonomy assignment with Wikipedia categories
+
+### Phase 4: Review UI & Polish (PLANNED)
+
+**To Implement:**
+- Three-column review UI (source | generated | final)
+- Data source visibility badges throughout
+- Compliance checklist
+- Per-game publish flow

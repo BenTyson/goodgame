@@ -88,10 +88,15 @@ src/app/
 │   ├── login/page.tsx
 │   └── (dashboard)/
 │       ├── page.tsx          # Dashboard
+│       ├── vecna/            # Vecna content pipeline
 │       ├── games/            # Game management
+│       ├── import/           # BGG import wizard
+│       ├── taxonomy/         # Taxonomy management
 │       ├── families/         # Family management
 │       ├── publishers/       # Publisher management
-│       └── queue/            # Import queue
+│       ├── queue/            # Import queue
+│       ├── data/             # Data dictionary
+│       └── wikidata/         # Wikidata import
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
 ├── settings/page.tsx          # Profile settings (avatar upload)
@@ -216,12 +221,19 @@ src/components/
 │   │   ├── RulebookParseSection.tsx
 │   │   ├── CrunchScoreDisplay.tsx  # Complexity score display (1-10 scale)
 │   │   └── ContentGenerationModal.tsx
-│   └── import/                # Import wizard components
-│       ├── ImportWizard.tsx   # Main import orchestrator with SSE
-│       ├── ImportInput.tsx    # BGG ID input step
-│       ├── ImportPreview.tsx  # Preview games to import
-│       ├── ImportProgress.tsx # Real-time progress display
-│       └── ImportReport.tsx   # Import summary with family navigation
+│   ├── import/                # Import wizard components
+│   │   ├── ImportWizard.tsx   # Main import orchestrator with SSE
+│   │   ├── ImportInput.tsx    # BGG ID input step
+│   │   ├── ImportPreview.tsx  # Preview games to import
+│   │   ├── ImportProgress.tsx # Real-time progress display
+│   │   └── ImportReport.tsx   # Import summary with family navigation
+│   └── vecna/                 # Vecna pipeline components (in app/admin/vecna/components/)
+│       ├── VecnaPipeline.tsx      # Pipeline orchestrator with state management
+│       ├── VecnaFamilySidebar.tsx # Collapsible family tree sidebar
+│       ├── VecnaGameView.tsx      # Game detail view with tabs (Overview, Taxonomy, Data)
+│       ├── VecnaEmptyState.tsx    # Empty state with aggregate stats
+│       ├── StateActions.tsx       # State transition action buttons
+│       └── RulebookDiscovery.tsx  # Rulebook URL discovery UI
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
@@ -303,6 +315,11 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
   └── discovery.ts             # Publisher URL pattern matching
 src/lib/wikipedia/             # Wikipedia integration utilities
   └── index.ts                 # fetchWikipediaContent(), summarizeWikipediaContent(), formatSummaryForPrompt()
+src/lib/vecna/                 # Vecna pipeline utilities
+  ├── types.ts                 # VecnaState, VecnaGame, VecnaFamily, FamilyContext
+  ├── pipeline.ts              # Pipeline orchestration logic
+  ├── context.ts               # Family context utilities
+  └── index.ts                 # Barrel exports
 src/lib/ai/
   ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
   ├── generator.ts             # Content generation orchestrator
@@ -324,7 +341,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (57 files)
+supabase/migrations/           # Database schema (62 files)
 ```
 
 ### Type Definitions
@@ -362,6 +379,16 @@ ReviewWithUser   // Review with user profile
 TaxonomySuggestion // AI-generated taxonomy suggestion
 TaxonomySuggestionInsert // For inserting suggestions
 TaxonomyExtractionResult // AI extraction response format
+TaxonomySource     // 'bgg' | 'wikidata' | 'wikipedia' | 'ai' | 'manual'
+
+// Vecna types (from src/lib/vecna/types.ts)
+VecnaState         // Processing state enum (11 states)
+VecnaGame          // Game with processing state and data sources
+VecnaFamily        // Family with games for sidebar display
+FamilyContext      // Base game context for expansion processing
+PipelineProgress   // Pipeline progress for a family
+DataSource         // 'bgg' | 'wikidata' | 'wikipedia' | 'manual' | 'ai'
+SourcedField<T>    // Field value with source tracking
 
 // Content types (union types for AI generation)
 ReferenceContent['endGame'] // string | { triggers, finalRound?, winner, tiebreakers? }

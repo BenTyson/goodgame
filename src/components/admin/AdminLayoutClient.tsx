@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Dice5, Menu } from 'lucide-react'
+import { ArrowLeft, Dice5, Menu, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminSidebar } from './AdminSidebar'
 import { LogoutButton } from './LogoutButton'
@@ -14,6 +14,7 @@ interface AdminLayoutClientProps {
 
 export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -29,6 +30,20 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
               className="lg:hidden"
             >
               <Menu className="h-5 w-5" />
+            </Button>
+            {/* Desktop sidebar toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden lg:flex"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeft className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
             </Button>
             <Link
               href="/"
@@ -60,6 +75,7 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
         <AdminSidebar
           isMobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
+          collapsed={sidebarCollapsed}
         />
 
         {/* Main Content */}

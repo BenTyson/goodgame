@@ -523,6 +523,342 @@ QUALITY CHECKLIST:
 - Keep text SHORT - this is a reference card, not a guide`
 }
 
+// =====================================================
+// Enhanced Prompts with Full Context (Vecna Pipeline)
+// =====================================================
+
+/**
+ * Enhanced rules summary prompt that uses all available Wikipedia data
+ * and optionally includes family context for expansions
+ */
+export function getEnhancedRulesSummaryPrompt(
+  rulebookText: string,
+  gameName: string,
+  context: {
+    wikipediaContext?: string | null
+    familyContext?: string | null
+    expansionNote?: string | null
+  }
+): string {
+  const truncatedText = rulebookText.length > 35000
+    ? rulebookText.substring(0, 35000) + '\n\n[...rulebook truncated...]'
+    : rulebookText
+
+  // Build context sections
+  const contextSections: string[] = []
+
+  if (context.expansionNote) {
+    contextSections.push(`IMPORTANT: ${context.expansionNote}\n`)
+  }
+
+  if (context.familyContext) {
+    contextSections.push(`${context.familyContext}\n`)
+  }
+
+  if (context.wikipediaContext) {
+    contextSections.push(`WIKIPEDIA CONTEXT (use for background, theme, and reception - rulebook is primary for rules):\n---\n${context.wikipediaContext}\n---\n`)
+  }
+
+  const contextBlock = contextSections.length > 0
+    ? contextSections.join('\n')
+    : ''
+
+  return `You're writing the rules guide for "${gameName}" on Board Nomads. This will be the first thing new players read - make it count!
+${contextBlock}
+RULEBOOK TEXT (primary source for all rules):
+---
+${truncatedText}
+---
+
+Create a comprehensive but approachable rules guide. Write in YOUR voice - warm, expert, and genuinely helpful. Never copy rulebook text verbatim.
+
+${context.expansionNote ? `Since this is an expansion, focus on:\n- What NEW mechanics or rules this adds\n- How it CHANGES the base game experience\n- Setup additions/modifications\n- New victory conditions or scoring (if any)\nDon't repeat base game rules unless modified.\n\n` : ''}Return as JSON:
+{
+  "quickStart": [
+    "First thing every player needs to know - what's the goal?",
+    "The core action loop - what do you actually DO on your turn?",
+    "The key decision point - where's the interesting choice?",
+    "The satisfying moment - what makes this game click?",
+    "Pro tip - something that clicks after a few plays"
+  ],
+  "overview": "3-4 sentences capturing what makes this game special. Lead with the hook - what's exciting? Then explain the core experience. End with who this game is perfect for.${context.expansionNote ? ' Mention how this expansion enhances the base game.' : ''}",
+  "coreRules": [
+    {
+      "title": "Category Name (e.g., 'Resources', 'Combat', 'Building')",
+      "summary": "One sentence explaining what this system does and why it matters",
+      "points": [
+        "Specific rule or mechanic explained clearly",
+        "Another key point players need to know",
+        "Important interaction or exception",
+        "Helpful context or 'gotcha' to watch for"
+      ]
+    }
+  ],
+  "turnStructure": [
+    {
+      "phase": "Phase Name",
+      "description": "What you do in this phase - be specific!",
+      "keyChoices": "The main decision(s) you make here"
+    }
+  ],
+  "scoring": [
+    {
+      "category": "Scoring Category",
+      "points": "How many points and how to earn them",
+      "strategy": "Brief tip on when/why to pursue this"
+    }
+  ],
+  "endGameConditions": [
+    "Specific trigger that ends the game (with exact numbers/conditions)",
+    "Alternative end condition if applicable"
+  ],
+  "winCondition": "Exactly how the winner is determined. Include tiebreakers if they exist.",
+  "keyTerms": [
+    {
+      "term": "Game-specific term",
+      "definition": "What it means in plain language"
+    }
+  ],
+  "tips": [
+    "Strategic insight that new players often miss",
+    "Common mistake to avoid",
+    "Something experienced players wish they knew earlier",
+    "Timing tip or tempo advice"
+  ],
+  "rulesNotes": [
+    "Tricky rule that's easy to get wrong",
+    "Important clarification or edge case"
+  ]
+}
+
+QUALITY CHECKLIST:
+- quickStart should let someone understand the game in 60 seconds
+- overview should make someone WANT to play (not just describe the theme)${context.wikipediaContext ? '\n- Use Wikipedia reception/awards to add credibility if notable' : ''}
+- coreRules should have 3-6 categories covering all major systems
+- turnStructure should walk through a complete turn
+- scoring should include ALL ways to earn points
+- tips should be genuinely useful, not generic
+- keyTerms for any game-specific vocabulary
+- rulesNotes for things players commonly get wrong`
+}
+
+/**
+ * Enhanced setup guide prompt with full context
+ */
+export function getEnhancedSetupGuidePrompt(
+  rulebookText: string,
+  gameName: string,
+  context: {
+    wikipediaContext?: string | null
+    familyContext?: string | null
+    expansionNote?: string | null
+  }
+): string {
+  const truncatedText = rulebookText.length > 30000
+    ? rulebookText.substring(0, 30000) + '\n\n[...rulebook truncated...]'
+    : rulebookText
+
+  // Build context sections
+  const contextSections: string[] = []
+
+  if (context.expansionNote) {
+    contextSections.push(`IMPORTANT: ${context.expansionNote}\n`)
+  }
+
+  if (context.familyContext) {
+    contextSections.push(`${context.familyContext}\n`)
+  }
+
+  if (context.wikipediaContext) {
+    contextSections.push(`WIKIPEDIA CONTEXT (for component context only):\n---\n${context.wikipediaContext}\n---\n`)
+  }
+
+  const contextBlock = contextSections.length > 0
+    ? contextSections.join('\n')
+    : ''
+
+  return `You're writing the setup guide for "${gameName}" on Board Nomads. Someone's about to crack open this box - help them get playing smoothly!
+${contextBlock}
+RULEBOOK TEXT (primary source for setup instructions):
+---
+${truncatedText}
+---
+
+${context.expansionNote ? `Since this is an expansion:\n- Focus on what's ADDED to base game setup\n- Note which base game components are still used\n- Highlight any base game setup MODIFICATIONS\n- Don't repeat base game setup steps unless changed\n\n` : ''}Create a setup guide that gets people from "box on table" to "ready to play" efficiently. Write conversationally but stay practical.
+
+Return as JSON:
+{
+  "overview": "2-3 sentences setting expectations. How complex is setup? What's the vibe? Any prep required beforehand?${context.expansionNote ? ' Mention this is expansion setup.' : ''}",
+  "estimatedTime": "X-Y minutes (be realistic, include sorting time for first play)",
+  "spaceRequired": "Brief note on table space needed",
+  "components": [
+    {
+      "name": "Component Name",
+      "quantity": "Count or description",
+      "description": "What it is and how it's used",
+      "sortingTip": "How to organize it (if helpful)"
+    }
+  ],
+  "beforeYouStart": [
+    "Any sorting, punching, or organizing to do before first play",
+    "Reference cards to hand out",
+    "Things to read/review before starting"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "title": "Clear Action Title",
+      "instruction": "Specific, actionable instruction",
+      "details": "Additional details or variations (by player count, etc.)",
+      "tip": "Helpful context or efficiency tip (null if none)"
+    }
+  ],
+  "playerSetup": {
+    "description": "What each player needs in their play area",
+    "items": [
+      "Specific item with quantity",
+      "Another item - be specific about colors, positions, etc."
+    ],
+    "notes": "Any variations by player count or role"
+  },
+  "boardSetup": {
+    "description": "How to configure the central play area",
+    "steps": ["Specific placement instruction", "Another placement step"],
+    "playerCountVariations": "How setup changes with different player counts (null if same)"
+  },
+  "firstPlayerRule": "The exact first player rule from the game. If it's thematic, include the fun flavor!",
+  "readyCheck": [
+    "Quick verification that setup is complete",
+    "Common thing to double-check before starting"
+  ],
+  "quickTips": [
+    "Practical tip that speeds up setup",
+    "Organization hack experienced players use",
+    "Advice for teaching while setting up"
+  ],
+  "commonMistakes": [
+    "Specific setup error and why it matters",
+    "Thing people often forget or do wrong"
+  ],
+  "storageNotes": "Tips for packing up efficiently (bagging suggestions, etc.)"
+}
+
+QUALITY CHECKLIST:
+- components should list ${context.expansionNote ? 'all NEW expansion components' : 'EVERYTHING in the box'}
+- steps should be in logical order (board first, then cards, then player pieces, etc.)
+- Include player count variations where relevant
+- firstPlayerRule should use the game's actual thematic rule if it has one
+- Tips should be genuinely useful, from experience`
+}
+
+/**
+ * Enhanced reference card prompt with full context
+ */
+export function getEnhancedReferenceCardPrompt(
+  rulebookText: string,
+  gameName: string,
+  context: {
+    wikipediaContext?: string | null
+    familyContext?: string | null
+    expansionNote?: string | null
+  }
+): string {
+  const truncatedText = rulebookText.length > 30000
+    ? rulebookText.substring(0, 30000) + '\n\n[...rulebook truncated...]'
+    : rulebookText
+
+  // For reference cards, only use minimal context
+  const contextBlock = context.expansionNote
+    ? `IMPORTANT: ${context.expansionNote}\n\n`
+    : ''
+
+  return `You're creating the quick reference for "${gameName}" on Board Nomads. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
+${contextBlock}
+RULEBOOK TEXT (primary source for all reference content):
+---
+${truncatedText}
+---
+
+${context.expansionNote ? `Since this is an expansion, focus on:\n- NEW actions and their costs\n- Modified rules from base game\n- New scoring opportunities\n- New icons/symbols introduced\n\n` : ''}Create a reference that answers the most common "wait, how does this work again?" questions during play.
+
+Return as JSON:
+{
+  "turnSummary": [
+    {
+      "phase": "Phase Name",
+      "required": true,
+      "actions": ["Specific action you can/must take"],
+      "notes": "Important timing or limitation (null if none)"
+    }
+  ],
+  "actionCosts": [
+    {
+      "action": "Action Name",
+      "cost": "What you spend (resources, cards, etc.)",
+      "effect": "What you get/do",
+      "limit": "Any restrictions (once per turn, etc.)"
+    }
+  ],
+  "resourceConversions": [
+    {
+      "from": "What you trade in",
+      "to": "What you receive",
+      "when": "When/where you can do this"
+    }
+  ],
+  "importantRules": [
+    {
+      "rule": "The rule itself, clearly stated",
+      "context": "When this matters or why it's easy to forget"
+    }
+  ],
+  "timingRules": [
+    {
+      "situation": "When X happens",
+      "resolution": "Do Y (in this order)"
+    }
+  ],
+  "endGame": {
+    "triggers": ["What causes the game to end - be specific"],
+    "finalRound": "What happens after trigger (if applicable)",
+    "winner": "How to determine the winner",
+    "tiebreakers": ["First tiebreaker", "Second tiebreaker"]
+  },
+  "scoringSummary": [
+    {
+      "category": "Scoring Category",
+      "calculation": "Exactly how to calculate (X points per Y)",
+      "maxPossible": "Maximum points possible from this (if relevant)"
+    }
+  ],
+  "iconography": [
+    {
+      "symbol": "Symbol name or description",
+      "meaning": "What it represents in game terms",
+      "examples": "Where you'll see this icon"
+    }
+  ],
+  "commonQuestions": [
+    {
+      "question": "Question players often ask mid-game",
+      "answer": "Clear, direct answer"
+    }
+  ],
+  "quickReminders": [
+    "Thing players commonly forget that affects gameplay",
+    "Important rule that's easy to miss"
+  ]
+}
+
+QUALITY CHECKLIST:
+- This is for DURING play, not learning - assume they know the basics
+- turnSummary should be glanceable in 5 seconds
+- Include ALL costs and conversions players need to reference
+- endGame should be complete - triggers, final round, winner, tiebreakers
+- scoringSummary should cover every way to score points
+- Keep text SHORT - this is a reference card, not a guide`
+}
+
 /**
  * Prompt for extracting themes and player experiences from rulebook
  * Used to suggest taxonomy assignments for admin review

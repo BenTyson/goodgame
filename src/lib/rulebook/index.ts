@@ -41,6 +41,10 @@ export {
   getRulesSummaryPrompt,
   getSetupGuidePrompt,
   getReferenceCardPrompt,
+  // Enhanced prompts with full context support (Vecna pipeline)
+  getEnhancedRulesSummaryPrompt,
+  getEnhancedSetupGuidePrompt,
+  getEnhancedReferenceCardPrompt,
 } from './prompts'
 
 // Complexity scoring (Crunch Score)

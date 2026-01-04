@@ -70,7 +70,18 @@ export const mockCategories: Category[] = [
 ]
 
 // Mock games can omit the newer tracking fields
-type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikidata_id' | 'wikidata_image_url' | 'wikidata_last_synced' | 'official_website' | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at' | 'crunch_score' | 'crunch_breakdown' | 'crunch_generated_at' | 'crunch_bgg_reference' | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations' | 'wikipedia_summary' | 'wikipedia_fetched_at'> & {
+type GameWithCategories = Omit<GameRow,
+  | 'data_source' | 'field_sources'
+  | 'wikidata_id' | 'wikidata_image_url' | 'wikidata_last_synced' | 'official_website'
+  | 'rulebook_url' | 'rulebook_source' | 'rulebook_parsed_at'
+  | 'crunch_score' | 'crunch_breakdown' | 'crunch_generated_at' | 'crunch_bgg_reference'
+  | 'component_list' | 'latest_parse_log_id' | 'has_unimported_relations'
+  | 'wikipedia_summary' | 'wikipedia_fetched_at' | 'wikipedia_url' | 'wikipedia_infobox'
+  | 'wikipedia_origins' | 'wikipedia_reception' | 'wikipedia_gameplay'
+  | 'wikipedia_images' | 'wikipedia_external_links' | 'wikipedia_awards' | 'wikipedia_search_confidence'
+  | 'vecna_state' | 'vecna_processed_at' | 'vecna_error'
+  | 'wikidata_series_id'
+> & {
   data_source?: string | null
   field_sources?: Json | null
   wikidata_id?: string | null
@@ -89,6 +100,19 @@ type GameWithCategories = Omit<GameRow, 'data_source' | 'field_sources' | 'wikid
   has_unimported_relations?: boolean | null
   wikipedia_summary?: Json | null
   wikipedia_fetched_at?: string | null
+  wikipedia_url?: string | null
+  wikipedia_infobox?: Json | null
+  wikipedia_origins?: string | null
+  wikipedia_reception?: string | null
+  wikipedia_gameplay?: string | null
+  wikipedia_images?: Json | null
+  wikipedia_external_links?: Json | null
+  wikipedia_awards?: Json | null
+  wikipedia_search_confidence?: string | null
+  vecna_state?: string | null
+  vecna_processed_at?: string | null
+  vecna_error?: string | null
+  wikidata_series_id?: string | null
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

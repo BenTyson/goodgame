@@ -171,8 +171,31 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 54. `00054_wikidata_game_fields.sql` - Wikidata enrichment columns (image, website, rulebook)
 55. `00055_wikipedia_url.sql` - Add wikipedia_url, wikidata_series_id to games
 56. `00056_game_families_wikidata_series.sql` - Add wikidata_series_id to game_families
+57. `00057_wikipedia_summary.sql` - Wikipedia summary storage
+58. `00058_wikipedia_enrichment.sql` - Wikipedia enrichment fields
+59. `00059_wikipedia_tier1_fields.sql` - Wikipedia images, external links, awards, gameplay
+60. `00060_vecna_state.sql` - Vecna processing state enum and columns
+61. `00061_taxonomy_source.sql` - Taxonomy source tracking on junction tables
+62. `00062_fix_taxonomy_source_default.sql` - Backfill BGG as default source
 
 ## Core Enums
+
+### vecna_state
+Processing state for the Vecna content pipeline.
+
+| Value | Description |
+|-------|-------------|
+| `imported` | BGG data imported |
+| `enriched` | Wikidata + Wikipedia done |
+| `rulebook_missing` | Waiting for manual rulebook URL |
+| `rulebook_ready` | Rulebook URL confirmed |
+| `parsing` | Rulebook being parsed |
+| `parsed` | Rulebook text extracted |
+| `taxonomy_assigned` | Categories/mechanics assigned |
+| `generating` | AI content being generated |
+| `generated` | AI content ready |
+| `review_pending` | Ready for human review |
+| `published` | Live on site |
 
 ### data_source
 Data provenance tracking for legal compliance.
@@ -358,6 +381,15 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | latest_parse_log_id | UUID | FK to rulebook_parse_log |
 | wikipedia_url | VARCHAR(500) | English Wikipedia article URL |
 | wikidata_series_id | VARCHAR(20) | Wikidata Q-number for the game series (P179 property) |
+| wikipedia_summary | JSONB | AI-summarized Wikipedia content (themes, mechanics, reception, awards) |
+| wikipedia_gameplay | TEXT | Gameplay section from Wikipedia |
+| wikipedia_origins | TEXT | Origins/history section from Wikipedia |
+| wikipedia_images | JSONB | Article images with Commons metadata, licensing |
+| wikipedia_external_links | JSONB | Categorized external links (rulebook, official, publisher, etc.) |
+| wikipedia_awards | JSONB | Parsed awards from Wikipedia (name, year, winner/nominated) |
+| vecna_state | vecna_state | Current state in Vecna processing pipeline |
+| vecna_processed_at | TIMESTAMPTZ | When Vecna last processed this game |
+| vecna_error | TEXT | Error message if Vecna processing failed |
 | fts | TSVECTOR | Generated full-text search column |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
@@ -679,11 +711,13 @@ Game series/family groupings (e.g., Catan, Pandemic, Ticket to Ride).
 | base_game_id | UUID | FK to games - the primary/original game in family |
 | bgg_family_id | INTEGER | BGG family ID (for import matching) |
 | wikidata_series_id | VARCHAR(20) | Wikidata Q-number for series (P179), used for import matching |
+| family_context | JSONB | Base game context for expansion processing (mechanics, theme, setup, rules overview) |
 | created_at | TIMESTAMPTZ | Creation timestamp |
 | updated_at | TIMESTAMPTZ | Last update timestamp |
 
 **Notes:**
 - Games link to families via `games.family_id`
+- `family_context` stores base game context for Vecna expansion processing
 - `base_game_id` identifies the original game (used for thumbnails, canonical reference)
 - Auto-created during BGG import from game name patterns (colons, parentheses, en-dashes)
 - Auto-created from Wikidata series (P179) when detected during import
@@ -1179,19 +1213,21 @@ Tracks sent notifications to avoid duplicates.
 ### game_categories
 Many-to-many: games ↔ categories
 
-| Column | Type |
-|--------|------|
-| game_id | UUID |
-| category_id | UUID |
-| is_primary | BOOLEAN |
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| category_id | UUID | FK to categories |
+| is_primary | BOOLEAN | Primary category for game |
+| source | VARCHAR(20) | Origin: bgg, wikidata, wikipedia, ai, manual |
 
 ### game_mechanics
 Many-to-many: games ↔ mechanics
 
-| Column | Type |
-|--------|------|
-| game_id | UUID |
-| mechanic_id | UUID |
+| Column | Type | Description |
+|--------|------|-------------|
+| game_id | UUID | FK to games |
+| mechanic_id | UUID | FK to mechanics |
+| source | VARCHAR(20) | Origin: bgg, wikidata, wikipedia, ai, manual |
 
 ### game_themes
 Many-to-many: games ↔ themes
@@ -1201,6 +1237,7 @@ Many-to-many: games ↔ themes
 | game_id | UUID | FK to games |
 | theme_id | UUID | FK to themes |
 | is_primary | BOOLEAN | Primary theme for game |
+| source | VARCHAR(20) | Origin: bgg, wikidata, wikipedia, ai, manual |
 
 ### game_player_experiences
 Many-to-many: games ↔ player_experiences
