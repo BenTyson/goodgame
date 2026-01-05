@@ -1,9 +1,9 @@
 # Vecna: Automated Game Content Pipeline
 
-**Version:** 2.0
+**Version:** 2.1
 **Created:** 2026-01-04
-**Updated:** 2026-01-04
-**Status:** UI V2 Complete - Simplified 4-Phase Visual Model
+**Updated:** 2026-01-05
+**Status:** Phase 3 Complete - Enhanced AI + Completeness Report
 
 ## Overview
 
@@ -206,29 +206,49 @@ When processing expansions, include base game context in AI prompts:
 interface FamilyContext {
   baseGameId: string
   baseGameName: string
-  coreMechanics: string[]        // From base game taxonomy
-  coreTheme: string              // From base game theme
-  baseSetupSummary: string       // From base game setup_content
-  baseRulesOverview: string      // From base game rules_content.overview
-  componentTypes: string[]       // From base game component_list
+  coreMechanics: string[]         // From base game taxonomy or Wikipedia
+  coreTheme: string | null        // From base game theme/Wikipedia
+  baseSetupSummary: string | null // From base game setup_content
+  baseRulesOverview: string | null // From base game rules_content.overview
+  componentTypes: string[]        // From base game component_list
+
+  // Enhanced: Base game Wikipedia context for expansions (NEW in Phase 3)
+  baseGameOrigins: string | null       // Designer intent, development history
+  baseGameReception: string | null     // Critical acclaim, what players love
+  baseGameAwards: string[] | null      // Awards won by base game
+  baseGameDesigners: string[] | null   // From Wikipedia infobox
+  baseGamePublishers: string[] | null  // From Wikipedia infobox
 }
 ```
 
-Expansion AI prompts will include:
+Expansion AI prompts now include full base game context:
 ```
-This is an expansion to "${baseGameName}".
+=== BASE GAME CONTEXT ===
+This expansion is for "${baseGameName}".
 
-BASE GAME CONTEXT:
-- Core mechanics: ${coreMechanics.join(', ')}
-- Theme: ${coreTheme}
-- Setup summary: ${baseSetupSummary}
-- Rules overview: ${baseRulesOverview}
+Core Mechanics: ${coreMechanics.join(', ')}
+Theme: ${coreTheme}
+Designers: ${baseGameDesigners.join(', ')}
+Publishers: ${baseGamePublishers.join(', ')}
 
-EXPANSION RULEBOOK:
-${expansionRulebookText}
+Awards Won: ${baseGameAwards.join(', ')}
 
-Generate content that builds on the base game...
+Critical Reception:
+${baseGameReception}
+
+Design Origins:
+${baseGameOrigins}
+
+Base Game Rules Overview:
+${baseRulesOverview}
+
+Base Game Setup:
+${baseSetupSummary}
+
+Base Game Components: ${componentTypes.join(', ')}
 ```
+
+This helps the AI understand what made the base game special and generate content that properly positions the expansion.
 
 ---
 
@@ -676,12 +696,39 @@ src/app/admin/(dashboard)/vecna/components/
 └── VecnaGameView.tsx           # DEPRECATED: Old 6-tab view (kept for reference)
 ```
 
-### Phase 3: Enhanced AI (PLANNED)
+### Phase 3: Enhanced AI (COMPLETE)
 
-**To Implement:**
-- Full Wikipedia context in prompts (gameplay, origins, awards)
-- Family context inheritance for expansions
-- Improved taxonomy assignment with Wikipedia categories
+**Implemented (2026-01-05):**
+- ✅ Full Wikipedia context in prompts (gameplay, origins, awards already working)
+- ✅ Enhanced family context inheritance for expansions (5 new fields)
+- ✅ Data completeness report showing missing fields after pipeline
+- ✅ Player experiences taxonomy fix (was completely missing from Vecna)
+- ✅ Model selector UI (Haiku/Sonnet/Opus) for content generation
+- ✅ US Publisher tracking as Critical field
+
+**New Files:**
+```
+src/lib/vecna/completeness.ts              # Field checking utility
+src/app/admin/(dashboard)/vecna/components/CompletenessReport.tsx  # Report UI
+```
+
+**Completeness Report Categories (9):**
+1. Core Game Data - name, year, player counts, play time, weight
+2. External Sources - BGG, Wikidata, Wikipedia (origins, reception, awards)
+3. Publisher Data - publishers listed, primary publisher, **US Publisher (Critical)**
+4. Rulebook & Parsing - rulebook URL, crunch score
+5. Taxonomy - categories, mechanics, themes, **player experiences**
+6. Rules Content - quickStart, coreRules, turnStructure, winCondition, etc.
+7. Setup Content - steps, components, estimatedTime, playerSetup, etc.
+8. Reference Content - turnSummary, keyActions, endGame, scoringSummary
+9. Images - thumbnail, box art, hero image, CC-licensed images
+
+**Model Options:**
+| Model | Speed | Cost | Temperature | Best For |
+|-------|-------|------|-------------|----------|
+| Haiku | Fastest | Cheapest | 0.4 | Testing, debugging |
+| Sonnet | Balanced | Medium | 0.6 | Production (default) |
+| Opus | Slowest | Highest | 0.7 | Best quality |
 
 ### Phase 4: Content Review UI (PLANNED)
 
@@ -690,3 +737,4 @@ src/app/admin/(dashboard)/vecna/components/
 - Data source visibility badges throughout
 - Compliance checklist
 - Content regeneration for games with malformed data
+- Per-game publish flow improvements

@@ -93,6 +93,13 @@ interface ThemeRow {
   source: string | null
 }
 
+interface PlayerExperienceRow {
+  id: string
+  name: string
+  slug: string
+  is_primary: boolean
+}
+
 interface RelationRow {
   source_game_id: string
   target_game_id: string
@@ -202,6 +209,11 @@ async function getFamilies(): Promise<VecnaFamily[]> {
     source: string | null
     themes: { id: string; name: string; slug: string } | null
   }
+  type GamePlayerExperienceJoin = {
+    game_id: string
+    is_primary: boolean | null
+    player_experiences: { id: string; name: string; slug: string } | null
+  }
 
   const { data: gameCategories } = await supabase
     .from('game_categories')
@@ -217,6 +229,11 @@ async function getFamilies(): Promise<VecnaFamily[]> {
     .from('game_themes')
     .select('game_id, source, themes:theme_id(id, name, slug)')
     .in('game_id', gameIds) as { data: GameThemeJoin[] | null }
+
+  const { data: gamePlayerExperiences } = await supabase
+    .from('game_player_experiences')
+    .select('game_id, is_primary, player_experiences:player_experience_id(id, name, slug)')
+    .in('game_id', gameIds) as { data: GamePlayerExperienceJoin[] | null }
 
   // Build taxonomy maps
   const categoriesMap = new Map<string, CategoryRow[]>()
@@ -250,6 +267,17 @@ async function getFamilies(): Promise<VecnaFamily[]> {
     themesMap.get(gt.game_id)!.push({
       ...theme,
       source: gt.source
+    })
+  }
+
+  const playerExperiencesMap = new Map<string, PlayerExperienceRow[]>()
+  for (const gpe of gamePlayerExperiences || []) {
+    const pe = gpe.player_experiences as unknown as { id: string; name: string; slug: string } | null
+    if (!pe) continue
+    if (!playerExperiencesMap.has(gpe.game_id)) playerExperiencesMap.set(gpe.game_id, [])
+    playerExperiencesMap.get(gpe.game_id)!.push({
+      ...pe,
+      is_primary: gpe.is_primary ?? false
     })
   }
 
@@ -362,6 +390,7 @@ async function getFamilies(): Promise<VecnaFamily[]> {
         categories: categoriesMap.get(game.id) || [],
         mechanics: mechanicsMap.get(game.id) || [],
         themes: themesMap.get(game.id) || [],
+        player_experiences: playerExperiencesMap.get(game.id) || [],
       }
     })
 
@@ -465,6 +494,11 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     source: string | null
     themes: { id: string; name: string; slug: string } | null
   }
+  type GamePlayerExperienceJoin = {
+    game_id: string
+    is_primary: boolean | null
+    player_experiences: { id: string; name: string; slug: string } | null
+  }
 
   const { data: gameCategories } = await supabase
     .from('game_categories')
@@ -480,6 +514,11 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     .from('game_themes')
     .select('game_id, source, themes:theme_id(id, name, slug)')
     .in('game_id', gameIds) as { data: GameThemeJoin[] | null }
+
+  const { data: gamePlayerExperiences } = await supabase
+    .from('game_player_experiences')
+    .select('game_id, is_primary, player_experiences:player_experience_id(id, name, slug)')
+    .in('game_id', gameIds) as { data: GamePlayerExperienceJoin[] | null }
 
   // Build taxonomy maps
   const categoriesMap = new Map<string, CategoryRow[]>()
@@ -513,6 +552,17 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     themesMap.get(gt.game_id)!.push({
       ...theme,
       source: gt.source
+    })
+  }
+
+  const playerExperiencesMap = new Map<string, PlayerExperienceRow[]>()
+  for (const gpe of gamePlayerExperiences || []) {
+    const pe = gpe.player_experiences as unknown as { id: string; name: string; slug: string } | null
+    if (!pe) continue
+    if (!playerExperiencesMap.has(gpe.game_id)) playerExperiencesMap.set(gpe.game_id, [])
+    playerExperiencesMap.get(gpe.game_id)!.push({
+      ...pe,
+      is_primary: gpe.is_primary ?? false
     })
   }
 
@@ -578,6 +628,7 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     categories: categoriesMap.get(game.id) || [],
     mechanics: mechanicsMap.get(game.id) || [],
     themes: themesMap.get(game.id) || [],
+    player_experiences: playerExperiencesMap.get(game.id) || [],
   }))
 }
 

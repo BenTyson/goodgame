@@ -7,3 +7,4 @@
 export * from './types'
 export * from './pipeline'
 export * from './context'
+export * from './completeness'

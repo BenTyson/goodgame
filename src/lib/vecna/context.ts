@@ -158,14 +158,16 @@ export function buildWikipediaContext(data: {
 
 /**
  * Build family context section for expansion content generation
+ * Enhanced with full Wikipedia context from base game
  */
 export function buildFamilyContextSection(context: FamilyContext): string {
   const sections: string[] = [
     '=== BASE GAME CONTEXT ===',
-    `This is related to "${context.baseGameName}".`,
+    `This expansion is for "${context.baseGameName}".`,
     '',
   ]
 
+  // Core game identity
   if (context.coreMechanics.length > 0) {
     sections.push(`Core Mechanics: ${context.coreMechanics.join(', ')}`)
   }
@@ -174,6 +176,38 @@ export function buildFamilyContextSection(context: FamilyContext): string {
     sections.push(`Theme: ${context.coreTheme}`)
   }
 
+  // Designers and publishers (for consistency in tone/style)
+  if (context.baseGameDesigners && context.baseGameDesigners.length > 0) {
+    sections.push(`Designers: ${context.baseGameDesigners.join(', ')}`)
+  }
+
+  if (context.baseGamePublishers && context.baseGamePublishers.length > 0) {
+    sections.push(`Publishers: ${context.baseGamePublishers.join(', ')}`)
+  }
+
+  // Critical acclaim context (helps AI understand what makes the base game special)
+  if (context.baseGameAwards && context.baseGameAwards.length > 0) {
+    sections.push(`\nAwards Won: ${context.baseGameAwards.slice(0, 5).join(', ')}`)
+  }
+
+  if (context.baseGameReception) {
+    // Truncate long reception text but keep the key info
+    const receptionPreview = context.baseGameReception.length > 500
+      ? context.baseGameReception.slice(0, 500) + '...'
+      : context.baseGameReception
+    sections.push(`\nCritical Reception:\n${receptionPreview}`)
+  }
+
+  // Design philosophy (helps AI understand the designer's intent)
+  if (context.baseGameOrigins) {
+    // Truncate long origins text
+    const originsPreview = context.baseGameOrigins.length > 400
+      ? context.baseGameOrigins.slice(0, 400) + '...'
+      : context.baseGameOrigins
+    sections.push(`\nDesign Origins:\n${originsPreview}`)
+  }
+
+  // Base game rules context
   if (context.baseRulesOverview) {
     sections.push(`\nBase Game Rules Overview:\n${context.baseRulesOverview}`)
   }

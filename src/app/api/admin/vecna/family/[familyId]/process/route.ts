@@ -652,13 +652,15 @@ async function rebuildFamilyContext(
   familyId: string,
   baseGameId: string
 ): Promise<FamilyContext | null> {
-  // Get base game content
+  // Get base game content with full Wikipedia data
   const { data: baseGame } = await supabase
     .from('games')
     .select(`
       id, name,
       rules_content, setup_content,
-      wikipedia_summary
+      wikipedia_summary, wikipedia_origins,
+      wikipedia_reception, wikipedia_awards,
+      wikipedia_infobox
     `)
     .eq('id', baseGameId)
     .single()
@@ -672,6 +674,21 @@ async function rebuildFamilyContext(
     mechanics?: string[]
     summary?: string
   } | null
+  const wikiAwards = baseGame.wikipedia_awards as Array<{ name: string; status?: string }> | null
+  const wikiInfobox = baseGame.wikipedia_infobox as {
+    designers?: string[]
+    publishers?: Array<{ name: string }> | string[]
+  } | null
+
+  // Extract award names for context
+  const awardNames = wikiAwards
+    ?.filter(a => a.status === 'winner' || !a.status)
+    .map(a => a.name) || null
+
+  // Extract publisher names (handle both array of objects and array of strings)
+  const publisherNames = wikiInfobox?.publishers
+    ? wikiInfobox.publishers.map(p => typeof p === 'string' ? p : p.name)
+    : null
 
   const familyContext: FamilyContext = {
     baseGameId: baseGame.id,
@@ -685,6 +702,12 @@ async function rebuildFamilyContext(
       null,
     baseSetupSummary: setupContent?.steps?.slice(0, 5).map(s => s.step).join('. ') || null,
     componentTypes: setupContent?.components?.map(c => c.name) || [],
+    // Enhanced: Include base game Wikipedia context
+    baseGameOrigins: baseGame.wikipedia_origins as string | null,
+    baseGameReception: baseGame.wikipedia_reception as string | null,
+    baseGameAwards: awardNames,
+    baseGameDesigners: wikiInfobox?.designers || null,
+    baseGamePublishers: publisherNames,
   }
 
   // Store the context

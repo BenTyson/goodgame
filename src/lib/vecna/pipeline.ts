@@ -240,7 +240,25 @@ export function buildFamilyContext(baseGame: {
   setup_content?: { overview?: string } | null
   rules_content?: { overview?: string } | null
   component_list?: string[]
+  // Enhanced Wikipedia fields
+  wikipedia_origins?: string | null
+  wikipedia_reception?: string | null
+  wikipedia_awards?: Array<{ name: string; status?: string }> | null
+  wikipedia_infobox?: {
+    designers?: string[]
+    publishers?: Array<{ name: string }> | string[]
+  } | null
 }): FamilyContext {
+  // Extract award names for context
+  const awardNames = baseGame.wikipedia_awards
+    ?.filter(a => a.status === 'winner' || !a.status)
+    .map(a => a.name) || null
+
+  // Extract publisher names (handle both array of objects and array of strings)
+  const publisherNames = baseGame.wikipedia_infobox?.publishers
+    ? baseGame.wikipedia_infobox.publishers.map(p => typeof p === 'string' ? p : p.name)
+    : null
+
   return {
     baseGameId: baseGame.id,
     baseGameName: baseGame.name,
@@ -249,6 +267,12 @@ export function buildFamilyContext(baseGame: {
     baseSetupSummary: baseGame.setup_content?.overview || '',
     baseRulesOverview: baseGame.rules_content?.overview || '',
     componentTypes: baseGame.component_list || [],
+    // Enhanced Wikipedia context
+    baseGameOrigins: baseGame.wikipedia_origins || null,
+    baseGameReception: baseGame.wikipedia_reception || null,
+    baseGameAwards: awardNames,
+    baseGameDesigners: baseGame.wikipedia_infobox?.designers || null,
+    baseGamePublishers: publisherNames,
   }
 }
 

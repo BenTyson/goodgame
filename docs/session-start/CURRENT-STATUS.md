@@ -1,12 +1,61 @@
 # Current Status
 
-> Last Updated: 2026-01-04 (Vecna UI V2 Complete)
+> Last Updated: 2026-01-05 (Vecna Phase 3: Enhanced AI + Completeness Report)
 
-## Current Phase: 51 - Vecna UI V2 Redesign & Reference Page Fixes
+## Current Phase: 52 - Vecna Enhanced AI & Data Completeness
 
-Major UI/UX overhaul of the Vecna admin pipeline and fixes to the public reference page.
+Enhanced AI content generation with full Wikipedia context, fixed taxonomy data loss, and added comprehensive data completeness reporting.
 
-### Session Summary (2026-01-04) - Vecna UI V2
+### Session Summary (2026-01-05) - Phase 3: Enhanced AI
+
+**Data Completeness Report:**
+- New report shows what data is MISSING after pipeline completes
+- 9 categories: Core Data, External Sources, Publisher Data, Rulebook, Taxonomy, Rules/Setup/Reference Content, Images
+- Field importance levels: Critical (red), Important (amber), Recommended (blue), Optional (gray)
+- Appears in Pipeline tab when game reaches `generated` or `review_pending` state
+
+**New Fields Tracked:**
+| Field | Importance | Source |
+|-------|------------|--------|
+| Origins/History | Important | `wikipedia_origins` |
+| Reception/Reviews | Important | `wikipedia_reception` |
+| **US Publisher** | **Critical** | `wikipedia_infobox.publishersWithRegion` |
+| Player Experiences | Important | `game_player_experiences` |
+
+**Taxonomy Data Loss Fix:**
+- **Player Experiences** were completely missing from Vecna pipeline - now fixed
+- Added queries to both `getFamilies()` and `getStandaloneGames()` in Vecna page
+- Added to VecnaGame type and displayed in Taxonomy accordion
+
+**Enhanced Family Context for Expansions:**
+- FamilyContext now includes 5 new fields from base game Wikipedia data
+- AI prompts for expansions now receive: origins, reception, awards, designers, publishers
+- Better content generation that understands what made the base game special
+
+**Model Selector:**
+- UI toggle to select AI model: Haiku (fast), Sonnet (balanced), Opus (best)
+- Appears when ready to generate content (`taxonomy_assigned` or `review_pending`)
+- Haiku is ideal for testing/debugging prompts
+
+**New Components:**
+| Component | Purpose |
+|-----------|---------|
+| `CompletenessReport.tsx` | Collapsible data completeness report UI |
+| `src/lib/vecna/completeness.ts` | Field checking utility with 9 categories |
+
+**Files Updated:**
+- `src/lib/vecna/types.ts` - Enhanced FamilyContext with 5 new fields, added player_experiences to VecnaGame
+- `src/lib/vecna/context.ts` - `buildFamilyContextSection()` outputs enhanced base game context
+- `src/lib/vecna/pipeline.ts` - `buildFamilyContext()` accepts Wikipedia fields
+- `src/app/api/admin/rulebook/generate-content/route.ts` - Fetches full base game Wikipedia data, model selector support
+- `src/app/api/admin/vecna/family/[familyId]/build-context/route.ts` - Stores enhanced context
+- `src/app/api/admin/vecna/family/[familyId]/process/route.ts` - Rebuilds with enhanced data
+- `src/app/admin/(dashboard)/vecna/page.tsx` - Queries player_experiences
+- `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` - Model selector, player experiences display, completeness report
+
+---
+
+## Previous Session (2026-01-04) - Vecna UI V2
 
 **UI Simplification:**
 - Reduced visual complexity: 11 states → 4-phase visual model (Import → Parse → Generate → Publish)
@@ -292,28 +341,26 @@ Recent migrations (57-62):
 
 ## Next Steps
 
-### Vecna Phase 2: Remaining Work
-- ✅ Auto-run enrichment after import (vecna_state updates)
-- ✅ Rulebook URL extraction from Wikipedia external links
-- ✅ Batch processing for families
-- Test batch processing end-to-end with more families
-- Improve rulebook discovery success rate
-
-### Vecna Phase 3: Enhanced AI
-- Full Wikipedia context in prompts (gameplay, origins, awards)
-- Family context inheritance for expansions
-- Improved taxonomy assignment with Wikipedia categories
+### Vecna Phase 3: Enhanced AI (COMPLETE)
+- ✅ Full Wikipedia context in prompts (gameplay, origins, awards)
+- ✅ Family context inheritance for expansions (5 new fields)
+- ✅ Data completeness report
+- ✅ Player experiences taxonomy fix
+- ✅ Model selector (Haiku/Sonnet/Opus)
+- Improved taxonomy assignment with Wikipedia categories (remaining)
 
 ### Vecna Phase 4: Review UI & Polish
 - Three-column review UI (source | generated | final)
 - Data source visibility badges throughout
 - Compliance checklist
+- Content regeneration for games with malformed data
 - Per-game publish flow improvements
 
 ### Content
 - Process Gloomhaven family through full pipeline (3 games generated, ready for review)
 - Upload images for all games via admin
 - Import more games via Wikidata skill
+- Fill in missing US publishers (Critical in completeness report)
 
 ### Future Features
 - Local discovery (find gamers nearby, game nights)

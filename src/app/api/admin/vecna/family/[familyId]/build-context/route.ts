@@ -42,6 +42,8 @@ export async function POST(
         id, name, slug, year_published,
         rules_content, setup_content,
         wikipedia_summary, wikipedia_gameplay,
+        wikipedia_origins, wikipedia_reception,
+        wikipedia_awards, wikipedia_infobox,
         vecna_state
       `)
       .eq('family_id', familyId)
@@ -88,6 +90,11 @@ export async function POST(
       mechanics?: string[]
       summary?: string
     } | null
+    const wikiAwards = baseGame.wikipedia_awards as Array<{ name: string; status?: string }> | null
+    const wikiInfobox = baseGame.wikipedia_infobox as {
+      designers?: string[]
+      publishers?: Array<{ name: string }> | string[]
+    } | null
 
     const hasContent = rulesContent || setupContent || wikiSummary
 
@@ -103,7 +110,17 @@ export async function POST(
       })
     }
 
-    // Build the family context
+    // Extract award names for context
+    const awardNames = wikiAwards
+      ?.filter(a => a.status === 'winner' || !a.status)
+      .map(a => a.name) || null
+
+    // Extract publisher names (handle both array of objects and array of strings)
+    const publisherNames = wikiInfobox?.publishers
+      ? wikiInfobox.publishers.map(p => typeof p === 'string' ? p : p.name)
+      : null
+
+    // Build the family context with full Wikipedia data
     const familyContext: FamilyContext = {
       baseGameId: baseGame.id,
       baseGameName: baseGame.name,
@@ -116,6 +133,12 @@ export async function POST(
         null,
       baseSetupSummary: setupContent?.steps?.slice(0, 5).map(s => s.step).join('. ') || null,
       componentTypes: setupContent?.components?.map(c => c.name) || [],
+      // Enhanced: Include base game Wikipedia context
+      baseGameOrigins: baseGame.wikipedia_origins as string | null,
+      baseGameReception: baseGame.wikipedia_reception as string | null,
+      baseGameAwards: awardNames,
+      baseGameDesigners: wikiInfobox?.designers || null,
+      baseGamePublishers: publisherNames,
     }
 
     // Store the context in the family
@@ -150,6 +173,12 @@ export async function POST(
         hasRulesOverview: !!familyContext.baseRulesOverview,
         hasSetupSummary: !!familyContext.baseSetupSummary,
         componentTypesCount: familyContext.componentTypes.length,
+        // Enhanced Wikipedia context
+        hasOrigins: !!familyContext.baseGameOrigins,
+        hasReception: !!familyContext.baseGameReception,
+        awardsCount: familyContext.baseGameAwards?.length || 0,
+        hasDesigners: !!familyContext.baseGameDesigners?.length,
+        hasPublishers: !!familyContext.baseGamePublishers?.length,
       },
       expansionsReadyForContext: expansionCount,
     })
@@ -202,6 +231,12 @@ export async function GET(
         hasRulesOverview: !!context.baseRulesOverview,
         hasSetupSummary: !!context.baseSetupSummary,
         componentTypes: context.componentTypes,
+        // Enhanced Wikipedia context
+        hasOrigins: !!context.baseGameOrigins,
+        hasReception: !!context.baseGameReception,
+        awardsCount: context.baseGameAwards?.length || 0,
+        hasDesigners: !!context.baseGameDesigners?.length,
+        hasPublishers: !!context.baseGamePublishers?.length,
       } : null,
     })
   } catch (error) {

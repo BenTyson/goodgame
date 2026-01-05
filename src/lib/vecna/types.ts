@@ -194,6 +194,13 @@ export interface FamilyContext {
   baseSetupSummary: string | null // From base game setup_content
   baseRulesOverview: string | null // From base game rules_content.overview
   componentTypes: string[]        // From base game component_list
+
+  // Enhanced: Base game Wikipedia context for expansions
+  baseGameOrigins: string | null       // Designer intent, development history
+  baseGameReception: string | null     // Critical acclaim, what players love
+  baseGameAwards: string[] | null      // Awards won by base game
+  baseGameDesigners: string[] | null   // From Wikipedia infobox
+  baseGamePublishers: string[] | null  // From Wikipedia infobox
 }
 
 // Game with family and processing state
@@ -287,6 +294,7 @@ export interface VecnaGame {
   categories: Array<{ id: string; name: string; slug: string; is_primary: boolean; source: string | null }>
   mechanics: Array<{ id: string; name: string; slug: string; source: string | null }>
   themes: Array<{ id: string; name: string; slug: string; source: string | null }>
+  player_experiences: Array<{ id: string; name: string; slug: string; is_primary: boolean }>
 }
 
 // Taxonomy source type (for documentation)

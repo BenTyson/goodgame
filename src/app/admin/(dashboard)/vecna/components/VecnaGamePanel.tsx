@@ -23,6 +23,9 @@ import {
   Tags,
   SkipForward,
   XCircle,
+  Cpu,
+  Zap,
+  Brain,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,6 +54,7 @@ import { VECNA_STATE_CONFIG } from '@/lib/vecna'
 import { PipelineProgressBar } from './PipelineProgressBar'
 import { BlockedStateAlert } from './BlockedStateAlert'
 import { RulebookDiscovery } from './RulebookDiscovery'
+import { CompletenessReport } from './CompletenessReport'
 
 interface VecnaGamePanelProps {
   game: VecnaGame
@@ -85,10 +89,12 @@ export function VecnaGamePanel({
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showRulebookDiscovery, setShowRulebookDiscovery] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<'sonnet' | 'haiku' | 'opus'>('sonnet')
 
   const stateConfig = VECNA_STATE_CONFIG[currentState]
   const isBlocked = currentState === 'rulebook_missing' || currentState === 'review_pending'
   const needsRulebook = currentState === 'rulebook_missing' || (currentState === 'enriched' && !hasRulebook)
+  const showCompletenessReport = ['generated', 'review_pending', 'published'].includes(currentState)
 
   const handleStateChange = (newState: VecnaState) => {
     setCurrentState(newState)
@@ -170,11 +176,18 @@ export function VecnaGamePanel({
     }
   }
 
+  // Model display names
+  const modelLabels = {
+    haiku: 'Haiku (Fast)',
+    sonnet: 'Sonnet (Balanced)',
+    opus: 'Opus (Best)',
+  }
+
   // Generate content
   const startGenerating = async () => {
     setIsProcessing(true)
     setError(null)
-    setProcessingMessage('Generating content with AI...')
+    setProcessingMessage(`Generating with ${modelLabels[selectedModel]}...`)
 
     try {
       await fetch(`/api/admin/vecna/${game.id}/state`, {
@@ -184,11 +197,11 @@ export function VecnaGamePanel({
       })
       handleStateChange('generating')
 
-      setProcessingMessage('Creating rules summary, setup guide, and reference...')
+      setProcessingMessage(`Creating rules, setup, reference with ${modelLabels[selectedModel]}...`)
       const generateResponse = await fetch('/api/admin/rulebook/generate-content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId: game.id, contentTypes: ['rules', 'setup', 'reference'] }),
+        body: JSON.stringify({ gameId: game.id, contentTypes: ['rules', 'setup', 'reference'], model: selectedModel }),
       })
 
       const generateResult = await generateResponse.json()
@@ -323,6 +336,48 @@ export function VecnaGamePanel({
 
         {/* Pipeline Tab */}
         <TabsContent value="pipeline" className="mt-4 space-y-4">
+          {/* Model Selector - show when ready to generate */}
+          {(currentState === 'taxonomy_assigned' || currentState === 'review_pending') && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Model:</span>
+              <div className="flex gap-1">
+                <Button
+                  variant={selectedModel === 'haiku' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedModel('haiku')}
+                  className="h-7 text-xs gap-1"
+                >
+                  <Zap className="h-3 w-3" />
+                  Haiku
+                </Button>
+                <Button
+                  variant={selectedModel === 'sonnet' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedModel('sonnet')}
+                  className="h-7 text-xs gap-1"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Sonnet
+                </Button>
+                <Button
+                  variant={selectedModel === 'opus' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedModel('opus')}
+                  className="h-7 text-xs gap-1"
+                >
+                  <Brain className="h-3 w-3" />
+                  Opus
+                </Button>
+              </div>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {selectedModel === 'haiku' && 'Fast & cheap for testing'}
+                {selectedModel === 'sonnet' && 'Balanced quality & speed'}
+                {selectedModel === 'opus' && 'Best quality, slower'}
+              </span>
+            </div>
+          )}
+
           {/* Next Action Card */}
           {nextAction && (
             <Card className="border-2 border-primary/20">
@@ -386,6 +441,14 @@ export function VecnaGamePanel({
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
               <span className="text-sm text-red-700">{error}</span>
             </div>
+          )}
+
+          {/* Completeness Report - shown after content is generated */}
+          {showCompletenessReport && (
+            <CompletenessReport
+              game={game}
+              defaultExpanded={currentState === 'review_pending'}
+            />
           )}
 
           {/* Data Status - compact */}
@@ -556,7 +619,7 @@ export function VecnaGamePanel({
                   <Tags className="h-4 w-4" />
                   Taxonomy
                   <span className="text-xs text-muted-foreground ml-2">
-                    {game.categories.length + game.mechanics.length + game.themes.length} items
+                    {game.categories.length + game.mechanics.length + game.themes.length + game.player_experiences.length} items
                   </span>
                 </div>
               </AccordionTrigger>
@@ -602,6 +665,21 @@ export function VecnaGamePanel({
                           <Badge key={theme.id} variant="outline" className="text-xs">
                             {theme.name}
                             {theme.source && <SourceBadge source={theme.source} />}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Player Experiences */}
+                  {game.player_experiences.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-1">Player Experiences</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {game.player_experiences.map((pe) => (
+                          <Badge key={pe.id} variant="outline" className="text-xs">
+                            {pe.is_primary && <span className="text-yellow-500 mr-1">★</span>}
+                            {pe.name}
                           </Badge>
                         ))}
                       </div>

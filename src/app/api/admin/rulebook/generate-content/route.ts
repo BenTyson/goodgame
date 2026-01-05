@@ -34,10 +34,12 @@ export async function POST(request: NextRequest) {
     const { gameId, contentTypes = ['rules', 'setup', 'reference'], model = 'sonnet' } = body
 
     // Map model choice to actual model ID
-    const modelId = model === 'haiku'
-      ? 'claude-3-5-haiku-20241022'
-      : 'claude-sonnet-4-20250514'
-    const temperature = model === 'haiku' ? 0.4 : 0.6
+    const modelConfig: Record<string, { id: string; temperature: number }> = {
+      haiku: { id: 'claude-3-5-haiku-20241022', temperature: 0.4 },
+      sonnet: { id: 'claude-sonnet-4-20250514', temperature: 0.6 },
+      opus: { id: 'claude-opus-4-20250514', temperature: 0.7 },
+    }
+    const { id: modelId, temperature } = modelConfig[model] || modelConfig.sonnet
 
     if (!gameId) {
       return NextResponse.json(
@@ -86,18 +88,37 @@ export async function POST(request: NextRequest) {
       isExpansion = true
       relationToBase = gameRelation.relation_type
 
-      // Fetch the base game data separately
+      // Fetch the base game data with full Wikipedia context
       const { data: baseGame } = await supabase
         .from('games')
-        .select('id, name, rules_content, setup_content, wikipedia_summary, wikipedia_gameplay')
+        .select(`
+          id, name, rules_content, setup_content,
+          wikipedia_summary, wikipedia_gameplay, wikipedia_origins,
+          wikipedia_reception, wikipedia_awards, wikipedia_infobox
+        `)
         .eq('id', gameRelation.target_game_id)
         .single()
 
       if (baseGame) {
-        // Build family context from base game
+        // Build family context from base game with full Wikipedia data
         const rulesContent = baseGame.rules_content as RulesContent | null
         const setupContent = baseGame.setup_content as SetupContent | null
         const wikiSummary = baseGame.wikipedia_summary as { themes?: string[]; mechanics?: string[] } | null
+        const wikiAwards = baseGame.wikipedia_awards as Array<{ name: string; status?: string }> | null
+        const wikiInfobox = baseGame.wikipedia_infobox as {
+          designers?: string[]
+          publishers?: Array<{ name: string }> | string[]
+        } | null
+
+        // Extract award names for context
+        const awardNames = wikiAwards
+          ?.filter(a => a.status === 'winner' || !a.status)
+          .map(a => a.name) || null
+
+        // Extract publisher names (handle both array of objects and array of strings)
+        const publisherNames = wikiInfobox?.publishers
+          ? wikiInfobox.publishers.map(p => typeof p === 'string' ? p : p.name)
+          : null
 
         familyContext = {
           baseGameId: baseGame.id,
@@ -107,6 +128,12 @@ export async function POST(request: NextRequest) {
           baseRulesOverview: rulesContent?.quickStart?.join(' ') || null,
           baseSetupSummary: setupContent?.steps?.slice(0, 3).map(s => s.step).join('. ') || null,
           componentTypes: setupContent?.components?.map(c => c.name) || [],
+          // Enhanced: Include base game Wikipedia context
+          baseGameOrigins: baseGame.wikipedia_origins as string | null,
+          baseGameReception: baseGame.wikipedia_reception as string | null,
+          baseGameAwards: awardNames,
+          baseGameDesigners: wikiInfobox?.designers || null,
+          baseGamePublishers: publisherNames,
         }
       }
     }
