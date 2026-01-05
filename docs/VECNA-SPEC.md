@@ -1,9 +1,9 @@
 # Vecna: Automated Game Content Pipeline
 
-**Version:** 1.1
+**Version:** 1.2
 **Created:** 2026-01-04
 **Updated:** 2026-01-04
-**Status:** Phase 1 Complete - Foundation Implemented
+**Status:** Phase 2 In Progress - Batch Processing & Data Surfacing
 
 ## Overview
 
@@ -598,11 +598,15 @@ src/app/admin/(dashboard)/vecna/
 └── components/
     ├── VecnaPipeline.tsx       # Pipeline orchestrator
     ├── VecnaFamilySidebar.tsx  # Collapsible family tree
-    ├── VecnaGameView.tsx       # Game detail view with tabs
+    ├── VecnaGameView.tsx       # Game detail view with 6 tabs
     ├── VecnaEmptyState.tsx     # Empty state with stats
     ├── StateActions.tsx        # State transition actions
     ├── RulebookDiscovery.tsx   # Rulebook URL discovery UI
+    ├── FamilyBatchActions.tsx  # Batch processing for families
     └── index.ts                # Barrel exports
+
+src/app/api/admin/vecna/family/[familyId]/process/
+└── route.ts                    # Batch processing API
 
 src/lib/vecna/
 ├── types.ts                    # VecnaState, VecnaGame, VecnaFamily, etc.
@@ -616,13 +620,37 @@ src/lib/vecna/
 - `00061_taxonomy_source.sql` - `source` column on junction tables
 - `00062_fix_taxonomy_source_default.sql` - Backfill BGG as source
 
-### Phase 2: Automation (NOT STARTED)
+### Phase 2: Automation (IN PROGRESS)
 
-**To Implement:**
-- Auto-enrichment after import
-- Rulebook discovery priority chain (Wikidata → Wikipedia → Pattern)
-- Batch processing for families
-- State transition APIs
+**Implemented:**
+- Auto-enrichment after import (vecna_state updates in `/lib/bgg/importer.ts`)
+- Rulebook URL extraction from Wikipedia external links
+- Batch processing for families with `/api/admin/vecna/family/[familyId]/process`
+- `FamilyBatchActions` component with processing modes
+- Dedicated "Rulebook" tab (always accessible)
+- Manual URL input without discovery click
+
+**New Files:**
+```
+src/app/admin/(dashboard)/vecna/components/FamilyBatchActions.tsx
+src/app/api/admin/vecna/family/[familyId]/process/route.ts
+```
+
+**Batch Processing Features:**
+- Processing modes: `full`, `parse-only`, `generate-only`, `from-current`
+- Order: base game first, then expansions chronologically
+- Family context rebuilt after base game completes
+- Options: skip blocked games, stop on first error
+- Results display: "X advanced" vs "X blocked" vs "X skipped"
+
+**Bug Fixes:**
+- Cookie forwarding for internal API auth
+- Hydration error in AlertDialogDescription
+- Stale state when switching games (key prop)
+
+**Remaining:**
+- Improve rulebook discovery success rate
+- More end-to-end testing with various families
 
 ### Phase 3: Enhanced AI (PLANNED)
 

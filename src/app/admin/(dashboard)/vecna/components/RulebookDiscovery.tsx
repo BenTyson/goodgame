@@ -160,25 +160,51 @@ export function RulebookDiscovery({
           </div>
         )}
 
+        {/* Manual URL input - always visible */}
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Paste Rulebook URL:</div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://example.com/rulebook.pdf"
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && manualUrl.trim() && handleManualSubmit()}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleManualSubmit}
+              disabled={!manualUrl.trim() || isSetting}
+            >
+              {isSetting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set URL'}
+            </Button>
+          </div>
+        </div>
+
         {/* Discovery button */}
         {!result && (
-          <Button
-            onClick={runDiscovery}
-            disabled={isDiscovering}
-            className="w-full gap-2"
-          >
-            {isDiscovering ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Discovering...
-              </>
-            ) : (
-              <>
-                <Search className="h-4 w-4" />
-                Discover Rulebook URLs
-              </>
-            )}
-          </Button>
+          <div className="pt-2 border-t">
+            <div className="text-xs text-muted-foreground mb-2">
+              Or search for rulebook URLs automatically:
+            </div>
+            <Button
+              onClick={runDiscovery}
+              disabled={isDiscovering}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              {isDiscovering ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Discovering...
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4" />
+                  Discover Rulebook URLs
+                </>
+              )}
+            </Button>
+          </div>
         )}
 
         {/* Error display */}
@@ -288,26 +314,6 @@ export function RulebookDiscovery({
                 </div>
               </div>
             )}
-
-            {/* Manual input */}
-            <div className="pt-2 border-t">
-              <div className="text-sm font-medium mb-2">Or enter URL manually:</div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://example.com/rulebook.pdf"
-                  value={manualUrl}
-                  onChange={(e) => setManualUrl(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleManualSubmit}
-                  disabled={!manualUrl.trim() || isSetting}
-                  variant="outline"
-                >
-                  Set
-                </Button>
-              </div>
-            </div>
 
             {/* Re-run discovery */}
             <Button

@@ -143,21 +143,60 @@ export interface VecnaGame {
   // Crunch score
   crunch_score: number | null
 
-  // External data summary
-  rulebook_url: string | null
-  wikipedia_url: string | null
-  wikidata_id: string | null
+  // =====================================================
+  // BGG Data
+  // =====================================================
+  bgg_id: number | null
+  bgg_raw_data: BggRawData | null
+  bgg_last_synced: string | null
 
-  // Generated content (for review)
+  // Direct BGG fields (for convenience)
+  weight: number | null              // BGG complexity weight 1-5
+  min_age: number | null
+  player_count_min: number | null
+  player_count_max: number | null
+  play_time_min: number | null
+  play_time_max: number | null
+
+  // =====================================================
+  // Wikidata
+  // =====================================================
+  wikidata_id: string | null
+  wikidata_image_url: string | null  // CC-licensed image
+  wikidata_series_id: string | null  // Series membership
+  official_website: string | null    // From Wikidata P856
+  wikidata_last_synced: string | null
+
+  // =====================================================
+  // Wikipedia
+  // =====================================================
+  wikipedia_url: string | null
+  wikipedia_summary: WikipediaSummary | null       // AI-generated summary
+  wikipedia_infobox: WikipediaInfobox | null       // Structured infobox data
+  wikipedia_gameplay: string | null                // Gameplay section
+  wikipedia_origins: string | null                 // Origins/History section
+  wikipedia_reception: string | null               // Reception section
+  wikipedia_images: WikipediaImage[] | null        // Article images with licenses
+  wikipedia_external_links: WikipediaExternalLink[] | null  // Categorized links
+  wikipedia_awards: WikipediaAward[] | null        // Structured awards
+  wikipedia_search_confidence: 'high' | 'medium' | 'low' | null
+  wikipedia_fetched_at: string | null
+
+  // =====================================================
+  // Rulebook & Content
+  // =====================================================
+  rulebook_url: string | null
+  rulebook_source: string | null     // 'wikidata' | 'wikipedia' | 'publisher_pattern' | 'manual'
+
+  // Generated content
   rules_content: RulesContent | null
   setup_content: SetupContent | null
   reference_content: ReferenceContent | null
+  content_generated_at: string | null
 
-  // Source data for comparison
-  bgg_raw_data: BggRawData | null
-  wikipedia_summary: WikipediaSummary | null
-  wikipedia_gameplay: string | null
-  wikipedia_origins: string | null
+  // =====================================================
+  // Other
+  // =====================================================
   description: string | null
 
   // Images
@@ -173,28 +212,116 @@ export interface VecnaGame {
 // Taxonomy source type (for documentation)
 export type TaxonomySource = 'bgg' | 'wikidata' | 'wikipedia' | 'ai' | 'manual'
 
-// BGG raw data structure
+// BGG raw data structure (comprehensive)
 export interface BggRawData {
+  // Core identifiers
+  id?: number
+  type?: string  // 'boardgame' | 'boardgameexpansion'
   name?: string
+  alternateNames?: string[]
+
+  // Basic info
   yearpublished?: number
   minplayers?: number
   maxplayers?: number
   minplaytime?: number
   maxplaytime?: number
+  playingTime?: number
+  minAge?: number
   description?: string
+
+  // Images
   thumbnail?: string
   image?: string
-  weight?: number
+
+  // BGG metrics (internal use only - not for public display)
+  weight?: number      // BGG complexity weight 1-5
+  rating?: number      // BGG average rating
+  numRatings?: number  // Number of ratings
+  rank?: number | null // BGG overall rank
+
+  // People
+  designers?: string[]
+  artists?: string[]
+  publishers?: string[]
+
+  // Taxonomy
+  categories?: string[]
+  mechanics?: string[]
+  categoryLinks?: Array<{ id: number; name: string }>
+  mechanicLinks?: Array<{ id: number; name: string }>
+
+  // Relations
+  families?: Array<{ id: number; name: string }>
+  expansions?: Array<{ id: number; name: string }>
+  expandsGame?: { id: number; name: string } | null
+  implementations?: Array<{ id: number; name: string }>
+  implementsGame?: { id: number; name: string } | null
+
+  // Allow additional fields
   [key: string]: unknown
 }
 
-// Wikipedia summary structure
+// Wikipedia summary structure (AI-generated)
 export interface WikipediaSummary {
   summary?: string
   themes?: string[]
   mechanics?: string[]
   reception?: string
   awards?: string[]
+}
+
+// Wikipedia infobox structure (extracted from article)
+export interface WikipediaInfobox {
+  designer?: string[]
+  publisher?: string[]
+  players?: string
+  playingTime?: string
+  setupTime?: string
+  ages?: string
+  releaseDate?: string
+  genre?: string
+  skills?: string[]
+  website?: string
+  series?: string
+  expansion?: string
+  publishersWithRegion?: Array<{ name: string; region?: string; isPrimary?: boolean }>
+  image?: string
+  imageCaption?: string
+  mechanics?: string[]
+  themes?: string[]
+  complexity?: string
+  minPlayers?: string
+  maxPlayers?: string
+  recommendedPlayers?: string
+  playerElimination?: boolean
+  bggId?: string
+}
+
+// Wikipedia image with metadata
+export interface WikipediaImage {
+  filename: string
+  url?: string
+  thumbUrl?: string
+  width?: number
+  height?: number
+  caption?: string
+  license?: string
+  isPrimary?: boolean
+}
+
+// Wikipedia external link (categorized)
+export interface WikipediaExternalLink {
+  url: string
+  type: 'official' | 'rulebook' | 'publisher' | 'store' | 'video' | 'review' | 'other'
+  domain?: string
+}
+
+// Wikipedia award (structured)
+export interface WikipediaAward {
+  name: string
+  year?: number
+  result: 'winner' | 'nominated' | 'finalist' | 'recommended' | 'unknown'
 }
 
 // Content types for display

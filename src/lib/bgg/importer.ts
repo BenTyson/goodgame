@@ -1275,6 +1275,62 @@ export async function importGameFromBGG(
         .update(wikipediaData)
         .eq('id', newGame.id)
     }
+
+    // If no rulebook URL from Wikidata, check Wikipedia external links for rulebook
+    const { data: currentGame } = await supabase
+      .from('games')
+      .select('rulebook_url')
+      .eq('id', newGame.id)
+      .single()
+
+    if (!currentGame?.rulebook_url && wikipediaResult.externalLinks) {
+      const rulebookLink = wikipediaResult.externalLinks.find(
+        link => link.type === 'rulebook'
+      )
+      if (rulebookLink) {
+        await supabase
+          .from('games')
+          .update({
+            rulebook_url: rulebookLink.url,
+            rulebook_source: 'wikipedia'
+          })
+          .eq('id', newGame.id)
+        console.log(`  [Wikipedia] Found rulebook URL: ${rulebookLink.url}`)
+      }
+    }
+  }
+
+  // Determine and set vecna_state based on enrichment results
+  // Get current enrichment status to determine proper state
+  const { data: enrichedGame } = await supabase
+    .from('games')
+    .select('wikidata_id, wikipedia_url, rulebook_url')
+    .eq('id', newGame.id)
+    .single()
+
+  if (enrichedGame) {
+    let vecnaState: 'imported' | 'enriched' | 'rulebook_ready' = 'imported'
+
+    // If we have Wikidata or Wikipedia data, we're enriched
+    if (enrichedGame.wikidata_id || enrichedGame.wikipedia_url) {
+      vecnaState = 'enriched'
+    }
+
+    // If we have a rulebook URL (from Wikidata P953 or Wikipedia external links), skip to rulebook_ready
+    if (enrichedGame.rulebook_url) {
+      vecnaState = 'rulebook_ready'
+    }
+
+    // Update vecna_state if not staying at default 'imported'
+    if (vecnaState !== 'imported') {
+      await supabase
+        .from('games')
+        .update({
+          vecna_state: vecnaState,
+          vecna_processed_at: new Date().toISOString()
+        })
+        .eq('id', newGame.id)
+    }
   }
 
   // Update has_unimported_relations flag for this game

@@ -1,8 +1,41 @@
 # Current Status
 
-> Last Updated: 2026-01-04 (Vecna Pipeline Phase 1 Complete)
+> Last Updated: 2026-01-04 (Vecna Pipeline Phase 2 In Progress)
 
-## Current Phase: 49 - Vecna Pipeline Implementation (COMPLETE)
+## Current Phase: 50 - Vecna Phase 2: Batch Processing & Data Surfacing
+
+Continuing Vecna pipeline development with batch family processing, comprehensive data surfacing, and UX improvements.
+
+### Session Summary (2026-01-04)
+
+**Data Audit & Surfacing:**
+- Audited all data sources (BGG, Wikidata, Wikipedia) to ensure nothing is "left on the table"
+- Expanded `VecnaGame` type with 25+ new fields organized by source
+- Updated Vecna page queries to fetch 40+ fields per game
+- Enhanced `VecnaGameView` UI: External References, Data Freshness, Images tab (Wikidata CC images, Wikipedia images with licenses), Sources tab (BGG metrics, Wikipedia infobox/awards/reception/external links, Wikidata section)
+
+**Batch Processing (NEW):**
+- Created `/api/admin/vecna/family/[familyId]/process` endpoint
+- Created `FamilyBatchActions` component for family-level processing
+- Processing modes: `full`, `parse-only`, `generate-only`, `from-current`
+- Order: base game first, then expansions chronologically
+- Family context rebuilt after base game processing
+- Options: skip blocked games, stop on first error
+
+**Rulebook Management:**
+- Added dedicated "Rulebook" tab (always accessible regardless of state)
+- Manual URL input without requiring discovery click
+- Each game in a family can have its own rulebook
+
+**Bug Fixes:**
+- Fixed auth for batch processing (cookie forwarding to internal API calls)
+- Fixed hydration error (`<p>` nesting in AlertDialogDescription)
+- Fixed stale state when switching games (`key` prop on VecnaGameView)
+- Improved batch results: "X advanced" vs "X blocked" vs "X skipped"
+
+---
+
+## Phase 49 - Vecna Pipeline Implementation (COMPLETE)
 
 Implemented the Vecna automated game content pipeline at `/admin/vecna`. This is a unified admin page that shows all games organized by family with their processing state, allowing admins to manage the entire content pipeline from a single location.
 
@@ -27,6 +60,8 @@ Implemented the Vecna automated game content pipeline at `/admin/vecna`. This is
 | `/src/app/admin/(dashboard)/vecna/components/VecnaEmptyState.tsx` | Empty state with stats |
 | `/src/app/admin/(dashboard)/vecna/components/StateActions.tsx` | State transition actions |
 | `/src/app/admin/(dashboard)/vecna/components/RulebookDiscovery.tsx` | Rulebook URL discovery UI |
+| `/src/app/admin/(dashboard)/vecna/components/FamilyBatchActions.tsx` | Batch processing UI for families |
+| `/src/app/api/admin/vecna/family/[familyId]/process/route.ts` | Batch processing API endpoint |
 | `/src/lib/vecna/types.ts` | Type definitions for Vecna pipeline |
 | `/src/lib/vecna/pipeline.ts` | Pipeline orchestration logic |
 | `/src/lib/vecna/context.ts` | Family context utilities |
@@ -225,13 +260,26 @@ Recent migrations (57-62):
 
 ## Next Steps
 
-### Vecna Phase 2: Automation
-- Auto-run enrichment after import
-- Rulebook discovery priority chain (Wikidata → Wikipedia → Pattern matching)
-- Batch processing for families
+### Vecna Phase 2: Remaining Work
+- ✅ Auto-run enrichment after import (vecna_state updates)
+- ✅ Rulebook URL extraction from Wikipedia external links
+- ✅ Batch processing for families
+- Test batch processing end-to-end with more families
+- Improve rulebook discovery success rate
+
+### Vecna Phase 3: Enhanced AI
+- Full Wikipedia context in prompts (gameplay, origins, awards)
+- Family context inheritance for expansions
+- Improved taxonomy assignment with Wikipedia categories
+
+### Vecna Phase 4: Review UI & Polish
+- Three-column review UI (source | generated | final)
+- Data source visibility badges throughout
+- Compliance checklist
+- Per-game publish flow improvements
 
 ### Content
-- Process games through Vecna pipeline
+- Process Gloomhaven family through full pipeline (3 games generated, ready for review)
 - Upload images for all games via admin
 - Import more games via Wikidata skill
 

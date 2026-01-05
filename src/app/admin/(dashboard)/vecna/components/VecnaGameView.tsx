@@ -33,6 +33,7 @@ import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
 import { VECNA_STATE_CONFIG } from '@/lib/vecna'
 import { RulebookDiscovery } from './RulebookDiscovery'
 import { StateActions } from './StateActions'
+import { FamilyBatchActions } from './FamilyBatchActions'
 
 interface VecnaGameViewProps {
   game: VecnaGame
@@ -259,12 +260,65 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
       {/* Tabs for different views */}
       <Tabs defaultValue="unified" className="w-full">
         <TabsList>
-          <TabsTrigger value="unified">Unified View</TabsTrigger>
+          <TabsTrigger value="unified">Status</TabsTrigger>
+          <TabsTrigger value="rulebook">Rulebook</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="taxonomy">Taxonomy</TabsTrigger>
           <TabsTrigger value="images">Images</TabsTrigger>
           <TabsTrigger value="sources">Data Sources</TabsTrigger>
         </TabsList>
+
+        {/* Rulebook Tab - Always accessible for managing rulebooks */}
+        <TabsContent value="rulebook" className="mt-4">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Rulebook Management
+                </CardTitle>
+                <CardDescription>
+                  Set or update the rulebook URL for this game. Each game in a family can have its own rulebook.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Current Rulebook Status */}
+                {game.rulebook_url ? (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-green-800">Rulebook Set</span>
+                      {game.rulebook_source && <SourceBadge source={game.rulebook_source} />}
+                    </div>
+                    <a
+                      href={game.rulebook_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-green-700 hover:underline break-all"
+                    >
+                      {game.rulebook_url}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <span className="text-yellow-800">No rulebook URL set for this game</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Rulebook Discovery Component */}
+            <RulebookDiscovery
+              gameId={game.id}
+              gameName={game.name}
+              currentRulebookUrl={game.rulebook_url}
+              onRulebookSet={handleRulebookSet}
+            />
+          </div>
+        </TabsContent>
 
         {/* Unified View Tab */}
         <TabsContent value="unified" className="mt-4">
@@ -307,6 +361,22 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
               {/* External Links */}
               <CollapsibleSection title="External References" icon={ExternalLink}>
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {/* BGG Link */}
+                  {game.bgg_id && (
+                    <a
+                      href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="w-5 h-5 rounded bg-orange-500 text-white text-xs flex items-center justify-center font-bold">B</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">BoardGameGeek</div>
+                        <div className="text-xs text-muted-foreground">ID: {game.bgg_id}</div>
+                      </div>
+                      <SourceBadge source="bgg" />
+                    </a>
+                  )}
                   {game.wikipedia_url && (
                     <a
                       href={game.wikipedia_url}
@@ -316,7 +386,19 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                     >
                       <Globe className="h-5 w-5 text-violet-500" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">Wikipedia</div>
+                        <div className="font-medium flex items-center gap-1">
+                          Wikipedia
+                          {game.wikipedia_search_confidence && (
+                            <span className={cn(
+                              'text-[10px] px-1 rounded',
+                              game.wikipedia_search_confidence === 'high' && 'bg-green-100 text-green-700',
+                              game.wikipedia_search_confidence === 'medium' && 'bg-yellow-100 text-yellow-700',
+                              game.wikipedia_search_confidence === 'low' && 'bg-red-100 text-red-700'
+                            )}>
+                              {game.wikipedia_search_confidence}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">
                           {game.wikipedia_url}
                         </div>
@@ -339,6 +421,24 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                       <SourceBadge source="wikidata" />
                     </a>
                   )}
+                  {/* Official Website from Wikidata */}
+                  {game.official_website && (
+                    <a
+                      href={game.official_website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <Globe className="h-5 w-5 text-emerald-500" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">Official Website</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {game.official_website}
+                        </div>
+                      </div>
+                      <SourceBadge source="wikidata" />
+                    </a>
+                  )}
                   {game.rulebook_url && (
                     <a
                       href={game.rulebook_url}
@@ -348,14 +448,19 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                     >
                       <FileText className="h-5 w-5 text-green-500" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">Rulebook</div>
+                        <div className="font-medium flex items-center gap-1">
+                          Rulebook
+                          {game.rulebook_source && (
+                            <SourceBadge source={game.rulebook_source} />
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">
                           {game.rulebook_url}
                         </div>
                       </div>
                     </a>
                   )}
-                  {!game.wikipedia_url && !game.wikidata_id && !game.rulebook_url && (
+                  {!game.bgg_id && !game.wikipedia_url && !game.wikidata_id && !game.rulebook_url && !game.official_website && (
                     <div className="text-sm text-muted-foreground col-span-2">
                       No external references available
                     </div>
@@ -433,6 +538,35 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                     <span className="text-muted-foreground">Published:</span>
                     <span>{game.is_published ? 'Yes' : 'No'}</span>
                   </div>
+
+                  {/* Data Freshness */}
+                  <div className="pt-2 border-t mt-2">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Data Freshness</div>
+                    {game.bgg_last_synced && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">BGG synced:</span>
+                        <span>{new Date(game.bgg_last_synced).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {game.wikidata_last_synced && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Wikidata synced:</span>
+                        <span>{new Date(game.wikidata_last_synced).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {game.wikipedia_fetched_at && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Wikipedia fetched:</span>
+                        <span>{new Date(game.wikipedia_fetched_at).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {game.content_generated_at && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Content generated:</span>
+                        <span>{new Date(game.content_generated_at).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CollapsibleSection>
             </div>
@@ -449,6 +583,14 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                 isPublished={game.is_published}
                 onStateChange={handleStateChange}
               />
+
+              {/* Family Batch Processing (only for family games) */}
+              {family && (
+                <FamilyBatchActions
+                  family={family}
+                  onProcessingComplete={() => router.refresh()}
+                />
+              )}
             </div>
           </div>
         </TabsContent>
@@ -903,6 +1045,90 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
             </Card>
           </div>
 
+          {/* Wikidata CC-Licensed Image */}
+          {game.wikidata_image_url && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Database className="h-5 w-5 text-blue-500" />
+                  Wikidata Image
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    CC Licensed
+                  </Badge>
+                </CardTitle>
+                <CardDescription>Creative Commons licensed - safe for public display</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative aspect-square w-full max-w-[250px] mx-auto rounded-lg overflow-hidden bg-muted">
+                  <Image
+                    src={game.wikidata_image_url}
+                    alt={`${game.name} Wikidata image`}
+                    fill
+                    className="object-contain"
+                    sizes="250px"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center truncate">
+                  {game.wikidata_image_url.split('/').pop()}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Wikipedia Images with Licenses */}
+          {game.wikipedia_images && game.wikipedia_images.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-violet-500" />
+                  Wikipedia Images
+                  <Badge variant="secondary" className="text-xs">
+                    {game.wikipedia_images.length} images
+                  </Badge>
+                </CardTitle>
+                <CardDescription>Images from Wikipedia article with license info</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {game.wikipedia_images.map((img, i) => (
+                    <div key={i} className="space-y-2">
+                      {img.url || img.thumbUrl ? (
+                        <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-muted">
+                          <Image
+                            src={img.thumbUrl || img.url || ''}
+                            alt={img.caption || `Wikipedia image ${i + 1}`}
+                            fill
+                            className="object-contain"
+                            sizes="200px"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground truncate" title={img.filename}>
+                          {img.filename?.replace('File:', '')}
+                        </p>
+                        {img.license && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {img.license}
+                          </Badge>
+                        )}
+                        {img.isPrimary && (
+                          <Badge className="text-[10px] bg-violet-100 text-violet-700">
+                            Primary
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* BGG Images (from raw data) */}
           {game.bgg_raw_data && (game.bgg_raw_data.thumbnail || game.bgg_raw_data.image) && (
             <Card>
@@ -911,7 +1137,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                   <span className="w-6 h-6 rounded bg-orange-500 text-white text-xs flex items-center justify-center font-bold">BGG</span>
                   BoardGameGeek Images
                 </CardTitle>
-                <CardDescription>Original images from BGG</CardDescription>
+                <CardDescription>Original images from BGG (not CC licensed)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -950,6 +1176,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
 
           {/* Empty state */}
           {!game.thumbnail_url && !game.box_image_url && !game.hero_image_url &&
+           !game.wikidata_image_url && !(game.wikipedia_images?.length) &&
            !(game.bgg_raw_data?.thumbnail || game.bgg_raw_data?.image) && (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
@@ -968,26 +1195,88 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
               <CardTitle className="text-lg flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-orange-500 text-white text-xs flex items-center justify-center font-bold">BGG</span>
                 BoardGameGeek
+                {game.bgg_id && (
+                  <a
+                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline ml-auto"
+                  >
+                    View on BGG →
+                  </a>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {game.bgg_raw_data ? (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  {game.bgg_raw_data.yearpublished && (
-                    <div><span className="text-muted-foreground">Year:</span> {game.bgg_raw_data.yearpublished}</div>
+                <div className="space-y-4">
+                  {/* Core Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+                    <div><span className="text-muted-foreground">Year:</span> {game.bgg_raw_data.yearpublished || 'N/A'}</div>
+                    <div><span className="text-muted-foreground">Players:</span> {game.bgg_raw_data.minplayers || '?'}-{game.bgg_raw_data.maxplayers || '?'}</div>
+                    <div><span className="text-muted-foreground">Playtime:</span> {game.bgg_raw_data.minplaytime || '?'}-{game.bgg_raw_data.maxplaytime || '?'} min</div>
+                    <div><span className="text-muted-foreground">Min Age:</span> {game.bgg_raw_data.minAge || game.min_age || 'N/A'}+</div>
+                    <div><span className="text-muted-foreground">Weight:</span> {game.bgg_raw_data.weight ? Number(game.bgg_raw_data.weight).toFixed(2) : 'N/A'}</div>
+                    <div><span className="text-muted-foreground">Type:</span> {game.bgg_raw_data.type || 'boardgame'}</div>
+                  </div>
+
+                  {/* Admin-only BGG Metrics (not for public display) */}
+                  {(game.bgg_raw_data.rating || game.bgg_raw_data.rank) && (
+                    <div className="pt-3 border-t">
+                      <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <span>Internal BGG Metrics</span>
+                        <Badge variant="outline" className="text-[9px] px-1">Admin Only</Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        {game.bgg_raw_data.rating && (
+                          <div><span className="text-muted-foreground">Rating:</span> {Number(game.bgg_raw_data.rating).toFixed(2)}</div>
+                        )}
+                        {game.bgg_raw_data.numRatings && (
+                          <div><span className="text-muted-foreground">Votes:</span> {game.bgg_raw_data.numRatings.toLocaleString()}</div>
+                        )}
+                        {game.bgg_raw_data.rank && (
+                          <div><span className="text-muted-foreground">Rank:</span> #{game.bgg_raw_data.rank}</div>
+                        )}
+                      </div>
+                    </div>
                   )}
-                  {(game.bgg_raw_data.minplayers || game.bgg_raw_data.maxplayers) && (
-                    <div><span className="text-muted-foreground">Players:</span> {game.bgg_raw_data.minplayers}-{game.bgg_raw_data.maxplayers}</div>
+
+                  {/* People */}
+                  {(game.bgg_raw_data.designers?.length || game.bgg_raw_data.artists?.length || game.bgg_raw_data.publishers?.length) && (
+                    <div className="pt-3 border-t space-y-2">
+                      {game.bgg_raw_data.designers && game.bgg_raw_data.designers.length > 0 && (
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Designers:</span> {game.bgg_raw_data.designers.join(', ')}
+                        </div>
+                      )}
+                      {game.bgg_raw_data.artists && game.bgg_raw_data.artists.length > 0 && (
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Artists:</span> {game.bgg_raw_data.artists.join(', ')}
+                        </div>
+                      )}
+                      {game.bgg_raw_data.publishers && game.bgg_raw_data.publishers.length > 0 && (
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Publishers:</span> {game.bgg_raw_data.publishers.join(', ')}
+                        </div>
+                      )}
+                    </div>
                   )}
-                  {(game.bgg_raw_data.minplaytime || game.bgg_raw_data.maxplaytime) && (
-                    <div><span className="text-muted-foreground">Playtime:</span> {game.bgg_raw_data.minplaytime}-{game.bgg_raw_data.maxplaytime} min</div>
+
+                  {/* Alt Names */}
+                  {game.bgg_raw_data.alternateNames && game.bgg_raw_data.alternateNames.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Also Known As:</span>{' '}
+                        {game.bgg_raw_data.alternateNames.slice(0, 5).join(', ')}
+                        {game.bgg_raw_data.alternateNames.length > 5 && ` (+${game.bgg_raw_data.alternateNames.length - 5} more)`}
+                      </div>
+                    </div>
                   )}
-                  {game.bgg_raw_data.weight && (
-                    <div><span className="text-muted-foreground">Weight:</span> {Number(game.bgg_raw_data.weight).toFixed(2)}</div>
-                  )}
+
+                  {/* Description */}
                   {game.bgg_raw_data.description && (
-                    <div className="col-span-2 mt-2">
-                      <span className="text-muted-foreground">Description:</span>
+                    <div className="pt-3 border-t">
+                      <span className="text-muted-foreground text-sm">Description:</span>
                       <ExpandableText
                         text={String(game.bgg_raw_data.description).replace(/<[^>]*>/g, '')}
                         className="mt-1"
@@ -1005,73 +1294,243 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-gray-600 text-white text-xs flex items-center justify-center font-bold">W</span>
+                <Globe className="h-5 w-5 text-violet-500" />
                 Wikipedia
+                {game.wikipedia_url && (
+                  <a
+                    href={game.wikipedia_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline ml-auto"
+                  >
+                    View Article →
+                  </a>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              {/* AI Summary */}
               {game.wikipedia_summary ? (
-                <>
+                <div className="space-y-3">
                   {game.wikipedia_summary.summary && (
                     <div>
-                      <h4 className="font-medium text-sm mb-1">Summary</h4>
+                      <h4 className="font-medium text-sm mb-1 flex items-center gap-1">
+                        Summary
+                        <SourceBadge source="ai" />
+                      </h4>
                       <ExpandableText text={game.wikipedia_summary.summary} />
                     </div>
                   )}
-                  {game.wikipedia_summary.themes && game.wikipedia_summary.themes.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-1">Themes</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {game.wikipedia_summary.themes.map((theme, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">{theme}</Badge>
-                        ))}
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {game.wikipedia_summary.themes && game.wikipedia_summary.themes.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-sm mb-1">AI-Extracted Themes</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {game.wikipedia_summary.themes.map((theme, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">{theme}</Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {game.wikipedia_summary.mechanics && game.wikipedia_summary.mechanics.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-1">Mechanics</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {game.wikipedia_summary.mechanics.map((mech, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">{mech}</Badge>
-                        ))}
+                    )}
+                    {game.wikipedia_summary.mechanics && game.wikipedia_summary.mechanics.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-sm mb-1">AI-Extracted Mechanics</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {game.wikipedia_summary.mechanics.map((mech, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">{mech}</Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {game.wikipedia_summary.awards && game.wikipedia_summary.awards.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-1">Awards ({game.wikipedia_summary.awards.length})</h4>
-                      <ul className="text-sm text-muted-foreground list-disc list-inside">
-                        {game.wikipedia_summary.awards.map((award, i) => (
-                          <li key={i}>{award}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No Wikipedia summary available</p>
-              )}
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
-              {game.wikipedia_gameplay && (
-                <div>
-                  <h4 className="font-medium text-sm mb-1">Gameplay (from Wikipedia)</h4>
-                  <ExpandableText text={game.wikipedia_gameplay} />
+              {/* Wikipedia Infobox */}
+              {game.wikipedia_infobox && Object.keys(game.wikipedia_infobox).length > 0 && (
+                <div className="pt-3 border-t">
+                  <h4 className="font-medium text-sm mb-2">Infobox Data</h4>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    {game.wikipedia_infobox.designer && game.wikipedia_infobox.designer.length > 0 && (
+                      <div><span className="text-muted-foreground">Designer:</span> {game.wikipedia_infobox.designer.join(', ')}</div>
+                    )}
+                    {game.wikipedia_infobox.publisher && game.wikipedia_infobox.publisher.length > 0 && (
+                      <div><span className="text-muted-foreground">Publisher:</span> {game.wikipedia_infobox.publisher.join(', ')}</div>
+                    )}
+                    {game.wikipedia_infobox.players && (
+                      <div><span className="text-muted-foreground">Players:</span> {game.wikipedia_infobox.players}</div>
+                    )}
+                    {game.wikipedia_infobox.playingTime && (
+                      <div><span className="text-muted-foreground">Playing Time:</span> {game.wikipedia_infobox.playingTime}</div>
+                    )}
+                    {game.wikipedia_infobox.setupTime && (
+                      <div><span className="text-muted-foreground">Setup Time:</span> {game.wikipedia_infobox.setupTime}</div>
+                    )}
+                    {game.wikipedia_infobox.ages && (
+                      <div><span className="text-muted-foreground">Ages:</span> {game.wikipedia_infobox.ages}</div>
+                    )}
+                    {game.wikipedia_infobox.releaseDate && (
+                      <div><span className="text-muted-foreground">Release:</span> {game.wikipedia_infobox.releaseDate}</div>
+                    )}
+                    {game.wikipedia_infobox.genre && (
+                      <div><span className="text-muted-foreground">Genre:</span> {game.wikipedia_infobox.genre}</div>
+                    )}
+                    {game.wikipedia_infobox.series && (
+                      <div><span className="text-muted-foreground">Series:</span> {game.wikipedia_infobox.series}</div>
+                    )}
+                    {game.wikipedia_infobox.website && (
+                      <div className="col-span-2">
+                        <span className="text-muted-foreground">Website:</span>{' '}
+                        <a href={game.wikipedia_infobox.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          {game.wikipedia_infobox.website}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {game.wikipedia_origins && (
-                <div>
-                  <h4 className="font-medium text-sm mb-1">Origins (from Wikipedia)</h4>
-                  <ExpandableText text={game.wikipedia_origins} />
+              {/* Structured Awards */}
+              {game.wikipedia_awards && game.wikipedia_awards.length > 0 && (
+                <div className="pt-3 border-t">
+                  <h4 className="font-medium text-sm mb-2">Awards ({game.wikipedia_awards.length})</h4>
+                  <div className="space-y-1">
+                    {game.wikipedia_awards.map((award, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-xs',
+                            award.result === 'winner' && 'bg-yellow-50 border-yellow-300 text-yellow-700',
+                            award.result === 'nominated' && 'bg-blue-50 border-blue-300 text-blue-700',
+                            award.result === 'finalist' && 'bg-purple-50 border-purple-300 text-purple-700'
+                          )}
+                        >
+                          {award.result === 'winner' ? '🏆' : award.result === 'nominated' ? '📋' : '🎖️'} {award.result}
+                        </Badge>
+                        <span>{award.name}</span>
+                        {award.year && <span className="text-muted-foreground">({award.year})</span>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {!game.wikipedia_summary && !game.wikipedia_gameplay && !game.wikipedia_origins && (
+              {/* Wikipedia Sections */}
+              <div className="pt-3 border-t space-y-3">
+                {game.wikipedia_gameplay && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Gameplay</h4>
+                    <ExpandableText text={game.wikipedia_gameplay} />
+                  </div>
+                )}
+
+                {game.wikipedia_origins && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Origins / History</h4>
+                    <ExpandableText text={game.wikipedia_origins} />
+                  </div>
+                )}
+
+                {game.wikipedia_reception && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Reception</h4>
+                    <ExpandableText text={game.wikipedia_reception} />
+                  </div>
+                )}
+              </div>
+
+              {/* External Links from Wikipedia */}
+              {game.wikipedia_external_links && game.wikipedia_external_links.length > 0 && (
+                <div className="pt-3 border-t">
+                  <h4 className="font-medium text-sm mb-2">External Links from Wikipedia</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {game.wikipedia_external_links.map((link, i) => (
+                      <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded border hover:bg-muted/50 transition-colors text-sm"
+                      >
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[10px]',
+                            link.type === 'official' && 'bg-green-50 text-green-700',
+                            link.type === 'rulebook' && 'bg-blue-50 text-blue-700',
+                            link.type === 'publisher' && 'bg-purple-50 text-purple-700',
+                            link.type === 'store' && 'bg-orange-50 text-orange-700'
+                          )}
+                        >
+                          {link.type}
+                        </Badge>
+                        <span className="truncate flex-1">{link.domain || new URL(link.url).hostname}</span>
+                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!game.wikipedia_summary && !game.wikipedia_gameplay && !game.wikipedia_origins && !game.wikipedia_infobox && (
                 <p className="text-sm text-muted-foreground">No Wikipedia data available</p>
               )}
             </CardContent>
           </Card>
+
+          {/* Wikidata */}
+          {(game.wikidata_id || game.official_website || game.wikidata_series_id) && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Database className="h-5 w-5 text-blue-500" />
+                  Wikidata
+                  {game.wikidata_id && (
+                    <a
+                      href={`https://www.wikidata.org/wiki/${game.wikidata_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline ml-auto"
+                    >
+                      {game.wikidata_id} →
+                    </a>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {game.official_website && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Official Website:</span>{' '}
+                      <a href={game.official_website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {game.official_website}
+                      </a>
+                    </div>
+                  )}
+                  {game.wikidata_series_id && (
+                    <div>
+                      <span className="text-muted-foreground">Series ID:</span>{' '}
+                      <a
+                        href={`https://www.wikidata.org/wiki/${game.wikidata_series_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {game.wikidata_series_id}
+                      </a>
+                    </div>
+                  )}
+                  {game.wikidata_image_url && (
+                    <div>
+                      <span className="text-muted-foreground">CC Image:</span>{' '}
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700">Available</Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Current Values (merged) */}
           <Card>
@@ -1080,19 +1539,21 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
               <CardDescription>Final values used on the game page</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
                 <div><span className="text-muted-foreground">Year:</span> {game.year_published || 'N/A'}</div>
                 <div>
                   <span className="text-muted-foreground">Players:</span>{' '}
-                  {game.bgg_raw_data?.minplayers || '?'}-{game.bgg_raw_data?.maxplayers || '?'}
+                  {game.player_count_min || game.bgg_raw_data?.minplayers || '?'}-{game.player_count_max || game.bgg_raw_data?.maxplayers || '?'}
                 </div>
                 <div>
                   <span className="text-muted-foreground">Playtime:</span>{' '}
-                  {game.bgg_raw_data?.minplaytime || '?'}-{game.bgg_raw_data?.maxplaytime || '?'} min
+                  {game.play_time_min || game.bgg_raw_data?.minplaytime || '?'}-{game.play_time_max || game.bgg_raw_data?.maxplaytime || '?'} min
                 </div>
+                <div><span className="text-muted-foreground">Min Age:</span> {game.min_age || game.bgg_raw_data?.minAge || 'N/A'}+</div>
+                <div><span className="text-muted-foreground">Weight:</span> {game.weight?.toFixed(2) || game.bgg_raw_data?.weight?.toFixed(2) || 'N/A'}</div>
                 <div><span className="text-muted-foreground">Crunch:</span> {game.crunch_score?.toFixed(1) || 'N/A'}</div>
                 {game.description && (
-                  <div className="col-span-2 mt-2">
+                  <div className="col-span-full mt-2">
                     <span className="text-muted-foreground">Description:</span>
                     <ExpandableText text={game.description} className="mt-1" />
                   </div>

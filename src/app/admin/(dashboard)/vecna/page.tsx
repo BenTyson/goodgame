@@ -27,19 +27,48 @@ interface GameRow {
   vecna_state: VecnaState | null
   vecna_processed_at: string | null
   vecna_error: string | null
-  rulebook_url: string | null
-  wikipedia_url: string | null
+  is_published: boolean
+  description: string | null
+
+  // BGG data
+  bgg_id: number | null
+  bgg_raw_data: Record<string, unknown> | null
+  bgg_last_synced: string | null
+  weight: number | null
+  min_age: number | null
+  player_count_min: number | null
+  player_count_max: number | null
+  play_time_min: number | null
+  play_time_max: number | null
+
+  // Wikidata
   wikidata_id: string | null
+  wikidata_image_url: string | null
+  wikidata_series_id: string | null
+  official_website: string | null
+  wikidata_last_synced: string | null
+
+  // Wikipedia
+  wikipedia_url: string | null
+  wikipedia_summary: Record<string, unknown> | null
+  wikipedia_infobox: Record<string, unknown> | null
+  wikipedia_gameplay: string | null
+  wikipedia_origins: string | null
+  wikipedia_reception: string | null
+  wikipedia_images: unknown[] | null
+  wikipedia_external_links: unknown[] | null
+  wikipedia_awards: unknown[] | null
+  wikipedia_search_confidence: string | null
+  wikipedia_fetched_at: string | null
+
+  // Rulebook & Content
+  rulebook_url: string | null
+  rulebook_source: string | null
   rules_content: unknown | null
   setup_content: unknown | null
   reference_content: unknown | null
-  is_published: boolean
   crunch_score: number | null
-  bgg_raw_data: Record<string, unknown> | null
-  wikipedia_summary: Record<string, unknown> | null
-  wikipedia_gameplay: string | null
-  wikipedia_origins: string | null
-  description: string | null
+  content_generated_at: string | null
 }
 
 interface CategoryRow {
@@ -104,20 +133,41 @@ async function getFamilies(): Promise<VecnaFamily[]> {
       vecna_state,
       vecna_processed_at,
       vecna_error,
-      rulebook_url,
-      wikipedia_url,
+      is_published,
+      description,
+      family_id,
+      bgg_id,
+      bgg_raw_data,
+      bgg_last_synced,
+      weight,
+      min_age,
+      player_count_min,
+      player_count_max,
+      play_time_min,
+      play_time_max,
       wikidata_id,
+      wikidata_image_url,
+      wikidata_series_id,
+      official_website,
+      wikidata_last_synced,
+      wikipedia_url,
+      wikipedia_summary,
+      wikipedia_infobox,
+      wikipedia_gameplay,
+      wikipedia_origins,
+      wikipedia_reception,
+      wikipedia_images,
+      wikipedia_external_links,
+      wikipedia_awards,
+      wikipedia_search_confidence,
+      wikipedia_fetched_at,
+      rulebook_url,
+      rulebook_source,
       rules_content,
       setup_content,
       reference_content,
-      is_published,
       crunch_score,
-      family_id,
-      bgg_raw_data,
-      wikipedia_summary,
-      wikipedia_gameplay,
-      wikipedia_origins,
-      description
+      content_generated_at
     `)
     .not('family_id', 'is', null)
     .order('year_published', { ascending: true, nullsFirst: false })
@@ -267,17 +317,48 @@ async function getFamilies(): Promise<VecnaFamily[]> {
         has_content: !!game.rules_content,
         is_published: game.is_published,
         crunch_score: game.crunch_score,
-        rulebook_url: game.rulebook_url,
-        wikipedia_url: game.wikipedia_url,
+        description: game.description,
+
+        // BGG data
+        bgg_id: game.bgg_id,
+        bgg_raw_data: game.bgg_raw_data as VecnaGame['bgg_raw_data'],
+        bgg_last_synced: game.bgg_last_synced,
+        weight: game.weight,
+        min_age: game.min_age,
+        player_count_min: game.player_count_min,
+        player_count_max: game.player_count_max,
+        play_time_min: game.play_time_min,
+        play_time_max: game.play_time_max,
+
+        // Wikidata
         wikidata_id: game.wikidata_id,
+        wikidata_image_url: game.wikidata_image_url,
+        wikidata_series_id: game.wikidata_series_id,
+        official_website: game.official_website,
+        wikidata_last_synced: game.wikidata_last_synced,
+
+        // Wikipedia
+        wikipedia_url: game.wikipedia_url,
+        wikipedia_summary: game.wikipedia_summary as VecnaGame['wikipedia_summary'],
+        wikipedia_infobox: game.wikipedia_infobox as VecnaGame['wikipedia_infobox'],
+        wikipedia_gameplay: game.wikipedia_gameplay,
+        wikipedia_origins: game.wikipedia_origins,
+        wikipedia_reception: game.wikipedia_reception,
+        wikipedia_images: game.wikipedia_images as VecnaGame['wikipedia_images'],
+        wikipedia_external_links: game.wikipedia_external_links as VecnaGame['wikipedia_external_links'],
+        wikipedia_awards: game.wikipedia_awards as VecnaGame['wikipedia_awards'],
+        wikipedia_search_confidence: game.wikipedia_search_confidence as VecnaGame['wikipedia_search_confidence'],
+        wikipedia_fetched_at: game.wikipedia_fetched_at,
+
+        // Rulebook & Content
+        rulebook_url: game.rulebook_url,
+        rulebook_source: game.rulebook_source,
         rules_content: game.rules_content as VecnaGame['rules_content'],
         setup_content: game.setup_content as VecnaGame['setup_content'],
         reference_content: game.reference_content as VecnaGame['reference_content'],
-        bgg_raw_data: game.bgg_raw_data as VecnaGame['bgg_raw_data'],
-        wikipedia_summary: game.wikipedia_summary as VecnaGame['wikipedia_summary'],
-        wikipedia_gameplay: game.wikipedia_gameplay,
-        wikipedia_origins: game.wikipedia_origins,
-        description: game.description,
+        content_generated_at: game.content_generated_at,
+
+        // Taxonomy
         categories: categoriesMap.get(game.id) || [],
         mechanics: mechanicsMap.get(game.id) || [],
         themes: themesMap.get(game.id) || [],
@@ -321,19 +402,40 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
       vecna_state,
       vecna_processed_at,
       vecna_error,
-      rulebook_url,
-      wikipedia_url,
+      is_published,
+      description,
+      bgg_id,
+      bgg_raw_data,
+      bgg_last_synced,
+      weight,
+      min_age,
+      player_count_min,
+      player_count_max,
+      play_time_min,
+      play_time_max,
       wikidata_id,
+      wikidata_image_url,
+      wikidata_series_id,
+      official_website,
+      wikidata_last_synced,
+      wikipedia_url,
+      wikipedia_summary,
+      wikipedia_infobox,
+      wikipedia_gameplay,
+      wikipedia_origins,
+      wikipedia_reception,
+      wikipedia_images,
+      wikipedia_external_links,
+      wikipedia_awards,
+      wikipedia_search_confidence,
+      wikipedia_fetched_at,
+      rulebook_url,
+      rulebook_source,
       rules_content,
       setup_content,
       reference_content,
-      is_published,
       crunch_score,
-      bgg_raw_data,
-      wikipedia_summary,
-      wikipedia_gameplay,
-      wikipedia_origins,
-      description
+      content_generated_at
     `)
     .is('family_id', null)
     .order('name')
@@ -431,17 +533,48 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     has_content: !!game.rules_content,
     is_published: game.is_published,
     crunch_score: game.crunch_score,
-    rulebook_url: game.rulebook_url,
-    wikipedia_url: game.wikipedia_url,
+    description: game.description,
+
+    // BGG data
+    bgg_id: game.bgg_id,
+    bgg_raw_data: game.bgg_raw_data as VecnaGame['bgg_raw_data'],
+    bgg_last_synced: game.bgg_last_synced,
+    weight: game.weight,
+    min_age: game.min_age,
+    player_count_min: game.player_count_min,
+    player_count_max: game.player_count_max,
+    play_time_min: game.play_time_min,
+    play_time_max: game.play_time_max,
+
+    // Wikidata
     wikidata_id: game.wikidata_id,
+    wikidata_image_url: game.wikidata_image_url,
+    wikidata_series_id: game.wikidata_series_id,
+    official_website: game.official_website,
+    wikidata_last_synced: game.wikidata_last_synced,
+
+    // Wikipedia
+    wikipedia_url: game.wikipedia_url,
+    wikipedia_summary: game.wikipedia_summary as VecnaGame['wikipedia_summary'],
+    wikipedia_infobox: game.wikipedia_infobox as VecnaGame['wikipedia_infobox'],
+    wikipedia_gameplay: game.wikipedia_gameplay,
+    wikipedia_origins: game.wikipedia_origins,
+    wikipedia_reception: game.wikipedia_reception,
+    wikipedia_images: game.wikipedia_images as VecnaGame['wikipedia_images'],
+    wikipedia_external_links: game.wikipedia_external_links as VecnaGame['wikipedia_external_links'],
+    wikipedia_awards: game.wikipedia_awards as VecnaGame['wikipedia_awards'],
+    wikipedia_search_confidence: game.wikipedia_search_confidence as VecnaGame['wikipedia_search_confidence'],
+    wikipedia_fetched_at: game.wikipedia_fetched_at,
+
+    // Rulebook & Content
+    rulebook_url: game.rulebook_url,
+    rulebook_source: game.rulebook_source,
     rules_content: game.rules_content as VecnaGame['rules_content'],
     setup_content: game.setup_content as VecnaGame['setup_content'],
     reference_content: game.reference_content as VecnaGame['reference_content'],
-    bgg_raw_data: game.bgg_raw_data as VecnaGame['bgg_raw_data'],
-    wikipedia_summary: game.wikipedia_summary as VecnaGame['wikipedia_summary'],
-    wikipedia_gameplay: game.wikipedia_gameplay,
-    wikipedia_origins: game.wikipedia_origins,
-    description: game.description,
+    content_generated_at: game.content_generated_at,
+
+    // Taxonomy
     categories: categoriesMap.get(game.id) || [],
     mechanics: mechanicsMap.get(game.id) || [],
     themes: themesMap.get(game.id) || [],

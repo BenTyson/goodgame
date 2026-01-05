@@ -171,6 +171,7 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
         )}
         {selectedGame ? (
           <VecnaGameView
+            key={selectedGame.id}
             game={selectedGame}
             family={selectedFamily}
             isStandalone={showStandalone}
