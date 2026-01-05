@@ -1,9 +1,9 @@
 # Vecna: Automated Game Content Pipeline
 
-**Version:** 1.2
+**Version:** 2.0
 **Created:** 2026-01-04
 **Updated:** 2026-01-04
-**Status:** Phase 2 In Progress - Batch Processing & Data Surfacing
+**Status:** UI V2 Complete - Simplified 4-Phase Visual Model
 
 ## Overview
 
@@ -249,57 +249,107 @@ For each field, when multiple sources have data:
 
 ---
 
-## UI Components
+## UI Components (V2)
 
-### Main Vecna Page Layout
+### Visual Model: 4 Phases
+
+Instead of showing all 11 raw states, the UI displays 4 simplified phases:
+
+```
+┌─────────────┬─────────────┬─────────────┬─────────────┐
+│   IMPORT    │    PARSE    │  GENERATE   │   PUBLISH   │
+│  ●━━━━━━━━━━│━━━━━━━━━━━━━│━━━━━━━━━━━━━│━━━━━━━━━━○  │
+│  imported   │ rulebook_*  │ taxonomy_*  │ review_*    │
+│  enriched   │ parsing     │ generating  │ published   │
+│             │ parsed      │ generated   │             │
+└─────────────┴─────────────┴─────────────┴─────────────┘
+```
+
+**Phase Mapping:**
+```typescript
+type Phase = 'import' | 'parse' | 'generate' | 'publish'
+
+const PHASE_MAPPING: Record<VecnaState, Phase> = {
+  imported: 'import',
+  enriched: 'import',
+  rulebook_missing: 'parse',
+  rulebook_ready: 'parse',
+  parsing: 'parse',
+  parsed: 'parse',
+  taxonomy_assigned: 'generate',
+  generating: 'generate',
+  generated: 'generate',
+  review_pending: 'publish',
+  published: 'publish',
+}
+```
+
+### Main Vecna Page Layout (V2)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ VECNA - Game Content Pipeline                            [Settings] │
+│ VECNA - Game Content Pipeline                                       │
 ├───────────────────┬─────────────────────────────────────────────────┤
 │                   │                                                 │
-│ FAMILY SIDEBAR    │  MAIN CONTENT AREA                              │
-│                   │                                                 │
+│ FAMILY SIDEBAR    │  FAMILY HEADER (only if 2+ games)               │
 │ ┌───────────────┐ │  ┌─────────────────────────────────────────┐   │
-│ │ Pandemic      │ │  │ Stage Progress: ████████░░░░ 65%        │   │
-│ │ [Base Game]   │ │  │ Currently: Processing "On the Brink"    │   │
-│ │ ✅ Published  │ │  └─────────────────────────────────────────┘   │
-│ └───────────────┘ │                                                 │
-│ ┌───────────────┐ │  ┌─────────────────────────────────────────┐   │
-│ │ On the Brink  │ │  │                                         │   │
-│ │ [Expansion]   │ │  │  [Game Processing Panel]                │   │
-│ │ 🔄 Processing │ │  │                                         │   │
-│ └───────────────┘ │  │  - Rulebook Status                      │   │
-│ ┌───────────────┐ │  │  - Crunch Score                         │   │
-│ │ In the Lab    │ │  │  - Taxonomy                             │   │
-│ │ [Expansion]   │ │  │  - Content Generation Progress          │   │
-│ │ ⏳ Queued     │ │  │  - Media Selection                      │   │
-│ └───────────────┘ │  │                                         │   │
-│ ┌───────────────┐ │  └─────────────────────────────────────────┘   │
-│ │ The Cure      │ │                                                 │
-│ │ [Standalone]  │ │                                                 │
-│ │ ⚠️ No Rulebook│ │                                                 │
-│ └───────────────┘ │                                                 │
-│                   │                                                 │
+│ │ [Phase Tabs]  │ │  │ Catan Family           [Batch Actions ▾] │   │
+│ │ All|Import|...│ │  │ 5/8 published                            │   │
+│ └───────────────┘ │  │ ●━━━━━━━●━━━━━━━○━━━━━━━○                │   │
+│ ┌───────────────┐ │  │ IMPORT   PARSE   GENERATE  PUBLISH       │   │
+│ │ Catan Family  │ │  └─────────────────────────────────────────┘   │
+│ │ ●●●○ 5/8 pub  │ │                                                 │
+│ │ > Catan      │ │  GAME PANEL (2 tabs)                            │
+│ │   Seafarers  │ │  ┌─────────────────────────────────────────┐   │
+│ │   Cities     │ │  │ [Pipeline] [Details]                     │   │
+│ └───────────────┘ │  ├─────────────────────────────────────────┤   │
+│ ┌───────────────┐ │  │ ⚠️ BLOCKED: No rulebook [Find Rulebook] │   │
+│ │ Standalone    │ │  ├─────────────────────────────────────────┤   │
+│ │ ○○○○ 2 games  │ │  │ Next Action: [Set Rulebook URL]         │   │
+│ └───────────────┘ │  │ Status: rulebook_missing                │   │
+│                   │  │ Crunch: N/A                              │   │
+│                   │  │ Content: Not generated                   │   │
+│                   │  └─────────────────────────────────────────┘   │
 └───────────────────┴─────────────────────────────────────────────────┘
 ```
 
-### Game Processing States
+### Component Structure (V2)
+
+```
+src/app/admin/(dashboard)/vecna/components/
+├── VecnaPipeline.tsx           # Main orchestrator
+├── VecnaFamilySidebar.tsx      # Left sidebar with phase filters
+├── VecnaFamilyHeader.tsx       # Family-level header + batch actions (NEW)
+├── VecnaGamePanel.tsx          # 2-tab game view (NEW, replaces VecnaGameView)
+├── VecnaEmptyState.tsx         # Empty state message
+├── PipelineProgressBar.tsx     # 4-phase visual indicator (NEW)
+├── BlockedStateAlert.tsx       # Prominent blocked/error banners (NEW)
+├── SourcesDrawer.tsx           # Debug sources slide-out drawer (NEW)
+├── StateActions.tsx            # State transition actions
+├── RulebookDiscovery.tsx       # Rulebook URL discovery UI
+└── FamilyBatchActions.tsx      # Batch processing dropdown
+```
+
+### Game Processing States (Internal)
+
+The 11 states still exist internally for precise tracking:
 
 ```typescript
-type GameProcessingState =
+type VecnaState =
   | 'imported'           // BGG data imported
   | 'enriched'           // Wikidata + Wikipedia done
-  | 'rulebook_missing'   // Waiting for manual rulebook URL
+  | 'rulebook_missing'   // BLOCKED: Waiting for manual rulebook URL
   | 'rulebook_ready'     // Rulebook URL confirmed
   | 'parsing'            // Rulebook being parsed
   | 'parsed'             // Rulebook text extracted
   | 'taxonomy_assigned'  // Categories/mechanics assigned
   | 'generating'         // AI content being generated
   | 'generated'          // AI content ready
-  | 'review_pending'     // Ready for human review
+  | 'review_pending'     // BLOCKED: Ready for human review
   | 'published'          // Live on site
 ```
+
+**Blocked States:** `rulebook_missing` and `review_pending` show prominent amber banners
 
 ---
 
@@ -523,58 +573,34 @@ interface SetupContent {
 }
 ```
 
-### ReferenceContent (Full Structure)
+### ReferenceContent (Current Schema)
+
+The reference content supports both the AI-generated schema and legacy data:
 
 ```typescript
 interface ReferenceContent {
-  turnSummary: {
-    phase: string
-    required: boolean
-    actions: string[]
-    notes?: string
-  }[]
-  actionCosts: {
-    action: string
-    cost: string
-    effect: string
-    limit?: string
-  }[]
-  resourceConversions: {
-    from: string
-    to: string
-    when: string
-  }[]
-  importantRules: {
-    rule: string
-    context: string
-  }[]
-  timingRules: {
-    situation: string
-    resolution: string
-  }[]
-  endGame: {
-    triggers: string[]
+  // AI-generated schema (from prompts.ts)
+  turnSummary?: (string | { phase?: string; action?: string })[]
+  actions?: { name: string; cost: string; effect: string; limit: string }[]
+  symbols?: { symbol: string; meaning: string }[]
+  scoring?: { category: string; points: string; notes: string }[]
+  importantNumbers?: { what: string; value: string; context: string }[]
+  reminders?: string[]
+  endGame?: string | {
+    triggers?: string[]
     finalRound?: string
-    winner: string
-    tiebreakers: string[]
+    winner?: string
+    tiebreakers?: string[]
   }
-  scoringSummary: {
-    category: string
-    calculation: string
-    maxPossible?: string
-  }[]
-  iconography: {
-    symbol: string
-    meaning: string
-    examples: string
-  }[]
-  commonQuestions: {
-    question: string
-    answer: string
-  }[]
-  quickReminders: string[]
+
+  // Legacy schema (older data)
+  keyRules?: { rule: string; detail: string }[]
+  costs?: { item: string; cost: string }[]
+  quickReminders?: string[]
 }
 ```
+
+**Note:** The reference page (`/games/[slug]/reference`) handles both schemas and renders whichever fields exist in the data.
 
 ---
 
@@ -586,71 +612,69 @@ interface ReferenceContent {
 - `/admin/vecna` page with family sidebar
 - `VecnaPipeline` component with state management
 - `VecnaFamilySidebar` with search, filter, and collapse functionality
-- `VecnaGameView` with three tabs (Overview, Taxonomy, Data Sources)
 - Processing state enum and tracking columns
 - Family context storage in `game_families`
 - Taxonomy source tracking (bgg, wikidata, wikipedia, ai, manual)
-
-**Files Created:**
-```
-src/app/admin/(dashboard)/vecna/
-├── page.tsx                    # Main page with data fetching
-└── components/
-    ├── VecnaPipeline.tsx       # Pipeline orchestrator
-    ├── VecnaFamilySidebar.tsx  # Collapsible family tree
-    ├── VecnaGameView.tsx       # Game detail view with 6 tabs
-    ├── VecnaEmptyState.tsx     # Empty state with stats
-    ├── StateActions.tsx        # State transition actions
-    ├── RulebookDiscovery.tsx   # Rulebook URL discovery UI
-    ├── FamilyBatchActions.tsx  # Batch processing for families
-    └── index.ts                # Barrel exports
-
-src/app/api/admin/vecna/family/[familyId]/process/
-└── route.ts                    # Batch processing API
-
-src/lib/vecna/
-├── types.ts                    # VecnaState, VecnaGame, VecnaFamily, etc.
-├── pipeline.ts                 # Pipeline orchestration logic
-├── context.ts                  # Family context utilities
-└── index.ts                    # Barrel exports
-```
 
 **Migrations:**
 - `00060_vecna_state.sql` - `vecna_state` enum and columns
 - `00061_taxonomy_source.sql` - `source` column on junction tables
 - `00062_fix_taxonomy_source_default.sql` - Backfill BGG as source
 
-### Phase 2: Automation (IN PROGRESS)
+### Phase 2: Automation & Batch Processing (COMPLETE)
 
 **Implemented:**
 - Auto-enrichment after import (vecna_state updates in `/lib/bgg/importer.ts`)
 - Rulebook URL extraction from Wikipedia external links
 - Batch processing for families with `/api/admin/vecna/family/[familyId]/process`
 - `FamilyBatchActions` component with processing modes
-- Dedicated "Rulebook" tab (always accessible)
-- Manual URL input without discovery click
-
-**New Files:**
-```
-src/app/admin/(dashboard)/vecna/components/FamilyBatchActions.tsx
-src/app/api/admin/vecna/family/[familyId]/process/route.ts
-```
+- Publishing now sets `is_published = true` on games table
 
 **Batch Processing Features:**
 - Processing modes: `full`, `parse-only`, `generate-only`, `from-current`
 - Order: base game first, then expansions chronologically
 - Family context rebuilt after base game completes
 - Options: skip blocked games, stop on first error
-- Results display: "X advanced" vs "X blocked" vs "X skipped"
 
-**Bug Fixes:**
-- Cookie forwarding for internal API auth
-- Hydration error in AlertDialogDescription
-- Stale state when switching games (key prop)
+### UI V2 Redesign (COMPLETE)
 
-**Remaining:**
-- Improve rulebook discovery success rate
-- More end-to-end testing with various families
+**Implemented:**
+- Simplified 4-phase visual model (Import → Parse → Generate → Publish)
+- Reduced from 6 tabs to 2 tabs (Pipeline + Details)
+- New phase filter buttons in sidebar (replaces 11-state dropdown)
+- Auto-select first family/game on page load
+- Family header only shown for multi-game families
+- Sources moved to hidden debug drawer
+- Prominent blocked state alerts (amber banners)
+
+**New Files (V2):**
+```
+src/app/admin/(dashboard)/vecna/components/
+├── VecnaFamilyHeader.tsx       # Family-level header + batch actions
+├── VecnaGamePanel.tsx          # 2-tab game view (replaces VecnaGameView)
+├── PipelineProgressBar.tsx     # 4-phase visual indicator
+├── BlockedStateAlert.tsx       # Prominent blocked/error banners
+├── SourcesDrawer.tsx           # Debug sources slide-out drawer
+
+src/lib/vecna/types.ts          # Added Phase type, PHASE_MAPPING, helper functions
+```
+
+**Current Component Structure:**
+```
+src/app/admin/(dashboard)/vecna/components/
+├── VecnaPipeline.tsx           # Main orchestrator (updated for V2 layout)
+├── VecnaFamilySidebar.tsx      # Left sidebar (updated with phase filters)
+├── VecnaFamilyHeader.tsx       # NEW: Family header + batch actions
+├── VecnaGamePanel.tsx          # NEW: 2-tab game view
+├── VecnaEmptyState.tsx         # Simplified empty state
+├── PipelineProgressBar.tsx     # NEW: 4-phase progress indicator
+├── BlockedStateAlert.tsx       # NEW: Blocked state banners
+├── SourcesDrawer.tsx           # NEW: Debug drawer
+├── StateActions.tsx            # State transition actions
+├── RulebookDiscovery.tsx       # Rulebook URL discovery UI
+├── FamilyBatchActions.tsx      # Batch processing dropdown
+└── VecnaGameView.tsx           # DEPRECATED: Old 6-tab view (kept for reference)
+```
 
 ### Phase 3: Enhanced AI (PLANNED)
 
@@ -659,10 +683,10 @@ src/app/api/admin/vecna/family/[familyId]/process/route.ts
 - Family context inheritance for expansions
 - Improved taxonomy assignment with Wikipedia categories
 
-### Phase 4: Review UI & Polish (PLANNED)
+### Phase 4: Content Review UI (PLANNED)
 
 **To Implement:**
 - Three-column review UI (source | generated | final)
 - Data source visibility badges throughout
 - Compliance checklist
-- Per-game publish flow
+- Content regeneration for games with malformed data

@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { PanelLeftClose, PanelLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { PanelLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { VecnaFamilySidebar } from './VecnaFamilySidebar'
-import { VecnaGameView } from './VecnaGameView'
+import { VecnaFamilyHeader } from './VecnaFamilyHeader'
+import { VecnaGamePanel } from './VecnaGamePanel'
 import { VecnaEmptyState } from './VecnaEmptyState'
-import type { VecnaFamily, VecnaGame } from '@/lib/vecna'
+import { SourcesDrawer } from './SourcesDrawer'
+import type { VecnaFamily, VecnaGame, Phase } from '@/lib/vecna'
+import { getPhaseForState, isBlockedState } from '@/lib/vecna'
 
 interface VecnaPipelineProps {
   families: VecnaFamily[]
@@ -14,15 +18,24 @@ interface VecnaPipelineProps {
 }
 
 export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps) {
+  const router = useRouter()
+
+  // Auto-select first family on mount
+  const initialFamily = families[0] || null
+  const initialGame = initialFamily?.games[0] || standaloneGames[0] || null
+
   // Selected state
-  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null)
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
-  const [showStandalone, setShowStandalone] = useState(false)
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(initialFamily?.id || null)
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(initialGame?.id || null)
+  const [showStandalone, setShowStandalone] = useState(!initialFamily && standaloneGames.length > 0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Filter state
+  // Filter state - now phase-based
   const [stateFilter, setStateFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Sources drawer state
+  const [sourcesDrawerOpen, setSourcesDrawerOpen] = useState(false)
 
   // Find selected family and game
   const selectedFamily = useMemo(() => {
@@ -44,6 +57,14 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
     return null
   }, [selectedGameId, selectedFamily, standaloneGames, showStandalone])
 
+  // Filter helper - check if game matches current filter
+  const gameMatchesFilter = (game: VecnaGame): boolean => {
+    if (stateFilter === 'all') return true
+    if (stateFilter === 'blocked') return isBlockedState(game.vecna_state)
+    // Phase-based filtering
+    return getPhaseForState(game.vecna_state) === stateFilter
+  }
+
   // Filtered families based on search and state filter
   const filteredFamilies = useMemo(() => {
     let result = families
@@ -57,10 +78,10 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
       )
     }
 
-    // State filter
+    // Phase/state filter
     if (stateFilter !== 'all') {
       result = result.filter(f =>
-        f.games.some(g => g.vecna_state === stateFilter)
+        f.games.some(g => gameMatchesFilter(g))
       )
     }
 
@@ -77,7 +98,7 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
     }
 
     if (stateFilter !== 'all') {
-      result = result.filter(g => g.vecna_state === stateFilter)
+      result = result.filter(g => gameMatchesFilter(g))
     }
 
     return result
@@ -110,6 +131,11 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
     } else {
       setSelectedGameId(null)
     }
+  }
+
+  // Handle processing complete
+  const handleProcessingComplete = () => {
+    router.refresh()
   }
 
   // Calculate aggregate stats
@@ -156,7 +182,7 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-background relative">
+      <main className="flex-1 overflow-y-auto bg-background relative flex flex-col">
         {/* Expand button when collapsed */}
         {sidebarCollapsed && (
           <Button
@@ -169,20 +195,42 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
             <PanelLeft className="h-4 w-4" />
           </Button>
         )}
-        {selectedGame ? (
-          <VecnaGameView
-            key={selectedGame.id}
-            game={selectedGame}
-            family={selectedFamily}
-            isStandalone={showStandalone}
-          />
-        ) : (
-          <VecnaEmptyState
-            stats={stats}
-            hasSelection={!!selectedFamilyId || showStandalone}
-          />
+
+        {/* Family Header (only when family has multiple games - otherwise redundant) */}
+        {selectedFamily && !showStandalone && selectedFamily.games.length > 1 && (
+          <div className="flex-shrink-0 p-4 border-b">
+            <VecnaFamilyHeader
+              family={selectedFamily}
+              onProcessingComplete={handleProcessingComplete}
+            />
+          </div>
         )}
+
+        {/* Game Panel or Empty State */}
+        <div className="flex-1 overflow-y-auto">
+          {selectedGame ? (
+            <VecnaGamePanel
+              key={selectedGame.id}
+              game={selectedGame}
+              family={selectedFamily}
+              isStandalone={showStandalone}
+              onOpenSourcesDrawer={() => setSourcesDrawerOpen(true)}
+            />
+          ) : (
+            <VecnaEmptyState
+              stats={stats}
+              hasSelection={!!selectedFamilyId || showStandalone}
+            />
+          )}
+        </div>
       </main>
+
+      {/* Sources Drawer */}
+      <SourcesDrawer
+        open={sourcesDrawerOpen}
+        onOpenChange={setSourcesDrawerOpen}
+        game={selectedGame}
+      />
     </div>
   )
 }

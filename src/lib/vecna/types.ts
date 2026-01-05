@@ -4,6 +4,86 @@
  * Type definitions for the automated game content pipeline.
  */
 
+// =====================================================
+// V2 Phase Model - Simplified 4-phase view
+// =====================================================
+
+export type Phase = 'import' | 'parse' | 'generate' | 'publish'
+
+// Map internal states to user-facing phases
+export const PHASE_MAPPING: Record<VecnaState, Phase> = {
+  imported: 'import',
+  enriched: 'import',
+  rulebook_missing: 'parse',
+  rulebook_ready: 'parse',
+  parsing: 'parse',
+  parsed: 'parse',
+  taxonomy_assigned: 'generate',
+  generating: 'generate',
+  generated: 'generate',
+  review_pending: 'publish',
+  published: 'publish',
+}
+
+// States that require user action (blocked)
+export const BLOCKED_STATES: VecnaState[] = ['rulebook_missing', 'review_pending']
+
+// States that are actively processing (show spinner)
+export const PROCESSING_STATES: VecnaState[] = ['parsing', 'generating']
+
+// Phase display configuration
+export const PHASE_CONFIG: Record<Phase, {
+  label: string
+  description: string
+  states: VecnaState[]
+}> = {
+  import: {
+    label: 'Import',
+    description: 'BGG + Wikidata + Wikipedia',
+    states: ['imported', 'enriched'],
+  },
+  parse: {
+    label: 'Parse',
+    description: 'Rulebook extraction',
+    states: ['rulebook_missing', 'rulebook_ready', 'parsing', 'parsed'],
+  },
+  generate: {
+    label: 'Generate',
+    description: 'AI content creation',
+    states: ['taxonomy_assigned', 'generating', 'generated'],
+  },
+  publish: {
+    label: 'Publish',
+    description: 'Review & go live',
+    states: ['review_pending', 'published'],
+  },
+}
+
+// Get phase for a state
+export function getPhaseForState(state: VecnaState): Phase {
+  return PHASE_MAPPING[state]
+}
+
+// Check if state is blocked (V2 naming to avoid conflict with pipeline.ts isBlockingState)
+export function isBlockedState(state: VecnaState): boolean {
+  return BLOCKED_STATES.includes(state)
+}
+
+// Get completed phases for a state
+export function getCompletedPhases(state: VecnaState): Phase[] {
+  const phases: Phase[] = ['import', 'parse', 'generate', 'publish']
+  const currentPhase = PHASE_MAPPING[state]
+  const currentIndex = phases.indexOf(currentPhase)
+
+  // Published = all complete, otherwise phases before current
+  if (state === 'published') return phases
+  return phases.slice(0, currentIndex)
+}
+
+// =====================================================
+// Original State Model
+// =====================================================
+
 // Processing state for individual games
 export type VecnaState =
   | 'imported'           // BGG data imported

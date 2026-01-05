@@ -1,37 +1,69 @@
 # Current Status
 
-> Last Updated: 2026-01-04 (Vecna Pipeline Phase 2 In Progress)
+> Last Updated: 2026-01-04 (Vecna UI V2 Complete)
 
-## Current Phase: 50 - Vecna Phase 2: Batch Processing & Data Surfacing
+## Current Phase: 51 - Vecna UI V2 Redesign & Reference Page Fixes
 
-Continuing Vecna pipeline development with batch family processing, comprehensive data surfacing, and UX improvements.
+Major UI/UX overhaul of the Vecna admin pipeline and fixes to the public reference page.
 
-### Session Summary (2026-01-04)
+### Session Summary (2026-01-04) - Vecna UI V2
+
+**UI Simplification:**
+- Reduced visual complexity: 11 states → 4-phase visual model (Import → Parse → Generate → Publish)
+- Reduced tabs: 6 tabs → 2 tabs (Pipeline + Details)
+- Moved Sources tab → hidden "Debug Sources" drawer (rarely used)
+- Auto-select first family/game on page load (no more empty welcome screen)
+- Only show family header when family has 2+ games (no redundant UI for single-game families)
+
+**New Components Created:**
+| Component | Purpose |
+|-----------|---------|
+| `PipelineProgressBar.tsx` | 4-phase visual progress indicator |
+| `PipelineProgressDots.tsx` | Compact dots variant for sidebar |
+| `BlockedStateAlert.tsx` | Prominent amber/blue/red banners for blocked states |
+| `VecnaFamilyHeader.tsx` | Family header with batch actions dropdown |
+| `VecnaGamePanel.tsx` | New 2-tab game view (replaces VecnaGameView) |
+| `SourcesDrawer.tsx` | Slide-out drawer for debug/sources data |
+
+**Phase System Added to `src/lib/vecna/types.ts`:**
+```typescript
+type Phase = 'import' | 'parse' | 'generate' | 'publish'
+PHASE_MAPPING: Record<VecnaState, Phase>
+getPhaseForState(), isBlockedState(), getCompletedPhases()
+```
+
+**Publishing Fix:**
+- Fixed `/api/admin/vecna/[gameId]/state` to actually set `is_published = true` when publishing
+- Unpublishing (review_pending from published) now sets `is_published = false`
+
+**Reference Page Rewrite (`/games/[slug]/reference`):**
+- Removed ~400 lines of hardcoded legacy game data (Catan, Wingspan, etc.)
+- Updated `ReferenceContent` type to support both AI schema and legacy schema
+- Page now renders dynamically based on database content
+- Handles multiple data formats: `turnSummary` as strings or objects, `endGame` as string or object
+- Shows "content being generated" message when no meaningful content exists
+
+**Known Issue:**
+- Some games (e.g., Gloomhaven) have malformed `reference_content` with empty action fields
+- Data needs to be regenerated via Vecna pipeline for these games
+
+---
+
+## Previous Session (2026-01-04) - Phase 50
 
 **Data Audit & Surfacing:**
 - Audited all data sources (BGG, Wikidata, Wikipedia) to ensure nothing is "left on the table"
 - Expanded `VecnaGame` type with 25+ new fields organized by source
 - Updated Vecna page queries to fetch 40+ fields per game
-- Enhanced `VecnaGameView` UI: External References, Data Freshness, Images tab (Wikidata CC images, Wikipedia images with licenses), Sources tab (BGG metrics, Wikipedia infobox/awards/reception/external links, Wikidata section)
 
-**Batch Processing (NEW):**
+**Batch Processing:**
 - Created `/api/admin/vecna/family/[familyId]/process` endpoint
 - Created `FamilyBatchActions` component for family-level processing
 - Processing modes: `full`, `parse-only`, `generate-only`, `from-current`
-- Order: base game first, then expansions chronologically
-- Family context rebuilt after base game processing
-- Options: skip blocked games, stop on first error
 
 **Rulebook Management:**
 - Added dedicated "Rulebook" tab (always accessible regardless of state)
 - Manual URL input without requiring discovery click
-- Each game in a family can have its own rulebook
-
-**Bug Fixes:**
-- Fixed auth for batch processing (cookie forwarding to internal API calls)
-- Fixed hydration error (`<p>` nesting in AlertDialogDescription)
-- Fixed stale state when switching games (`key` prop on VecnaGameView)
-- Improved batch results: "X advanced" vs "X blocked" vs "X skipped"
 
 ---
 

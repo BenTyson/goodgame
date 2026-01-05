@@ -242,16 +242,23 @@ export interface SetupContent {
 }
 
 export interface ReferenceContent {
-  turnSummary: { phase: string; action: string }[]
-  keyRules: { rule: string; detail: string }[]
-  costs: { item: string; cost: string }[]
-  quickReminders: string[]
-  endGame: string | {
-    triggers: string[]
+  // AI-generated schema (new prompts) - turnSummary can be strings or objects
+  turnSummary?: (string | { phase?: string; action?: string; step?: string; description?: string })[]
+  actions?: { name: string; cost: string; effect: string; limit: string }[]
+  symbols?: { symbol: string; meaning: string }[]
+  scoring?: { category: string; points: string; notes: string }[]
+  importantNumbers?: { what: string; value: string; context: string }[]
+  reminders?: string[]
+  endGame?: string | {
+    triggers?: string[]
     finalRound?: string
-    winner: string
+    winner?: string
     tiebreakers?: string[]
   }
+  // Legacy/rulebook schema (older data)
+  keyRules?: { rule: string; detail: string }[]
+  costs?: { item: string; cost: string }[]
+  quickReminders?: string[]
 }
 
 // Content status enum

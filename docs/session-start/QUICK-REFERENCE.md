@@ -228,12 +228,18 @@ src/components/
 │   │   ├── ImportProgress.tsx # Real-time progress display
 │   │   └── ImportReport.tsx   # Import summary with family navigation
 │   └── vecna/                 # Vecna pipeline components (in app/admin/vecna/components/)
-│       ├── VecnaPipeline.tsx      # Pipeline orchestrator with state management
-│       ├── VecnaFamilySidebar.tsx # Collapsible family tree sidebar
-│       ├── VecnaGameView.tsx      # Game detail view with tabs (Overview, Taxonomy, Data)
-│       ├── VecnaEmptyState.tsx    # Empty state with aggregate stats
-│       ├── StateActions.tsx       # State transition action buttons
-│       └── RulebookDiscovery.tsx  # Rulebook URL discovery UI
+│       ├── VecnaPipeline.tsx        # Pipeline orchestrator (updated for V2 layout)
+│       ├── VecnaFamilySidebar.tsx   # Sidebar with phase filter buttons
+│       ├── VecnaFamilyHeader.tsx    # NEW: Family header + batch actions (for 2+ games)
+│       ├── VecnaGamePanel.tsx       # NEW: 2-tab game view (Pipeline + Details)
+│       ├── VecnaEmptyState.tsx      # Simplified empty state
+│       ├── PipelineProgressBar.tsx  # NEW: 4-phase visual progress indicator
+│       ├── BlockedStateAlert.tsx    # NEW: Prominent blocked state banners
+│       ├── SourcesDrawer.tsx        # NEW: Debug sources slide-out drawer
+│       ├── StateActions.tsx         # State transition action buttons
+│       ├── RulebookDiscovery.tsx    # Rulebook URL discovery UI
+│       ├── FamilyBatchActions.tsx   # Batch processing dropdown
+│       └── VecnaGameView.tsx        # DEPRECATED: Old 6-tab view (kept for reference)
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
@@ -383,10 +389,13 @@ TaxonomySource     // 'bgg' | 'wikidata' | 'wikipedia' | 'ai' | 'manual'
 
 // Vecna types (from src/lib/vecna/types.ts)
 VecnaState         // Processing state enum (11 states)
+Phase              // Visual phase: 'import' | 'parse' | 'generate' | 'publish'
+PHASE_MAPPING      // Map VecnaState → Phase
+getPhaseForState() // Helper to get phase from state
+isBlockedState()   // Check if state is blocked (rulebook_missing, review_pending)
 VecnaGame          // Game with processing state and data sources
 VecnaFamily        // Family with games for sidebar display
 FamilyContext      // Base game context for expansion processing
-PipelineProgress   // Pipeline progress for a family
 DataSource         // 'bgg' | 'wikidata' | 'wikipedia' | 'manual' | 'ai'
 SourcedField<T>    // Field value with source tracking
 

@@ -85,6 +85,19 @@
 | Auto-select | High confidence only | Safe default, admin can add more |
 | Import → Family nav | Single-family imports route to family page | Family config before game wizard |
 
+## Vecna Pipeline UI
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| State visualization | 4 phases (Import/Parse/Generate/Publish) | Simpler than 11 raw states |
+| Game detail tabs | 2 tabs (Pipeline + Details) | Reduced from 6, less overwhelming |
+| Sources data | Hidden in drawer | Rarely used, clutters main UI |
+| Blocked states | Prominent amber/red banners | Errors must be unmissable |
+| Family header | Only for multi-game families | Single-game families don't need it |
+| Auto-selection | First family + first game on load | No empty welcome screen |
+| Batch actions | Dropdown in family header | Prominent but not cluttering sidebar |
+| Publishing | Updates `is_published` flag | Game actually goes live on main site |
+
 ## Marketplace UI/UX
 
 | Decision | Choice | Rationale |

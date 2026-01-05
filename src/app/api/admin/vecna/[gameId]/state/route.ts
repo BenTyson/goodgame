@@ -115,6 +115,24 @@ export async function PATCH(
 
     if (state !== undefined) {
       updates.vecna_state = state
+
+      // Publishing state also sets is_published on the game
+      if (state === 'published') {
+        updates.is_published = true
+      }
+      // Unpublishing (going back from published) clears is_published
+      if (state === 'review_pending') {
+        // Check if we're coming from published state
+        const { data: currentGame } = await supabase
+          .from('games')
+          .select('vecna_state')
+          .eq('id', gameId)
+          .single()
+
+        if (currentGame?.vecna_state === 'published') {
+          updates.is_published = false
+        }
+      }
     }
 
     if (stateError !== undefined) {

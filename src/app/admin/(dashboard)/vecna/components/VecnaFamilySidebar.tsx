@@ -7,12 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   Wand2,
-  Globe,
-  AlertCircle,
-  CheckCircle2,
-  Eye,
-  Loader2,
-  FileText,
   Users2,
   Gamepad2,
   PanelLeftClose,
@@ -21,16 +15,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
-import { VECNA_STATE_CONFIG } from '@/lib/vecna'
+import type { VecnaFamily, VecnaGame, VecnaState, Phase } from '@/lib/vecna'
+import { VECNA_STATE_CONFIG, PHASE_CONFIG, getPhaseForState, isBlockedState } from '@/lib/vecna'
+import { PipelineProgressDots } from './PipelineProgressBar'
 
 interface VecnaFamilySidebarProps {
   families: VecnaFamily[]
@@ -56,41 +44,15 @@ interface VecnaFamilySidebarProps {
   onToggleCollapse: () => void
 }
 
-// State filter options
-const STATE_FILTERS = [
-  { value: 'all', label: 'All States' },
-  { value: 'imported', label: 'Imported' },
-  { value: 'enriched', label: 'Enriched' },
-  { value: 'rulebook_missing', label: 'No Rulebook' },
-  { value: 'rulebook_ready', label: 'Rulebook Ready' },
-  { value: 'parsed', label: 'Parsed' },
-  { value: 'generated', label: 'Generated' },
-  { value: 'review_pending', label: 'Review' },
-  { value: 'published', label: 'Published' },
+// Phase-based filter options (simplified from 11 states)
+const PHASE_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'import', label: 'Import' },
+  { value: 'parse', label: 'Parse' },
+  { value: 'generate', label: 'Generate' },
+  { value: 'publish', label: 'Publish' },
+  { value: 'blocked', label: 'Blocked' },
 ]
-
-// State icon mapping
-function getStateIcon(state: VecnaState) {
-  switch (state) {
-    case 'published':
-      return <Globe className="h-3 w-3 text-green-500" />
-    case 'generated':
-    case 'review_pending':
-      return <Eye className="h-3 w-3 text-amber-500" />
-    case 'parsing':
-    case 'generating':
-      return <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
-    case 'parsed':
-    case 'taxonomy_assigned':
-      return <FileText className="h-3 w-3 text-violet-500" />
-    case 'rulebook_missing':
-      return <AlertCircle className="h-3 w-3 text-amber-500" />
-    case 'rulebook_ready':
-      return <CheckCircle2 className="h-3 w-3 text-green-500" />
-    default:
-      return <div className="h-3 w-3 rounded-full bg-slate-300" />
-  }
-}
 
 export function VecnaFamilySidebar({
   families,
@@ -188,19 +150,23 @@ export function VecnaFamilySidebar({
           />
         </div>
 
-        {/* State Filter */}
-        <Select value={stateFilter} onValueChange={onStateFilterChange}>
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue placeholder="Filter by state" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATE_FILTERS.map(filter => (
-              <SelectItem key={filter.value} value={filter.value}>
-                {filter.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Phase Filter - Segmented buttons */}
+        <div className="flex gap-1">
+          {PHASE_FILTERS.map(filter => (
+            <Button
+              key={filter.value}
+              variant={stateFilter === filter.value ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onStateFilterChange(filter.value)}
+              className={cn(
+                'flex-1 h-7 text-xs px-2',
+                filter.value === 'blocked' && stateFilter !== filter.value && 'text-amber-600 hover:text-amber-700'
+              )}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Family List */}
@@ -358,7 +324,8 @@ function GameItem({
   isBaseGame?: boolean
   onClick: () => void
 }) {
-  const stateConfig = VECNA_STATE_CONFIG[game.vecna_state]
+  const isBlocked = isBlockedState(game.vecna_state)
+  const hasError = !!game.vecna_error
 
   return (
     <button
@@ -367,10 +334,13 @@ function GameItem({
         'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors',
         isSelected
           ? 'bg-primary/10 border border-primary/30'
-          : 'hover:bg-accent'
+          : 'hover:bg-accent',
+        // Highlight blocked/error games subtly
+        !isSelected && isBlocked && 'bg-amber-50/50 dark:bg-amber-950/20',
+        !isSelected && hasError && 'bg-red-50/50 dark:bg-red-950/20'
       )}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail with blocked indicator */}
       <div className="relative h-8 w-8 rounded overflow-hidden bg-muted flex-shrink-0">
         {game.thumbnail_url ? (
           <Image
@@ -384,6 +354,15 @@ function GameItem({
           <div className="h-full w-full flex items-center justify-center">
             <Gamepad2 className="h-4 w-4 text-muted-foreground/30" />
           </div>
+        )}
+        {/* Blocked/Error indicator dot */}
+        {(isBlocked || hasError) && (
+          <div
+            className={cn(
+              'absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background',
+              hasError ? 'bg-red-500' : 'bg-amber-500'
+            )}
+          />
         )}
       </div>
 
@@ -404,16 +383,8 @@ function GameItem({
         )}
       </div>
 
-      {/* State indicator with label */}
-      <div
-        className="flex-shrink-0 flex items-center gap-1.5"
-        title={stateConfig.description}
-      >
-        {getStateIcon(game.vecna_state)}
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          {stateConfig.label}
-        </span>
-      </div>
+      {/* Phase progress dots */}
+      <PipelineProgressDots state={game.vecna_state} />
     </button>
   )
 }
