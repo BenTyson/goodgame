@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,11 +17,16 @@ import {
   Pencil,
   Hash,
   CheckCircle2,
-  Settings,
   Cog,
+  Workflow,
+  AlertCircle,
+  Loader2,
+  Play,
+  ArrowRight,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getCrunchLabel, getCrunchBadgeClasses } from '@/lib/rulebook/complexity-utils'
+import { VECNA_STATE_CONFIG, type VecnaState } from '@/lib/vecna/types'
 import type { Game } from '@/types/database'
 
 interface DetailsTabProps {
@@ -28,9 +34,139 @@ interface DetailsTabProps {
   updateField: <K extends keyof Game>(field: K, value: Game[K]) => void
 }
 
+// Helper to get state badge styling
+function getStateBadgeClass(state: VecnaState): string {
+  const config = VECNA_STATE_CONFIG[state]
+  if (!config) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+
+  // Map state to appropriate badge colors
+  switch (state) {
+    case 'published':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'review_pending':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    case 'generated':
+    case 'generating':
+      return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400'
+    case 'parsed':
+    case 'parsing':
+    case 'taxonomy_assigned':
+      return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+    case 'rulebook_ready':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'rulebook_missing':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    case 'enriched':
+      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    case 'imported':
+    default:
+      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+  }
+}
+
+// Helper to format date
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return 'Never'
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function DetailsTab({ game, updateField }: DetailsTabProps) {
+  const vecnaState = (game.vecna_state as VecnaState) || 'imported'
+  const stateConfig = VECNA_STATE_CONFIG[vecnaState]
+  const isProcessing = vecnaState === 'parsing' || vecnaState === 'generating'
+
   return (
     <div className="space-y-6">
+      {/* Pipeline Status */}
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Workflow className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-lg">Vecna Pipeline Status</CardTitle>
+              <CardDescription>Content processing state and history</CardDescription>
+            </div>
+            <Link href={`/admin/vecna?game=${game.id}`}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Play className="h-4 w-4" />
+                Open in Vecna
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Current State */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-3">
+              {isProcessing ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : vecnaState === 'published' ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : vecnaState === 'rulebook_missing' || vecnaState === 'review_pending' ? (
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              ) : (
+                <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Current State:</span>
+                  <Badge className={getStateBadgeClass(vecnaState)}>
+                    {stateConfig?.label || vecnaState}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {stateConfig?.description || 'Processing state'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Display */}
+          {game.vecna_error && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50">
+              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-medium text-red-700 dark:text-red-400 text-sm">Processing Error</span>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">{game.vecna_error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Timestamps */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Processed</p>
+              <p className="font-medium mt-1 text-sm">
+                {formatDate(game.vecna_processed_at)}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Content Generated</p>
+              <p className="font-medium mt-1 text-sm">
+                {formatDate(game.content_generated_at)}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Content Reviewed</p>
+              <p className="font-medium mt-1 text-sm">
+                {formatDate(game.content_reviewed_at)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Identity */}
       <Card>
         <CardHeader className="pb-4">
@@ -417,58 +553,40 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Content Status */}
+      {/* Record Timestamps */}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Settings className="h-4 w-4 text-blue-500" />
+            <div className="h-8 w-8 rounded-lg bg-slate-500/10 flex items-center justify-center">
+              <Clock className="h-4 w-4 text-slate-500" />
             </div>
             <div>
-              <CardTitle className="text-lg">Content Status</CardTitle>
-              <CardDescription>Track the content pipeline stage</CardDescription>
+              <CardTitle className="text-lg">Record History</CardTitle>
+              <CardDescription>When this game was created and last modified</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Current Status</Label>
-            <select
-              value={game.content_status || 'none'}
-              onChange={(e) => updateField('content_status', e.target.value)}
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <option value="none">None - No content yet</option>
-              <option value="importing">Importing - Fetching from BGG</option>
-              <option value="draft">Draft - AI content generated</option>
-              <option value="review">Review - Ready for human review</option>
-              <option value="published">Published - Content finalized</option>
-            </select>
-          </div>
-
-          <div className="pt-4 border-t">
-            <h4 className="text-sm font-medium mb-3">Timestamps</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Created</p>
-                <p className="font-medium mt-1">
-                  {game.created_at ? new Date(game.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  }) : 'N/A'}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Updated</p>
-                <p className="font-medium mt-1">
-                  {game.updated_at ? new Date(game.updated_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  }) : 'N/A'}
-                </p>
-              </div>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Created</p>
+              <p className="font-medium mt-1">
+                {game.created_at ? new Date(game.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                }) : 'N/A'}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Updated</p>
+              <p className="font-medium mt-1">
+                {game.updated_at ? new Date(game.updated_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                }) : 'N/A'}
+              </p>
             </div>
           </div>
         </CardContent>

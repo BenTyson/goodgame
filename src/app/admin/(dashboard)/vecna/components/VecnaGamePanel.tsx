@@ -50,30 +50,18 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
-import { VECNA_STATE_CONFIG } from '@/lib/vecna'
+import { VECNA_STATE_CONFIG, DataSourceBadge } from '@/lib/vecna'
 import { PipelineProgressBar } from './PipelineProgressBar'
 import { BlockedStateAlert } from './BlockedStateAlert'
 import { RulebookDiscovery } from './RulebookDiscovery'
 import { CompletenessReport } from './CompletenessReport'
+import { ContentReviewPanel } from './ContentReviewPanel'
 
 interface VecnaGamePanelProps {
   game: VecnaGame
   family: VecnaFamily | null
   isStandalone: boolean
   onOpenSourcesDrawer: () => void
-}
-
-// Source badge component
-function SourceBadge({ source }: { source: string | null | undefined }) {
-  const config: Record<string, { label: string; color: string }> = {
-    bgg: { label: 'BGG', color: 'bg-orange-100 text-orange-700' },
-    wikidata: { label: 'WD', color: 'bg-blue-100 text-blue-700' },
-    wikipedia: { label: 'WP', color: 'bg-violet-100 text-violet-700' },
-    manual: { label: 'Manual', color: 'bg-slate-100 text-slate-700' },
-    ai: { label: 'AI', color: 'bg-cyan-100 text-cyan-700' },
-  }
-  const c = config[source || ''] || { label: '?', color: 'bg-gray-100 text-gray-500' }
-  return <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', c.color)}>{c.label}</span>
 }
 
 export function VecnaGamePanel({
@@ -95,6 +83,7 @@ export function VecnaGamePanel({
   const isBlocked = currentState === 'rulebook_missing' || currentState === 'review_pending'
   const needsRulebook = currentState === 'rulebook_missing' || (currentState === 'enriched' && !hasRulebook)
   const showCompletenessReport = ['generated', 'review_pending', 'published'].includes(currentState)
+  const showReviewTab = ['generated', 'review_pending', 'published'].includes(currentState)
 
   const handleStateChange = (newState: VecnaState) => {
     setCurrentState(newState)
@@ -328,9 +317,15 @@ export function VecnaGamePanel({
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="pipeline" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue={showReviewTab ? 'review' : 'pipeline'} className="w-full">
+        <TabsList className={cn('grid w-full', showReviewTab ? 'grid-cols-3' : 'grid-cols-2')}>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          {showReviewTab && (
+            <TabsTrigger value="review" className="gap-1">
+              <Eye className="h-3 w-3" />
+              Review
+            </TabsTrigger>
+          )}
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
@@ -558,6 +553,13 @@ export function VecnaGamePanel({
           )}
         </TabsContent>
 
+        {/* Review Tab - Content review with publish flow */}
+        {showReviewTab && (
+          <TabsContent value="review" className="mt-4">
+            <ContentReviewPanel game={game} onPublish={() => router.refresh()} />
+          </TabsContent>
+        )}
+
         {/* Details Tab */}
         <TabsContent value="details" className="mt-4">
           <Accordion type="multiple" defaultValue={game.has_content ? ['content'] : ['external']}>
@@ -634,7 +636,7 @@ export function VecnaGamePanel({
                           <Badge key={cat.id} variant="outline" className="text-xs">
                             {cat.is_primary && <span className="text-yellow-500 mr-1">★</span>}
                             {cat.name}
-                            {cat.source && <SourceBadge source={cat.source} />}
+                            {cat.source && <DataSourceBadge source={cat.source} showTooltip={false} />}
                           </Badge>
                         ))}
                       </div>
@@ -649,7 +651,7 @@ export function VecnaGamePanel({
                         {game.mechanics.map((mech) => (
                           <Badge key={mech.id} variant="outline" className="text-xs">
                             {mech.name}
-                            {mech.source && <SourceBadge source={mech.source} />}
+                            {mech.source && <DataSourceBadge source={mech.source} showTooltip={false} />}
                           </Badge>
                         ))}
                       </div>
@@ -664,7 +666,7 @@ export function VecnaGamePanel({
                         {game.themes.map((theme) => (
                           <Badge key={theme.id} variant="outline" className="text-xs">
                             {theme.name}
-                            {theme.source && <SourceBadge source={theme.source} />}
+                            {theme.source && <DataSourceBadge source={theme.source} showTooltip={false} />}
                           </Badge>
                         ))}
                       </div>
@@ -795,7 +797,7 @@ export function VecnaGamePanel({
                     >
                       <FileText className="h-5 w-5 text-green-500" />
                       <span className="text-sm">Rulebook</span>
-                      {game.rulebook_source && <SourceBadge source={game.rulebook_source} />}
+                      {game.rulebook_source && <DataSourceBadge source={game.rulebook_source} showTooltip={false} />}
                     </a>
                   )}
                 </div>

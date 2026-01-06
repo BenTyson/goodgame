@@ -64,6 +64,26 @@ export interface CompletenessReport {
 // =====================================================
 
 function checkCoreData(game: VecnaGame): FieldStatus[] {
+  // Player count - both min and max should be present
+  const hasPlayerCount = game.player_count_min !== null && game.player_count_max !== null
+  const playerCountNote = hasPlayerCount
+    ? `${game.player_count_min}-${game.player_count_max} players`
+    : game.player_count_min !== null
+      ? `Min only: ${game.player_count_min}`
+      : game.player_count_max !== null
+        ? `Max only: ${game.player_count_max}`
+        : undefined
+
+  // Play time - both min and max should be present
+  const hasPlayTime = game.play_time_min !== null && game.play_time_max !== null
+  const playTimeNote = hasPlayTime
+    ? `${game.play_time_min}-${game.play_time_max} min`
+    : game.play_time_min !== null
+      ? `Min only: ${game.play_time_min}`
+      : game.play_time_max !== null
+        ? `Max only: ${game.play_time_max}`
+        : undefined
+
   return [
     {
       field: 'name',
@@ -88,32 +108,20 @@ function checkCoreData(game: VecnaGame): FieldStatus[] {
       note: game.description ? `${game.description.length} chars` : undefined,
     },
     {
-      field: 'player_count_min',
-      label: 'Min Players',
-      present: game.player_count_min !== null,
+      field: 'player_count',
+      label: 'Player Count',
+      present: hasPlayerCount,
       importance: 'critical',
       source: 'import',
+      note: playerCountNote,
     },
     {
-      field: 'player_count_max',
-      label: 'Max Players',
-      present: game.player_count_max !== null,
-      importance: 'critical',
-      source: 'import',
-    },
-    {
-      field: 'play_time_min',
-      label: 'Min Play Time',
-      present: game.play_time_min !== null,
+      field: 'play_time',
+      label: 'Play Time',
+      present: hasPlayTime,
       importance: 'important',
       source: 'import',
-    },
-    {
-      field: 'play_time_max',
-      label: 'Max Play Time',
-      present: game.play_time_max !== null,
-      importance: 'important',
-      source: 'import',
+      note: playTimeNote,
     },
     {
       field: 'weight',
@@ -134,21 +142,18 @@ function checkCoreData(game: VecnaGame): FieldStatus[] {
 }
 
 function checkExternalSources(game: VecnaGame): FieldStatus[] {
+  // BGG data - both ID and raw data should be present
+  const hasBggData = game.bgg_id !== null && game.bgg_raw_data !== null
+
   return [
     // BGG
     {
-      field: 'bgg_id',
-      label: 'BGG ID',
-      present: game.bgg_id !== null,
+      field: 'bgg_data',
+      label: 'BGG Data',
+      present: hasBggData,
       importance: 'critical',
       source: 'import',
-    },
-    {
-      field: 'bgg_raw_data',
-      label: 'BGG Raw Data',
-      present: game.bgg_raw_data !== null,
-      importance: 'important',
-      source: 'import',
+      note: game.bgg_id ? `ID: ${game.bgg_id}` : undefined,
     },
     // Wikidata
     {
@@ -252,12 +257,10 @@ function checkRulebookParsing(game: VecnaGame): FieldStatus[] {
 }
 
 function checkTaxonomy(game: VecnaGame): FieldStatus[] {
-  const hasPrimaryCategory = game.categories.some(c => c.is_primary)
   const categoryCount = game.categories.length
   const mechanicCount = game.mechanics.length
   const themeCount = game.themes.length
   const playerExperienceCount = game.player_experiences.length
-  const hasPrimaryPlayerExperience = game.player_experiences.some(pe => pe.is_primary)
 
   return [
     {
@@ -267,14 +270,6 @@ function checkTaxonomy(game: VecnaGame): FieldStatus[] {
       importance: 'critical',
       source: 'import/ai',
       note: categoryCount > 0 ? `${categoryCount} assigned` : 'None assigned',
-    },
-    {
-      field: 'primary_category',
-      label: 'Primary Category',
-      present: hasPrimaryCategory,
-      importance: 'important',
-      source: 'import/manual',
-      note: hasPrimaryCategory ? 'Set' : 'Not designated',
     },
     {
       field: 'mechanics',
@@ -301,14 +296,6 @@ function checkTaxonomy(game: VecnaGame): FieldStatus[] {
       note: playerExperienceCount > 0
         ? `${playerExperienceCount} assigned (${game.player_experiences.map(pe => pe.name).join(', ')})`
         : 'None assigned (Competitive, Cooperative, Solo, etc.)',
-    },
-    {
-      field: 'primary_player_experience',
-      label: 'Primary Player Experience',
-      present: hasPrimaryPlayerExperience,
-      importance: 'recommended',
-      source: 'manual',
-      note: hasPrimaryPlayerExperience ? 'Set' : 'Not designated',
     },
   ]
 }
@@ -525,19 +512,11 @@ function checkPublisherData(game: VecnaGame): FieldStatus[] {
   const wikiPublishers = game.wikipedia_infobox?.publishersWithRegion || []
   const hasWikiPublishers = wikiPublishers.length > 0
 
-  // Find US publisher (look for U.S., US, USA, United States, or North America)
-  const usPublisher = wikiPublishers.find(p =>
-    p.region && /\b(U\.?S\.?A?|United States|North America|NA)\b/i.test(p.region)
-  )
-  const hasUsPublisher = !!usPublisher
-
-  // Find primary publisher
+  // Find primary publisher (isPrimary is set by infobox.ts, prioritizing US publishers)
   const primaryPublisher = wikiPublishers.find(p => p.isPrimary)
   const hasPrimaryPublisher = !!primaryPublisher
-
-  // Publisher name for notes
-  const usPublisherName = usPublisher?.name
   const primaryPublisherName = primaryPublisher?.name
+  const primaryPublisherRegion = primaryPublisher?.region
 
   return [
     {
@@ -556,19 +535,11 @@ function checkPublisherData(game: VecnaGame): FieldStatus[] {
       field: 'primary_publisher',
       label: 'Primary Publisher',
       present: hasPrimaryPublisher,
-      importance: 'important',
-      source: 'enrichment',
-      note: primaryPublisherName || 'Not designated',
-    },
-    {
-      field: 'us_publisher',
-      label: 'US Publisher',
-      present: hasUsPublisher,
       importance: 'critical',
       source: 'enrichment',
-      note: usPublisherName
-        ? `${usPublisherName}${usPublisher?.region ? ` (${usPublisher.region})` : ''}`
-        : 'No US publisher identified',
+      note: primaryPublisherName
+        ? `${primaryPublisherName}${primaryPublisherRegion ? ` (${primaryPublisherRegion})` : ''}`
+        : 'Not designated',
     },
     {
       field: 'publisher_regions',
@@ -666,7 +637,7 @@ export function generateCompletenessReport(game: VecnaGame): CompletenessReport 
     },
     {
       name: 'Publisher Data',
-      description: 'Publisher info and US distribution',
+      description: 'Publisher info and regional distribution',
       icon: 'Building',
       fields: publisherData,
       ...calculateCategoryStats(publisherData),

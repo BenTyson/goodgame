@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
-import { VECNA_STATE_CONFIG } from '@/lib/vecna'
+import { VECNA_STATE_CONFIG, DataSourceBadge } from '@/lib/vecna'
 import { RulebookDiscovery } from './RulebookDiscovery'
 import { StateActions } from './StateActions'
 import { FamilyBatchActions } from './FamilyBatchActions'
@@ -39,24 +39,6 @@ interface VecnaGameViewProps {
   game: VecnaGame
   family: VecnaFamily | null
   isStandalone: boolean
-}
-
-// Data source badge component
-function SourceBadge({ source }: { source: string | null | undefined }) {
-  const config: Record<string, { label: string; color: string }> = {
-    bgg: { label: 'BGG', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-    wikidata: { label: 'WD', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-    wikipedia: { label: 'WP', color: 'bg-violet-100 text-violet-700 border-violet-200' },
-    manual: { label: 'Manual', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-    ai: { label: 'AI', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-  }
-
-  const c = config[source || ''] || { label: '?', color: 'bg-gray-100 text-gray-500 border-gray-200' }
-  return (
-    <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium', c.color)}>
-      {c.label}
-    </span>
-  )
 }
 
 // State progress display
@@ -288,7 +270,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
                       <span className="font-medium text-green-800">Rulebook Set</span>
-                      {game.rulebook_source && <SourceBadge source={game.rulebook_source} />}
+                      {game.rulebook_source && <DataSourceBadge showTooltip={false} source={game.rulebook_source} />}
                     </div>
                     <a
                       href={game.rulebook_url}
@@ -374,7 +356,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                         <div className="font-medium">BoardGameGeek</div>
                         <div className="text-xs text-muted-foreground">ID: {game.bgg_id}</div>
                       </div>
-                      <SourceBadge source="bgg" />
+                      <DataSourceBadge showTooltip={false} source="bgg" />
                     </a>
                   )}
                   {game.wikipedia_url && (
@@ -403,7 +385,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                           {game.wikipedia_url}
                         </div>
                       </div>
-                      <SourceBadge source="wikipedia" />
+                      <DataSourceBadge showTooltip={false} source="wikipedia" />
                     </a>
                   )}
                   {game.wikidata_id && (
@@ -418,7 +400,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                         <div className="font-medium">Wikidata</div>
                         <div className="text-xs text-muted-foreground">{game.wikidata_id}</div>
                       </div>
-                      <SourceBadge source="wikidata" />
+                      <DataSourceBadge showTooltip={false} source="wikidata" />
                     </a>
                   )}
                   {/* Official Website from Wikidata */}
@@ -436,7 +418,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                           {game.official_website}
                         </div>
                       </div>
-                      <SourceBadge source="wikidata" />
+                      <DataSourceBadge showTooltip={false} source="wikidata" />
                     </a>
                   )}
                   {game.rulebook_url && (
@@ -451,7 +433,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                         <div className="font-medium flex items-center gap-1">
                           Rulebook
                           {game.rulebook_source && (
-                            <SourceBadge source={game.rulebook_source} />
+                            <DataSourceBadge showTooltip={false} source={game.rulebook_source} />
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground truncate">
@@ -832,7 +814,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                             <Star className="h-3 w-3 ml-1 fill-current" />
                           )}
                         </Badge>
-                        <SourceBadge source={cat.source} />
+                        <DataSourceBadge showTooltip={false} source={cat.source} />
                       </div>
                     ))}
                   </div>
@@ -861,7 +843,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                         <Badge variant="outline" className="text-sm">
                           {mech.name}
                         </Badge>
-                        <SourceBadge source={mech.source} />
+                        <DataSourceBadge showTooltip={false} source={mech.source} />
                       </div>
                     ))}
                   </div>
@@ -890,7 +872,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                         <Badge variant="secondary" className="text-sm bg-purple-100 text-purple-700">
                           {theme.name}
                         </Badge>
-                        <SourceBadge source={theme.source} />
+                        <DataSourceBadge showTooltip={false} source={theme.source} />
                       </div>
                     ))}
                   </div>
@@ -1316,7 +1298,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
                     <div>
                       <h4 className="font-medium text-sm mb-1 flex items-center gap-1">
                         Summary
-                        <SourceBadge source="ai" />
+                        <DataSourceBadge showTooltip={false} source="ai" />
                       </h4>
                       <ExpandableText text={game.wikipedia_summary.summary} />
                     </div>

@@ -15,12 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  CheckCircle2,
   AlertCircle,
-  PenTool,
-  Sparkles,
-  ExternalLink,
-  Search,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
@@ -28,9 +23,7 @@ import {
   RulebookUrlSection,
   RulebookParseSection,
   CrunchScoreDisplay,
-  ContentGenerationModal,
 } from '@/components/admin/rulebook'
-import type { ContentResult } from '@/components/admin/rulebook'
 import { formatEndGame, parseGameContent, type Publisher } from '@/lib/admin/wizard'
 
 interface RulebookContentTabProps {
@@ -62,10 +55,6 @@ export function RulebookContentTab({
     crunchScore?: number
     error?: string
   } | null>(null)
-  const [generatingContent, setGeneratingContent] = useState(false)
-  const [contentResult, setContentResult] = useState<ContentResult | null>(null)
-  const [showContentModal, setShowContentModal] = useState(false)
-  const [contentModel, setContentModel] = useState<'sonnet' | 'haiku'>('sonnet')
 
   // Content section collapse state
   const [contentExpanded, setContentExpanded] = useState(true)
@@ -165,36 +154,6 @@ export function RulebookContentTab({
     }
   }
 
-  const generateContent = async () => {
-    if (!rulebookUrl) return
-    setGeneratingContent(true)
-    setContentResult(null)
-
-    try {
-      const response = await fetch('/api/admin/rulebook/generate-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: game.id,
-          contentTypes: ['rules', 'setup', 'reference'],
-          model: contentModel,
-        }),
-      })
-      const result = await response.json()
-      setContentResult(result)
-      if (result.success) {
-        setShowContentModal(true)
-      }
-    } catch (error) {
-      setContentResult({
-        success: false,
-        error: error instanceof Error ? error.message : 'Content generation failed',
-      })
-    } finally {
-      setGeneratingContent(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Rulebook URL Section */}
@@ -232,88 +191,6 @@ export function RulebookContentTab({
         />
       )}
 
-      {/* Generate Content */}
-      {game.crunch_score && (
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <PenTool className="h-4 w-4 text-green-500" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Generate Game Content</CardTitle>
-                <CardDescription>
-                  Create rules summary, setup guide, and quick reference from the rulebook
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant={game.has_rules ? 'default' : 'outline'}>
-                {game.has_rules ? <CheckCircle2 className="h-3 w-3 mr-1" /> : null}
-                Rules
-              </Badge>
-              <Badge variant={game.has_setup_guide ? 'default' : 'outline'}>
-                {game.has_setup_guide ? <CheckCircle2 className="h-3 w-3 mr-1" /> : null}
-                Setup Guide
-              </Badge>
-              <Badge variant={game.has_reference ? 'default' : 'outline'}>
-                {game.has_reference ? <CheckCircle2 className="h-3 w-3 mr-1" /> : null}
-                Quick Reference
-              </Badge>
-            </div>
-
-            {/* Model Selection */}
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
-              <Label className="text-sm font-medium">AI Model:</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={contentModel === 'sonnet' ? 'default' : 'outline'}
-                  onClick={() => setContentModel('sonnet')}
-                  className="gap-1.5"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Sonnet
-                  <span className="text-xs opacity-70">~$0.23</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={contentModel === 'haiku' ? 'default' : 'outline'}
-                  onClick={() => setContentModel('haiku')}
-                  className="gap-1.5"
-                >
-                  Haiku
-                  <span className="text-xs opacity-70">~$0.02</span>
-                </Button>
-              </div>
-            </div>
-
-            <Button
-              onClick={generateContent}
-              disabled={!rulebookUrl || generatingContent}
-              className="w-full sm:w-auto"
-            >
-              {generatingContent ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <PenTool className="h-4 w-4 mr-2" />
-              )}
-              {generatingContent ? 'Generating Content...' : 'Generate All Content'}
-            </Button>
-
-            {contentResult && !contentResult.success && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 text-red-800">
-                <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                <div className="text-sm">{contentResult.error}</div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Component List */}
       {game.component_list && (
@@ -493,14 +370,6 @@ export function RulebookContentTab({
           </CollapsibleContent>
         </Card>
       </Collapsible>
-
-      {/* Content Generation Modal */}
-      <ContentGenerationModal
-        open={showContentModal}
-        onOpenChange={setShowContentModal}
-        contentResult={contentResult}
-        gameSlug={game.slug}
-      />
     </div>
   )
 }

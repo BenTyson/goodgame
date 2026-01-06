@@ -96,7 +96,7 @@ const peopleFields: DataField[] = [
   { field: 'Designers', bgg: true, wikidata: true, wikipedia: true, dbColumn: 'game_designers', notes: 'Junction table' },
   { field: 'Artists', bgg: true, wikidata: false, wikipedia: false, dbColumn: 'game_artists', notes: 'Junction table' },
   { field: 'Publishers', bgg: true, wikidata: true, wikipedia: true, dbColumn: 'game_publishers', notes: 'Junction table' },
-  { field: 'Publisher Regions', bgg: false, wikidata: false, wikipedia: true, dbColumn: 'games.wikipedia_infobox', notes: 'Primary US publisher detection' },
+  { field: 'Publisher Regions', bgg: false, wikidata: false, wikipedia: true, dbColumn: 'games.wikipedia_infobox', notes: 'Primary publisher detection (US priority)' },
 ]
 
 // ===========================================

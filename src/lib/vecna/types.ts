@@ -483,7 +483,7 @@ export interface PipelineProgress {
 }
 
 // Data source for unified view
-export type DataSource = 'bgg' | 'wikidata' | 'wikipedia' | 'manual' | 'ai'
+export type DataSource = 'bgg' | 'wikidata' | 'wikipedia' | 'manual' | 'ai' | 'rulebook'
 
 // Unified data field with source tracking
 export interface SourcedField<T> {

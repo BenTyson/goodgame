@@ -46,7 +46,6 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { VecnaFamily, VecnaState } from '@/lib/vecna'
-import { PipelineProgressBar } from './PipelineProgressBar'
 
 type ProcessingMode = 'full' | 'parse-only' | 'generate-only' | 'from-current'
 
@@ -150,25 +149,6 @@ export function VecnaFamilyHeader({
     return { total, published, generated, blocked, ready, needsReview }
   }, [family.games])
 
-  // Get the "dominant" state for the progress bar (most common non-published state)
-  const dominantState = useMemo(() => {
-    const nonPublished = family.games.filter(g => g.vecna_state !== 'published')
-    if (nonPublished.length === 0) return 'published' as VecnaState
-
-    // Find earliest state that any game is in
-    const stateOrder: VecnaState[] = [
-      'imported', 'enriched', 'rulebook_missing', 'rulebook_ready',
-      'parsing', 'parsed', 'taxonomy_assigned', 'generating',
-      'generated', 'review_pending', 'published'
-    ]
-    for (const state of stateOrder) {
-      if (nonPublished.some(g => g.vecna_state === state)) {
-        return state
-      }
-    }
-    return nonPublished[0].vecna_state
-  }, [family.games])
-
   // Get base game thumbnail
   const baseGame = family.games.find(g => g.id === family.base_game_id) || family.games[0]
   const thumbnailUrl = baseGame?.thumbnail_url
@@ -210,60 +190,51 @@ export function VecnaFamilyHeader({
 
   return (
     <>
-      <div className={cn('bg-card border rounded-lg p-4', className)}>
-        {/* Top row: Family info + batch actions */}
-        <div className="flex items-start gap-4">
-          {/* Thumbnail */}
+      <div className={cn('bg-muted/30 border rounded-lg px-4 py-3', className)}>
+        {/* Compact single row: thumbnail + info + stats + batch actions */}
+        <div className="flex items-center gap-3">
+          {/* Small thumbnail */}
           <div className="flex-shrink-0">
             {thumbnailUrl ? (
               <Image
                 src={thumbnailUrl}
                 alt={family.name}
-                width={48}
-                height={48}
-                className="rounded-lg object-cover"
+                width={36}
+                height={36}
+                className="rounded object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                <Users className="w-6 h-6 text-muted-foreground" />
+              <div className="w-9 h-9 rounded bg-muted flex items-center justify-center">
+                <Users className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
           </div>
 
-          {/* Family info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold truncate">{family.name}</h2>
-              <Badge variant="secondary" className="text-xs">
-                {stats.total} games
-              </Badge>
-            </div>
-
-            {/* Status badges */}
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="text-sm text-green-600 font-medium">
-                {stats.published} published
-              </span>
-              {stats.generated > 0 && (
-                <span className="text-sm text-blue-600">
-                  {stats.generated} generated
-                </span>
-              )}
-              {stats.needsReview > 0 && (
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                  {stats.needsReview} needs review
-                </Badge>
-              )}
-              {stats.blocked > 0 && (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
-                  {stats.blocked} blocked
-                </Badge>
-              )}
-            </div>
+          {/* Family name + game count */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium truncate">{family.name}</span>
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {stats.total} games
+            </Badge>
           </div>
 
-          {/* Batch actions dropdown */}
-          <div className="flex-shrink-0">
+          {/* Status badges - compact */}
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            <span className="text-xs text-green-600">
+              {stats.published}/{stats.total} published
+            </span>
+            {stats.needsReview > 0 && (
+              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs py-0">
+                {stats.needsReview} review
+              </Badge>
+            )}
+            {stats.blocked > 0 && (
+              <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs py-0">
+                {stats.blocked} blocked
+              </Badge>
+            )}
+
+            {/* Batch actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -329,11 +300,6 @@ export function VecnaFamilyHeader({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-4">
-          <PipelineProgressBar state={dominantState} size="sm" />
         </div>
 
         {/* Error message */}

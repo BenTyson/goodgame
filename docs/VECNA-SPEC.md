@@ -1,9 +1,9 @@
 # Vecna: Automated Game Content Pipeline
 
-**Version:** 2.1
+**Version:** 2.2
 **Created:** 2026-01-04
 **Updated:** 2026-01-05
-**Status:** Phase 3 Complete - Enhanced AI + Completeness Report
+**Status:** All 4 Phases Complete
 
 ## Overview
 
@@ -704,7 +704,7 @@ src/app/admin/(dashboard)/vecna/components/
 - ✅ Data completeness report showing missing fields after pipeline
 - ✅ Player experiences taxonomy fix (was completely missing from Vecna)
 - ✅ Model selector UI (Haiku/Sonnet/Opus) for content generation
-- ✅ US Publisher tracking as Critical field
+- ✅ Primary Publisher as Critical field
 
 **New Files:**
 ```
@@ -715,7 +715,7 @@ src/app/admin/(dashboard)/vecna/components/CompletenessReport.tsx  # Report UI
 **Completeness Report Categories (9):**
 1. Core Game Data - name, year, player counts, play time, weight
 2. External Sources - BGG, Wikidata, Wikipedia (origins, reception, awards)
-3. Publisher Data - publishers listed, primary publisher, **US Publisher (Critical)**
+3. Publisher Data - publishers listed, **Primary Publisher (Critical)**, regional publishers
 4. Rulebook & Parsing - rulebook URL, crunch score
 5. Taxonomy - categories, mechanics, themes, **player experiences**
 6. Rules Content - quickStart, coreRules, turnStructure, winCondition, etc.
@@ -730,11 +730,40 @@ src/app/admin/(dashboard)/vecna/components/CompletenessReport.tsx  # Report UI
 | Sonnet | Balanced | Medium | 0.6 | Production (default) |
 | Opus | Slowest | Highest | 0.7 | Best quality |
 
-### Phase 4: Content Review UI (PLANNED)
+### Phase 4: Content Review UI (COMPLETE)
 
-**To Implement:**
-- Three-column review UI (source | generated | final)
-- Data source visibility badges throughout
-- Compliance checklist
-- Content regeneration for games with malformed data
-- Per-game publish flow improvements
+**Implemented (2026-01-05):**
+- ✅ Three-column review UI (source | generated | final)
+- ✅ Data source visibility badges throughout (shared DataSourceBadge component)
+- ✅ "Review" tab appears when game reaches generated/review_pending/published states
+- ✅ Completeness report field consolidation (player count, play time, BGG data merged)
+- ✅ JSON editor for manual content tweaks (format, reset, save, validation)
+- ✅ Per-section content regeneration with model selector (Haiku/Sonnet/Opus)
+- ✅ Publish flow: preview links, unpublish capability, enhanced confirmation
+- ✅ Readiness checklist (rules, setup, reference, thumbnail, categories)
+- ✅ Dark mode compatible styling
+
+**New Files:**
+```
+src/lib/vecna/DataSourceBadge.tsx                              # Shared badge component
+src/app/admin/(dashboard)/vecna/components/ContentReviewPanel.tsx  # Three-column review UI
+/api/admin/vecna/[gameId]/content                              # PATCH endpoint for content edits
+```
+
+**Bug Fixes (2026-01-05):**
+- Fixed nested button hydration error in ContentSection
+- Made VecnaFamilyHeader compact to reduce UI redundancy
+- Added actionable links to checklist items (Categories/Thumbnail → game editor)
+
+---
+
+## All Phases Complete
+
+Vecna is now fully implemented with all 4 phases:
+
+| Phase | Status | Key Features |
+|-------|--------|--------------|
+| 1. Foundation | ✅ Complete | Page, sidebar, state management, migrations |
+| 2. Automation | ✅ Complete | Batch processing, rulebook discovery, publishing |
+| 3. Enhanced AI | ✅ Complete | Family context, completeness report, model selector |
+| 4. Review UI | ✅ Complete | Three-column review, JSON editor, publish flow |

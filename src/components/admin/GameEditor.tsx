@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
 import { SourcedImage } from '@/components/admin/TempImage'
 import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
-import { DetailsTab, RulebookContentTab, TaxonomyTab, GameSetupWizard } from './game-editor'
+import { DetailsTab, RulebookContentTab, TaxonomyTab, SourcesTab, GameSetupWizard } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -24,6 +24,7 @@ import {
   Link2,
   Tags,
   Wand2,
+  Database,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
 
@@ -194,9 +195,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - 5 tabs */}
+      {/* Editor Tabs - 6 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -207,7 +208,11 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           </TabsTrigger>
           <TabsTrigger value="rulebook" className="gap-2">
             <BookOpen className="h-4 w-4 hidden sm:block" />
-            Rulebook & Content
+            Content
+          </TabsTrigger>
+          <TabsTrigger value="sources" className="gap-2">
+            <Database className="h-4 w-4 hidden sm:block" />
+            Sources
           </TabsTrigger>
           <TabsTrigger value="images" className="gap-2">
             <ImageIcon className="h-4 w-4 hidden sm:block" />
@@ -236,6 +241,11 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             updateField={updateField}
             onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
           />
+        </TabsContent>
+
+        {/* Sources Tab */}
+        <TabsContent value="sources">
+          <SourcesTab game={game} />
         </TabsContent>
 
         {/* Images Tab */}
