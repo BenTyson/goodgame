@@ -23,6 +23,11 @@ interface Publisher {
   website: string | null
 }
 
+interface WikipediaInfobox {
+  publisher?: string[]
+  publishersWithRegion?: { name: string; region?: string; isPrimary?: boolean }[]
+}
+
 interface ValidationResult {
   valid: boolean
   error?: string
@@ -40,6 +45,7 @@ interface RulebookUrlSectionProps {
   onValidate: () => void
   onDiscover: () => void
   publishersList?: Publisher[]
+  wikipediaInfobox?: WikipediaInfobox | null
   rulebookSource?: string | null
   rulebookParsedAt?: string | null
 }
@@ -54,9 +60,24 @@ export function RulebookUrlSection({
   onValidate,
   onDiscover,
   publishersList,
+  wikipediaInfobox,
   rulebookSource,
   rulebookParsedAt,
 }: RulebookUrlSectionProps) {
+  // Extract Wikipedia infobox publishers that aren't already in publishers_list
+  const knownPublisherNames = new Set(
+    (publishersList || []).map(p => p.name.toLowerCase())
+  )
+
+  const wikipediaPublishers: { name: string; region?: string }[] = (
+    wikipediaInfobox?.publishersWithRegion ||
+    wikipediaInfobox?.publisher?.map(name => ({ name })) ||
+    []
+  ).filter(p => !knownPublisherNames.has(p.name.toLowerCase()))
+
+  const hasLinkedPublishers = publishersList && publishersList.length > 0 && publishersList.some(p => p.website)
+  const hasWikipediaPublishers = wikipediaPublishers.length > 0
+
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -73,14 +94,15 @@ export function RulebookUrlSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Publisher Website Link */}
-        {publishersList && publishersList.length > 0 && publishersList.some(p => p.website) && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-            <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+        {/* Publisher Website Links */}
+        {(hasLinkedPublishers || hasWikipediaPublishers) && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+            <Globe className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-muted-foreground">Publisher website - check for rulebook downloads:</p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {publishersList.filter(p => p.website).map((publisher) => (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                {/* Linked publishers with websites */}
+                {publishersList?.filter(p => p.website).map((publisher) => (
                   <a
                     key={publisher.id}
                     href={publisher.website!}
@@ -90,6 +112,21 @@ export function RulebookUrlSection({
                   >
                     {publisher.name}
                     <ExternalLink className="h-3 w-3" />
+                  </a>
+                ))}
+                {/* Wikipedia infobox publishers (search links) */}
+                {wikipediaPublishers.map((publisher, idx) => (
+                  <a
+                    key={`wiki-${idx}`}
+                    href={`https://www.google.com/search?q=${encodeURIComponent(publisher.name + ' board game rulebook pdf')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+                    title={`Search for ${publisher.name} rulebook (from Wikipedia)`}
+                  >
+                    {publisher.name}
+                    {publisher.region && <span className="text-xs text-muted-foreground">({publisher.region})</span>}
+                    <Search className="h-3 w-3" />
                   </a>
                 ))}
               </div>

@@ -206,9 +206,6 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     }
   }
 
-  const primaryImage = images.find(img => img.is_primary)
-  const secondaryImages = images.filter(img => !img.is_primary)
-
   return (
     <div className="space-y-5">
       {/* Error message */}
@@ -318,67 +315,49 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         </label>
       </div>
 
-      {/* Primary Image */}
-      {primaryImage && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-            <span className="text-sm font-medium">Primary Image</span>
-          </div>
-          <Card className="relative overflow-hidden group">
-            <img
-              src={primaryImage.url}
-              alt="Primary"
-              className="w-full h-64 object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute top-3 right-3">
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => deleteImage(primaryImage)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-white text-sm font-medium">
-                Appears on game cards and as hero image
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Gallery Images */}
-      {secondaryImages.length > 0 && (
+      {/* Image Gallery - All images in a unified grid */}
+      {images.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Gallery</span>
-            <span className="text-xs text-muted-foreground">({secondaryImages.length})</span>
+            <span className="text-xs text-muted-foreground">({images.length} image{images.length !== 1 ? 's' : ''})</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {secondaryImages.map((image) => (
-              <Card key={image.id} className="relative overflow-hidden group aspect-[4/3]">
+            {images.map((image) => (
+              <Card
+                key={image.id}
+                className={cn(
+                  "relative overflow-hidden group aspect-[4/3]",
+                  image.is_primary && "ring-2 ring-amber-500 ring-offset-2 ring-offset-background"
+                )}
+              >
                 <img
                   src={image.url}
-                  alt="Gallery"
+                  alt={image.is_primary ? "Primary" : "Gallery"}
                   className="w-full h-full object-cover"
                 />
+                {/* Primary badge */}
+                {image.is_primary && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                    <Star className="h-3 w-3 fill-current" />
+                    Primary
+                  </div>
+                )}
+                {/* Hover overlay with actions */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setPrimaryImage(image.id)}
-                    title="Set as primary"
-                  >
-                    <Star className="h-4 w-4" />
-                  </Button>
+                  {!image.is_primary && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setPrimaryImage(image.id)}
+                      title="Set as primary"
+                    >
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="destructive"
@@ -393,6 +372,9 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
               </Card>
             ))}
           </div>
+          <p className="text-xs text-muted-foreground">
+            The primary image appears on game cards and as the hero image. Hover to change or delete.
+          </p>
         </div>
       )}
 

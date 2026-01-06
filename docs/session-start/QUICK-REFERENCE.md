@@ -181,7 +181,8 @@ src/app/
 ### Components
 ```
 src/components/
-├── ui/                        # shadcn/ui (don't edit directly)
+├── ui/                        # shadcn/ui + custom UI components
+│   └── auto-resize-textarea.tsx  # Textarea that expands with content
 ├── layout/                    # Header, Footer, ThemeProvider
 ├── games/                     # GameCard, GameGrid, ImageGallery, RelatedGames
 │   └── filters/               # V2 Filter UI (FilterBar, FilterSidebar, FilterRail, etc.)
@@ -197,25 +198,16 @@ src/components/
 │   ├── WikipediaEnrichment.tsx # AI-powered Wikipedia game discovery
 │   ├── AutoLinkRelations.tsx  # AI-powered relation creation from Wikipedia
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
-│   ├── ImageUpload.tsx        # Image uploader with type selector + crop flow
+│   ├── ImageUpload.tsx        # Image uploader with unified gallery, primary indicator, crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
-│   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wiki/Uploaded)
-│   ├── game-editor/           # GameEditor tab components
-│   │   ├── DetailsTab.tsx
-│   │   ├── ContentTab.tsx
-│   │   ├── RulebookContentTab.tsx
-│   │   ├── GameSetupWizard.tsx
-│   │   ├── WizardStepIndicator.tsx
-│   │   ├── TaxonomySelector.tsx   # Multi-select with AI badges
-│   │   └── wizard-steps/          # Wizard step components (8 steps)
-│   │       ├── RulebookStep.tsx        # Step 1: Find rulebook URL
-│   │       ├── ParseAnalyzeStep.tsx    # Step 2: Parse PDF, Crunch Score (Haiku)
-│   │       ├── TaxonomyStep.tsx        # Step 3: AI-powered taxonomy review
-│   │       ├── GenerateContentStep.tsx # Step 4: Generate guides (Sonnet/Haiku)
-│   │       ├── ImagesStep.tsx          # Step 5: Upload images
-│   │       ├── RelationsStep.tsx       # Step 6: Game connections
-│   │       ├── ReviewContentStep.tsx   # Step 7: Review content
-│   │       └── PublishStep.tsx         # Step 8: Publish game
+│   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wikidata/Wikipedia/Uploaded)
+│   ├── game-editor/           # GameEditor tab components (5 tabs)
+│   │   ├── DetailsTab.tsx         # Core info, metadata, Crunch Score, publishing
+│   │   ├── TaxonomyTab.tsx        # Categories, mechanics, themes, player experiences
+│   │   ├── ContentTab.tsx         # Rules, setup, reference content
+│   │   ├── RulebookContentTab.tsx # Rulebook URL, parsing
+│   │   ├── SourcesTab.tsx         # BGG/Wikidata/Wikipedia data display
+│   │   └── TaxonomySelector.tsx   # Multi-select with AI badges (auto-selects ≥70%)
 │   ├── rulebook/              # RulebookEditor sub-components
 │   │   ├── RulebookUrlSection.tsx
 │   │   ├── RulebookParseSection.tsx

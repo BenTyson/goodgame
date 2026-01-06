@@ -1,12 +1,52 @@
 # Current Status
 
-> Last Updated: 2026-01-05 (Game Editor Comprehensive Update)
+> Last Updated: 2026-01-05 (Game Editor Cleanup & UX Improvements)
 
 ## Current Phase: 52 - Game Editor & Vecna Phase 4 Complete
 
-Completed comprehensive update to game editor with Sources tab and Pipeline Status. Vecna Phase 4 (Content Review UI) is complete.
+Completed comprehensive update to game editor with Sources tab and Pipeline Status. Vecna Phase 4 (Content Review UI) is complete. Game Editor streamlined to 5 tabs with legacy components removed.
 
-### Session Summary (2026-01-05) - Game Editor Update
+### Session Summary (2026-01-05) - Game Editor Cleanup
+
+**Game Editor Streamlined (6 → 5 tabs):**
+- Removed Relations tab (outdated, relations managed in Vecna/Families)
+- Removed Setup Wizard (legacy, fully replaced by Vecna pipeline)
+- Game Editor tabs: Details, Taxonomy, Content, Sources, Images
+
+**UX Improvements:**
+- Auto-resize textareas for all content fields (description, rules, setup, reference)
+- Moved Crunch Score display from Content tab to Details tab (under Metadata)
+- Taxonomy auto-selection: AI suggestions ≥70% confidence now pre-selected
+- Publisher list shows Wikipedia infobox publishers with search icons
+- Sources tab: quick link icons for BGG/Wikidata/Wikipedia URLs, fixed fetch status
+
+**Image Management Overhaul:**
+- Unified image gallery with amber ring for primary image indicator
+- Added Wikipedia/Wikidata images to Images tab "Available Sources" section
+- Import workflow: "Add to Gallery" buttons for fetching external images
+- Color-coded source badges (purple=Wikipedia, blue=Wikidata, red=BGG)
+- BGG images marked as "Reference only" (can't import due to licensing)
+
+**New Components:**
+- `AutoResizeTextarea` - Textarea that expands based on content
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `GameEditor.tsx` | Removed Relations tab, Setup Wizard; unified image sources UI; image import workflow |
+| `ImageUpload.tsx` | Unified grid layout, primary image indicator |
+| `DetailsTab.tsx` | Auto-resize textarea, Crunch Score moved here |
+| `ContentTab.tsx` | Auto-resize textareas for all fields |
+| `RulebookContentTab.tsx` | Auto-resize textareas, removed Crunch Score |
+| `TaxonomyTab.tsx` | Auto-selection for ≥70% confidence AI suggestions |
+| `SourcesTab.tsx` | Quick link icons, fixed Wikipedia fetch status |
+| `TempImage.tsx` | Added 'wikipedia' source type |
+| `/api/admin/upload/route.ts` | Added PUT endpoint for external image import |
+| `auto-resize-textarea.tsx` | NEW - Auto-expanding textarea component |
+
+---
+
+### Earlier Session (2026-01-05) - Game Editor Update
 
 **Game Editor Audit:**
 - Audited game editor for missing VecnaGame fields (~40% were missing)
@@ -95,7 +135,7 @@ Completed comprehensive update to game editor with Sources tab and Pipeline Stat
 
 ### Admin
 - **Vecna Pipeline** (`/admin/vecna`) - Complete 4-phase content pipeline
-- **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Content, Sources, Images, Relations
+- **Game Editor** (`/admin/games/[id]`) - 5 tabs: Details, Taxonomy, Content, Sources, Images
 - **Import Wizard** (`/admin/import`) - BGG game import with real-time progress
 - Rulebook parsing + Crunch Score generation
 - AI content generation (rules, setup, reference)

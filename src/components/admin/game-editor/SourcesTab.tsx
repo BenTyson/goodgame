@@ -204,6 +204,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
   const hasBgg = !!game.bgg_id || !!bggData
   const hasWikidata = !!game.wikidata_id
   const hasWikipedia = !!game.wikipedia_url
+  const hasWikipediaData = !!wikipediaSummary || !!wikipediaInfobox || !!game.wikipedia_gameplay || !!game.wikipedia_origins
 
   return (
     <div className="space-y-4">
@@ -224,13 +225,26 @@ export function SourcesTab({ game }: SourcesTabProps) {
           <div className="grid grid-cols-3 gap-4">
             {/* BGG Status */}
             <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2 mb-2">
-                {hasBgg ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {hasBgg ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="font-medium text-sm">BoardGameGeek</span>
+                </div>
+                {hasBgg && (
+                  <a
+                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id || bggData?.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="View on BGG"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 )}
-                <span className="font-medium text-sm">BoardGameGeek</span>
               </div>
               {hasBgg ? (
                 <>
@@ -248,13 +262,26 @@ export function SourcesTab({ game }: SourcesTabProps) {
 
             {/* Wikidata Status */}
             <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2 mb-2">
-                {hasWikidata ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {hasWikidata ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="font-medium text-sm">Wikidata</span>
+                </div>
+                {hasWikidata && (
+                  <a
+                    href={`https://www.wikidata.org/wiki/${game.wikidata_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="View on Wikidata"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 )}
-                <span className="font-medium text-sm">Wikidata</span>
               </div>
               {hasWikidata ? (
                 <>
@@ -272,13 +299,26 @@ export function SourcesTab({ game }: SourcesTabProps) {
 
             {/* Wikipedia Status */}
             <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2 mb-2">
-                {hasWikipedia ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {hasWikipedia ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="font-medium text-sm">Wikipedia</span>
+                </div>
+                {hasWikipedia && (
+                  <a
+                    href={game.wikipedia_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="View on Wikipedia"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 )}
-                <span className="font-medium text-sm">Wikipedia</span>
               </div>
               {hasWikipedia ? (
                 <>
@@ -286,7 +326,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
                     {game.wikipedia_url?.replace('https://en.wikipedia.org/wiki/', '')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Fetched: {formatDate(game.wikipedia_fetched_at)}
+                    Fetched: {game.wikipedia_fetched_at ? formatDate(game.wikipedia_fetched_at) : hasWikipediaData ? 'Data present' : 'Never'}
                   </p>
                 </>
               ) : (

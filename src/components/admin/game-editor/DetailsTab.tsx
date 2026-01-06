@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -17,7 +17,6 @@ import {
   Pencil,
   Hash,
   CheckCircle2,
-  Cog,
   Workflow,
   AlertCircle,
   Loader2,
@@ -25,7 +24,8 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { getCrunchLabel, getCrunchBadgeClasses } from '@/lib/rulebook/complexity-utils'
+import { CrunchScoreDisplay } from '@/components/admin/rulebook'
+import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { VECNA_STATE_CONFIG, type VecnaState } from '@/lib/vecna/types'
 import type { Game } from '@/types/database'
 
@@ -218,11 +218,12 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
 
           <div className="space-y-2">
             <Label htmlFor="description">Full Description</Label>
-            <Textarea
+            <AutoResizeTextarea
               id="description"
               value={game.description || ''}
               onChange={(e) => updateField('description', e.target.value)}
-              rows={4}
+              minRows={4}
+              maxRows={30}
               placeholder="Detailed description of the game..."
             />
           </div>
@@ -324,22 +325,12 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
         <CardContent className="space-y-4">
           {/* Crunch Score Display (read-only, AI-generated) */}
           {game.crunch_score != null && (
-            <div className="p-4 rounded-lg border bg-amber-500/5 border-amber-500/20">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <Cog className="h-5 w-5 text-amber-500" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold">{Number(game.crunch_score).toFixed(1)}</span>
-                    <Badge className={getCrunchBadgeClasses(Number(game.crunch_score))}>
-                      {getCrunchLabel(Number(game.crunch_score))}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Crunch Score (AI-generated from rulebook)</p>
-                </div>
-              </div>
-            </div>
+            <CrunchScoreDisplay
+              score={Number(game.crunch_score)}
+              breakdown={game.crunch_breakdown as CrunchBreakdown | null}
+              generatedAt={game.crunch_generated_at}
+              bggReference={game.crunch_bgg_reference ? Number(game.crunch_bgg_reference) : undefined}
+            />
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

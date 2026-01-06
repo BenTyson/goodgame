@@ -174,6 +174,92 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+// Import external image (from Wikipedia/Wikidata)
+export async function PUT(request: NextRequest) {
+  const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
+  if (rateLimited) return rateLimited
+
+  // Check admin auth
+  if (!await isAdmin()) {
+    return ApiErrors.unauthorized()
+  }
+
+  try {
+    const { gameId, url, source, license, isPrimary, imageType = 'cover' } = await request.json()
+
+    if (!gameId || !url) {
+      return ApiErrors.validation('Missing required fields: gameId and url')
+    }
+
+    // Validate imageType
+    const validImageTypes = ['cover', 'hero', 'gallery']
+    if (!validImageTypes.includes(imageType)) {
+      return ApiErrors.validation(`Invalid imageType. Must be one of: ${validImageTypes.join(', ')}`)
+    }
+
+    // Validate source
+    const validSources = ['wikipedia', 'wikidata', 'external']
+    if (source && !validSources.includes(source)) {
+      return ApiErrors.validation(`Invalid source. Must be one of: ${validSources.join(', ')}`)
+    }
+
+    const adminClient = createAdminClient()
+
+    // Check how many images exist for this game
+    const { count } = await adminClient
+      .from('game_images')
+      .select('*', { count: 'exact', head: true })
+      .eq('game_id', gameId)
+
+    // Determine if this should be primary
+    const shouldBePrimary = isPrimary || count === 0
+
+    // If setting as primary, clear other primary flags first
+    if (shouldBePrimary) {
+      await adminClient
+        .from('game_images')
+        .update({ is_primary: false })
+        .eq('game_id', gameId)
+    }
+
+    // Create database record (no storage_path for external images)
+    const { data: imageRecord, error: dbError } = await adminClient
+      .from('game_images')
+      .insert({
+        game_id: gameId,
+        url: url,
+        storage_path: null, // External image, not stored locally
+        image_type: imageType,
+        is_primary: shouldBePrimary,
+        display_order: count || 0,
+        alt_text: source ? `Image from ${source}` : null,
+        caption: license ? `License: ${license}` : null,
+      })
+      .select()
+      .single()
+
+    if (dbError) {
+      return ApiErrors.database(dbError, { route: 'PUT /api/admin/upload' })
+    }
+
+    // Sync to games table if primary
+    if (shouldBePrimary) {
+      await adminClient
+        .from('games')
+        .update({
+          box_image_url: url,
+          hero_image_url: url,
+          thumbnail_url: url,
+        })
+        .eq('id', gameId)
+    }
+
+    return NextResponse.json({ image: imageRecord })
+  } catch (error) {
+    return ApiErrors.internal(error, { route: 'PUT /api/admin/upload' })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
   if (rateLimited) return rateLimited

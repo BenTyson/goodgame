@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { SourcedImage } from '@/components/admin/TempImage'
-import { GameRelationsEditor } from '@/components/admin/GameRelationsEditor'
-import { DetailsTab, RulebookContentTab, TaxonomyTab, SourcesTab, GameSetupWizard } from './game-editor'
+import { DetailsTab, RulebookContentTab, TaxonomyTab, SourcesTab } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -21,10 +19,10 @@ import {
   Info,
   ImageIcon,
   BookOpen,
-  Link2,
   Tags,
-  Wand2,
   Database,
+  Plus,
+  Check,
 } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
 
@@ -53,19 +51,65 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     setImages(initialGame.images)
   }, [initialGame])
 
-  // Editor mode: wizard vs advanced
-  // - Unpublished games default to wizard mode
-  // - Published games default to advanced mode
-  // - User can toggle between modes
-  const [editorMode, setEditorMode] = useState<'wizard' | 'advanced'>(
-    initialGame.is_published ? 'advanced' : 'wizard'
-  )
-  const showWizard = editorMode === 'wizard'
-
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
     setGame(prev => ({ ...prev, [field]: value }))
     markUnsaved()
   }, [markUnsaved])
+
+  // State for tracking image import
+  const [importingImages, setImportingImages] = useState<Set<string>>(new Set())
+  const [importedImages, setImportedImages] = useState<Set<string>>(new Set())
+
+  // Import external image to gallery
+  const importExternalImage = async (
+    url: string,
+    source: 'wikipedia' | 'wikidata',
+    license?: string,
+    makePrimary: boolean = false
+  ) => {
+    const imageKey = `${source}:${url}`
+    if (importingImages.has(imageKey) || importedImages.has(imageKey)) return
+
+    setImportingImages(prev => new Set(prev).add(imageKey))
+
+    try {
+      const response = await fetch('/api/admin/upload', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          url,
+          source,
+          license,
+          isPrimary: makePrimary,
+          imageType: 'cover',
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Import failed')
+      }
+
+      const { image } = await response.json()
+      setImages(prev => [...prev, image])
+      setImportedImages(prev => new Set(prev).add(imageKey))
+      markUnsaved()
+    } catch (error) {
+      console.error('Failed to import image:', error)
+    } finally {
+      setImportingImages(prev => {
+        const next = new Set(prev)
+        next.delete(imageKey)
+        return next
+      })
+    }
+  }
+
+  // Check if an external image URL is already in the gallery
+  const isImageInGallery = useCallback((url: string) => {
+    return images.some(img => img.url === url)
+  }, [images])
 
   const saveGame = async () => {
     // Get primary image URL for hero_image_url
@@ -121,17 +165,6 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     })
   }
 
-  // Show wizard mode
-  if (showWizard) {
-    return (
-      <GameSetupWizard
-        game={{ ...game, images }}
-        onExitToAdvanced={() => setEditorMode('advanced')}
-      />
-    )
-  }
-
-  // Advanced editor (tabs)
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -155,15 +188,6 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditorMode('wizard')}
-            className="gap-2"
-          >
-            <Wand2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Setup Wizard</span>
-          </Button>
           <Link href={`/admin/games/${game.id}/preview`} target="_blank">
             <Button variant="outline" size="sm" className="gap-2">
               <Eye className="h-4 w-4" />
@@ -195,9 +219,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - 6 tabs */}
+      {/* Editor Tabs - 5 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -217,10 +241,6 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TabsTrigger value="images" className="gap-2">
             <ImageIcon className="h-4 w-4 hidden sm:block" />
             Images
-          </TabsTrigger>
-          <TabsTrigger value="relations" className="gap-2">
-            <Link2 className="h-4 w-4 hidden sm:block" />
-            Relations
           </TabsTrigger>
         </TabsList>
 
@@ -275,62 +295,145 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                 }}
               />
 
-              {/* Show Wikidata CC-licensed image if available */}
-              {images.length === 0 && game.wikidata_image_url && (
-                <Card className="border-dashed border-blue-500/50 bg-blue-500/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm text-blue-600 dark:text-blue-400">
-                      Wikidata Image (CC Licensed)
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      This CC-licensed image from Wikimedia Commons is safe for production use.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SourcedImage
-                      src={game.wikidata_image_url}
-                      alt={`${game.name}`}
-                      source="wikidata"
-                      aspectRatio="4/3"
-                      className="max-w-md rounded-lg overflow-hidden"
-                    />
-                  </CardContent>
-                </Card>
-              )}
+              {/* Available Image Sources */}
+              {(() => {
+                const wikipediaImages = game.wikipedia_images as { filename: string; url?: string; thumbUrl?: string; caption?: string; license?: string; isPrimary?: boolean }[] | null
+                const wikidataImage = game.wikidata_image_url
+                const bggImage = (game.bgg_raw_data as { image?: string | null })?.image
 
-              {/* Show BGG reference image when no Wikidata image and no images uploaded */}
-              {images.length === 0 && !game.wikidata_image_url && (game.bgg_raw_data as { image?: string | null })?.image && (
-                <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm text-amber-600 dark:text-amber-400">
-                      BGG Reference Image
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      This image is from BoardGameGeek for reference only. Upload your own licensed images above.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SourcedImage
-                      src={(game.bgg_raw_data as { image: string }).image}
-                      alt={`${game.name} reference`}
-                      source="bgg"
-                      aspectRatio="4/3"
-                      className="max-w-md rounded-lg overflow-hidden"
-                    />
-                  </CardContent>
-                </Card>
-              )}
+                const hasAnySources = (wikipediaImages && wikipediaImages.length > 0) || wikidataImage || bggImage
+                if (!hasAnySources) return null
+
+                const isFairUse = (license?: string) => !license || license.toLowerCase().includes('fair use') || license.toLowerCase().includes('non-free')
+                const getImageUrl = (img: { url?: string; thumbUrl?: string }) => img.thumbUrl || img.url || ''
+
+                // Collect all source images into a unified list
+                type SourceImage = {
+                  url: string
+                  source: 'wikipedia' | 'wikidata' | 'bgg'
+                  license?: string
+                  canImport: boolean
+                }
+
+                const sourceImages: SourceImage[] = []
+
+                // Add Wikipedia images
+                if (wikipediaImages) {
+                  wikipediaImages.forEach(img => {
+                    const url = getImageUrl(img)
+                    if (url) {
+                      sourceImages.push({
+                        url,
+                        source: 'wikipedia',
+                        license: img.license || 'Fair use',
+                        canImport: true,
+                      })
+                    }
+                  })
+                }
+
+                // Add Wikidata image
+                if (wikidataImage) {
+                  sourceImages.push({
+                    url: wikidataImage,
+                    source: 'wikidata',
+                    license: 'CC Licensed',
+                    canImport: true,
+                  })
+                }
+
+                // Add BGG image (reference only)
+                if (bggImage) {
+                  sourceImages.push({
+                    url: bggImage,
+                    source: 'bgg',
+                    license: 'Reference only',
+                    canImport: false,
+                  })
+                }
+
+                const sourceColors = {
+                  wikipedia: { bg: 'bg-purple-500', text: 'text-purple-400', label: 'Wikipedia' },
+                  wikidata: { bg: 'bg-blue-500', text: 'text-blue-400', label: 'Wikidata' },
+                  bgg: { bg: 'bg-red-500', text: 'text-red-400', label: 'BGG' },
+                }
+
+                return (
+                  <Card className="border-dashed">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Available Image Sources</CardTitle>
+                      <CardDescription className="text-xs">
+                        Images fetched from external sources. Add to gallery to use on the game page.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {sourceImages.map((img, i) => {
+                          const imageKey = `${img.source}:${img.url}`
+                          const isImporting = importingImages.has(imageKey)
+                          const isImported = importedImages.has(imageKey) || isImageInGallery(img.url)
+                          const colors = sourceColors[img.source]
+
+                          return (
+                            <div key={i} className="relative group">
+                              <div className="aspect-[4/3] rounded-lg overflow-hidden border bg-muted">
+                                <img
+                                  src={img.url}
+                                  alt={`${game.name} from ${colors.label}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              {/* Source badge */}
+                              <span className={`absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded ${colors.bg} text-white`}>
+                                {colors.label}
+                              </span>
+                              {/* License badge */}
+                              <span className={`absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded ${
+                                img.source === 'bgg' ? 'bg-red-500/90' :
+                                isFairUse(img.license) ? 'bg-amber-500/90' : 'bg-green-500/90'
+                              } text-white`}>
+                                {img.license}
+                              </span>
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                {img.canImport ? (
+                                  isImported ? (
+                                    <span className="flex items-center gap-1 text-xs text-white bg-green-600 px-2 py-1 rounded">
+                                      <Check className="h-3 w-3" />
+                                      In Gallery
+                                    </span>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => importExternalImage(img.url, img.source as 'wikipedia' | 'wikidata', img.license, images.length === 0)}
+                                      disabled={isImporting}
+                                      className="text-xs"
+                                    >
+                                      {isImporting ? (
+                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      ) : (
+                                        <Plus className="h-3 w-3 mr-1" />
+                                      )}
+                                      Add to Gallery
+                                    </Button>
+                                  )
+                                ) : (
+                                  <span className="text-xs text-white/80 text-center px-2">
+                                    Reference only
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })()}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Relations Tab */}
-        <TabsContent value="relations" className="space-y-6">
-          <GameRelationsEditor
-            key={game.id}
-            game={game}
-            onFamilyChange={(familyId) => updateField('family_id', familyId)}
-          />
         </TabsContent>
       </Tabs>
     </div>

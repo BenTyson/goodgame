@@ -1,6 +1,6 @@
 'use client'
 
-import { Textarea } from '@/components/ui/textarea'
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -34,26 +34,28 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Overview</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={rulesContent.overview}
               onChange={(e) => updateField('rules_content', {
                 ...rulesContent,
                 overview: e.target.value
               })}
-              rows={3}
+              minRows={3}
+              maxRows={20}
               placeholder="A brief overview of the game and what makes it fun..."
             />
           </div>
 
           <div className="space-y-2">
             <Label>Quick Start Steps</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={rulesContent.quickStart?.join('\n') || ''}
               onChange={(e) => updateField('rules_content', {
                 ...rulesContent,
                 quickStart: e.target.value.split('\n').filter(Boolean)
               })}
-              rows={4}
+              minRows={4}
+              maxRows={20}
               placeholder="Step 1: Set up the board&#10;Step 2: Deal starting cards&#10;Step 3: Choose first player"
             />
             <p className="text-xs text-muted-foreground">One step per line</p>
@@ -61,13 +63,14 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
 
           <div className="space-y-2">
             <Label>Strategy Tips</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={rulesContent.tips?.join('\n') || ''}
               onChange={(e) => updateField('rules_content', {
                 ...rulesContent,
                 tips: e.target.value.split('\n').filter(Boolean)
               })}
-              rows={4}
+              minRows={4}
+              maxRows={20}
               placeholder="Focus on resource management early&#10;Don't neglect defense"
             />
             <p className="text-xs text-muted-foreground">One tip per line</p>
@@ -102,13 +105,14 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
 
           <div className="space-y-2">
             <Label>Setup Tips</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={setupContent.quickTips?.join('\n') || ''}
               onChange={(e) => updateField('setup_content', {
                 ...setupContent,
                 quickTips: e.target.value.split('\n').filter(Boolean)
               })}
-              rows={4}
+              minRows={4}
+              maxRows={20}
               placeholder="Tip 1&#10;Tip 2&#10;Tip 3"
             />
             <p className="text-xs text-muted-foreground">One tip per line</p>
@@ -131,26 +135,28 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>End Game Condition</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={formatEndGame(referenceContent.endGame)}
               onChange={(e) => updateField('reference_content', {
                 ...referenceContent,
                 endGame: e.target.value
               })}
-              rows={2}
+              minRows={2}
+              maxRows={15}
               placeholder="The game ends when a player reaches 10 victory points..."
             />
           </div>
 
           <div className="space-y-2">
             <Label>Quick Reminders</Label>
-            <Textarea
+            <AutoResizeTextarea
               value={referenceContent.quickReminders?.join('\n') || ''}
               onChange={(e) => updateField('reference_content', {
                 ...referenceContent,
                 quickReminders: e.target.value.split('\n').filter(Boolean)
               })}
-              rows={4}
+              minRows={4}
+              maxRows={20}
               placeholder="Draw a card at the end of your turn&#10;You can only build on your turn"
             />
             <p className="text-xs text-muted-foreground">One reminder per line</p>

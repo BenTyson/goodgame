@@ -4,10 +4,9 @@ import { useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import {
   BookOpen,
   FileText,
@@ -18,11 +17,9 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
-import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import {
   RulebookUrlSection,
   RulebookParseSection,
-  CrunchScoreDisplay,
 } from '@/components/admin/rulebook'
 import { formatEndGame, parseGameContent, type Publisher } from '@/lib/admin/wizard'
 
@@ -61,8 +58,6 @@ export function RulebookContentTab({
 
   // Parse JSONB content with type-safe fallbacks
   const { rulesContent, setupContent, referenceContent } = parseGameContent(game)
-  const crunchBreakdown = game.crunch_breakdown as CrunchBreakdown | null
-  const crunchScore = game.crunch_score
 
   // Rulebook handlers
   const validateUrl = async () => {
@@ -167,6 +162,7 @@ export function RulebookContentTab({
         onValidate={validateUrl}
         onDiscover={discoverUrl}
         publishersList={game.publishers_list}
+        wikipediaInfobox={game.wikipedia_infobox as { publisher?: string[]; publishersWithRegion?: { name: string; region?: string; isPrimary?: boolean }[] } | null}
         rulebookSource={game.rulebook_source}
         rulebookParsedAt={game.rulebook_parsed_at}
       />
@@ -180,17 +176,6 @@ export function RulebookContentTab({
         rulebookParsedAt={game.rulebook_parsed_at}
         onParse={parseRulebook}
       />
-
-      {/* Crunch Score Display */}
-      {crunchScore && (
-        <CrunchScoreDisplay
-          score={Number(crunchScore)}
-          breakdown={crunchBreakdown}
-          generatedAt={game.crunch_generated_at}
-          bggReference={game.crunch_bgg_reference ? Number(game.crunch_bgg_reference) : undefined}
-        />
-      )}
-
 
       {/* Component List */}
       {game.component_list && (
@@ -265,18 +250,19 @@ export function RulebookContentTab({
                 </h4>
                 <div className="space-y-2">
                   <Label>Overview</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={rulesContent.overview}
                     onChange={(e) =>
                       updateField('rules_content', { ...rulesContent, overview: e.target.value })
                     }
-                    rows={3}
+                    minRows={3}
+                    maxRows={20}
                     placeholder="A brief overview of the game..."
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Quick Start Steps (one per line)</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={rulesContent.quickStart?.join('\n') || ''}
                     onChange={(e) =>
                       updateField('rules_content', {
@@ -284,12 +270,13 @@ export function RulebookContentTab({
                         quickStart: e.target.value.split('\n').filter(Boolean),
                       })
                     }
-                    rows={4}
+                    minRows={4}
+                    maxRows={20}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Strategy Tips (one per line)</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={rulesContent.tips?.join('\n') || ''}
                     onChange={(e) =>
                       updateField('rules_content', {
@@ -297,7 +284,8 @@ export function RulebookContentTab({
                         tips: e.target.value.split('\n').filter(Boolean),
                       })
                     }
-                    rows={3}
+                    minRows={3}
+                    maxRows={20}
                   />
                 </div>
               </div>
@@ -321,7 +309,7 @@ export function RulebookContentTab({
                 </div>
                 <div className="space-y-2">
                   <Label>Setup Tips (one per line)</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={setupContent.quickTips?.join('\n') || ''}
                     onChange={(e) =>
                       updateField('setup_content', {
@@ -329,7 +317,8 @@ export function RulebookContentTab({
                         quickTips: e.target.value.split('\n').filter(Boolean),
                       })
                     }
-                    rows={4}
+                    minRows={4}
+                    maxRows={20}
                   />
                 </div>
               </div>
@@ -344,17 +333,18 @@ export function RulebookContentTab({
                 </h4>
                 <div className="space-y-2">
                   <Label>End Game Condition</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={formatEndGame(referenceContent.endGame)}
                     onChange={(e) =>
                       updateField('reference_content', { ...referenceContent, endGame: e.target.value })
                     }
-                    rows={2}
+                    minRows={2}
+                    maxRows={15}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Quick Reminders (one per line)</Label>
-                  <Textarea
+                  <AutoResizeTextarea
                     value={referenceContent.quickReminders?.join('\n') || ''}
                     onChange={(e) =>
                       updateField('reference_content', {
@@ -362,7 +352,8 @@ export function RulebookContentTab({
                         quickReminders: e.target.value.split('\n').filter(Boolean),
                       })
                     }
-                    rows={4}
+                    minRows={4}
+                    maxRows={20}
                   />
                 </div>
               </div>

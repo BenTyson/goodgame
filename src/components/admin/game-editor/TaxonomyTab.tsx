@@ -89,6 +89,69 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
           isPrimary: e.is_primary ?? false,
         }))
 
+        // Auto-select AI suggestions with 70%+ confidence that aren't already selected
+        const AUTO_SELECT_THRESHOLD = 0.7
+
+        // For categories
+        const existingCategoryIds = new Set(initialCategories.map(c => c.id))
+        const highConfidenceCategories = result.suggestions
+          .filter(s =>
+            s.suggestion_type === 'category' &&
+            s.target_id &&
+            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
+            !existingCategoryIds.has(s.target_id)
+          )
+          .map(s => ({
+            id: s.target_id!,
+            isPrimary: false,
+          }))
+        initialCategories.push(...highConfidenceCategories)
+
+        // For mechanics
+        const existingMechanicIds = new Set(initialMechanics.map(m => m.id))
+        const highConfidenceMechanics = result.suggestions
+          .filter(s =>
+            s.suggestion_type === 'mechanic' &&
+            s.target_id &&
+            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
+            !existingMechanicIds.has(s.target_id)
+          )
+          .map(s => ({
+            id: s.target_id!,
+            isPrimary: false,
+          }))
+        initialMechanics.push(...highConfidenceMechanics)
+
+        // For themes
+        const existingThemeIds = new Set(initialThemes.map(t => t.id))
+        const highConfidenceThemes = result.suggestions
+          .filter(s =>
+            s.suggestion_type === 'theme' &&
+            s.target_id &&
+            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
+            !existingThemeIds.has(s.target_id)
+          )
+          .map(s => ({
+            id: s.target_id!,
+            isPrimary: false,
+          }))
+        initialThemes.push(...highConfidenceThemes)
+
+        // For player experiences
+        const existingExperienceIds = new Set(initialExperiences.map(e => e.id))
+        const highConfidenceExperiences = result.suggestions
+          .filter(s =>
+            s.suggestion_type === 'player_experience' &&
+            s.target_id &&
+            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
+            !existingExperienceIds.has(s.target_id)
+          )
+          .map(s => ({
+            id: s.target_id!,
+            isPrimary: false,
+          }))
+        initialExperiences.push(...highConfidenceExperiences)
+
         setSelectedCategories(initialCategories)
         setSelectedMechanics(initialMechanics)
         setSelectedThemes(initialThemes)
@@ -276,6 +339,7 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
           <TaxonomySelector
             items={data?.categories ?? []}
             selected={selectedCategories}
+            suggestions={data?.suggestions}
             onChange={setSelectedCategories}
             type="category"
             allowPrimary={true}
@@ -302,6 +366,7 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
           <TaxonomySelector
             items={data?.mechanics ?? []}
             selected={selectedMechanics}
+            suggestions={data?.suggestions}
             onChange={setSelectedMechanics}
             type="mechanic"
             allowPrimary={false}

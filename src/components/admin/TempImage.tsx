@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-type ImageSource = 'bgg' | 'wikidata' | 'uploaded'
+type ImageSource = 'bgg' | 'wikidata' | 'wikipedia' | 'uploaded'
 
 interface SourcedImageProps {
   src: string
@@ -19,6 +19,7 @@ interface SourcedImageProps {
 const sourceConfig: Record<ImageSource, { label: string; variant: 'destructive' | 'secondary' | 'default'; className?: string }> = {
   bgg: { label: 'BGG', variant: 'destructive' },
   wikidata: { label: 'Wiki', variant: 'secondary', className: 'bg-blue-500 hover:bg-blue-500 text-white' },
+  wikipedia: { label: 'Wikipedia', variant: 'secondary', className: 'bg-purple-500 hover:bg-purple-500 text-white' },
   uploaded: { label: 'Uploaded', variant: 'default', className: 'bg-green-500 hover:bg-green-500 text-white' },
 }
 
