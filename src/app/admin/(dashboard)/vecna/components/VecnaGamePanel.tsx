@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -56,6 +56,7 @@ import { BlockedStateAlert } from './BlockedStateAlert'
 import { RulebookDiscovery } from './RulebookDiscovery'
 import { CompletenessReport } from './CompletenessReport'
 import { ContentReviewPanel } from './ContentReviewPanel'
+import { AutoProcessModal } from './AutoProcessModal'
 
 interface VecnaGamePanelProps {
   game: VecnaGame
@@ -77,7 +78,14 @@ export function VecnaGamePanel({
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showRulebookDiscovery, setShowRulebookDiscovery] = useState(false)
+  const [showAutoProcess, setShowAutoProcess] = useState(false)
   const [selectedModel, setSelectedModel] = useState<'sonnet' | 'haiku' | 'opus'>('sonnet')
+
+  // Sync local state when game prop changes (e.g., after router.refresh())
+  useEffect(() => {
+    setCurrentState(game.vecna_state)
+    setHasRulebook(game.has_rulebook)
+  }, [game.id, game.vecna_state, game.has_rulebook])
 
   const stateConfig = VECNA_STATE_CONFIG[currentState]
   const isBlocked = currentState === 'rulebook_missing' || currentState === 'review_pending'
@@ -399,6 +407,22 @@ export function VecnaGamePanel({
                 {selectedModel === 'sonnet' && 'Balanced quality & speed'}
                 {selectedModel === 'opus' && 'Best quality, slower'}
               </span>
+            </div>
+          )}
+
+          {/* Auto Process Button - show when game has rulebook and can be processed */}
+          {hasRulebook && ['enriched', 'rulebook_ready', 'rulebook_missing', 'parsed', 'taxonomy_assigned'].includes(currentState) && (
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setShowAutoProcess(true)}
+                disabled={isProcessing}
+                className="gap-2"
+              >
+                <Zap className="h-4 w-4" />
+                Auto Process
+              </Button>
             </div>
           )}
 
@@ -846,6 +870,17 @@ export function VecnaGamePanel({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Auto Process Modal */}
+      <AutoProcessModal
+        open={showAutoProcess}
+        onOpenChange={setShowAutoProcess}
+        mode="single"
+        gameId={game.id}
+        gameName={game.name}
+        model={selectedModel}
+        onComplete={() => router.refresh()}
+      />
     </div>
   )
 }

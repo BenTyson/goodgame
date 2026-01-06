@@ -1,12 +1,49 @@
 # Current Status
 
-> Last Updated: 2026-01-06 (Rulebook Tab, Import Enhancements, Vecna Re-sync)
+> Last Updated: 2026-01-06 (Vecna Auto-Process, Parsed Text Viewer)
 
-## Current Phase: 53 - Rulebook Tab & Pipeline Improvements
+## Current Phase: 54 - Vecna Auto-Process Pipeline
 
-Added dedicated Rulebook tab to game editor with structured text parsing. Enhanced import page with relation management. Added Re-sync BGG feature to Vecna.
+Added automated pipeline processing with real-time progress modal. Improved parsed text viewer to show structured sections.
 
-### Session Summary (2026-01-06) - Rulebook Tab & Import Enhancements
+### Session Summary (2026-01-06) - Vecna Auto-Process
+
+**Vecna Auto-Process Feature:**
+- New SSE streaming endpoint: `/api/admin/vecna/auto-process`
+- Chains parse → taxonomy → generate automatically
+- Real-time progress modal with step tracking
+- Model selector (Haiku/Sonnet/Opus) before processing
+- Works for both single games and family batches
+- Cancel button to abort mid-process
+
+**Parsed Text Viewer Improvements:**
+- Now shows structured sections instead of raw text wall
+- Each section displays: title, type badge, word count
+- Content preview (truncated at 1000 chars per section)
+- Falls back to raw text for older parses without structured data
+- Copy button exports formatted markdown with section headers
+
+**Database Fix:**
+- Applied migration `00063_structured_parsed_text.sql`
+- Added `parsed_text_structured` column to `rulebook_parse_log`
+- Stores categorized/cleaned rulebook sections for AI Q&A
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/vecna/auto-process/route.ts` | SSE streaming auto-process endpoint |
+| `src/app/admin/(dashboard)/vecna/components/AutoProcessModal.tsx` | Progress modal with step tracking |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `VecnaGamePanel.tsx` | Added Auto Process button, useEffect state sync fix |
+| `VecnaFamilyHeader.tsx` | Added model selector, Auto Process menu item |
+| `RulebookParseSection.tsx` | Structured sections display, section badges |
+
+---
+
+### Earlier Session (2026-01-06) - Rulebook Tab & Import Enhancements
 
 **Game Editor - New Rulebook Tab (6 tabs total):**
 - Created new `RulebookTab.tsx` with parsed text viewer

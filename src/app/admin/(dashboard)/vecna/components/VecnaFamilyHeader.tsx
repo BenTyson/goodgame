@@ -15,6 +15,8 @@ import {
   Sparkles,
   ChevronDown,
   Users,
+  Cpu,
+  Brain,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { VecnaFamily, VecnaState } from '@/lib/vecna'
+import { AutoProcessModal } from './AutoProcessModal'
 
 type ProcessingMode = 'full' | 'parse-only' | 'generate-only' | 'from-current'
 
@@ -116,6 +119,8 @@ export function VecnaFamilyHeader({
   const [stopOnError, setStopOnError] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showAutoProcess, setShowAutoProcess] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<'haiku' | 'sonnet' | 'opus'>('sonnet')
   const [results, setResults] = useState<ProcessingResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -297,6 +302,52 @@ export function VecnaFamilyHeader({
                   <Play className="w-4 h-4 mr-2" />
                   Process {stats.ready} Games
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Auto Process</DropdownMenuLabel>
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <Cpu className="w-3 h-3" />
+                    Model:
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant={selectedModel === 'haiku' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={(e) => { e.preventDefault(); setSelectedModel('haiku') }}
+                      className="h-6 text-xs px-2"
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Haiku
+                    </Button>
+                    <Button
+                      variant={selectedModel === 'sonnet' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={(e) => { e.preventDefault(); setSelectedModel('sonnet') }}
+                      className="h-6 text-xs px-2"
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Sonnet
+                    </Button>
+                    <Button
+                      variant={selectedModel === 'opus' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={(e) => { e.preventDefault(); setSelectedModel('opus') }}
+                      className="h-6 text-xs px-2"
+                    >
+                      <Brain className="h-3 w-3 mr-1" />
+                      Opus
+                    </Button>
+                  </div>
+                </div>
+                <DropdownMenuItem
+                  onClick={() => setShowAutoProcess(true)}
+                  className="text-primary font-medium"
+                  disabled={stats.ready === 0}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Auto Process with Progress
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -382,6 +433,20 @@ export function VecnaFamilyHeader({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Auto Process Modal */}
+      <AutoProcessModal
+        open={showAutoProcess}
+        onOpenChange={setShowAutoProcess}
+        mode="family"
+        familyId={family.id}
+        familyName={family.name}
+        model={selectedModel}
+        onComplete={() => {
+          onProcessingComplete()
+          router.refresh()
+        }}
+      />
     </>
   )
 }

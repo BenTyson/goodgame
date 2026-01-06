@@ -793,3 +793,50 @@ POST /api/admin/games/[id]/sync-bgg
 - After updating `bgg_tag_aliases` in database
 - When BGG data has been updated upstream
 - To refresh taxonomy assignments without re-importing
+
+### Auto-Process Pipeline (2026-01-06)
+
+Added automated pipeline processing that chains parse → taxonomy → generate with real-time progress modal.
+
+**Features:**
+- "Auto Process" button for single games (VecnaGamePanel)
+- "Auto Process with Progress" menu item for family batches (VecnaFamilyHeader)
+- Model selector (Haiku/Sonnet/Opus) before processing
+- Real-time streaming progress via SSE
+- Blocking modal prevents interaction until complete
+
+**New Files:**
+```
+src/app/api/admin/vecna/auto-process/route.ts    # SSE streaming endpoint
+src/app/admin/(dashboard)/vecna/components/AutoProcessModal.tsx  # Progress modal
+```
+
+**API Endpoint:**
+```
+POST /api/admin/vecna/auto-process
+Body: {
+  mode: 'single' | 'family',
+  gameId?: string,        // Required for single mode
+  familyId?: string,      // Required for family mode
+  model?: 'haiku' | 'sonnet' | 'opus',  // Default: sonnet
+  skipBlocked?: boolean,  // Default: true
+  stopOnError?: boolean   // Default: false
+}
+```
+
+**SSE Event Types:**
+- `start` - Pipeline started, total games count
+- `game_start` - Processing game X of Y (with thumbnail)
+- `step` - Step progress (parsing/taxonomy/generating - running/complete/error)
+- `game_complete` - Game finished with state transition
+- `game_skip` - Game skipped with reason
+- `complete` - Pipeline finished with summary
+
+**Progress Modal Features:**
+- 4-stat summary grid (Total/Processed/Skipped/Errors)
+- Current game display with thumbnail
+- 3-step progress indicator (Parse → Taxonomy → Generate)
+- Animated spinners for running steps
+- Error display inline
+- Cancel button to abort stream
+- "Close & Refresh" on completion
