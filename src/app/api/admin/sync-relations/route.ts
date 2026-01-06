@@ -79,21 +79,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check expansions array for direction
+      // Games that expand US (we're the base game)
+      // These games should be the SOURCE, we should be the TARGET
       if (rawData.expansions) {
         for (const exp of rawData.expansions) {
           const bggId = exp.bgg_id || exp.id
           if (!bggId) continue
-          const isExpansionOf = exp.direction === 'expands' || exp.inbound === false
-          if (isExpansionOf) {
-            const result = await createRelationIfNotExists(
-              adminClient,
-              gameId,
-              bggId,
-              'expansion_of'
-            )
-            if (result) created++
-          }
+          // expansions array contains games that expand us (inbound=true in BGG)
+          // Create relation: expansion (source) -> us (target/base)
+          const result = await createRelationWithUsAsTarget(
+            adminClient,
+            gameId,
+            bggId,
+            'expansion_of'
+          )
+          if (result) created++
         }
       }
     }
@@ -114,21 +114,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check implementations array for direction
+      // Games that reimplement US (we're the original)
+      // These games should be the SOURCE, we should be the TARGET
       if (rawData.implementations) {
         for (const impl of rawData.implementations) {
           const bggId = impl.bgg_id || impl.id
           if (!bggId) continue
-          const isReimplementationOf = impl.direction === 'reimplements' || impl.inbound === false
-          if (isReimplementationOf) {
-            const result = await createRelationIfNotExists(
-              adminClient,
-              gameId,
-              bggId,
-              'reimplementation_of'
-            )
-            if (result) created++
-          }
+          // implementations array contains games that reimplement us (inbound=true in BGG)
+          // Create relation: impl (source/reimplementation) -> us (target/original)
+          const result = await createRelationWithUsAsTarget(
+            adminClient,
+            gameId,
+            bggId,
+            'reimplementation_of'
+          )
+          if (result) created++
         }
       }
     }
@@ -175,6 +175,48 @@ async function createRelationIfNotExists(
     .insert({
       source_game_id: sourceGameId,
       target_game_id: targetGame.id,
+      relation_type: relationType,
+    })
+
+  return !error
+}
+
+/**
+ * Create relation where we are the TARGET (original game)
+ * Used for implementations array - games that reimplement us
+ */
+async function createRelationWithUsAsTarget(
+  supabase: ReturnType<typeof createAdminClient>,
+  targetGameId: string,  // Us - the original game
+  sourceBggId: number,   // The reimplementation (by BGG ID)
+  relationType: RelationType
+): Promise<boolean> {
+  // Find source game (the reimplementation) by BGG ID
+  const { data: sourceGame } = await supabase
+    .from('games')
+    .select('id')
+    .eq('bgg_id', sourceBggId)
+    .single()
+
+  if (!sourceGame) return false
+
+  // Check if exists
+  const { data: existing } = await supabase
+    .from('game_relations')
+    .select('id')
+    .eq('source_game_id', sourceGame.id)
+    .eq('target_game_id', targetGameId)
+    .eq('relation_type', relationType)
+    .single()
+
+  if (existing) return false
+
+  // Create relation: reimplementation (source) -> original (target)
+  const { error } = await supabase
+    .from('game_relations')
+    .insert({
+      source_game_id: sourceGame.id,
+      target_game_id: targetGameId,
       relation_type: relationType,
     })
 

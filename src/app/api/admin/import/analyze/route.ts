@@ -26,12 +26,23 @@ interface GameAnalysis {
   reimplementationCount: number
 }
 
+interface RelationGame {
+  bggId: number
+  name: string
+  year?: number | null
+}
+
 interface AnalyzeResponse {
   games: GameAnalysis[]
   relations: {
     expansions: number
     baseGames: number
     reimplementations: number
+  }
+  relationsDetail: {
+    expansions: RelationGame[]
+    baseGames: RelationGame[]
+    reimplementations: RelationGame[]
   }
   totals: {
     new: number
@@ -92,6 +103,11 @@ export async function POST(request: NextRequest) {
     let totalBaseGames = 0
     let totalReimplementations = 0
 
+    // Track unique relation games to avoid duplicates
+    const expansionGamesMap = new Map<number, RelationGame>()
+    const baseGamesMap = new Map<number, RelationGame>()
+    const reimplementationGamesMap = new Map<number, RelationGame>()
+
     for (const bggId of validIds) {
       const bggData = bggGamesMap.get(bggId)
       const existing = existingMap.get(bggId)
@@ -123,13 +139,32 @@ export async function POST(request: NextRequest) {
           // Note: We can't filter fan expansions here without fetching each expansion's data
           // The execute endpoint will filter them, so this is an upper bound estimate
           expansionCount = bggData.expansions?.length || 0
+
+          // Collect expansion details
+          for (const exp of bggData.expansions || []) {
+            if (!expansionGamesMap.has(exp.id)) {
+              expansionGamesMap.set(exp.id, { bggId: exp.id, name: exp.name })
+            }
+          }
         }
         // Both 'all' and 'upstream' include parent/base games
         if (bggData.expandsGame) {
           baseGameCount = 1
+          if (!baseGamesMap.has(bggData.expandsGame.id)) {
+            baseGamesMap.set(bggData.expandsGame.id, {
+              bggId: bggData.expandsGame.id,
+              name: bggData.expandsGame.name,
+            })
+          }
         }
         if (bggData.implementsGame) {
           reimplementationCount = 1
+          if (!reimplementationGamesMap.has(bggData.implementsGame.id)) {
+            reimplementationGamesMap.set(bggData.implementsGame.id, {
+              bggId: bggData.implementsGame.id,
+              name: bggData.implementsGame.name,
+            })
+          }
         }
       }
 
@@ -152,6 +187,11 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Convert maps to arrays for response
+    const expansionGames = Array.from(expansionGamesMap.values())
+    const baseGames = Array.from(baseGamesMap.values())
+    const reimplementationGames = Array.from(reimplementationGamesMap.values())
+
     // Calculate totals
     const newCount = games.filter(g => g.status === 'new').length
     const existingCount = games.filter(g => g.status === 'exists').length
@@ -164,9 +204,14 @@ export async function POST(request: NextRequest) {
     const response: AnalyzeResponse = {
       games,
       relations: {
-        expansions: totalExpansions,
-        baseGames: totalBaseGames,
-        reimplementations: totalReimplementations,
+        expansions: expansionGames.length,
+        baseGames: baseGames.length,
+        reimplementations: reimplementationGames.length,
+      },
+      relationsDetail: {
+        expansions: expansionGames,
+        baseGames: baseGames,
+        reimplementations: reimplementationGames,
       },
       totals: {
         new: newCount,

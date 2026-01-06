@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { DetailsTab, RulebookContentTab, TaxonomyTab, SourcesTab } from './game-editor'
+import { DetailsTab, RulebookTab, ContentTab, TaxonomyTab, SourcesTab } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -19,6 +19,7 @@ import {
   Info,
   ImageIcon,
   BookOpen,
+  FileText,
   Tags,
   Database,
   Plus,
@@ -219,9 +220,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - 5 tabs */}
+      {/* Editor Tabs - 6 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -232,6 +233,10 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           </TabsTrigger>
           <TabsTrigger value="rulebook" className="gap-2">
             <BookOpen className="h-4 w-4 hidden sm:block" />
+            Rulebook
+          </TabsTrigger>
+          <TabsTrigger value="content" className="gap-2">
+            <FileText className="h-4 w-4 hidden sm:block" />
             Content
           </TabsTrigger>
           <TabsTrigger value="sources" className="gap-2">
@@ -254,13 +259,17 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TaxonomyTab game={game} />
         </TabsContent>
 
-        {/* Rulebook & Content Tab */}
+        {/* Rulebook Tab */}
         <TabsContent value="rulebook">
-          <RulebookContentTab
+          <RulebookTab
             game={game}
-            updateField={updateField}
             onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
           />
+        </TabsContent>
+
+        {/* Content Tab */}
+        <TabsContent value="content">
+          <ContentTab game={game} updateField={updateField} />
         </TabsContent>
 
         {/* Sources Tab */}

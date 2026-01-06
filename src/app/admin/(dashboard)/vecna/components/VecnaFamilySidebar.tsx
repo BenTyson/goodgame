@@ -377,8 +377,8 @@ function GameItem({
           )}
         </div>
         {game.relation_type && (
-          <div className="text-[10px] text-muted-foreground truncate">
-            {game.relation_type.replace(/_/g, ' ')}
+          <div className="text-[10px] text-muted-foreground truncate capitalize">
+            {game.relation_type.replace(/_/g, ' ').replace(/ of$/i, '')}
           </div>
         )}
       </div>

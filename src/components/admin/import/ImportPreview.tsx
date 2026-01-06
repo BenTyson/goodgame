@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   ArrowLeft,
   Play,
@@ -16,8 +18,10 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  X,
+  Undo2,
 } from 'lucide-react'
-import type { AnalyzeResult, ImportSettings } from './ImportWizard'
+import type { AnalyzeResult, ImportSettings, RelationGame } from './ImportWizard'
 
 interface ImportPreviewProps {
   result: AnalyzeResult
@@ -185,34 +189,83 @@ export function ImportPreview({
         </CardContent>
       </Card>
 
-      {/* Relations Card */}
+      {/* Relations Card - Expandable with game list */}
       {totalRelations > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Relations to Import</CardTitle>
-            <CardDescription>Additional games that will be imported as relations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {result.relations.baseGames > 0 && (
-                <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                  <span className="text-sm">Base games (upstream)</span>
-                  <Badge variant="outline">+{result.relations.baseGames}</Badge>
-                </div>
-              )}
-              {result.relations.expansions > 0 && (
-                <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                  <span className="text-sm">Expansions</span>
-                  <Badge variant="outline">+{result.relations.expansions}</Badge>
-                </div>
-              )}
-              {result.relations.reimplementations > 0 && (
-                <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                  <span className="text-sm">Reimplementations</span>
-                  <Badge variant="outline">+{result.relations.reimplementations}</Badge>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Relations to Import</CardTitle>
+                <CardDescription>
+                  Additional games that will be imported as relations
+                  {settings.excludedBggIds.length > 0 && (
+                    <span className="text-orange-500 ml-2">
+                      ({settings.excludedBggIds.length} excluded)
+                    </span>
+                  )}
+                </CardDescription>
+              </div>
+              {settings.excludedBggIds.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSettingsChange({ ...settings, excludedBggIds: [] })}
+                  className="text-orange-500 hover:text-orange-600"
+                >
+                  <Undo2 className="h-4 w-4 mr-1" />
+                  Restore all
+                </Button>
               )}
             </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Base Games */}
+            {result.relationsDetail?.baseGames?.length > 0 && (
+              <RelationSection
+                title="Base games (upstream)"
+                games={result.relationsDetail.baseGames}
+                excludedIds={settings.excludedBggIds}
+                onToggleExclude={(bggId) => {
+                  const newExcluded = settings.excludedBggIds.includes(bggId)
+                    ? settings.excludedBggIds.filter((id) => id !== bggId)
+                    : [...settings.excludedBggIds, bggId]
+                  onSettingsChange({ ...settings, excludedBggIds: newExcluded })
+                }}
+                badgeColor="bg-purple-500/10 text-purple-600"
+              />
+            )}
+
+            {/* Expansions */}
+            {result.relationsDetail?.expansions?.length > 0 && (
+              <RelationSection
+                title="Expansions"
+                games={result.relationsDetail.expansions}
+                excludedIds={settings.excludedBggIds}
+                onToggleExclude={(bggId) => {
+                  const newExcluded = settings.excludedBggIds.includes(bggId)
+                    ? settings.excludedBggIds.filter((id) => id !== bggId)
+                    : [...settings.excludedBggIds, bggId]
+                  onSettingsChange({ ...settings, excludedBggIds: newExcluded })
+                }}
+                badgeColor="bg-cyan-500/10 text-cyan-600"
+              />
+            )}
+
+            {/* Reimplementations */}
+            {result.relationsDetail?.reimplementations?.length > 0 && (
+              <RelationSection
+                title="Reimplementations"
+                games={result.relationsDetail.reimplementations}
+                excludedIds={settings.excludedBggIds}
+                onToggleExclude={(bggId) => {
+                  const newExcluded = settings.excludedBggIds.includes(bggId)
+                    ? settings.excludedBggIds.filter((id) => id !== bggId)
+                    : [...settings.excludedBggIds, bggId]
+                  onSettingsChange({ ...settings, excludedBggIds: newExcluded })
+                }}
+                badgeColor="bg-amber-500/10 text-amber-600"
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -265,5 +318,102 @@ export function ImportPreview({
         </Button>
       </div>
     </div>
+  )
+}
+
+// Collapsible section for relation games
+function RelationSection({
+  title,
+  games,
+  excludedIds,
+  onToggleExclude,
+  badgeColor,
+}: {
+  title: string
+  games: RelationGame[]
+  excludedIds: number[]
+  onToggleExclude: (bggId: number) => void
+  badgeColor: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const includedCount = games.filter((g) => !excludedIds.includes(g.bggId)).length
+  const excludedCount = games.length - includedCount
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-2">
+            {isOpen ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">{title}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {excludedCount > 0 && (
+              <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+                -{excludedCount}
+              </Badge>
+            )}
+            <Badge variant="outline">+{includedCount}</Badge>
+          </div>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ScrollArea className={games.length > 8 ? 'h-64' : ''}>
+          <div className="space-y-1 pt-2 pl-6">
+            {games.map((game) => {
+              const isExcluded = excludedIds.includes(game.bggId)
+              return (
+                <div
+                  key={game.bggId}
+                  className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${
+                    isExcluded
+                      ? 'bg-muted/20 border-dashed border-muted-foreground/30 opacity-60'
+                      : 'bg-muted/10 border-transparent hover:bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className={`text-sm truncate ${isExcluded ? 'line-through text-muted-foreground' : ''}`}>
+                      {game.name}
+                    </span>
+                    {game.year && (
+                      <span className="text-xs text-muted-foreground shrink-0">({game.year})</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <a
+                      href={`https://boardgamegeek.com/boardgame/${game.bggId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-foreground p-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 w-7 p-0 ${isExcluded ? 'text-green-500 hover:text-green-600' : 'text-red-500 hover:text-red-600'}`}
+                      onClick={() => onToggleExclude(game.bggId)}
+                      title={isExcluded ? 'Include in import' : 'Exclude from import'}
+                    >
+                      {isExcluded ? (
+                        <Undo2 className="h-3.5 w-3.5" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </ScrollArea>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

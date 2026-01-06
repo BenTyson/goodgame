@@ -146,6 +146,7 @@ src/app/
 │   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
 │   │   └── [id]/
 │   │       ├── reset-content/route.ts  # POST reset parsed content
+│   │       ├── sync-bgg/route.ts       # POST re-sync BGG data
 │   │       └── wikipedia/route.ts      # GET status, POST fetch Wikipedia summary
 │   ├── families/
 │   │   └── [id]/
@@ -201,11 +202,12 @@ src/components/
 │   ├── ImageUpload.tsx        # Image uploader with unified gallery, primary indicator, crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
 │   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wikidata/Wikipedia/Uploaded)
-│   ├── game-editor/           # GameEditor tab components (5 tabs)
+│   ├── game-editor/           # GameEditor tab components (6 tabs)
 │   │   ├── DetailsTab.tsx         # Core info, metadata, Crunch Score, publishing
 │   │   ├── TaxonomyTab.tsx        # Categories, mechanics, themes, player experiences
+│   │   ├── RulebookTab.tsx        # Rulebook URL, parsing, parsed text viewer
 │   │   ├── ContentTab.tsx         # Rules, setup, reference content
-│   │   ├── RulebookContentTab.tsx # Rulebook URL, parsing
+│   │   ├── RulebookContentTab.tsx # Legacy - moved to RulebookTab
 │   │   ├── SourcesTab.tsx         # BGG/Wikidata/Wikipedia data display
 │   │   └── TaxonomySelector.tsx   # Multi-select with AI badges (auto-selects ≥70%)
 │   ├── rulebook/              # RulebookEditor sub-components
@@ -329,7 +331,8 @@ src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
 src/lib/config/                # App configuration
   ├── feature-flags.ts         # Feature flag utilities
-  └── marketplace-constants.ts # Marketplace config (fees, limits)
+  ├── marketplace-constants.ts # Marketplace config (fees, limits)
+  └── bgg-mappings.ts          # BGG category/theme/experience mappings
 src/lib/stripe/                # Stripe SDK
   ├── client.ts                # Server-side Stripe client
   └── connect.ts               # Stripe Connect helpers

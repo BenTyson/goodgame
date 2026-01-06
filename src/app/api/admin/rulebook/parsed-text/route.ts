@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
+import type { ParsedTextStructured } from '@/lib/rulebook/types'
 
 /**
  * GET /api/admin/rulebook/parsed-text
- * Fetch the parsed rulebook text for a game
+ * Fetch the parsed rulebook text for a game (raw and structured)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     let parsedText: string | null = null
+    let parsedTextStructured: ParsedTextStructured | null = null
     let wordCount: number | null = null
     let pageCount: number | null = null
     let parsedAt: string | null = null
@@ -40,13 +42,20 @@ export async function GET(request: NextRequest) {
     if (gameData?.latest_parse_log_id) {
       const { data: parseLog } = await supabase
         .from('rulebook_parse_log')
-        .select('parsed_text, word_count, page_count, created_at')
+        .select('parsed_text, parsed_text_structured, word_count, page_count, created_at')
         .eq('id', gameData.latest_parse_log_id)
         .single()
 
       if (parseLog) {
-        const log = parseLog as { parsed_text?: string; word_count?: number; page_count?: number; created_at?: string }
+        const log = parseLog as {
+          parsed_text?: string
+          parsed_text_structured?: ParsedTextStructured
+          word_count?: number
+          page_count?: number
+          created_at?: string
+        }
         parsedText = log.parsed_text || null
+        parsedTextStructured = log.parsed_text_structured || null
         wordCount = log.word_count || null
         pageCount = log.page_count || null
         parsedAt = log.created_at || null
@@ -57,7 +66,7 @@ export async function GET(request: NextRequest) {
     if (!parsedText) {
       const { data: recentLog } = await supabase
         .from('rulebook_parse_log')
-        .select('parsed_text, word_count, page_count, created_at')
+        .select('parsed_text, parsed_text_structured, word_count, page_count, created_at')
         .eq('game_id', gameId)
         .in('status', ['success', 'partial'])
         .order('created_at', { ascending: false })
@@ -65,8 +74,15 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (recentLog) {
-        const log = recentLog as { parsed_text?: string; word_count?: number; page_count?: number; created_at?: string }
+        const log = recentLog as {
+          parsed_text?: string
+          parsed_text_structured?: ParsedTextStructured
+          word_count?: number
+          page_count?: number
+          created_at?: string
+        }
         parsedText = log.parsed_text || null
+        parsedTextStructured = log.parsed_text_structured || null
         wordCount = log.word_count || null
         pageCount = log.page_count || null
         parsedAt = log.created_at || null
@@ -76,12 +92,14 @@ export async function GET(request: NextRequest) {
     if (!parsedText) {
       return NextResponse.json({
         text: null,
+        structured: null,
         message: 'No parsed text found. Parse the rulebook first.',
       })
     }
 
     return NextResponse.json({
       text: parsedText,
+      structured: parsedTextStructured,
       wordCount,
       pageCount,
       parsedAt,

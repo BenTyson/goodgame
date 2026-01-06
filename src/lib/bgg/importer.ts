@@ -682,22 +682,34 @@ async function linkBaseGameExpansions(
 
 /**
  * Create reimplementation relation if the original game exists in our database
+ * Includes year validation to prevent impossible relations (can't reimplement a future game)
  */
 async function linkImplementationRelation(
   supabase: SupabaseClient<Database>,
   reimplementationGameId: string,
-  originalGameBggId: number
+  originalGameBggId: number,
+  reimplementationYear?: number | null
 ): Promise<void> {
   // Find the original game by BGG ID
   const { data: originalGame } = await supabase
     .from('games')
-    .select('id')
+    .select('id, name, year_published')
     .eq('bgg_id', originalGameBggId)
     .single()
 
   if (!originalGame) {
     // Original game not in our DB yet - relation will be created when it's imported
     return
+  }
+
+  // Year validation: a game cannot be a reimplementation of a game published after it
+  if (reimplementationYear && originalGame.year_published) {
+    if (reimplementationYear < originalGame.year_published) {
+      console.warn(`[Importer] Skipping invalid reimplementation relation: ` +
+        `cannot reimplement "${originalGame.name}" (${originalGame.year_published}) ` +
+        `from a game published in ${reimplementationYear}. BGG data may be incorrect.`)
+      return
+    }
   }
 
   // Check if relation already exists
@@ -723,23 +735,35 @@ async function linkImplementationRelation(
 
 /**
  * Create relations for an original game's reimplementations that already exist in our DB
+ * Includes year validation to prevent impossible relations
  */
 async function linkOriginalGameImplementations(
   supabase: SupabaseClient<Database>,
   originalGameId: string,
-  reimplementationBggIds: number[]
+  reimplementationBggIds: number[],
+  originalYear?: number | null
 ): Promise<void> {
   if (reimplementationBggIds.length === 0) return
 
   // Find reimplementations that exist in our DB
   const { data: reimplementations } = await supabase
     .from('games')
-    .select('id, bgg_id')
+    .select('id, bgg_id, name, year_published')
     .in('bgg_id', reimplementationBggIds)
 
   if (!reimplementations || reimplementations.length === 0) return
 
   for (const reimplementation of reimplementations) {
+    // Year validation: the reimplementation should have a year >= original's year
+    if (originalYear && reimplementation.year_published) {
+      if (reimplementation.year_published < originalYear) {
+        console.warn(`[Importer] Skipping invalid reimplementation relation: ` +
+          `"${reimplementation.name}" (${reimplementation.year_published}) cannot be a reimplementation ` +
+          `of a game published in ${originalYear}. BGG data may be incorrect.`)
+        continue
+      }
+    }
+
     // Check if relation already exists (reimplementation -> original)
     const { data: existing } = await supabase
       .from('game_relations')
@@ -1239,13 +1263,13 @@ export async function importGameFromBGG(
   // Create implementation/reimplementation relations
   // If this game reimplements another, link to original
   if (bggData.implementsGame) {
-    await linkImplementationRelation(supabase, newGame.id, bggData.implementsGame.id)
+    await linkImplementationRelation(supabase, newGame.id, bggData.implementsGame.id, bggData.yearPublished)
   }
 
   // If this is an original game, link any existing reimplementations in our DB
   if (bggData.implementations.length > 0) {
     const implementationBggIds = bggData.implementations.map(i => i.id)
-    await linkOriginalGameImplementations(supabase, newGame.id, implementationBggIds)
+    await linkOriginalGameImplementations(supabase, newGame.id, implementationBggIds, bggData.yearPublished)
   }
 
   // Enrich with Wikidata data (image, official website, etc.)

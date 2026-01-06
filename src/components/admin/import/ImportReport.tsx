@@ -17,6 +17,7 @@ import {
   ChevronUp,
   List,
   Users2,
+  Sparkles,
 } from 'lucide-react'
 import type { ImportSummary, ImportProgress } from './ImportWizard'
 
@@ -257,16 +258,22 @@ export function ImportReport({ summary, items, onStartOver }: ImportReportProps)
         <div className="flex gap-2">
           {primaryFamily && (
             <Link href={`/admin/families/${primaryFamily.id}`}>
-              <Button className="gap-2">
+              <Button variant="outline" className="gap-2">
                 <Users2 className="h-4 w-4" />
                 Configure Family
               </Button>
             </Link>
           )}
           <Link href="/admin/games">
-            <Button variant={primaryFamily ? 'outline' : 'default'} className="gap-2">
+            <Button variant="outline" className="gap-2">
               <List className="h-4 w-4" />
               Games List
+            </Button>
+          </Link>
+          <Link href="/admin/vecna">
+            <Button className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Go to Vecna
             </Button>
           </Link>
         </div>

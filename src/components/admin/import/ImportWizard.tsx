@@ -25,12 +25,23 @@ export interface GameAnalysis {
   reimplementationCount: number
 }
 
+export interface RelationGame {
+  bggId: number
+  name: string
+  year?: number | null
+}
+
 export interface AnalyzeResult {
   games: GameAnalysis[]
   relations: {
     expansions: number
     baseGames: number
     reimplementations: number
+  }
+  relationsDetail: {
+    expansions: RelationGame[]
+    baseGames: RelationGame[]
+    reimplementations: RelationGame[]
   }
   totals: {
     new: number
@@ -64,6 +75,7 @@ export interface ImportSettings {
   relationMode: RelationMode
   maxDepth: number
   resyncExisting: boolean
+  excludedBggIds: number[]
 }
 
 export function ImportWizard() {
@@ -73,6 +85,7 @@ export function ImportWizard() {
     relationMode: 'all',
     maxDepth: 3,
     resyncExisting: true,
+    excludedBggIds: [],
   })
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null)
   const [progressItems, setProgressItems] = useState<ImportProgress[]>([])
@@ -120,6 +133,7 @@ export function ImportWizard() {
           relationMode: settings.relationMode,
           maxDepth: settings.maxDepth,
           resyncExisting: settings.resyncExisting,
+          excludedBggIds: settings.excludedBggIds,
         }),
       })
 
@@ -196,6 +210,7 @@ export function ImportWizard() {
       relationMode: 'all',
       maxDepth: 3,
       resyncExisting: true,
+      excludedBggIds: [],
     })
     setAnalyzeResult(null)
     setProgressItems([])

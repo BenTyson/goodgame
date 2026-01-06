@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
-import { parsePdfFromUrl, generateCrunchScore } from '@/lib/rulebook'
+import { parsePdfFromUrl, generateCrunchScore, parseStructuredRulebook } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
 import { getDataExtractionPrompt, getTaxonomyExtractionPrompt, RULEBOOK_SYSTEM_PROMPT } from '@/lib/rulebook/prompts'
 import type { ExtractedGameData } from '@/lib/rulebook/types'
@@ -210,6 +210,14 @@ export async function POST(request: NextRequest) {
 
     const processingTime = Date.now() - startTime
 
+    // Generate structured/cleaned text for AI Q&A feature
+    const structuredText = parseStructuredRulebook(pdf.text)
+    console.log('Structured text generated:', {
+      sections: structuredText.sections.length,
+      totalWords: structuredText.metadata.totalWords,
+      cleaningApplied: structuredText.metadata.cleaningApplied,
+    })
+
     // Log successful parse with the parsed text
     const { data: parseLog } = await supabase.from('rulebook_parse_log').insert({
       game_id: gameId,
@@ -219,7 +227,8 @@ export async function POST(request: NextRequest) {
       word_count: pdf.wordCount,
       extracted_data: (extractedData ?? null) as Json | null,
       processing_time_ms: processingTime,
-      parsed_text: pdf.text, // Store the parsed rulebook text
+      parsed_text: pdf.text, // Store the raw parsed text
+      parsed_text_structured: structuredText as unknown as Json, // Store the structured version
     }).select('id').single()
 
     // Update game with parsed data
@@ -294,6 +303,12 @@ export async function POST(request: NextRequest) {
         newSuggestionsCount: taxonomySuggestions.newSuggestions?.length ?? 0,
       } : null,
       taxonomyError,
+      // Structured text info
+      structuredText: {
+        sectionsCount: structuredText.sections.length,
+        totalWords: structuredText.metadata.totalWords,
+        cleaningApplied: structuredText.metadata.cleaningApplied,
+      },
       processingTimeMs: processingTime,
     })
   } catch (error) {

@@ -243,3 +243,56 @@ export interface ContentGenerationResult {
   }
   processingTimeMs: number
 }
+
+// =====================================================
+// Structured Parsed Text Types
+// For categorized/cleaned rulebook text (AI Q&A feature)
+// =====================================================
+
+/** Standard section types for rulebook categorization */
+export type RulebookSectionType =
+  | 'overview'
+  | 'components'
+  | 'setup'
+  | 'gameplay'
+  | 'turns'
+  | 'actions'
+  | 'scoring'
+  | 'variants'
+  | 'glossary'
+  | 'faq'
+  | 'other'
+
+/** A categorized section from the rulebook */
+export interface StructuredSection {
+  /** Standard section type */
+  type: RulebookSectionType
+  /** Original section title from the PDF */
+  title: string
+  /** Cleaned section content */
+  content: string
+  /** Word count for this section */
+  wordCount: number
+}
+
+/** Metadata about the parsing/cleaning process */
+export interface StructuredParseMetadata {
+  /** Total sections detected */
+  totalSections: number
+  /** Total words in cleaned text */
+  totalWords: number
+  /** Cleaning operations applied */
+  cleaningApplied: string[]
+}
+
+/** Complete structured parsed text object stored in DB */
+export interface ParsedTextStructured {
+  /** Schema version for future compatibility */
+  version: 1
+  /** Full cleaned text (all sections combined) */
+  cleanedText: string
+  /** Categorized sections */
+  sections: StructuredSection[]
+  /** Parsing metadata */
+  metadata: StructuredParseMetadata
+}

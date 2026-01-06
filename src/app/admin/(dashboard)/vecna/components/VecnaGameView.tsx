@@ -211,7 +211,7 @@ export function VecnaGameView({ game, family, isStandalone }: VecnaGameViewProps
           {/* Relation info */}
           {game.relation_type && family && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-              <span className="capitalize">{game.relation_type.replace(/_/g, ' ')}</span>
+              <span className="capitalize">{game.relation_type.replace(/_/g, ' ').replace(/ of$/i, '')}</span>
               {game.relation_to_base && (
                 <>
                   <span>of</span>

@@ -767,3 +767,29 @@ Vecna is now fully implemented with all 4 phases:
 | 2. Automation | ✅ Complete | Batch processing, rulebook discovery, publishing |
 | 3. Enhanced AI | ✅ Complete | Family context, completeness report, model selector |
 | 4. Review UI | ✅ Complete | Three-column review, JSON editor, publish flow |
+
+---
+
+## Post-Launch Enhancements
+
+### Re-sync BGG (2026-01-06)
+
+Added ability to re-sync a game's BGG data from within Vecna. This is useful after fixing configuration issues (like category mappings) to re-run the import logic without starting over.
+
+**Features:**
+- "Re-sync BGG" button in Reset State section (Pipeline tab)
+- Available from `rulebook_ready` state onwards
+- Calls `syncGameWithBGG()` to re-fetch BGG data
+- Re-runs category/mechanic/theme mappings with current configuration
+- Page refreshes to show updated data
+
+**API Endpoint:**
+```
+POST /api/admin/games/[id]/sync-bgg
+```
+
+**Use Cases:**
+- After fixing `BGG_CATEGORY_MAP` slugs
+- After updating `bgg_tag_aliases` in database
+- When BGG data has been updated upstream
+- To refresh taxonomy assignments without re-importing

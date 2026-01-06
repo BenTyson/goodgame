@@ -209,6 +209,33 @@ export function VecnaGamePanel({
     }
   }
 
+  // Re-sync with BGG
+  const resyncBGG = async () => {
+    setIsProcessing(true)
+    setError(null)
+    setProcessingMessage('Re-syncing with BoardGameGeek...')
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}/sync-bgg`, {
+        method: 'POST',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Re-sync failed')
+      }
+
+      // Refresh to show updated data
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Re-sync failed')
+    } finally {
+      setIsProcessing(false)
+      setProcessingMessage(null)
+    }
+  }
+
   // Get next action based on state
   const getNextAction = () => {
     switch (currentState) {
@@ -275,7 +302,9 @@ export function VecnaGamePanel({
                 {game.year_published && <span>{game.year_published}</span>}
                 {game.relation_type && family && (
                   <>
-                    <span className="capitalize">{game.relation_type.replace(/_/g, ' ')}</span>
+                    <span className="capitalize">
+                      {game.relation_type.replace(/_/g, ' ').replace(/ of$/i, '')}
+                    </span>
                     {game.relation_to_base && (
                       <>
                         <span>of</span>
@@ -373,53 +402,45 @@ export function VecnaGamePanel({
             </div>
           )}
 
-          {/* Next Action Card */}
+          {/* Primary Action Button */}
           {nextAction && (
-            <Card className="border-2 border-primary/20">
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Next Action</div>
-                    <div className="font-medium">{stateConfig.description}</div>
-                  </div>
-                  {nextAction.requireConfirm ? (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button disabled={isProcessing}>
-                          {isProcessing ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <nextAction.icon className="h-4 w-4 mr-2" />
-                          )}
-                          {nextAction.label}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Publish Game?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will publish "{game.name}" and make it visible to users.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={nextAction.action}>Publish</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  ) : (
-                    <Button onClick={nextAction.action} disabled={isProcessing}>
+            <div className="flex justify-center">
+              {nextAction.requireConfirm ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="lg" disabled={isProcessing} className="gap-2">
                       {isProcessing ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <nextAction.icon className="h-4 w-4 mr-2" />
+                        <nextAction.icon className="h-4 w-4" />
                       )}
                       {nextAction.label}
                     </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Publish Game?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will publish "{game.name}" and make it visible to users.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={nextAction.action}>Publish</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button size="lg" onClick={nextAction.action} disabled={isProcessing} className="gap-2">
+                  {isProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <nextAction.icon className="h-4 w-4" />
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                  {nextAction.label}
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Processing message */}
@@ -496,6 +517,17 @@ export function VecnaGamePanel({
             <div className="pt-3 border-t">
               <div className="text-xs text-muted-foreground mb-2">Reset State</div>
               <div className="flex flex-wrap gap-2">
+                {/* Re-sync BGG - always available */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={isProcessing}
+                  onClick={resyncBGG}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Database className="h-3 w-3 mr-1" />
+                  Re-sync BGG
+                </Button>
                 {currentState !== 'rulebook_ready' && currentState !== 'rulebook_missing' && (
                   <Button
                     variant="ghost"

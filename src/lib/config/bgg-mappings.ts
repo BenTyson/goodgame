@@ -15,16 +15,19 @@
 export const BGG_CATEGORY_MAP: Record<string, string> = {
   // Strategy games
   'Abstract Strategy': 'strategy',
-  'Economic': 'strategy',
+  'Economic': 'economic',
   'City Building': 'strategy',
   'Territory Building': 'strategy',
+  'Civilization': 'strategy',
+  'Wargame': 'strategy',
 
   // Family games
-  'Family Game': 'family-games',
-  "Children's Game": 'family-games',
+  'Family Game': 'family',
+  "Children's Game": 'family',
 
   // Party games
-  'Party Game': 'party-games',
+  'Party Game': 'party',
+  'Humor': 'party',
 
   // Thematic games
   'Adventure': 'thematic',
@@ -32,22 +35,30 @@ export const BGG_CATEGORY_MAP: Record<string, string> = {
   'Fantasy': 'thematic',
   'Science Fiction': 'thematic',
   'Exploration': 'thematic',
-
-  // Card games
-  'Card Game': 'card-games',
-  'Collectible Components': 'card-games',
+  'Animals': 'thematic',
+  'Environmental': 'thematic',
+  'Zombies': 'thematic',
+  'Pirates': 'thematic',
+  'Mythology': 'thematic',
+  'Medieval': 'thematic',
 
   // Cooperative games
   'Cooperative': 'cooperative',
   'Solo / Solitaire Game': 'cooperative',
 
-  // Word/Trivia games
-  'Word Game': 'word-games',
-  'Trivia': 'word-games',
-  'Deduction': 'word-games',
+  // Two-player games
+  'Two-Player Only': 'two-player',
 
-  // Dice games
-  'Dice': 'dice-games',
+  // Abstract games
+  'Abstract': 'abstract',
+  'Puzzle': 'abstract',
+
+  // Deck building
+  'Card Game': 'deck-building',
+  'Collectible Components': 'deck-building',
+
+  // Campaign games
+  'Campaign / Battle Card Driven': 'campaign',
 } as const
 
 /**

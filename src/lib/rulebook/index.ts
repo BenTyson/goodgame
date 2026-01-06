@@ -21,6 +21,11 @@ export type {
   SetupContent,
   ReferenceContent,
   ContentGenerationResult,
+  // Structured parsing types
+  RulebookSectionType,
+  StructuredSection,
+  StructuredParseMetadata,
+  ParsedTextStructured,
 } from './types'
 
 // Parser
@@ -30,6 +35,10 @@ export {
   extractSections,
   findComponentsSection,
   estimateComplexityFromMetrics,
+  // Enhanced text cleaning & structuring
+  deepCleanPdfText,
+  categorizeSection,
+  parseStructuredRulebook,
 } from './parser'
 
 // Prompts

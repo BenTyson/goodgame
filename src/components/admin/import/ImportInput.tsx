@@ -84,6 +84,7 @@ export function ImportInput({ initialSettings, onAnalyze }: ImportInputProps) {
         relationMode,
         maxDepth: isNaN(depth) ? 3 : depth,  // 0 means unlimited
         resyncExisting: true,
+        excludedBggIds: [],
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed')

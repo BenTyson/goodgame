@@ -1,6 +1,7 @@
 // Tab components
 export { DetailsTab } from './DetailsTab'
 export { ContentTab } from './ContentTab'
+export { RulebookTab } from './RulebookTab'
 export { RulebookContentTab } from './RulebookContentTab'
 export { TaxonomyTab } from './TaxonomyTab'
 export { SourcesTab } from './SourcesTab'

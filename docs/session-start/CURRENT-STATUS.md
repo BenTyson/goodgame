@@ -1,10 +1,60 @@
 # Current Status
 
-> Last Updated: 2026-01-05 (Game Editor Cleanup & UX Improvements)
+> Last Updated: 2026-01-06 (Rulebook Tab, Import Enhancements, Vecna Re-sync)
 
-## Current Phase: 52 - Game Editor & Vecna Phase 4 Complete
+## Current Phase: 53 - Rulebook Tab & Pipeline Improvements
 
-Completed comprehensive update to game editor with Sources tab and Pipeline Status. Vecna Phase 4 (Content Review UI) is complete. Game Editor streamlined to 5 tabs with legacy components removed.
+Added dedicated Rulebook tab to game editor with structured text parsing. Enhanced import page with relation management. Added Re-sync BGG feature to Vecna.
+
+### Session Summary (2026-01-06) - Rulebook Tab & Import Enhancements
+
+**Game Editor - New Rulebook Tab (6 tabs total):**
+- Created new `RulebookTab.tsx` with parsed text viewer
+- Tab order: Details, Taxonomy, Rulebook, Content, Sources, Images
+- Parsed text viewer with "Full Text" and "By Section" modes
+- Section categorization (overview, components, setup, gameplay, etc.)
+- Collapsible sections with copy buttons and word counts
+
+**Import Page Enhancements:**
+- Relations now show actual game names (not just "+7" counts)
+- Collapsible RelationSection components for expansions/base games/reimplementations
+- Click X to exclude games, Undo to restore
+- Excluded games respected during import execution
+- "Go to Vecna" button added to ImportReport as primary action
+
+**Vecna Improvements:**
+- Added "Re-sync BGG" button in Reset State section
+- New API endpoint: `/api/admin/games/[id]/sync-bgg`
+- Re-syncs BGG data and re-runs category/theme mappings
+- Removed redundant "Next Action" card wrapper (kept action button)
+
+**Category Import Fix:**
+- Fixed `BGG_CATEGORY_MAP` slugs to match database
+- Was: 'family-games', 'party-games', etc.
+- Now: 'family', 'party', etc. (matching actual DB slugs)
+- Added missing mappings: Animals, Environmental, Zombies, etc.
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/components/admin/game-editor/RulebookTab.tsx` | Rulebook management + parsed text viewer |
+| `src/app/api/admin/games/[id]/sync-bgg/route.ts` | Re-sync BGG data endpoint |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/admin/GameEditor.tsx` | Added 6th tab (Rulebook), updated grid |
+| `src/components/admin/game-editor/index.ts` | Export RulebookTab |
+| `src/app/api/admin/import/analyze/route.ts` | Return `relationsDetail` with game data |
+| `src/app/api/admin/import/execute/route.ts` | Respect `excludedBggIds` |
+| `src/components/admin/import/ImportWizard.tsx` | Added RelationGame type, excludedBggIds |
+| `src/components/admin/import/ImportPreview.tsx` | RelationSection components |
+| `src/components/admin/import/ImportInput.tsx` | Pass excludedBggIds |
+| `src/components/admin/import/ImportReport.tsx` | Added "Go to Vecna" button |
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Re-sync BGG button, removed redundant wrapper |
+| `src/lib/config/bgg-mappings.ts` | Fixed category slugs |
+
+---
 
 ### Session Summary (2026-01-05) - Game Editor Cleanup
 
@@ -134,9 +184,9 @@ Completed comprehensive update to game editor with Sources tab and Pipeline Stat
 - Reputation/feedback system
 
 ### Admin
-- **Vecna Pipeline** (`/admin/vecna`) - Complete 4-phase content pipeline
-- **Game Editor** (`/admin/games/[id]`) - 5 tabs: Details, Taxonomy, Content, Sources, Images
-- **Import Wizard** (`/admin/import`) - BGG game import with real-time progress
+- **Vecna Pipeline** (`/admin/vecna`) - Complete 4-phase content pipeline with Re-sync BGG
+- **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Rulebook, Content, Sources, Images
+- **Import Wizard** (`/admin/import`) - BGG game import with relation management and real-time progress
 - Rulebook parsing + Crunch Score generation
 - AI content generation (rules, setup, reference)
 - Publisher/Family/Taxonomy management

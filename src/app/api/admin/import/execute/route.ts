@@ -8,6 +8,7 @@ interface ExecuteRequest {
   relationMode: 'all' | 'upstream' | 'none'
   maxDepth: number
   resyncExisting: boolean
+  excludedBggIds?: number[]
 }
 
 interface ProgressEvent {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { bggIds, relationMode = 'upstream', maxDepth = 3, resyncExisting = true } = body
+  const { bggIds, relationMode = 'upstream', maxDepth = 3, resyncExisting = true, excludedBggIds = [] } = body
 
   if (!bggIds || !Array.isArray(bggIds) || bggIds.length === 0) {
     return new Response(JSON.stringify({ error: 'At least one BGG ID is required' }), {
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  // Convert excluded IDs to a Set for O(1) lookup
+  const excludedSet = new Set(excludedBggIds)
 
   // Create a streaming response
   const encoder = new TextEncoder()
@@ -207,24 +211,25 @@ export async function POST(request: NextRequest) {
             // Collect expansion IDs (downstream) - we'll filter fan expansions later
             if (bggData.expansions) {
               for (const exp of bggData.expansions) {
-                if (!processedIds.has(exp.id)) {
+                // Skip if already processed or explicitly excluded by user
+                if (!processedIds.has(exp.id) && !excludedSet.has(exp.id)) {
                   relatedIds.push(exp.id)
                 }
               }
             }
 
-            // Collect base game ID (upstream)
-            if (bggData.expandsGame && !processedIds.has(bggData.expandsGame.id)) {
+            // Collect base game ID (upstream) - skip if excluded
+            if (bggData.expandsGame && !processedIds.has(bggData.expandsGame.id) && !excludedSet.has(bggData.expandsGame.id)) {
               relatedIds.push(bggData.expandsGame.id)
             }
 
-            // Collect reimplementation IDs (both directions)
-            if (bggData.implementsGame && !processedIds.has(bggData.implementsGame.id)) {
+            // Collect reimplementation IDs (both directions) - skip if excluded
+            if (bggData.implementsGame && !processedIds.has(bggData.implementsGame.id) && !excludedSet.has(bggData.implementsGame.id)) {
               relatedIds.push(bggData.implementsGame.id)
             }
             if (bggData.implementations) {
               for (const reimp of bggData.implementations) {
-                if (!processedIds.has(reimp.id)) {
+                if (!processedIds.has(reimp.id) && !excludedSet.has(reimp.id)) {
                   relatedIds.push(reimp.id)
                 }
               }
