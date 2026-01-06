@@ -6,6 +6,7 @@
 
 export * from './types'
 export * from './pipeline'
+export * from './processing'
 export * from './context'
 export * from './completeness'
 export * from './DataSourceBadge'

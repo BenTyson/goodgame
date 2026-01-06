@@ -39,34 +39,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import type { VecnaFamily, VecnaState } from '@/lib/vecna'
-
-type ProcessingMode = 'full' | 'parse-only' | 'generate-only' | 'from-current'
-
-interface ProcessingResult {
-  gameId: string
-  gameName: string
-  previousState: VecnaState
-  newState: VecnaState
-  success: boolean
-  error?: string
-  skipped?: boolean
-  skipReason?: string
-}
-
-interface ProcessingResponse {
-  success: boolean
-  familyId: string
-  familyName: string
-  mode: ProcessingMode
-  summary: {
-    totalGames: number
-    processed: number
-    skipped: number
-    errors: number
-  }
-  results: ProcessingResult[]
-}
+import type { VecnaFamily, ProcessingMode, ProcessingResponse } from '@/lib/vecna'
 
 interface FamilyBatchActionsProps {
   family: VecnaFamily

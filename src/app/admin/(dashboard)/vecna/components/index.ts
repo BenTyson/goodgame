@@ -1,6 +1,5 @@
 export { VecnaPipeline } from './VecnaPipeline'
 export { VecnaFamilySidebar } from './VecnaFamilySidebar'
-export { VecnaGameView } from './VecnaGameView'
 export { VecnaEmptyState } from './VecnaEmptyState'
 export { RulebookDiscovery } from './RulebookDiscovery'
 export { StateActions } from './StateActions'

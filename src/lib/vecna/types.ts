@@ -64,11 +64,6 @@ export function getPhaseForState(state: VecnaState): Phase {
   return PHASE_MAPPING[state]
 }
 
-// Check if state is blocked (V2 naming to avoid conflict with pipeline.ts isBlockingState)
-export function isBlockedState(state: VecnaState): boolean {
-  return BLOCKED_STATES.includes(state)
-}
-
 // Get completed phases for a state
 export function getCompletedPhases(state: VecnaState): Phase[] {
   const phases: Phase[] = ['import', 'parse', 'generate', 'publish']
@@ -183,6 +178,46 @@ export const VECNA_STATE_CONFIG: Record<VecnaState, {
     icon: 'Globe',
     canProgress: false,
   },
+}
+
+// =====================================================
+// Batch Processing Types
+// =====================================================
+
+/**
+ * Processing mode for family batch operations
+ */
+export type ProcessingMode = 'full' | 'parse-only' | 'generate-only' | 'from-current'
+
+/**
+ * Result of processing a single game
+ */
+export interface ProcessingResult {
+  gameId: string
+  gameName: string
+  previousState: VecnaState
+  newState: VecnaState
+  success: boolean
+  error?: string
+  skipped?: boolean
+  skipReason?: string
+}
+
+/**
+ * Response from family batch processing
+ */
+export interface ProcessingResponse {
+  success: boolean
+  familyId: string
+  familyName: string
+  mode: ProcessingMode
+  summary: {
+    totalGames: number
+    processed: number
+    skipped: number
+    errors: number
+  }
+  results: ProcessingResult[]
 }
 
 // Family context for expansion processing

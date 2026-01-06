@@ -7,108 +7,9 @@
 import type { VecnaState, PipelineProgress, FamilyContext } from './types'
 
 /**
- * Determine the next state based on current state and game data
+ * Check if a state is blocked (requires human action)
  */
-export function getNextState(
-  currentState: VecnaState,
-  gameData: {
-    hasRulebook: boolean
-    hasWikipedia: boolean
-    hasWikidata: boolean
-    hasParsedText: boolean
-    hasTaxonomy: boolean
-    hasContent: boolean
-  }
-): VecnaState | null {
-  switch (currentState) {
-    case 'imported':
-      // After import, check if enrichment data exists
-      if (gameData.hasWikipedia || gameData.hasWikidata) {
-        return 'enriched'
-      }
-      return null // Need enrichment
-
-    case 'enriched':
-      // After enrichment, check rulebook status
-      if (gameData.hasRulebook) {
-        return 'rulebook_ready'
-      }
-      return 'rulebook_missing' // Need manual rulebook
-
-    case 'rulebook_missing':
-      // Manual intervention needed
-      if (gameData.hasRulebook) {
-        return 'rulebook_ready'
-      }
-      return null // Still waiting
-
-    case 'rulebook_ready':
-      // Ready to parse
-      return 'parsing'
-
-    case 'parsing':
-      // After parsing completes
-      if (gameData.hasParsedText) {
-        return 'parsed'
-      }
-      return null // Still parsing
-
-    case 'parsed':
-      // After parsing, assign taxonomy
-      if (gameData.hasTaxonomy) {
-        return 'taxonomy_assigned'
-      }
-      return 'taxonomy_assigned' // Auto-advance to taxonomy step
-
-    case 'taxonomy_assigned':
-      // Ready to generate content
-      return 'generating'
-
-    case 'generating':
-      // After generation completes
-      if (gameData.hasContent) {
-        return 'generated'
-      }
-      return null // Still generating
-
-    case 'generated':
-      // Ready for human review
-      return 'review_pending'
-
-    case 'review_pending':
-      // Human must approve - no auto-advance
-      return null
-
-    case 'published':
-      // Terminal state
-      return null
-
-    default:
-      return null
-  }
-}
-
-/**
- * Check if a state can be auto-progressed (no human intervention needed)
- */
-export function canAutoProgress(state: VecnaState): boolean {
-  const autoProgressStates: VecnaState[] = [
-    'imported',
-    'enriched',
-    'rulebook_ready',
-    'parsing',
-    'parsed',
-    'taxonomy_assigned',
-    'generating',
-    'generated',
-  ]
-  return autoProgressStates.includes(state)
-}
-
-/**
- * Check if a state is a blocking state (requires human action)
- */
-export function isBlockingState(state: VecnaState): boolean {
+export function isBlockedState(state: VecnaState): boolean {
   return state === 'rulebook_missing' || state === 'review_pending'
 }
 
@@ -274,17 +175,6 @@ export function buildFamilyContext(baseGame: {
     baseGameDesigners: baseGame.wikipedia_infobox?.designers || null,
     baseGamePublishers: publisherNames,
   }
-}
-
-/**
- * Check if game can skip certain stages (e.g., no rulebook but has Wikipedia)
- */
-export function canSkipRulebook(game: {
-  has_wikipedia: boolean
-  wikipedia_gameplay?: string | null
-}): boolean {
-  // Games with Wikipedia gameplay section can generate limited content without rulebook
-  return game.has_wikipedia && !!game.wikipedia_gameplay
 }
 
 /**

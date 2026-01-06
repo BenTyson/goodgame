@@ -47,35 +47,8 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-import type { VecnaFamily, VecnaState } from '@/lib/vecna'
+import type { VecnaFamily, ProcessingMode, ProcessingResult, ProcessingResponse } from '@/lib/vecna'
 import { AutoProcessModal } from './AutoProcessModal'
-
-type ProcessingMode = 'full' | 'parse-only' | 'generate-only' | 'from-current'
-
-interface ProcessingResult {
-  gameId: string
-  gameName: string
-  previousState: VecnaState
-  newState: VecnaState
-  success: boolean
-  error?: string
-  skipped?: boolean
-  skipReason?: string
-}
-
-interface ProcessingResponse {
-  success: boolean
-  familyId: string
-  familyName: string
-  mode: ProcessingMode
-  summary: {
-    totalGames: number
-    processed: number
-    skipped: number
-    errors: number
-  }
-  results: ProcessingResult[]
-}
 
 interface VecnaFamilyHeaderProps {
   family: VecnaFamily
