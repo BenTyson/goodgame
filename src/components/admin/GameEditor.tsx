@@ -24,7 +24,11 @@ import {
   Database,
   Plus,
   Check,
+  Search,
+  Globe,
 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import type { CommonsImage } from '@/lib/wikimedia-commons'
 import type { Game, GameImage } from '@/types/database'
 
 interface Publisher {
@@ -61,10 +65,17 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
   const [importingImages, setImportingImages] = useState<Set<string>>(new Set())
   const [importedImages, setImportedImages] = useState<Set<string>>(new Set())
 
+  // State for Commons search
+  const [commonsSearchQuery, setCommonsSearchQuery] = useState(game.name)
+  const [commonsSearchResults, setCommonsSearchResults] = useState<CommonsImage[]>([])
+  const [commonsSearching, setCommonsSearching] = useState(false)
+  const [commonsSearched, setCommonsSearched] = useState(false)
+  const [commonsSearchUrl, setCommonsSearchUrl] = useState<string | null>(null)
+
   // Import external image to gallery
   const importExternalImage = async (
     url: string,
-    source: 'wikipedia' | 'wikidata',
+    source: 'wikipedia' | 'wikidata' | 'commons',
     license?: string,
     makePrimary: boolean = false
   ) => {
@@ -104,6 +115,35 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         next.delete(imageKey)
         return next
       })
+    }
+  }
+
+  // Search Wikimedia Commons for images
+  const searchCommons = async () => {
+    if (!commonsSearchQuery.trim() || commonsSearching) return
+
+    setCommonsSearching(true)
+    setCommonsSearchResults([])
+    setCommonsSearched(false)
+
+    try {
+      const response = await fetch(
+        `/api/admin/commons/search?q=${encodeURIComponent(commonsSearchQuery)}&limit=12`
+      )
+
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+
+      const data = await response.json()
+      setCommonsSearchResults(data.images || [])
+      setCommonsSearchUrl(data.commonsSearchUrl || null)
+      setCommonsSearched(true)
+    } catch (error) {
+      console.error('Commons search failed:', error)
+      setCommonsSearchResults([])
+    } finally {
+      setCommonsSearching(false)
     }
   }
 
@@ -301,6 +341,148 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
                   markUnsaved()
                 }}
               />
+
+              {/* Search Wikimedia Commons */}
+              <Card className="border-dashed border-green-500/30 bg-green-500/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded bg-green-600 flex items-center justify-center">
+                      <Globe className="h-3 w-3 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm">Search Wikimedia Commons</CardTitle>
+                      <CardDescription className="text-xs">
+                        Find CC-licensed images directly from Wikimedia Commons
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Search form */}
+                  <div className="flex gap-2">
+                    <Input
+                      value={commonsSearchQuery}
+                      onChange={(e) => setCommonsSearchQuery(e.target.value)}
+                      placeholder="Search for images..."
+                      className="flex-1"
+                      onKeyDown={(e) => e.key === 'Enter' && searchCommons()}
+                    />
+                    <Button
+                      onClick={searchCommons}
+                      disabled={commonsSearching || !commonsSearchQuery.trim()}
+                      size="sm"
+                    >
+                      {commonsSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      <span className="ml-2">Search</span>
+                    </Button>
+                  </div>
+
+                  {/* Search results */}
+                  {commonsSearchResults.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          Found {commonsSearchResults.length} images
+                        </p>
+                        {commonsSearchUrl && (
+                          <a
+                            href={commonsSearchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-green-600 hover:underline flex items-center gap-1"
+                          >
+                            View all on Commons
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {commonsSearchResults.map((img, i) => {
+                          const imageKey = `commons:${img.url}`
+                          const isImporting = importingImages.has(imageKey)
+                          const isImported = importedImages.has(imageKey) || isImageInGallery(img.url)
+
+                          return (
+                            <div key={i} className="relative group">
+                              <div className="aspect-[4/3] rounded-lg overflow-hidden border bg-muted">
+                                <img
+                                  src={img.thumbUrl}
+                                  alt={img.description || img.filename}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              {/* Commons badge */}
+                              <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded bg-green-600 text-white">
+                                Commons
+                              </span>
+                              {/* License badge */}
+                              <span className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-green-500/90 text-white">
+                                {img.license || 'CC'}
+                              </span>
+                              {/* Primary indicator */}
+                              {img.isPrimary && (
+                                <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-500 text-white">
+                                  Best
+                                </span>
+                              )}
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                {isImported ? (
+                                  <span className="flex items-center gap-1 text-xs text-white bg-green-600 px-2 py-1 rounded">
+                                    <Check className="h-3 w-3" />
+                                    In Gallery
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => importExternalImage(
+                                      img.url,
+                                      'commons',
+                                      img.license,
+                                      images.length === 0
+                                    )}
+                                    disabled={isImporting}
+                                    className="text-xs"
+                                  >
+                                    {isImporting ? (
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <Plus className="h-3 w-3 mr-1" />
+                                    )}
+                                    Add to Gallery
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No results message */}
+                  {commonsSearched && commonsSearchResults.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No images found. Try a different search term.
+                      {commonsSearchUrl && (
+                        <a
+                          href={commonsSearchUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block mt-2 text-green-600 hover:underline text-xs"
+                        >
+                          Search manually on Commons
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Available Image Sources */}
               {(() => {

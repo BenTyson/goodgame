@@ -8,8 +8,12 @@ import { fetchBGGGame, type BGGRawGame, type BGGLink } from './client'
 import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
-import { enrichPublisher, getGameByBggId, getGamesInSeries, type WikidataBoardGame, type WikidataSeriesMember } from '@/lib/wikidata'
-import { enrichGameFromWikipedia, prepareWikipediaStorageData } from '@/lib/wikipedia'
+import { enrichPublisher, type WikidataBoardGame } from '@/lib/wikidata'
+import {
+  enrichGameParallel,
+  prepareGameUpdateFromEnrichment,
+  determineVecnaState,
+} from '@/lib/enrichment'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -173,81 +177,8 @@ async function upsertPublisher(
   return newPublisher.id
 }
 
-/**
- * Enrich a game with Wikidata data
- * Fetches additional fields, logs discrepancies, and handles series/family detection
- */
-async function enrichGameFromWikidata(
-  supabase: SupabaseClient<Database>,
-  gameId: string,
-  bggId: number,
-  bggData: BGGRawGame
-): Promise<void> {
-  try {
-    const wikidata = await getGameByBggId(String(bggId))
-
-    if (!wikidata) {
-      console.log(`  [Wikidata] No game found for BGG ID ${bggId}`)
-      return
-    }
-
-    console.log(`  [Wikidata] Found game: ${wikidata.name} (${wikidata.wikidataId})`)
-
-    // Log discrepancies between BGG and Wikidata
-    logDataDiscrepancies(bggData, wikidata)
-
-    // Update game with Wikidata fields
-    const updateData: Record<string, unknown> = {
-      wikidata_id: wikidata.wikidataId,
-      wikidata_last_synced: new Date().toISOString(),
-    }
-
-    // Wikipedia URL (English)
-    if (wikidata.wikipediaUrl) {
-      updateData.wikipedia_url = wikidata.wikipediaUrl
-      console.log(`  [Wikidata] Found Wikipedia URL: ${wikidata.wikipediaUrl}`)
-    }
-
-    // Wikidata image (CC-licensed, safe for public display)
-    if (wikidata.imageUrl) {
-      updateData.wikidata_image_url = wikidata.imageUrl
-      console.log(`  [Wikidata] Found CC-licensed image`)
-    }
-
-    // Official website (Wikidata-only field)
-    if (wikidata.officialWebsite) {
-      updateData.official_website = wikidata.officialWebsite
-      console.log(`  [Wikidata] Found official website: ${wikidata.officialWebsite}`)
-    }
-
-    // Rulebook URL (P953: full work available at URL)
-    if (wikidata.rulebookUrl) {
-      updateData.rulebook_url = wikidata.rulebookUrl
-      updateData.rulebook_source = 'wikidata'
-      console.log(`  [Wikidata] Found rulebook URL: ${wikidata.rulebookUrl}`)
-    }
-
-    // Series membership (P179)
-    if (wikidata.seriesId) {
-      updateData.wikidata_series_id = wikidata.seriesId
-      console.log(`  [Wikidata] Part of series: ${wikidata.seriesName} (${wikidata.seriesId})`)
-
-      // Try to create/link family from Wikidata series if not already linked via BGG
-      await linkFamilyFromWikidataSeries(supabase, gameId, wikidata.seriesId, wikidata.seriesName || 'Unknown Series')
-    }
-
-    await supabase
-      .from('games')
-      .update(updateData)
-      .eq('id', gameId)
-
-    // Create sequel relationships from Wikidata P155/P156
-    await createWikidataSequelRelations(supabase, gameId, wikidata)
-
-  } catch (err) {
-    console.warn(`  [Wikidata] Failed to enrich game ${bggId}:`, err)
-  }
-}
+// NOTE: enrichGameFromWikidata removed - replaced by parallel enrichment in enrichGameParallel()
+// The parallel enrichment module fetches from Wikidata, Wikipedia, and Commons simultaneously
 
 /**
  * Link a game to a family based on Wikidata series (P179)
@@ -1272,89 +1203,60 @@ export async function importGameFromBGG(
     await linkOriginalGameImplementations(supabase, newGame.id, implementationBggIds, bggData.yearPublished)
   }
 
-  // Enrich with Wikidata data (image, official website, etc.)
-  await enrichGameFromWikidata(supabase, newGame.id, bggId, bggData)
-
-  // Enrich with Wikipedia data (infobox, sections, categories, relations)
-  // Get the current game state to check if Wikidata provided a Wikipedia URL
-  const { data: gameWithWikipedia } = await supabase
-    .from('games')
-    .select('wikipedia_url')
-    .eq('id', newGame.id)
-    .single()
-
-  const wikipediaResult = await enrichGameFromWikipedia(
+  // =====================================================
+  // PARALLEL ENRICHMENT: Wikidata + Wikipedia + Commons
+  // =====================================================
+  // Fetches from all sources simultaneously for ~3x speedup
+  const enrichment = await enrichGameParallel(
+    bggId,
     bggData.name,
     bggData.yearPublished ?? undefined,
-    bggData.designers,
-    gameWithWikipedia?.wikipedia_url ?? undefined
+    bggData.designers
   )
 
-  if (wikipediaResult.found) {
-    // Store Wikipedia enrichment data
-    const wikipediaData = prepareWikipediaStorageData(wikipediaResult)
-    if (Object.keys(wikipediaData).length > 0) {
-      await supabase
-        .from('games')
-        .update(wikipediaData)
-        .eq('id', newGame.id)
-    }
+  // Prepare and apply enrichment data in a single update
+  const enrichmentUpdateData = prepareGameUpdateFromEnrichment(enrichment)
 
-    // If no rulebook URL from Wikidata, check Wikipedia external links for rulebook
-    const { data: currentGame } = await supabase
+  // Determine vecna_state from enrichment result (no extra DB fetch needed)
+  const vecnaState = determineVecnaState(enrichment)
+
+  if (Object.keys(enrichmentUpdateData).length > 0 || vecnaState !== 'imported') {
+    await supabase
       .from('games')
-      .select('rulebook_url')
+      .update({
+        ...enrichmentUpdateData,
+        vecna_state: vecnaState,
+        vecna_processed_at: new Date().toISOString(),
+      })
       .eq('id', newGame.id)
-      .single()
-
-    if (!currentGame?.rulebook_url && wikipediaResult.externalLinks) {
-      const rulebookLink = wikipediaResult.externalLinks.find(
-        link => link.type === 'rulebook'
-      )
-      if (rulebookLink) {
-        await supabase
-          .from('games')
-          .update({
-            rulebook_url: rulebookLink.url,
-            rulebook_source: 'wikipedia'
-          })
-          .eq('id', newGame.id)
-        console.log(`  [Wikipedia] Found rulebook URL: ${rulebookLink.url}`)
-      }
-    }
   }
 
-  // Determine and set vecna_state based on enrichment results
-  // Get current enrichment status to determine proper state
-  const { data: enrichedGame } = await supabase
-    .from('games')
-    .select('wikidata_id, wikipedia_url, rulebook_url')
-    .eq('id', newGame.id)
-    .single()
+  // Handle Wikidata-specific relations (family linking, sequel relations)
+  // These require the raw Wikidata data and database operations
+  if (enrichment.wikidata?.raw) {
+    const wikidataRaw = enrichment.wikidata.raw
 
-  if (enrichedGame) {
-    let vecnaState: 'imported' | 'enriched' | 'rulebook_ready' = 'imported'
+    // Log data discrepancies between BGG and Wikidata
+    logDataDiscrepancies(bggData, wikidataRaw)
 
-    // If we have Wikidata or Wikipedia data, we're enriched
-    if (enrichedGame.wikidata_id || enrichedGame.wikipedia_url) {
-      vecnaState = 'enriched'
+    // Link to family from Wikidata series if applicable
+    if (wikidataRaw.seriesId) {
+      console.log(`  [Wikidata] Part of series: ${wikidataRaw.seriesName} (${wikidataRaw.seriesId})`)
+      await linkFamilyFromWikidataSeries(
+        supabase,
+        newGame.id,
+        wikidataRaw.seriesId,
+        wikidataRaw.seriesName || 'Unknown Series'
+      )
     }
 
-    // If we have a rulebook URL (from Wikidata P953 or Wikipedia external links), skip to rulebook_ready
-    if (enrichedGame.rulebook_url) {
-      vecnaState = 'rulebook_ready'
-    }
+    // Create sequel relationships from Wikidata P155/P156
+    await createWikidataSequelRelations(supabase, newGame.id, wikidataRaw)
+  }
 
-    // Update vecna_state if not staying at default 'imported'
-    if (vecnaState !== 'imported') {
-      await supabase
-        .from('games')
-        .update({
-          vecna_state: vecnaState,
-          vecna_processed_at: new Date().toISOString()
-        })
-        .eq('id', newGame.id)
-    }
+  // Log Commons results (images are available for manual selection in admin)
+  if (enrichment.commonsImages.length > 0) {
+    console.log(`  [Commons] Found ${enrichment.commonsImages.length} CC-licensed images available for import`)
   }
 
   // Update has_unimported_relations flag for this game
