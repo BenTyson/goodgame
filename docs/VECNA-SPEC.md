@@ -671,29 +671,40 @@ interface ReferenceContent {
 ```
 src/app/admin/(dashboard)/vecna/components/
 ├── VecnaFamilyHeader.tsx       # Family-level header + batch actions
-├── VecnaGamePanel.tsx          # 2-tab game view (replaces VecnaGameView)
+├── VecnaGamePanel.tsx          # 2-tab game view (Pipeline + Details)
 ├── PipelineProgressBar.tsx     # 4-phase visual indicator
 ├── BlockedStateAlert.tsx       # Prominent blocked/error banners
 ├── SourcesDrawer.tsx           # Debug sources slide-out drawer
+├── CompletenessReport.tsx      # Data completeness report
+├── ContentReviewPanel.tsx      # Three-column review UI
+├── AutoProcessModal.tsx        # SSE streaming progress modal
 
-src/lib/vecna/types.ts          # Added Phase type, PHASE_MAPPING, helper functions
+src/lib/vecna/
+├── types.ts                    # VecnaState, Phase, ProcessingMode, ProcessingResult, etc.
+├── pipeline.ts                 # Pipeline orchestration (isBlockedState, calculatePipelineProgress)
+├── processing.ts               # Shared processing functions (runParseStep, runGenerateStep)
+├── context.ts                  # Family context utilities
+├── completeness.ts             # Field completeness checking utility
+└── index.ts                    # Barrel exports
 ```
 
 **Current Component Structure:**
 ```
 src/app/admin/(dashboard)/vecna/components/
-├── VecnaPipeline.tsx           # Main orchestrator (updated for V2 layout)
-├── VecnaFamilySidebar.tsx      # Left sidebar (updated with phase filters)
-├── VecnaFamilyHeader.tsx       # NEW: Family header + batch actions
-├── VecnaGamePanel.tsx          # NEW: 2-tab game view
-├── VecnaEmptyState.tsx         # Simplified empty state
-├── PipelineProgressBar.tsx     # NEW: 4-phase progress indicator
-├── BlockedStateAlert.tsx       # NEW: Blocked state banners
-├── SourcesDrawer.tsx           # NEW: Debug drawer
+├── VecnaPipeline.tsx           # Main orchestrator
+├── VecnaFamilySidebar.tsx      # Left sidebar with phase filters
+├── VecnaFamilyHeader.tsx       # Family header + batch actions
+├── VecnaGamePanel.tsx          # 2-tab game view (Pipeline + Details)
+├── VecnaEmptyState.tsx         # Empty state message
+├── PipelineProgressBar.tsx     # 4-phase visual progress indicator
+├── BlockedStateAlert.tsx       # Prominent blocked state banners
+├── SourcesDrawer.tsx           # Debug sources slide-out drawer
 ├── StateActions.tsx            # State transition actions
 ├── RulebookDiscovery.tsx       # Rulebook URL discovery UI
 ├── FamilyBatchActions.tsx      # Batch processing dropdown
-└── VecnaGameView.tsx           # DEPRECATED: Old 6-tab view (kept for reference)
+├── CompletenessReport.tsx      # Data completeness report after pipeline
+├── ContentReviewPanel.tsx      # Three-column review UI with JSON editor
+└── AutoProcessModal.tsx        # SSE streaming progress modal
 ```
 
 ### Phase 3: Enhanced AI (COMPLETE)

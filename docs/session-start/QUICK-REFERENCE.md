@@ -222,18 +222,20 @@ src/components/
 │   │   ├── ImportProgress.tsx # Real-time progress display
 │   │   └── ImportReport.tsx   # Import summary with family navigation
 │   └── vecna/                 # Vecna pipeline components (in app/admin/vecna/components/)
-│       ├── VecnaPipeline.tsx        # Pipeline orchestrator (updated for V2 layout)
-│       ├── VecnaFamilySidebar.tsx   # Sidebar with phase filter buttons
-│       ├── VecnaFamilyHeader.tsx    # NEW: Family header + batch actions (for 2+ games)
-│       ├── VecnaGamePanel.tsx       # NEW: 2-tab game view (Pipeline + Details)
-│       ├── VecnaEmptyState.tsx      # Simplified empty state
-│       ├── PipelineProgressBar.tsx  # NEW: 4-phase visual progress indicator
-│       ├── BlockedStateAlert.tsx    # NEW: Prominent blocked state banners
-│       ├── SourcesDrawer.tsx        # NEW: Debug sources slide-out drawer
-│       ├── StateActions.tsx         # State transition action buttons
+│       ├── VecnaPipeline.tsx        # Main orchestrator
+│       ├── VecnaFamilySidebar.tsx   # Left sidebar with phase filters
+│       ├── VecnaFamilyHeader.tsx    # Family header + batch actions
+│       ├── VecnaGamePanel.tsx       # 2-tab game view (Pipeline + Details)
+│       ├── VecnaEmptyState.tsx      # Empty state message
+│       ├── PipelineProgressBar.tsx  # 4-phase visual progress indicator
+│       ├── BlockedStateAlert.tsx    # Prominent blocked state banners
+│       ├── SourcesDrawer.tsx        # Debug sources slide-out drawer
+│       ├── StateActions.tsx         # State transition actions
 │       ├── RulebookDiscovery.tsx    # Rulebook URL discovery UI
 │       ├── FamilyBatchActions.tsx   # Batch processing dropdown
-│       └── VecnaGameView.tsx        # DEPRECATED: Old 6-tab view (kept for reference)
+│       ├── CompletenessReport.tsx   # Data completeness report
+│       ├── ContentReviewPanel.tsx   # Three-column review UI
+│       └── AutoProcessModal.tsx     # SSE streaming progress modal
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
 ├── settings/                  # UsernameInput, ProfileImageUpload
@@ -316,9 +318,11 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
 src/lib/wikipedia/             # Wikipedia integration utilities
   └── index.ts                 # fetchWikipediaContent(), summarizeWikipediaContent(), formatSummaryForPrompt()
 src/lib/vecna/                 # Vecna pipeline utilities
-  ├── types.ts                 # VecnaState, VecnaGame, VecnaFamily, FamilyContext
-  ├── pipeline.ts              # Pipeline orchestration logic
+  ├── types.ts                 # VecnaState, Phase, ProcessingMode, ProcessingResult, etc.
+  ├── pipeline.ts              # Pipeline orchestration (isBlockedState, calculatePipelineProgress)
+  ├── processing.ts            # Shared processing (runParseStep, runGenerateStep, rebuildFamilyContext)
   ├── context.ts               # Family context utilities
+  ├── completeness.ts          # Field completeness checking utility
   └── index.ts                 # Barrel exports
 src/lib/ai/
   ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
@@ -386,13 +390,19 @@ TaxonomySource     // 'bgg' | 'wikidata' | 'wikipedia' | 'ai' | 'manual'
 VecnaState         // Processing state enum (11 states)
 Phase              // Visual phase: 'import' | 'parse' | 'generate' | 'publish'
 PHASE_MAPPING      // Map VecnaState → Phase
+BLOCKED_STATES     // States requiring user action: ['rulebook_missing', 'review_pending']
+PROCESSING_STATES  // Active processing states: ['parsing', 'generating']
+PHASE_CONFIG       // Phase display config (label, description, states)
 getPhaseForState() // Helper to get phase from state
-isBlockedState()   // Check if state is blocked (rulebook_missing, review_pending)
+getCompletedPhases() // Get phases completed before current state
 VecnaGame          // Game with processing state and data sources
 VecnaFamily        // Family with games for sidebar display
 FamilyContext      // Base game context for expansion processing
 DataSource         // 'bgg' | 'wikidata' | 'wikipedia' | 'manual' | 'ai'
 SourcedField<T>    // Field value with source tracking
+ProcessingMode     // 'full' | 'parse-only' | 'generate-only' | 'from-current'
+ProcessingResult   // Result of processing a single game
+ProcessingResponse // Response from family batch processing
 
 // Content types (union types for AI generation)
 ReferenceContent['endGame'] // string | { triggers, finalRound?, winner, tiebreakers? }
