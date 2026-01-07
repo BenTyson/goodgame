@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import type { Game, Category, Mechanic, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
 import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
+import { filterHighConfidenceSuggestions, selectionsEqual } from '@/lib/admin/utils'
 
 interface TaxonomyTabProps {
   game: Game
@@ -90,67 +91,15 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         }))
 
         // Auto-select AI suggestions with 70%+ confidence that aren't already selected
-        const AUTO_SELECT_THRESHOLD = 0.7
-
-        // For categories
         const existingCategoryIds = new Set(initialCategories.map(c => c.id))
-        const highConfidenceCategories = result.suggestions
-          .filter(s =>
-            s.suggestion_type === 'category' &&
-            s.target_id &&
-            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
-            !existingCategoryIds.has(s.target_id)
-          )
-          .map(s => ({
-            id: s.target_id!,
-            isPrimary: false,
-          }))
-        initialCategories.push(...highConfidenceCategories)
-
-        // For mechanics
         const existingMechanicIds = new Set(initialMechanics.map(m => m.id))
-        const highConfidenceMechanics = result.suggestions
-          .filter(s =>
-            s.suggestion_type === 'mechanic' &&
-            s.target_id &&
-            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
-            !existingMechanicIds.has(s.target_id)
-          )
-          .map(s => ({
-            id: s.target_id!,
-            isPrimary: false,
-          }))
-        initialMechanics.push(...highConfidenceMechanics)
-
-        // For themes
         const existingThemeIds = new Set(initialThemes.map(t => t.id))
-        const highConfidenceThemes = result.suggestions
-          .filter(s =>
-            s.suggestion_type === 'theme' &&
-            s.target_id &&
-            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
-            !existingThemeIds.has(s.target_id)
-          )
-          .map(s => ({
-            id: s.target_id!,
-            isPrimary: false,
-          }))
-        initialThemes.push(...highConfidenceThemes)
-
-        // For player experiences
         const existingExperienceIds = new Set(initialExperiences.map(e => e.id))
-        const highConfidenceExperiences = result.suggestions
-          .filter(s =>
-            s.suggestion_type === 'player_experience' &&
-            s.target_id &&
-            (s.confidence ?? 0) >= AUTO_SELECT_THRESHOLD &&
-            !existingExperienceIds.has(s.target_id)
-          )
-          .map(s => ({
-            id: s.target_id!,
-            isPrimary: false,
-          }))
-        initialExperiences.push(...highConfidenceExperiences)
+
+        initialCategories.push(...filterHighConfidenceSuggestions(result.suggestions, 'category', existingCategoryIds))
+        initialMechanics.push(...filterHighConfidenceSuggestions(result.suggestions, 'mechanic', existingMechanicIds))
+        initialThemes.push(...filterHighConfidenceSuggestions(result.suggestions, 'theme', existingThemeIds))
+        initialExperiences.push(...filterHighConfidenceSuggestions(result.suggestions, 'player_experience', existingExperienceIds))
 
         setSelectedCategories(initialCategories)
         setSelectedMechanics(initialMechanics)
@@ -178,15 +127,6 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
   const hasUnsavedChanges = useMemo(() => {
     if (!initialStateRef.current) return false
     const initial = initialStateRef.current
-
-    // Helper to compare selections
-    const selectionsEqual = (a: SelectedTaxonomyItem[], b: SelectedTaxonomyItem[]) => {
-      if (a.length !== b.length) return false
-      return a.every(item => {
-        const match = b.find(i => i.id === item.id)
-        return match && match.isPrimary === item.isPrimary
-      })
-    }
 
     return (
       !selectionsEqual(selectedCategories, initial.categories) ||

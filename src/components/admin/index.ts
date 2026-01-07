@@ -15,6 +15,9 @@ export { LogoUpload } from './LogoUpload'
 export { GamePicker } from './GamePicker'
 export { SourcedImage, TempImage } from './TempImage'
 export { LogoutButton } from './LogoutButton'
+export { CardHeaderWithIcon } from './CardHeaderWithIcon'
+export { SwitchField } from './SwitchField'
+export { SourceStatusCard } from './SourceStatusCard'
 
 // Layout components
 export { AdminSidebar } from './AdminSidebar'

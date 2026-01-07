@@ -113,11 +113,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
   }, [images])
 
   const saveGame = async () => {
-    // Get primary image URL for hero_image_url
-    const primaryImage = images.find(img => img.is_primary)
-
     // Ensure content_status is 'published' when publishing
     const contentStatus = game.is_published ? 'published' : (game.content_status || 'none')
+
+    // Note: Image URLs (hero_image_url, box_image_url, thumbnail_url) are synced
+    // automatically by the /api/admin/upload PATCH endpoint when setting primary image.
+    // No need to include them here.
 
     await execute(async () => {
       const response = await fetch('/api/admin/games', {
@@ -150,9 +151,6 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             rules_content: game.rules_content,
             setup_content: game.setup_content,
             reference_content: game.reference_content,
-            hero_image_url: primaryImage?.url || game.hero_image_url,
-            box_image_url: primaryImage?.url || game.box_image_url,
-            thumbnail_url: primaryImage?.url || game.thumbnail_url,
           }
         })
       })

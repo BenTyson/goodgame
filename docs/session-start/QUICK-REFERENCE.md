@@ -202,12 +202,14 @@ src/components/
 │   ├── ImageUpload.tsx        # Image uploader with unified gallery, primary indicator, crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
 │   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wikidata/Wikipedia/Uploaded)
+│   ├── CardHeaderWithIcon.tsx # Shared card header with icon (used across tabs)
+│   ├── SwitchField.tsx        # Shared switch toggle with label/description
+│   ├── SourceStatusCard.tsx   # Shared data source status card
 │   ├── game-editor/           # GameEditor tab components (6 tabs)
 │   │   ├── DetailsTab.tsx         # Core info, metadata, Crunch Score, publishing
 │   │   ├── TaxonomyTab.tsx        # Categories, mechanics, themes, player experiences
 │   │   ├── RulebookTab.tsx        # Rulebook URL, parsing, parsed text viewer
 │   │   ├── ContentTab.tsx         # Rules, setup, reference content
-│   │   ├── RulebookContentTab.tsx # Legacy - moved to RulebookTab
 │   │   ├── SourcesTab.tsx         # BGG/Wikidata/Wikipedia data display
 │   │   └── TaxonomySelector.tsx   # Multi-select with AI badges (auto-selects ≥70%)
 │   ├── rulebook/              # RulebookEditor sub-components
@@ -323,7 +325,11 @@ src/lib/vecna/                 # Vecna pipeline utilities
   ├── processing.ts            # Shared processing (runParseStep, runGenerateStep, rebuildFamilyContext)
   ├── context.ts               # Family context utilities
   ├── completeness.ts          # Field completeness checking utility
+  ├── ui-theme.ts              # Centralized STATUS_COLORS and IMPORTANCE_COLORS
   └── index.ts                 # Barrel exports
+src/lib/admin/                 # Admin utilities
+  ├── utils.ts                 # formatDate(), filterHighConfidenceSuggestions(), selectionsEqual()
+  └── wizard/                  # Wizard context and utilities (legacy)
 src/lib/ai/
   ├── claude.ts                # Claude AI wrapper with repairJSON() for response sanitization
   ├── generator.ts             # Content generation orchestrator

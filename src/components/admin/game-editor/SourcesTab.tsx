@@ -34,21 +34,11 @@ import type {
   WikipediaExternalLink,
   WikipediaAward,
 } from '@/lib/vecna/types'
+import { formatDate } from '@/lib/admin/utils'
+import { SourceStatusCard } from '@/components/admin'
 
 interface SourcesTabProps {
   game: Game
-}
-
-// Helper to format dates
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'Never'
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 // Helper to get award badge color
@@ -224,115 +214,49 @@ export function SourcesTab({ game }: SourcesTabProps) {
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             {/* BGG Status */}
-            <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {hasBgg ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="font-medium text-sm">BoardGameGeek</span>
-                </div>
-                {hasBgg && (
-                  <a
-                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id || bggData?.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    title="View on BGG"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-              {hasBgg ? (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    ID: {game.bgg_id || bggData?.id}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Synced: {formatDate(game.bgg_last_synced)}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">Not linked</p>
-              )}
-            </div>
+            <SourceStatusCard
+              title="BoardGameGeek"
+              isLinked={hasBgg}
+              linkUrl={hasBgg ? `https://boardgamegeek.com/boardgame/${game.bgg_id || bggData?.id}` : undefined}
+              linkTitle="View on BGG"
+            >
+              <p className="text-xs text-muted-foreground">
+                ID: {game.bgg_id || bggData?.id}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Synced: {formatDate(game.bgg_last_synced)}
+              </p>
+            </SourceStatusCard>
 
             {/* Wikidata Status */}
-            <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {hasWikidata ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="font-medium text-sm">Wikidata</span>
-                </div>
-                {hasWikidata && (
-                  <a
-                    href={`https://www.wikidata.org/wiki/${game.wikidata_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    title="View on Wikidata"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-              {hasWikidata ? (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    ID: {game.wikidata_id}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Synced: {formatDate(game.wikidata_last_synced)}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">Not linked</p>
-              )}
-            </div>
+            <SourceStatusCard
+              title="Wikidata"
+              isLinked={hasWikidata}
+              linkUrl={hasWikidata ? `https://www.wikidata.org/wiki/${game.wikidata_id}` : undefined}
+              linkTitle="View on Wikidata"
+            >
+              <p className="text-xs text-muted-foreground">
+                ID: {game.wikidata_id}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Synced: {formatDate(game.wikidata_last_synced)}
+              </p>
+            </SourceStatusCard>
 
             {/* Wikipedia Status */}
-            <div className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {hasWikipedia ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="font-medium text-sm">Wikipedia</span>
-                </div>
-                {hasWikipedia && (
-                  <a
-                    href={game.wikipedia_url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    title="View on Wikipedia"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-              {hasWikipedia ? (
-                <>
-                  <p className="text-xs text-muted-foreground truncate" title={game.wikipedia_url || ''}>
-                    {game.wikipedia_url?.replace('https://en.wikipedia.org/wiki/', '')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Fetched: {game.wikipedia_fetched_at ? formatDate(game.wikipedia_fetched_at) : hasWikipediaData ? 'Data present' : 'Never'}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">Not linked</p>
-              )}
-            </div>
+            <SourceStatusCard
+              title="Wikipedia"
+              isLinked={hasWikipedia}
+              linkUrl={hasWikipedia && game.wikipedia_url ? game.wikipedia_url : undefined}
+              linkTitle="View on Wikipedia"
+            >
+              <p className="text-xs text-muted-foreground truncate" title={game.wikipedia_url || ''}>
+                {game.wikipedia_url?.replace('https://en.wikipedia.org/wiki/', '')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Fetched: {game.wikipedia_fetched_at ? formatDate(game.wikipedia_fetched_at) : hasWikipediaData ? 'Data present' : 'Never'}
+              </p>
+            </SourceStatusCard>
           </div>
         </CardContent>
       </Card>

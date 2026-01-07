@@ -2,14 +2,6 @@
 export { DetailsTab } from './DetailsTab'
 export { ContentTab } from './ContentTab'
 export { RulebookTab } from './RulebookTab'
-export { RulebookContentTab } from './RulebookContentTab'
 export { TaxonomyTab } from './TaxonomyTab'
 export { SourcesTab } from './SourcesTab'
-
-// Wizard components
-export { GameSetupWizard } from './GameSetupWizard'
-export { WizardStepIndicator } from './WizardStepIndicator'
-export type { WizardStep } from './WizardStepIndicator'
-
-// Wizard steps
-export * from './wizard-steps'
+export { TaxonomySelector } from './TaxonomySelector'

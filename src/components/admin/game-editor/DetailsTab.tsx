@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { SwitchField } from '@/components/admin'
 import {
   ExternalLink,
   Users,
@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { CrunchScoreDisplay } from '@/components/admin/rulebook'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { VECNA_STATE_CONFIG, type VecnaState } from '@/lib/vecna/types'
+import { formatDate } from '@/lib/admin/utils'
 import type { Game } from '@/types/database'
 
 interface DetailsTabProps {
@@ -62,18 +63,6 @@ function getStateBadgeClass(state: VecnaState): string {
     default:
       return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
   }
-}
-
-// Helper to format date
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'Never'
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export function DetailsTab({ game, updateField }: DetailsTabProps) {
@@ -443,31 +432,18 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-            <div className="space-y-0.5">
-              <Label className="text-base">Published</Label>
-              <p className="text-sm text-muted-foreground">
-                Make this game visible on the public site
-              </p>
-            </div>
-            <Switch
-              checked={game.is_published || false}
-              onCheckedChange={(checked) => updateField('is_published', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-            <div className="space-y-0.5">
-              <Label className="text-base">Featured</Label>
-              <p className="text-sm text-muted-foreground">
-                Show on homepage and featured sections
-              </p>
-            </div>
-            <Switch
-              checked={game.is_featured || false}
-              onCheckedChange={(checked) => updateField('is_featured', checked)}
-            />
-          </div>
+          <SwitchField
+            label="Published"
+            description="Make this game visible on the public site"
+            checked={game.is_published || false}
+            onCheckedChange={(checked) => updateField('is_published', checked)}
+          />
+          <SwitchField
+            label="Featured"
+            description="Show on homepage and featured sections"
+            checked={game.is_featured || false}
+            onCheckedChange={(checked) => updateField('is_featured', checked)}
+          />
         </CardContent>
       </Card>
 
@@ -486,60 +462,42 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-0.5">
-                <Label className="text-base">Trending Now</Label>
-                <p className="text-xs text-muted-foreground">Currently popular</p>
-              </div>
-              <Switch
-                checked={game.is_trending || false}
-                onCheckedChange={(checked) => updateField('is_trending', checked)}
-              />
-            </div>
+            <SwitchField
+              label="Trending Now"
+              description="Currently popular"
+              checked={game.is_trending || false}
+              onCheckedChange={(checked) => updateField('is_trending', checked)}
+              compact
+            />
+            <SwitchField
+              label="Top Rated"
+              description="Highest rated games"
+              checked={game.is_top_rated || false}
+              onCheckedChange={(checked) => updateField('is_top_rated', checked)}
+              compact
+            />
+            <SwitchField
+              label="Staff Pick"
+              description="Team recommendation"
+              checked={game.is_staff_pick || false}
+              onCheckedChange={(checked) => updateField('is_staff_pick', checked)}
+              compact
+            />
+            <SwitchField
+              label="Hidden Gem"
+              description="Underrated games"
+              checked={game.is_hidden_gem || false}
+              onCheckedChange={(checked) => updateField('is_hidden_gem', checked)}
+              compact
+            />
 
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-0.5">
-                <Label className="text-base">Top Rated</Label>
-                <p className="text-xs text-muted-foreground">Highest rated games</p>
-              </div>
-              <Switch
-                checked={game.is_top_rated || false}
-                onCheckedChange={(checked) => updateField('is_top_rated', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-0.5">
-                <Label className="text-base">Staff Pick</Label>
-                <p className="text-xs text-muted-foreground">Team recommendation</p>
-              </div>
-              <Switch
-                checked={game.is_staff_pick || false}
-                onCheckedChange={(checked) => updateField('is_staff_pick', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-0.5">
-                <Label className="text-base">Hidden Gem</Label>
-                <p className="text-xs text-muted-foreground">Underrated games</p>
-              </div>
-              <Switch
-                checked={game.is_hidden_gem || false}
-                onCheckedChange={(checked) => updateField('is_hidden_gem', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-0.5">
-                <Label className="text-base">New Release</Label>
-                <p className="text-xs text-muted-foreground">Recently released</p>
-              </div>
-              <Switch
-                checked={game.is_new_release || false}
-                onCheckedChange={(checked) => updateField('is_new_release', checked)}
-              />
-            </div>
+            <SwitchField
+              label="New Release"
+              description="Recently released"
+              checked={game.is_new_release || false}
+              onCheckedChange={(checked) => updateField('is_new_release', checked)}
+              compact
+            />
           </div>
         </CardContent>
       </Card>

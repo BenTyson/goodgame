@@ -124,10 +124,10 @@ Transformed Vecna from a cluttered workbench into a clean Pipeline Dashboard. Fo
 
 ### Session Summary (2026-01-05) - Game Editor Cleanup
 
-**Game Editor Streamlined (6 → 5 tabs):**
+**Game Editor (6 tabs):**
 - Removed Relations tab (outdated, relations managed in Vecna/Families)
-- Removed Setup Wizard (legacy, fully replaced by Vecna pipeline)
-- Game Editor tabs: Details, Taxonomy, Content, Sources, Images
+- Setup Wizard files deleted (replaced by Vecna pipeline)
+- Game Editor tabs: Details, Taxonomy, Rulebook, Content, Sources, Images
 
 **UX Improvements:**
 - Auto-resize textareas for all content fields (description, rules, setup, reference)

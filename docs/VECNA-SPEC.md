@@ -417,7 +417,7 @@ type VecnaState =
 
 **Files to Create:**
 - `/src/app/admin/(dashboard)/vecna/components/ContentReview.tsx`
-- `/src/app/admin/(dashboard)/vecna/components/DataSourceBadge.tsx`
+- `/src/lib/vecna/DataSourceBadge.tsx` (shared badge component)
 
 **Tasks:**
 1. Build three-column review UI (source | generated | final)
