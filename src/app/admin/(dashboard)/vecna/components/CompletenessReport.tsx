@@ -62,13 +62,13 @@ const categoryIcons: Record<string, React.ElementType> = {
 function ImportanceIcon({ importance }: { importance: FieldImportance }) {
   switch (importance) {
     case 'critical':
-      return <XCircle className="h-3.5 w-3.5 text-red-500" />
+      return <XCircle className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
     case 'important':
-      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
     case 'recommended':
-      return <AlertCircle className="h-3.5 w-3.5 text-blue-500" />
+      return <AlertCircle className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
     case 'optional':
-      return <CircleDot className="h-3.5 w-3.5 text-slate-400" />
+      return <CircleDot className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
   }
 }
 
@@ -88,9 +88,9 @@ function CategorySection({ category, defaultOpen = false }: { category: FieldCat
             'w-full flex items-center justify-between p-3 rounded-lg border transition-colors',
             'hover:bg-muted/50',
             category.criticalMissing > 0
-              ? 'border-red-200 bg-red-50/50'
+              ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
               : category.importantMissing > 0
-                ? 'border-amber-200 bg-amber-50/50'
+                ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20'
                 : 'border-border'
           )}
         >
@@ -117,10 +117,10 @@ function CategorySection({ category, defaultOpen = false }: { category: FieldCat
                     className={cn(
                       'text-xs',
                       category.criticalMissing > 0
-                        ? 'bg-red-100 text-red-700'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
                         : category.importantMissing > 0
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-blue-100 text-blue-700'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
                     )}
                   >
                     {missingCount} missing
@@ -187,25 +187,25 @@ function SummaryBadges({ report }: { report: ReportType }) {
   return (
     <div className="flex flex-wrap gap-2">
       {report.criticalMissing.length > 0 && (
-        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800">
           <XCircle className="h-3 w-3 mr-1" />
           {report.criticalMissing.length} Critical
         </Badge>
       )}
       {report.importantMissing.length > 0 && (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
           <AlertTriangle className="h-3 w-3 mr-1" />
           {report.importantMissing.length} Important
         </Badge>
       )}
       {report.recommendedMissing.length > 0 && (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800">
           <AlertCircle className="h-3 w-3 mr-1" />
-          {report.recommendedMissing.length} Recommended
+          {report.recommendedMissing.length} Suggested
         </Badge>
       )}
       {report.summary.status === 'complete' && (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           Ready
         </Badge>
@@ -235,10 +235,10 @@ export function CompletenessReport({ game, defaultExpanded = false }: Completene
     <Card className={cn(
       'border-2',
       report.summary.status === 'incomplete'
-        ? 'border-red-200'
+        ? 'border-red-200 dark:border-red-800'
         : report.summary.status === 'needs_attention'
-          ? 'border-amber-200'
-          : 'border-green-200'
+          ? 'border-amber-200 dark:border-amber-800'
+          : 'border-green-200 dark:border-green-800'
     )}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
@@ -291,18 +291,18 @@ export function CompletenessReport({ game, defaultExpanded = false }: Completene
 
             {/* Quick summary of critical missing */}
             {report.criticalMissing.length > 0 && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <h4 className="text-sm font-medium text-red-800 mb-2 flex items-center gap-2">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/30 dark:border-red-800">
+                <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2 flex items-center gap-2">
                   <XCircle className="h-4 w-4" />
                   Critical Missing Fields
                 </h4>
                 <ul className="space-y-1">
                   {report.criticalMissing.map((field) => (
-                    <li key={field.field} className="text-sm text-red-700 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    <li key={field.field} className="text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400" />
                       <span className="font-medium">{field.label}</span>
                       {field.source && (
-                        <span className="text-red-500/70 text-xs">({field.source})</span>
+                        <span className="text-red-500/70 dark:text-red-400/70 text-xs">({field.source})</span>
                       )}
                     </li>
                   ))}
@@ -312,18 +312,18 @@ export function CompletenessReport({ game, defaultExpanded = false }: Completene
 
             {/* Important missing summary */}
             {report.importantMissing.length > 0 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/30 dark:border-amber-800">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
                   Important Missing Fields
                 </h4>
                 <ul className="space-y-1">
                   {report.importantMissing.map((field) => (
-                    <li key={field.field} className="text-sm text-amber-700 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <li key={field.field} className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                       <span className="font-medium">{field.label}</span>
                       {field.source && (
-                        <span className="text-amber-500/70 text-xs">({field.source})</span>
+                        <span className="text-amber-500/70 dark:text-amber-400/70 text-xs">({field.source})</span>
                       )}
                     </li>
                   ))}

@@ -151,15 +151,16 @@ export function VecnaFamilySidebar({
         </div>
 
         {/* Phase Filter - Segmented buttons */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 bg-muted/50 rounded-md p-0.5">
           {PHASE_FILTERS.map(filter => (
             <Button
               key={filter.value}
-              variant={stateFilter === filter.value ? 'default' : 'ghost'}
+              variant="ghost"
               size="sm"
               onClick={() => onStateFilterChange(filter.value)}
               className={cn(
                 'flex-1 h-7 text-xs px-2',
+                stateFilter === filter.value && 'bg-background shadow-sm font-medium',
                 filter.value === 'blocked' && stateFilter !== filter.value && 'text-amber-600 hover:text-amber-700'
               )}
             >

@@ -1,12 +1,41 @@
 # Current Status
 
-> Last Updated: 2026-01-06 (Vecna Auto-Process, Parsed Text Viewer)
+> Last Updated: 2026-01-06 (Vecna UI/UX Overhaul)
 
-## Current Phase: 54 - Vecna Auto-Process Pipeline
+## Current Phase: 55 - Vecna UI/UX Overhaul
 
-Added automated pipeline processing with real-time progress modal. Improved parsed text viewer to show structured sections.
+Transformed Vecna from a cluttered workbench into a clean Pipeline Dashboard. Focus on status overview and batch processing; editing happens in Game Editor.
 
-### Session Summary (2026-01-06) - Vecna Auto-Process
+### Session Summary (2026-01-06) - Vecna UI/UX Overhaul
+
+**Design Changes:**
+- **Button hierarchy**: Ghost buttons by default, solid only for Publish
+- **Color fix**: Orange for "recommended" status (was confusing blue)
+- **Removed Review tab**: Now just Pipeline | Details (editing in Game Editor)
+- **Model selector timing**: Only shows before generation, not after
+- **Compact status card**: Replaced verbose CompletenessReport with collapsible summary
+- **Segmented controls**: Phase filters and model selector use subtle selected states
+
+**New Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/lib/vecna/ui-theme.ts` | Centralized STATUS_COLORS and IMPORTANCE_COLORS with dark mode |
+| `src/app/admin/(dashboard)/vecna/components/CompactStatusCard.tsx` | Single-line collapsible status summary |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/vecna/completeness.ts` | Blue → orange for "recommended", dark mode support |
+| `src/lib/vecna/index.ts` | Export ui-theme |
+| `VecnaGamePanel.tsx` | Removed Review tab, ghost buttons, model selector timing fix |
+| `VecnaFamilySidebar.tsx` | Ghost filter buttons with subtle selected state |
+| `VecnaFamilyHeader.tsx` | Dark mode badges |
+| `RulebookDiscovery.tsx` | Outline button variants, dark mode |
+| `CompletenessReport.tsx` | Orange for recommended, dark mode throughout |
+
+---
+
+### Earlier Session (2026-01-06) - Vecna Auto-Process
 
 **Vecna Auto-Process Feature:**
 - New SSE streaming endpoint: `/api/admin/vecna/auto-process`
@@ -221,7 +250,7 @@ Added automated pipeline processing with real-time progress modal. Improved pars
 - Reputation/feedback system
 
 ### Admin
-- **Vecna Pipeline** (`/admin/vecna`) - Complete 4-phase content pipeline with Re-sync BGG
+- **Vecna Pipeline** (`/admin/vecna`) - 4-phase content pipeline, 2-tab game panel (Pipeline + Details)
 - **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Rulebook, Content, Sources, Images
 - **Import Wizard** (`/admin/import`) - BGG game import with relation management and real-time progress
 - Rulebook parsing + Crunch Score generation

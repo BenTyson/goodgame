@@ -735,13 +735,13 @@ export function generateCompletenessReport(game: VecnaGame): CompletenessReport 
 export function getImportanceColor(importance: FieldImportance): string {
   switch (importance) {
     case 'critical':
-      return 'text-red-600 bg-red-50 border-red-200'
+      return 'text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-950/30 dark:border-red-800'
     case 'important':
-      return 'text-amber-600 bg-amber-50 border-amber-200'
+      return 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/30 dark:border-amber-800'
     case 'recommended':
-      return 'text-blue-600 bg-blue-50 border-blue-200'
+      return 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-800'
     case 'optional':
-      return 'text-slate-500 bg-slate-50 border-slate-200'
+      return 'text-slate-600 bg-slate-50 border-slate-200 dark:text-slate-400 dark:bg-slate-900/50 dark:border-slate-700'
   }
 }
 
@@ -761,10 +761,10 @@ export function getImportanceLabel(importance: FieldImportance): string {
 export function getStatusColor(status: CompletenessReport['summary']['status']): string {
   switch (status) {
     case 'complete':
-      return 'text-green-600 bg-green-50 border-green-200'
+      return 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/30 dark:border-green-800'
     case 'needs_attention':
-      return 'text-amber-600 bg-amber-50 border-amber-200'
+      return 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/30 dark:border-amber-800'
     case 'incomplete':
-      return 'text-red-600 bg-red-50 border-red-200'
+      return 'text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-950/30 dark:border-red-800'
   }
 }

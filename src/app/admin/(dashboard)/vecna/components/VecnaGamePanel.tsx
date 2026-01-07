@@ -17,8 +17,6 @@ import {
   Loader2,
   RotateCcw,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   Image as ImageIcon,
   Tags,
   SkipForward,
@@ -28,7 +26,6 @@ import {
   Brain,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -54,8 +51,7 @@ import { VECNA_STATE_CONFIG, DataSourceBadge } from '@/lib/vecna'
 import { PipelineProgressBar } from './PipelineProgressBar'
 import { BlockedStateAlert } from './BlockedStateAlert'
 import { RulebookDiscovery } from './RulebookDiscovery'
-import { CompletenessReport } from './CompletenessReport'
-import { ContentReviewPanel } from './ContentReviewPanel'
+import { CompactStatusCard } from './CompactStatusCard'
 import { AutoProcessModal } from './AutoProcessModal'
 
 interface VecnaGamePanelProps {
@@ -90,8 +86,7 @@ export function VecnaGamePanel({
   const stateConfig = VECNA_STATE_CONFIG[currentState]
   const isBlocked = currentState === 'rulebook_missing' || currentState === 'review_pending'
   const needsRulebook = currentState === 'rulebook_missing' || (currentState === 'enriched' && !hasRulebook)
-  const showCompletenessReport = ['generated', 'review_pending', 'published'].includes(currentState)
-  const showReviewTab = ['generated', 'review_pending', 'published'].includes(currentState)
+  const showStatusCard = ['generated', 'review_pending', 'published'].includes(currentState)
 
   const handleStateChange = (newState: VecnaState) => {
     setCurrentState(newState)
@@ -325,13 +320,13 @@ export function VecnaGamePanel({
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/admin/games/${game.id}`}>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="ghost" size="sm" className="gap-1.5">
                   <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </Button>
               </Link>
               <Link href={`/games/${game.slug}`} target="_blank">
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="ghost" size="sm" className="gap-1.5">
                   <Eye className="h-3.5 w-3.5" />
                   View
                 </Button>
@@ -354,49 +349,52 @@ export function VecnaGamePanel({
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue={showReviewTab ? 'review' : 'pipeline'} className="w-full">
-        <TabsList className={cn('grid w-full', showReviewTab ? 'grid-cols-3' : 'grid-cols-2')}>
+      <Tabs defaultValue="pipeline" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          {showReviewTab && (
-            <TabsTrigger value="review" className="gap-1">
-              <Eye className="h-3 w-3" />
-              Review
-            </TabsTrigger>
-          )}
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
         {/* Pipeline Tab */}
         <TabsContent value="pipeline" className="mt-4 space-y-4">
-          {/* Model Selector - show when ready to generate */}
-          {(currentState === 'taxonomy_assigned' || currentState === 'review_pending') && (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          {/* Model Selector - show when ready to generate (before generation only) */}
+          {currentState === 'taxonomy_assigned' && (
+            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
               <Cpu className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Model:</span>
-              <div className="flex gap-1">
+              <div className="flex gap-1 bg-muted/50 rounded-md p-0.5">
                 <Button
-                  variant={selectedModel === 'haiku' ? 'default' : 'outline'}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setSelectedModel('haiku')}
-                  className="h-7 text-xs gap-1"
+                  className={cn(
+                    'h-7 text-xs gap-1',
+                    selectedModel === 'haiku' && 'bg-background shadow-sm'
+                  )}
                 >
                   <Zap className="h-3 w-3" />
                   Haiku
                 </Button>
                 <Button
-                  variant={selectedModel === 'sonnet' ? 'default' : 'outline'}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setSelectedModel('sonnet')}
-                  className="h-7 text-xs gap-1"
+                  className={cn(
+                    'h-7 text-xs gap-1',
+                    selectedModel === 'sonnet' && 'bg-background shadow-sm'
+                  )}
                 >
                   <Sparkles className="h-3 w-3" />
                   Sonnet
                 </Button>
                 <Button
-                  variant={selectedModel === 'opus' ? 'default' : 'outline'}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setSelectedModel('opus')}
-                  className="h-7 text-xs gap-1"
+                  className={cn(
+                    'h-7 text-xs gap-1',
+                    selectedModel === 'opus' && 'bg-background shadow-sm'
+                  )}
                 >
                   <Brain className="h-3 w-3" />
                   Opus
@@ -414,7 +412,7 @@ export function VecnaGamePanel({
           {hasRulebook && ['enriched', 'rulebook_ready', 'rulebook_missing', 'parsed', 'taxonomy_assigned'].includes(currentState) && (
             <div className="flex justify-center">
               <Button
-                variant="secondary"
+                variant="outline"
                 size="lg"
                 onClick={() => setShowAutoProcess(true)}
                 disabled={isProcessing}
@@ -455,7 +453,13 @@ export function VecnaGamePanel({
                   </AlertDialogContent>
                 </AlertDialog>
               ) : (
-                <Button size="lg" onClick={nextAction.action} disabled={isProcessing} className="gap-2">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={nextAction.action}
+                  disabled={isProcessing}
+                  className="gap-2"
+                >
                   {isProcessing ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -469,26 +473,23 @@ export function VecnaGamePanel({
 
           {/* Processing message */}
           {processingMessage && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-              <Loader2 className="h-4 w-4 text-blue-500 flex-shrink-0 animate-spin mt-0.5" />
-              <span className="text-sm text-blue-700">{processingMessage}</span>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 dark:bg-blue-950/30 dark:border-blue-800">
+              <Loader2 className="h-4 w-4 text-blue-500 dark:text-blue-400 flex-shrink-0 animate-spin mt-0.5" />
+              <span className="text-sm text-blue-700 dark:text-blue-300">{processingMessage}</span>
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-              <span className="text-sm text-red-700">{error}</span>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 dark:bg-red-950/30 dark:border-red-800">
+              <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
+              <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
             </div>
           )}
 
-          {/* Completeness Report - shown after content is generated */}
-          {showCompletenessReport && (
-            <CompletenessReport
-              game={game}
-              defaultExpanded={currentState === 'review_pending'}
-            />
+          {/* Status Card - shown after content is generated */}
+          {showStatusCard && (
+            <CompactStatusCard game={game} />
           )}
 
           {/* Data Status - compact */}
@@ -608,13 +609,6 @@ export function VecnaGamePanel({
             </div>
           )}
         </TabsContent>
-
-        {/* Review Tab - Content review with publish flow */}
-        {showReviewTab && (
-          <TabsContent value="review" className="mt-4">
-            <ContentReviewPanel game={game} onPublish={() => router.refresh()} />
-          </TabsContent>
-        )}
 
         {/* Details Tab */}
         <TabsContent value="details" className="mt-4">

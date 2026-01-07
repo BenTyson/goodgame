@@ -198,16 +198,16 @@ export function VecnaFamilyHeader({
 
           {/* Status badges - compact */}
           <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-            <span className="text-xs text-green-600">
+            <span className="text-xs text-green-600 dark:text-green-400">
               {stats.published}/{stats.total} published
             </span>
             {stats.needsReview > 0 && (
-              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs py-0">
+              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs py-0 dark:text-blue-400 dark:border-blue-700">
                 {stats.needsReview} review
               </Badge>
             )}
             {stats.blocked > 0 && (
-              <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs py-0">
+              <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs py-0 dark:text-amber-400 dark:border-amber-700">
                 {stats.blocked} blocked
               </Badge>
             )}
@@ -351,16 +351,16 @@ export function VecnaFamilyHeader({
                 <>
                   <span className="text-sm text-muted-foreground">Results:</span>
                   {advanced > 0 && (
-                    <Badge className="bg-green-100 text-green-700">{advanced} advanced</Badge>
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">{advanced} advanced</Badge>
                   )}
                   {blocked > 0 && (
-                    <Badge className="bg-amber-100 text-amber-700">{blocked} blocked</Badge>
+                    <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">{blocked} blocked</Badge>
                   )}
                   {skipped > 0 && (
                     <Badge variant="secondary">{skipped} skipped</Badge>
                   )}
                   {errors > 0 && (
-                    <Badge className="bg-red-100 text-red-700">{errors} errors</Badge>
+                    <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">{errors} errors</Badge>
                   )}
                   <Button
                     variant="ghost"

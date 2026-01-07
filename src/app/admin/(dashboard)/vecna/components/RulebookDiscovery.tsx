@@ -172,6 +172,7 @@ export function RulebookDiscovery({
               className="flex-1"
             />
             <Button
+              variant="outline"
               onClick={handleManualSubmit}
               disabled={!manualUrl.trim() || isSetting}
             >
@@ -209,9 +210,9 @@ export function RulebookDiscovery({
 
         {/* Error display */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <span className="text-sm text-red-700">{error}</span>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 dark:bg-red-950/30 dark:border-red-800">
+            <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
+            <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
           </div>
         )}
 
@@ -289,7 +290,7 @@ export function RulebookDiscovery({
                       </div>
                       <Button
                         size="sm"
-                        variant={candidate.validated === false ? 'outline' : 'default'}
+                        variant="outline"
                         disabled={isSetting || candidate.validated === false}
                         onClick={() => setRulebookUrl(candidate.url, candidate.source)}
                       >
@@ -304,13 +305,13 @@ export function RulebookDiscovery({
                 })}
               </div>
             ) : (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
-                <AlertCircle className="h-6 w-6 text-amber-500 mx-auto mb-2" />
-                <div className="text-sm text-amber-800">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center dark:bg-amber-950/30 dark:border-amber-800">
+                <AlertCircle className="h-6 w-6 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
+                <div className="text-sm text-amber-800 dark:text-amber-300">
                   No rulebook URLs found automatically.
                 </div>
-                <div className="text-xs text-amber-700 mt-1">
-                  Try searching: <code className="bg-amber-100 px-1 rounded">{result.searchQuery}</code>
+                <div className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                  Try searching: <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">{result.searchQuery}</code>
                 </div>
               </div>
             )}
