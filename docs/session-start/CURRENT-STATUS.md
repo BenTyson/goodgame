@@ -1,8 +1,53 @@
 # Current Status
 
-> Last Updated: 2026-01-06 (Vecna UI/UX Overhaul)
+> Last Updated: 2026-01-07 (Admin Games UI/UX Cleanup)
 
-## Current Phase: 55 - Vecna UI/UX Overhaul
+## Current Phase: 56 - Admin Games UI/UX Cleanup
+
+Extended the Vecna UI/UX patterns to the Game Editor tabs. Unified iconography, consolidated redundant cards, established typography hierarchy.
+
+### Session Summary (2026-01-07) - Admin Games UI/UX Cleanup
+
+**Design System:**
+- **Icon colors**: All decorative icons now use `bg-primary/10 text-primary` (teal)
+- **Label typography**: Form labels use `uppercase tracking-wider text-xs text-primary`
+- **Block headers**: CardDescription uses `uppercase tracking-wider text-xs` (no teal)
+- **Card titles**: All CardTitle elements use `uppercase`
+- **Section dividers**: `border-t-4 border-primary/30` (4px teal at 30% opacity)
+
+**DetailsTab Consolidation:**
+- Combined Identity + Players & Time + Metadata into one "Game Details" card
+- Combined Visibility + Collection Tags into one "Visibility & Tags" card (4-column grid)
+- Removed redundant section header text (Players & Time, Metadata)
+
+**RulebookTab Cleanup:**
+- Removed AI Content Extraction section (parsing now exclusively in Vecna)
+- Combined Extracted Components + Parsed Text into single "Rulebook Content" card
+- Components displayed as compact inline tags
+- Publisher buttons with primary highlight for `is_primary` publisher
+
+**Admin Pages Removed:**
+- Deleted `/admin/wikidata` page (functionality now in Import + Vecna)
+- Deleted `/admin/queue` page (functionality now in Vecna pipeline)
+- Updated sidebar navigation to remove links
+- Updated dashboard to remove queue stats card
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `DetailsTab.tsx` | Consolidated cards, typography hierarchy, dividers |
+| `TaxonomyTab.tsx` | Section header styling |
+| `RulebookTab.tsx` | Removed parse section, consolidated content card |
+| `RulebookUrlSection.tsx` | Publisher buttons, removed validate/discover |
+| `ContentTab.tsx` | Typography styling |
+| `SourcesTab.tsx` | Icon colors, styling |
+| `AdminSidebar.tsx` | Removed queue/wikidata nav links |
+| `admin/page.tsx` | Removed queue stats, Import Queue card |
+| `games/[id]/page.tsx` | Query includes `is_primary` for publisher ordering |
+
+---
+
+## Previous Phase: 55 - Vecna UI/UX Overhaul
 
 Transformed Vecna from a cluttered workbench into a clean Pipeline Dashboard. Focus on status overview and batch processing; editing happens in Game Editor.
 

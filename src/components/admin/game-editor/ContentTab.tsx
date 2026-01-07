@@ -22,18 +22,18 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-orange-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Rules Content</CardTitle>
-              <CardDescription>Quick start guide and rules overview for players</CardDescription>
+              <CardTitle className="text-lg uppercase">Rules Content</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">Quick start guide and rules overview for players</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Overview</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">Overview</Label>
             <AutoResizeTextarea
               value={rulesContent.overview}
               onChange={(e) => updateField('rules_content', {
@@ -47,7 +47,7 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Quick Start Steps</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">Quick Start Steps</Label>
             <AutoResizeTextarea
               value={rulesContent.quickStart?.join('\n') || ''}
               onChange={(e) => updateField('rules_content', {
@@ -62,7 +62,7 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Strategy Tips</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">Strategy Tips</Label>
             <AutoResizeTextarea
               value={rulesContent.tips?.join('\n') || ''}
               onChange={(e) => updateField('rules_content', {
@@ -81,18 +81,18 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-              <Settings className="h-4 w-4 text-cyan-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Settings className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Setup Content</CardTitle>
-              <CardDescription>Setup instructions and component checklist</CardDescription>
+              <CardTitle className="text-lg uppercase">Setup Content</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">Setup instructions and component checklist</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>First Player Rule</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">First Player Rule</Label>
             <Input
               value={setupContent.firstPlayerRule}
               onChange={(e) => updateField('setup_content', {
@@ -104,7 +104,7 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Setup Tips</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">Setup Tips</Label>
             <AutoResizeTextarea
               value={setupContent.quickTips?.join('\n') || ''}
               onChange={(e) => updateField('setup_content', {
@@ -123,18 +123,18 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-pink-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Reference Content</CardTitle>
-              <CardDescription>Quick reference card and end game conditions</CardDescription>
+              <CardTitle className="text-lg uppercase">Reference Content</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">Quick reference card and end game conditions</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>End Game Condition</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">End Game Condition</Label>
             <AutoResizeTextarea
               value={formatEndGame(referenceContent.endGame)}
               onChange={(e) => updateField('reference_content', {
@@ -148,7 +148,7 @@ export function ContentTab({ game, updateField }: ContentTabProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Quick Reminders</Label>
+            <Label className="uppercase tracking-wider text-xs text-primary">Quick Reminders</Label>
             <AutoResizeTextarea
               value={referenceContent.quickReminders?.join('\n') || ''}
               onChange={(e) => updateField('reference_content', {

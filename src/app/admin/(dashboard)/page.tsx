@@ -4,14 +4,10 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getQueueStats } from '@/lib/bgg'
 import {
   CheckCircle2,
   FileEdit,
-  Clock,
   ArrowRight,
-  Database,
-  AlertCircle,
   ChevronRight,
   Cog,
   Package,
@@ -65,9 +61,8 @@ async function getRecentGames() {
 }
 
 export default async function AdminDashboard() {
-  const [gameStats, queueStats, recentGames] = await Promise.all([
+  const [gameStats, recentGames] = await Promise.all([
     getGameStats(),
-    getQueueStats(),
     getRecentGames(),
   ])
 
@@ -150,60 +145,20 @@ export default async function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">In Queue</p>
-                <p className="text-3xl font-bold mt-1">{queueStats.pending}</p>
-                <p className="text-xs text-muted-foreground mt-1">Pending imports</p>
+                <p className="text-sm font-medium text-muted-foreground">Have Rulebook</p>
+                <p className="text-3xl font-bold mt-1">{gameStats?.withRulebook || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Ready for content</p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                <Clock className="h-6 w-6 text-muted-foreground" />
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Pipeline Status */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base">Import Queue</CardTitle>
-              </div>
-              <Link href="/admin/queue">
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  View Queue
-                  <ChevronRight className="ml-1 h-3 w-3" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{queueStats.pending}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Pending</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{queueStats.importing}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">In Progress</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{queueStats.imported}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Complete</p>
-              </div>
-            </div>
-            {queueStats.failed > 0 && (
-              <div className="mt-3 flex items-center gap-2 p-2 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>{queueStats.failed} failed imports</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
+      {/* Content Pipeline */}
+      <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -239,7 +194,6 @@ export default async function AdminDashboard() {
             </p>
           </CardContent>
         </Card>
-      </div>
 
       {/* Recent Games - Cleaner list */}
       <Card>

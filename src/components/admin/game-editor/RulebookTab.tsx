@@ -20,11 +20,7 @@ import {
 } from 'lucide-react'
 import type { Game } from '@/types/database'
 import type { ParsedTextStructured, RulebookSectionType } from '@/lib/rulebook/types'
-import {
-  RulebookUrlSection,
-  RulebookParseSection,
-  CrunchScoreDisplay,
-} from '@/components/admin/rulebook'
+import { RulebookUrlSection } from '@/components/admin/rulebook'
 
 interface Publisher {
   id: string
@@ -56,22 +52,6 @@ const SECTION_TYPE_INFO: Record<RulebookSectionType, { label: string; color: str
 export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
   // Rulebook URL state
   const [rulebookUrl, setRulebookUrl] = useState(game.rulebook_url || '')
-  const [validating, setValidating] = useState(false)
-  const [validationResult, setValidationResult] = useState<{
-    valid: boolean
-    error?: string
-    contentLength?: number
-    searchQuery?: string
-  } | null>(null)
-  const [discovering, setDiscovering] = useState(false)
-  const [parsing, setParsing] = useState(false)
-  const [parseResult, setParseResult] = useState<{
-    success: boolean
-    wordCount?: number
-    pageCount?: number
-    crunchScore?: number
-    error?: string
-  } | null>(null)
 
   // Parsed text state
   const [loadingParsedText, setLoadingParsedText] = useState(false)
@@ -113,99 +93,6 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
       setParsedTextError(error instanceof Error ? error.message : 'Failed to fetch parsed text')
     } finally {
       setLoadingParsedText(false)
-    }
-  }
-
-  // Rulebook handlers
-  const validateUrl = async () => {
-    if (!rulebookUrl) return
-    setValidating(true)
-    setValidationResult(null)
-
-    try {
-      const response = await fetch('/api/admin/rulebook/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: rulebookUrl }),
-      })
-      const result = await response.json()
-      setValidationResult(result)
-      if (result.valid) {
-        onRulebookUrlChange(rulebookUrl)
-      }
-    } catch (error) {
-      setValidationResult({
-        valid: false,
-        error: error instanceof Error ? error.message : 'Validation failed',
-      })
-    } finally {
-      setValidating(false)
-    }
-  }
-
-  const discoverUrl = async () => {
-    setDiscovering(true)
-    setValidationResult(null)
-
-    try {
-      const response = await fetch('/api/admin/rulebook/discover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: game.id,
-          gameName: game.name,
-          publisher: game.publisher,
-        }),
-      })
-      const result = await response.json()
-
-      if (result.found && result.url) {
-        setRulebookUrl(result.url)
-        setValidationResult({ valid: true })
-        onRulebookUrlChange(result.url)
-      } else {
-        setValidationResult({
-          valid: false,
-          error: result.notes || 'No rulebook found automatically',
-          searchQuery: result.searchQuery,
-        })
-      }
-    } catch (error) {
-      setValidationResult({
-        valid: false,
-        error: error instanceof Error ? error.message : 'Discovery failed',
-      })
-    } finally {
-      setDiscovering(false)
-    }
-  }
-
-  const parseRulebook = async () => {
-    if (!rulebookUrl) return
-    setParsing(true)
-    setParseResult(null)
-
-    try {
-      const response = await fetch('/api/admin/rulebook/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId: game.id, url: rulebookUrl }),
-      })
-      const result = await response.json()
-      setParseResult(result)
-      if (result.success) {
-        // Refresh parsed text after successful parse
-        await fetchParsedText()
-        // Reload page to get updated game data
-        setTimeout(() => window.location.reload(), 1500)
-      }
-    } catch (error) {
-      setParseResult({
-        success: false,
-        error: error instanceof Error ? error.message : 'Parsing failed',
-      })
-    } finally {
-      setParsing(false)
     }
   }
 
@@ -275,12 +162,6 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
       <RulebookUrlSection
         rulebookUrl={rulebookUrl}
         onRulebookUrlChange={setRulebookUrl}
-        validationResult={validationResult}
-        onValidationResultChange={setValidationResult}
-        validating={validating}
-        discovering={discovering}
-        onValidate={validateUrl}
-        onDiscover={discoverUrl}
         publishersList={game.publishers_list}
         wikipediaInfobox={
           game.wikipedia_infobox as {
@@ -292,78 +173,16 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
         rulebookParsedAt={game.rulebook_parsed_at}
       />
 
-      {/* Parse & Generate Crunch Score */}
-      <RulebookParseSection
-        gameId={game.id}
-        rulebookUrl={rulebookUrl}
-        parsing={parsing}
-        parseResult={parseResult}
-        rulebookParsedAt={game.rulebook_parsed_at}
-        onParse={parseRulebook}
-      />
-
-      {/* Crunch Score Display */}
-      {game.crunch_score && (
-        <CrunchScoreDisplay
-          score={game.crunch_score}
-          breakdown={game.crunch_breakdown as Parameters<typeof CrunchScoreDisplay>[0]['breakdown']}
-          generatedAt={game.crunch_generated_at}
-          bggReference={game.crunch_bgg_reference}
-        />
-      )}
-
-      {/* Component List */}
-      {game.component_list && (
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-teal-500" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Extracted Components</CardTitle>
-                <CardDescription>Components detected from rulebook</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {Object.entries(game.component_list as Record<string, unknown>).map(([key, value]) => {
-                if (key === 'other' && Array.isArray(value)) {
-                  return (
-                    <div key={key} className="col-span-full">
-                      <span className="text-sm text-muted-foreground">Other: </span>
-                      <span className="text-sm">{value.join(', ')}</span>
-                    </div>
-                  )
-                }
-                if (typeof value === 'number' && value > 0) {
-                  return (
-                    <div key={key} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                      <span className="font-medium">{value}</span>
-                      <span className="text-sm text-muted-foreground capitalize">
-                        {key.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                  )
-                }
-                return null
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Parsed Text Viewer */}
+      {/* Rulebook Content - Components & Parsed Text */}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-              <BookOpen className="h-4 w-4 text-violet-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BookOpen className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-lg">Parsed Rulebook Text</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg uppercase">Rulebook Content</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">
                 {parsedTextData?.structured ? (
                   <>
                     {parsedTextData.structured.sections.length} sections &middot;{' '}
@@ -377,13 +196,46 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
                     )}
                   </>
                 ) : (
-                  'Parse the rulebook to view text'
+                  'Parsed via Vecna pipeline'
                 )}
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Extracted Components - Compact inline */}
+          {game.component_list && (
+            <div className="space-y-2">
+              <div className="uppercase tracking-wider text-xs text-primary font-medium">Components</div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(game.component_list as Record<string, unknown>).map(([key, value]) => {
+                  if (key === 'other' && Array.isArray(value)) {
+                    return (
+                      <span key={key} className="text-xs text-muted-foreground">
+                        Other: {value.join(', ')}
+                      </span>
+                    )
+                  }
+                  if (typeof value === 'number' && value > 0) {
+                    return (
+                      <span key={key} className="inline-flex items-center gap-1 px-2 py-1 bg-muted/50 rounded text-xs">
+                        <span className="font-medium">{value}</span>
+                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                      </span>
+                    )
+                  }
+                  return null
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Divider if both exist */}
+          {game.component_list && parsedTextData?.text && (
+            <div className="border-t-4 border-primary/30" />
+          )}
+
+          {/* Parsed Text */}
           {loadingParsedText ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -450,7 +302,7 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
                                 ) : (
                                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                 )}
-                                <span className={`font-medium ${typeInfo.color}`}>
+                                <span className="uppercase tracking-wider text-xs text-primary font-medium">
                                   {typeInfo.label}
                                 </span>
                                 <span className="text-xs text-muted-foreground">

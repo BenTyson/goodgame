@@ -122,8 +122,8 @@ export function TaxonomySelector<T extends TaxonomyItem>({
       {/* AI Suggested Section */}
       {suggestedItems.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-2 uppercase tracking-wider text-xs text-primary font-medium">
+            <Sparkles className="h-4 w-4" />
             AI Suggested
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -207,7 +207,7 @@ export function TaxonomySelector<T extends TaxonomyItem>({
       {/* All Items Section */}
       {otherItems.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <div className="uppercase tracking-wider text-xs text-primary font-medium">
             {suggestedItems.length > 0 ? 'Other Options' : 'Available Options'}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">

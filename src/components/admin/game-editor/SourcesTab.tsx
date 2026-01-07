@@ -88,14 +88,14 @@ function SourceSection({
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{title}</CardTitle>
+                  <CardTitle className="text-lg uppercase">{title}</CardTitle>
                   {badge && (
                     <Badge variant={badge.variant || 'secondary'} className="text-xs">
                       {badge.label}
                     </Badge>
                   )}
                 </div>
-                <CardDescription>{description}</CardDescription>
+                <CardDescription className="uppercase tracking-wider text-xs">{description}</CardDescription>
               </div>
               {isOpen ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -202,12 +202,12 @@ export function SourcesTab({ game }: SourcesTabProps) {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-slate-500/10 flex items-center justify-center">
-              <Layers className="h-4 w-4 text-slate-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Layers className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Data Sources Overview</CardTitle>
-              <CardDescription>External data imported for this game</CardDescription>
+              <CardTitle className="text-lg uppercase">Data Sources Overview</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">External data imported for this game</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -266,7 +266,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
         title="BoardGameGeek"
         description="Data from BGG API"
         icon={Database}
-        iconColor="bg-orange-500/10 text-orange-500"
+        iconColor="bg-primary/10 text-primary"
         badge={hasBgg ? { label: 'Connected' } : undefined}
         defaultOpen={hasBgg}
       >
@@ -408,7 +408,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
         title="Wikidata"
         description="Structured data from Wikimedia"
         icon={Database}
-        iconColor="bg-blue-500/10 text-blue-500"
+        iconColor="bg-primary/10 text-primary"
         badge={hasWikidata ? { label: 'Linked' } : undefined}
         defaultOpen={hasWikidata}
       >
@@ -475,7 +475,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
         title="Wikipedia"
         description="Encyclopedia article content"
         icon={Globe}
-        iconColor="bg-slate-500/10 text-slate-500"
+        iconColor="bg-primary/10 text-primary"
         badge={
           hasWikipedia
             ? {
@@ -484,7 +484,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
               }
             : undefined
         }
-        defaultOpen={hasWikipedia}
+        defaultOpen={false}
       >
         {hasWikipedia ? (
           <div className="space-y-6">

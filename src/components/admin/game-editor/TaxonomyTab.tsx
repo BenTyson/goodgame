@@ -264,12 +264,12 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Grid3X3 className="h-4 w-4 text-blue-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Grid3X3 className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Categories</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg uppercase">Categories</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">
                 Game categories like Strategy, Economic, or Abstract ({selectedCategories.length} selected)
               </CardDescription>
             </div>
@@ -291,12 +291,12 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Puzzle className="h-4 w-4 text-green-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Puzzle className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Mechanics</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg uppercase">Mechanics</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">
                 Game mechanics like Worker Placement or Deck Building ({selectedMechanics.length} selected)
               </CardDescription>
             </div>
@@ -318,12 +318,12 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <Palette className="h-4 w-4 text-purple-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Palette className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Themes</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg uppercase">Themes</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">
                 Thematic elements like Medieval, Sci-Fi, or Trading ({selectedThemes.length} selected)
               </CardDescription>
             </div>
@@ -345,12 +345,12 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-              <Users className="h-4 w-4 text-orange-500" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Player Experiences</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg uppercase">Player Experiences</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">
                 What players experience like Strategic Depth or Social Deduction ({selectedExperiences.length} selected)
               </CardDescription>
             </div>

@@ -280,12 +280,12 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <Card>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <ImageIcon className="h-4 w-4 text-green-500" />
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ImageIcon className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Game Images</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg uppercase">Game Images</CardTitle>
+                  <CardDescription className="uppercase tracking-wider text-xs">
                     Upload cover art and gallery images. The primary image appears on cards and as the hero.
                   </CardDescription>
                 </div>

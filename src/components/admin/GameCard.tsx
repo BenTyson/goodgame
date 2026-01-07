@@ -24,6 +24,7 @@ import {
   Trash2,
   Loader2,
 } from 'lucide-react'
+import { STATUS_COLORS } from '@/lib/admin/ui-theme'
 
 interface GameCardProps {
   game: {
@@ -70,7 +71,7 @@ export function GameCard({ game }: GameCardProps) {
   const getStatusBadge = () => {
     if (game.is_published) {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-green-600 text-white">
+        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS.success.badge}`}>
           <CheckCircle2 className="h-3 w-3" />
           Published
         </span>
@@ -78,14 +79,14 @@ export function GameCard({ game }: GameCardProps) {
     }
     if (game.content_status === 'draft') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-yellow-500 text-white">
+        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS.warning.badge}`}>
           <FileEdit className="h-3 w-3" />
           Draft
         </span>
       )
     }
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS.neutral.badge}`}>
         <Clock className="h-3 w-3" />
         {game.content_status || 'No content'}
       </span>

@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Settings, LayoutDashboard, Dices, ListTodo, Users2, Building2, Tags, Globe, Database, Download, Wand2 } from 'lucide-react'
+import { X, Settings, LayoutDashboard, Dices, Users2, Building2, Tags, Database, Download, Wand2 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -14,9 +14,7 @@ const adminNav = [
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: Tags, exact: false },
   { name: 'Families', href: '/admin/families', icon: Users2, exact: false },
   { name: 'Publishers', href: '/admin/publishers', icon: Building2, exact: false },
-  { name: 'Queue', href: '/admin/queue', icon: ListTodo, exact: false },
   { name: 'Data', href: '/admin/data', icon: Database, exact: false },
-  { name: 'Wikidata', href: '/admin/wikidata', icon: Globe, exact: false },
 ]
 
 interface AdminSidebarProps {

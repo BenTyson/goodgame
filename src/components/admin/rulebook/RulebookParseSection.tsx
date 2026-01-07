@@ -113,12 +113,12 @@ export function RulebookParseSection({
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-purple-500" />
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-lg">AI Content Extraction</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg uppercase">AI Content Extraction</CardTitle>
+            <CardDescription className="uppercase tracking-wider text-xs">
               Parse rulebook PDF and generate Crunch Score
             </CardDescription>
           </div>

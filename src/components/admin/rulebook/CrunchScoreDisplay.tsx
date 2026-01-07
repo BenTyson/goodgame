@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Cog, Calculator, Info } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Cog, Calculator, Info, ChevronDown } from 'lucide-react'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
 import { getCrunchLabel, getCrunchBadgeClasses } from '@/lib/rulebook/complexity-utils'
 import { cn } from '@/lib/utils'
@@ -12,6 +15,7 @@ interface CrunchScoreDisplayProps {
   breakdown: CrunchBreakdown | null
   generatedAt?: string | null
   bggReference?: number | null
+  compact?: boolean
 }
 
 /**
@@ -75,11 +79,81 @@ function ScoreBar({
   )
 }
 
-export function CrunchScoreDisplay({ score, breakdown, generatedAt, bggReference }: CrunchScoreDisplayProps) {
+export function CrunchScoreDisplay({ score, breakdown, generatedAt, bggReference, compact = false }: CrunchScoreDisplayProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
   // Calculate the raw AI score from breakdown if available
   const aiScore = breakdown ? calculateAiScore(breakdown) : null
   const bggNormalized = bggReference ? normalizeBGGWeight(bggReference) : null
 
+  // Compact mode: inline display with collapsible breakdown
+  if (compact) {
+    return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Cog className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold tabular-nums">{Number(score).toFixed(1)}</span>
+                <Badge className={cn('text-xs', getCrunchBadgeClasses(Number(score)))}>
+                  {getCrunchLabel(Number(score))}
+                </Badge>
+              </div>
+            </div>
+            {breakdown && (
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 px-2">
+                  <span className="text-xs text-muted-foreground mr-1">Details</span>
+                  <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+                </Button>
+              </CollapsibleTrigger>
+            )}
+          </div>
+
+          <CollapsibleContent>
+            <div className="mt-3 pt-3 border-t space-y-3">
+              {/* Compact breakdown grid */}
+              {breakdown && (
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { label: 'Rules', value: breakdown.rulesDensity },
+                    { label: 'Decisions', value: breakdown.decisionSpace },
+                    { label: 'Learning', value: breakdown.learningCurve },
+                    { label: 'Strategy', value: breakdown.strategicDepth },
+                    { label: 'Components', value: breakdown.componentComplexity },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="text-center">
+                      <div className="text-sm font-medium tabular-nums">{value.toFixed(1)}</div>
+                      <div className="text-[10px] text-muted-foreground">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Calibration info */}
+              {aiScore !== null && bggReference != null && bggNormalized !== null && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span>AI: {aiScore.toFixed(1)} × 85%</span>
+                  <span>BGG: {bggNormalized.toFixed(1)} × 15%</span>
+                </div>
+              )}
+
+              {generatedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Generated {new Date(generatedAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+    )
+  }
+
+  // Full mode: original card layout
   return (
     <Card>
       {/* Header */}

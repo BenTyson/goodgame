@@ -206,12 +206,6 @@ export function RulebookEditor({
       <RulebookUrlSection
         rulebookUrl={rulebookUrl}
         onRulebookUrlChange={setRulebookUrl}
-        validationResult={validationResult}
-        onValidationResultChange={setValidationResult}
-        validating={validating}
-        discovering={discovering}
-        onValidate={validateUrl}
-        onDiscover={discoverUrl}
         publishersList={game.publishers_list}
         rulebookSource={game.rulebook_source}
         rulebookParsedAt={game.rulebook_parsed_at}

@@ -25,15 +25,17 @@ async function getGameWithImages(id: string) {
     .eq('game_id', id)
     .order('display_order')
 
-  // Fetch linked publishers with website
+  // Fetch linked publishers with website, ordered by is_primary desc
   const { data: publisherLinks } = await supabase
     .from('game_publishers')
-    .select('publisher:publishers(id, name, slug, website)')
+    .select('is_primary, publisher:publishers(id, name, slug, website)')
     .eq('game_id', id)
+    .order('is_primary', { ascending: false })
+    .order('display_order', { ascending: true })
 
   const publishers = publisherLinks
-    ?.map(p => p.publisher)
-    .filter(Boolean) as { id: string; name: string; slug: string; website: string | null }[] | undefined
+    ?.map(p => ({ ...p.publisher, is_primary: p.is_primary }))
+    .filter(p => p.id) as { id: string; name: string; slug: string; website: string | null; is_primary: boolean }[] | undefined
 
   return {
     ...game,

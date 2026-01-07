@@ -4,15 +4,12 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { GameCard } from '@/components/admin/GameCard'
+import { cn } from '@/lib/utils'
 import {
-  CheckCircle2,
-  FileEdit,
-  Clock,
   Search,
   Dices,
   ChevronLeft,
   ChevronRight,
-  Link2,
 } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 60
@@ -97,12 +94,12 @@ export default async function AdminGamesPage({
   ])
 
   const filters = [
-    { label: 'All', value: undefined, icon: Dices, count: counts.total },
-    { label: 'Published', value: 'published', icon: CheckCircle2, color: 'text-green-500', count: counts.published },
-    { label: 'Unpublished', value: 'unpublished', icon: Clock, color: 'text-orange-500', count: counts.unpublished },
-    { label: 'Draft', value: 'draft', icon: FileEdit, color: 'text-yellow-500', count: counts.draft },
-    { label: 'Pending', value: 'pending', icon: Clock, color: 'text-gray-500', count: counts.pending },
-    { label: 'Needs Relations', value: 'needs-relations', icon: Link2, color: 'text-blue-500', count: counts.needsRelations },
+    { label: 'All', value: undefined, count: counts.total },
+    { label: 'Published', value: 'published', count: counts.published },
+    { label: 'Unpublished', value: 'unpublished', count: counts.unpublished },
+    { label: 'Draft', value: 'draft', count: counts.draft },
+    { label: 'Pending', value: 'pending', count: counts.pending },
+    { label: 'Needs Relations', value: 'needs-relations', count: counts.needsRelations },
   ]
 
   // Build pagination URL helper
@@ -116,7 +113,7 @@ export default async function AdminGamesPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -135,7 +132,8 @@ export default async function AdminGamesPage({
 
       {/* Filters & Search */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex gap-2 flex-wrap">
+        {/* Segmented Filter Tabs */}
+        <div className="flex gap-1 bg-muted/50 rounded-lg p-1 flex-wrap">
           {filters.map((f) => {
             const isActive = filter === f.value || (!filter && !f.value)
             return (
@@ -144,11 +142,13 @@ export default async function AdminGamesPage({
                 href={f.value ? `/admin/games?filter=${f.value}${q ? `&q=${q}` : ''}` : `/admin/games${q ? `?q=${q}` : ''}`}
               >
                 <Button
-                  variant={isActive ? 'default' : 'outline'}
+                  variant="ghost"
                   size="sm"
-                  className="gap-1.5"
+                  className={cn(
+                    'h-8 text-sm px-3',
+                    isActive && 'bg-background shadow-sm font-medium'
+                  )}
                 >
-                  {f.icon && <f.icon className={`h-3.5 w-3.5 ${!isActive && f.color ? f.color : ''}`} />}
                   {f.label} ({f.count})
                 </Button>
               </Link>
@@ -169,32 +169,8 @@ export default async function AdminGamesPage({
         </form>
       </div>
 
-      {/* Pagination Top */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, total)} of {total} games
-          </p>
-          <div className="flex items-center gap-2">
-            <Link href={buildPageUrl(Math.max(1, page - 1))}>
-              <Button variant="outline" size="sm" disabled={page <= 1}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <Link href={buildPageUrl(Math.min(totalPages, page + 1))}>
-              <Button variant="outline" size="sm" disabled={page >= totalPages}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
-
       {/* Games Grid */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {games.map((game) => (
           <GameCard
             key={game.id}
@@ -213,47 +189,51 @@ export default async function AdminGamesPage({
         ))}
       </div>
 
-      {/* Pagination Bottom */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 pt-4 border-t">
-          <Link href={buildPageUrl(Math.max(1, page - 1))}>
-            <Button variant="outline" size="sm" disabled={page <= 1}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-          </Link>
-          <div className="flex items-center gap-1">
-            {/* Show page numbers */}
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum: number
-              if (totalPages <= 5) {
-                pageNum = i + 1
-              } else if (page <= 3) {
-                pageNum = i + 1
-              } else if (page >= totalPages - 2) {
-                pageNum = totalPages - 4 + i
-              } else {
-                pageNum = page - 2 + i
-              }
-              return (
-                <Link key={pageNum} href={buildPageUrl(pageNum)}>
-                  <Button
-                    variant={page === pageNum ? 'default' : 'outline'}
-                    size="sm"
-                    className="w-8 h-8 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                </Link>
-              )
-            })}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, total)} of {total} games
+          </p>
+          <div className="flex items-center gap-2">
+            <Link href={buildPageUrl(Math.max(1, page - 1))}>
+              <Button variant="outline" size="sm" disabled={page <= 1}>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+            </Link>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (page <= 3) {
+                  pageNum = i + 1
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = page - 2 + i
+                }
+                return (
+                  <Link key={pageNum} href={buildPageUrl(pageNum)}>
+                    <Button
+                      variant={page === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  </Link>
+                )
+              })}
+            </div>
+            <Link href={buildPageUrl(Math.min(totalPages, page + 1))}>
+              <Button variant="outline" size="sm" disabled={page >= totalPages}>
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
           </div>
-          <Link href={buildPageUrl(Math.min(totalPages, page + 1))}>
-            <Button variant="outline" size="sm" disabled={page >= totalPages}>
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </Link>
         </div>
       )}
 

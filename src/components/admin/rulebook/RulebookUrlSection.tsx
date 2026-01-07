@@ -7,20 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   BookOpen,
   ExternalLink,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
   Search,
-  Globe,
   FileText,
+  Star,
 } from 'lucide-react'
-import { formatFileSize } from '@/lib/utils/format'
+import { cn } from '@/lib/utils'
 
 interface Publisher {
   id: string
   name: string
   slug: string
   website: string | null
+  is_primary?: boolean
 }
 
 interface WikipediaInfobox {
@@ -28,22 +26,9 @@ interface WikipediaInfobox {
   publishersWithRegion?: { name: string; region?: string; isPrimary?: boolean }[]
 }
 
-interface ValidationResult {
-  valid: boolean
-  error?: string
-  contentLength?: number
-  searchQuery?: string
-}
-
 interface RulebookUrlSectionProps {
   rulebookUrl: string
   onRulebookUrlChange: (url: string) => void
-  validationResult: ValidationResult | null
-  onValidationResultChange: (result: ValidationResult | null) => void
-  validating: boolean
-  discovering: boolean
-  onValidate: () => void
-  onDiscover: () => void
   publishersList?: Publisher[]
   wikipediaInfobox?: WikipediaInfobox | null
   rulebookSource?: string | null
@@ -53,12 +38,6 @@ interface RulebookUrlSectionProps {
 export function RulebookUrlSection({
   rulebookUrl,
   onRulebookUrlChange,
-  validationResult,
-  onValidationResultChange,
-  validating,
-  discovering,
-  onValidate,
-  onDiscover,
   publishersList,
   wikipediaInfobox,
   rulebookSource,
@@ -82,12 +61,12 @@ export function RulebookUrlSection({
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <BookOpen className="h-4 w-4 text-blue-500" />
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <BookOpen className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-lg">Rulebook PDF</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg uppercase">Rulebook PDF</CardTitle>
+            <CardDescription className="uppercase tracking-wider text-xs">
               Link to the official publisher rulebook for AI content extraction
             </CardDescription>
           </div>
@@ -96,55 +75,65 @@ export function RulebookUrlSection({
       <CardContent className="space-y-4">
         {/* Publisher Website Links */}
         {(hasLinkedPublishers || hasWikipediaPublishers) && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-            <Globe className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted-foreground">Publisher website - check for rulebook downloads:</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                {/* Linked publishers with websites */}
-                {publishersList?.filter(p => p.website).map((publisher) => (
+          <div className="space-y-2">
+            <div className="uppercase tracking-wider text-xs text-primary font-medium">Publisher Websites</div>
+            <div className="flex flex-wrap gap-2">
+              {/* Linked publishers with websites */}
+              {publishersList?.filter(p => p.website).map((publisher) => (
+                <Button
+                  key={publisher.id}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-8 gap-1.5',
+                    publisher.is_primary && 'border-primary/50 bg-primary/5'
+                  )}
+                  asChild
+                >
                   <a
-                    key={publisher.id}
                     href={publisher.website!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                   >
+                    {publisher.is_primary && <Star className="h-3 w-3 text-primary fill-primary/20" />}
                     {publisher.name}
-                    <ExternalLink className="h-3 w-3" />
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
                   </a>
-                ))}
-                {/* Wikipedia infobox publishers (search links) */}
-                {wikipediaPublishers.map((publisher, idx) => (
+                </Button>
+              ))}
+              {/* Wikipedia infobox publishers (search links) */}
+              {wikipediaPublishers.map((publisher, idx) => (
+                <Button
+                  key={`wiki-${idx}`}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                  asChild
+                >
                   <a
-                    key={`wiki-${idx}`}
                     href={`https://www.google.com/search?q=${encodeURIComponent(publisher.name + ' board game rulebook pdf')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline"
                     title={`Search for ${publisher.name} rulebook (from Wikipedia)`}
                   >
                     {publisher.name}
-                    {publisher.region && <span className="text-xs text-muted-foreground">({publisher.region})</span>}
+                    {publisher.region && <span className="text-xs">({publisher.region})</span>}
                     <Search className="h-3 w-3" />
                   </a>
-                ))}
-              </div>
+                </Button>
+              ))}
             </div>
           </div>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="rulebook_url">Rulebook URL</Label>
+          <Label htmlFor="rulebook_url" className="uppercase tracking-wider text-xs text-primary">Rulebook URL</Label>
           <div className="flex gap-2">
             <Input
               id="rulebook_url"
               type="url"
               value={rulebookUrl}
-              onChange={(e) => {
-                onRulebookUrlChange(e.target.value)
-                onValidationResultChange(null)
-              }}
+              onChange={(e) => onRulebookUrlChange(e.target.value)}
               placeholder="https://publisher.com/game-rulebook.pdf"
               className="flex-1"
             />
@@ -161,79 +150,6 @@ export function RulebookUrlSection({
             )}
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={onValidate}
-            disabled={!rulebookUrl || validating}
-          >
-            {validating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-            )}
-            Validate URL
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={onDiscover}
-            disabled={discovering}
-          >
-            {discovering ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4 mr-2" />
-            )}
-            Auto-Discover
-          </Button>
-        </div>
-
-        {validationResult && (
-          <div
-            className={`flex items-start gap-2 p-3 rounded-lg ${
-              validationResult.valid
-                ? 'bg-green-50 text-green-800'
-                : 'bg-amber-50 text-amber-800'
-            }`}
-          >
-            {validationResult.valid ? (
-              <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-            )}
-            <div className="text-sm flex-1">
-              {validationResult.valid ? (
-                <>
-                  Valid PDF
-                  {validationResult.contentLength && (
-                    <span className="text-green-600 ml-1">
-                      ({formatFileSize(validationResult.contentLength)})
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p>{validationResult.error}</p>
-                  {validationResult.searchQuery && (
-                    <div className="mt-2">
-                      <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(validationResult.searchQuery)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 underline"
-                      >
-                        <Search className="h-3.5 w-3.5" />
-                        Search Google for rulebook
-                      </a>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
 
         {rulebookSource && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

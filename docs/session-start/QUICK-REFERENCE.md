@@ -94,9 +94,7 @@ src/app/
 │       ├── taxonomy/         # Taxonomy management
 │       ├── families/         # Family management
 │       ├── publishers/       # Publisher management
-│       ├── queue/            # Import queue
-│       ├── data/             # Data dictionary
-│       └── wikidata/         # Wikidata import
+│       └── data/             # Data dictionary
 ├── login/page.tsx             # User login
 ├── shelf/page.tsx             # User's game collection
 ├── settings/page.tsx          # Profile settings (avatar upload)
