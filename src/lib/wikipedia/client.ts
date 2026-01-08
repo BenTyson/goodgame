@@ -329,6 +329,7 @@ export async function getPageWikitext(
     action: 'parse',
     page: title,
     prop: 'wikitext',
+    redirects: 'true', // Follow redirects to get actual content
   })
 
   const response = await rateLimitedFetch(url)
@@ -352,6 +353,7 @@ export async function getPageSections(
     action: 'parse',
     page: title,
     prop: 'sections',
+    redirects: 'true', // Follow redirects to get actual content
   })
 
   const response = await rateLimitedFetch(url)
@@ -374,6 +376,7 @@ export async function getSectionWikitext(
     page: title,
     prop: 'wikitext',
     section: String(sectionIndex),
+    redirects: 'true', // Follow redirects to get actual content
   })
 
   const response = await rateLimitedFetch(url)
@@ -396,6 +399,7 @@ export async function getSectionHtml(
     page: title,
     prop: 'text',
     section: String(sectionIndex),
+    redirects: 'true', // Follow redirects to get actual content
   })
 
   const response = await rateLimitedFetch(url)

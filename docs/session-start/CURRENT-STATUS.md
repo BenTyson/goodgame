@@ -1,8 +1,75 @@
 # Current Status
 
-> Last Updated: 2026-01-07 (Game Pages Comprehensive Rebuild)
+> Last Updated: 2026-01-08 (Game Page UX Overhaul - Tabbed Design)
 
-## Current Phase: 58 - Game Pages Comprehensive Rebuild
+## Current Phase: 59 - Game Page UX Overhaul
+
+Apple-inspired tabbed redesign of `/games/[slug]` consolidating hub + sub-pages into a single-page tabbed experience.
+
+### Session Summary (2026-01-08) - Tabbed Game Page & Wikipedia Fixes
+
+**Major UX Redesign:**
+- Consolidated `/games/[slug]` hub + 4 sub-pages into single tabbed experience
+- Tabs: Overview | How to Play | Setup | Score Sheet
+- Removed Reference tab (content merged into Rules tab as "Key Reminders")
+- Hash-based tab routing (`/games/catan#rules`)
+
+**New Components:**
+| Component | Purpose |
+|-----------|---------|
+| `GamePageTabs.tsx` | Hash-based tab container with URL sync |
+| `GameHero.tsx` | Simplified hero with single image, key stats |
+| `QuickStatsBar.tsx` | Players/time/complexity/age badges |
+| `tabs/OverviewTab.tsx` | Discovery content (about, credits, relations, reviews) |
+| `tabs/RulesTab.tsx` | How to Play with Wikipedia integration |
+| `tabs/SetupTab.tsx` | Setup checklist and component list |
+| `tabs/ScoreSheetTab.tsx` | Score sheet generator |
+
+**Rules Tab Improvements:**
+- Wikipedia gameplay section with proper paragraph display
+- Compact Core Rules accordion (single card, expandable rows)
+- Scoring and End Game moved to sidebar
+- Key Reminders card (from old Reference tab)
+- Rulebook preview card in sidebar
+
+**Wikipedia Bug Fixes:**
+- Fixed `cleanSectionWikitext()` stripping paragraph breaks (`\s` → `[^\S\n]`)
+- Added `redirects: 'true'` to all Wikipedia parse API calls
+- Articles that redirect (e.g., "Ark_Nova_(board_game)") now work correctly
+
+**Vecna Enhancement - Re-sync Wikipedia:**
+- New API: `POST /api/admin/games/[id]/resync-wikipedia`
+- New button in Pipeline tab "Reset State" section (next to Re-sync BGG)
+- Re-fetches all Wikipedia data without full re-import
+- Also added to SourcesDrawer Wikipedia tab
+
+**Files Created:**
+```
+src/components/games/GamePageTabs.tsx
+src/components/games/GameHero.tsx
+src/components/games/QuickStatsBar.tsx
+src/components/games/tabs/OverviewTab.tsx
+src/components/games/tabs/RulesTab.tsx
+src/components/games/tabs/SetupTab.tsx
+src/components/games/tabs/ScoreSheetTab.tsx
+src/components/games/tabs/index.ts
+src/app/api/admin/games/[id]/resync-wikipedia/route.ts
+```
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/games/[slug]/page.tsx` | Complete restructure with tabs |
+| `src/lib/wikipedia/sections.ts` | Fixed paragraph preservation |
+| `src/lib/wikipedia/client.ts` | Added redirect following |
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Added resyncWikipedia |
+| `src/app/admin/(dashboard)/vecna/components/SourcesDrawer.tsx` | Added re-sync button |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 58 - Game Pages Comprehensive Rebuild
 
 Complete rebuild of `/games/[slug]` hub page and sub-pages (rules, setup, reference, score-sheet) to surface all available game data with next-level UI/UX.
 

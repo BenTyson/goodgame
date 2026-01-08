@@ -239,6 +239,33 @@ export function VecnaGamePanel({
     }
   }
 
+  // Re-sync Wikipedia data
+  const resyncWikipedia = async () => {
+    setIsProcessing(true)
+    setError(null)
+    setProcessingMessage('Re-syncing Wikipedia data...')
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}/resync-wikipedia`, {
+        method: 'POST',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Re-sync failed')
+      }
+
+      // Refresh to show updated data
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Re-sync failed')
+    } finally {
+      setIsProcessing(false)
+      setProcessingMessage(null)
+    }
+  }
+
   // Get next action based on state
   const getNextAction = () => {
     switch (currentState) {
@@ -553,6 +580,19 @@ export function VecnaGamePanel({
                   <Database className="h-3 w-3 mr-1" />
                   Re-sync BGG
                 </Button>
+                {/* Re-sync Wikipedia - available if game has Wikipedia URL */}
+                {game.has_wikipedia && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isProcessing}
+                    onClick={resyncWikipedia}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Globe className="h-3 w-3 mr-1" />
+                    Re-sync Wikipedia
+                  </Button>
+                )}
                 {currentState !== 'rulebook_ready' && currentState !== 'rulebook_missing' && (
                   <Button
                     variant="ghost"

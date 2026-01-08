@@ -18,3 +18,11 @@ export { CreditsSection, InlineCredits } from './CreditsSection'
 export { ComponentsList } from './ComponentsList'
 export { WikipediaContent, WikipediaGameplay, WikipediaReception } from './WikipediaContent'
 export { GameRelationsSection } from './GameRelationsSection'
+
+// New tabbed game page components
+export { GameHero } from './GameHero'
+export { GamePageTabs } from './GamePageTabs'
+export { QuickStatsBar } from './QuickStatsBar'
+
+// Tab content components
+export * from './tabs'

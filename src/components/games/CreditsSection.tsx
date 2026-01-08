@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils'
 import type { Designer, Artist, Publisher } from '@/types/database'
 
 interface CreditsSectionProps {
-  designers?: Designer[]
-  artists?: Artist[]
-  publishers?: Publisher[]
+  designers?: Designer[] | null
+  artists?: Artist[] | null
+  publishers?: Publisher[] | null
   /** Display variant */
   variant?: 'default' | 'compact' | 'inline'
   /** Show role icons */
@@ -109,17 +109,21 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
 }
 
 export function CreditsSection({
-  designers = [],
-  artists = [],
-  publishers = [],
+  designers,
+  artists,
+  publishers,
   variant = 'default',
   showIcons = true,
   limit = 5,
   className
 }: CreditsSectionProps) {
-  const hasDesigners = designers.length > 0
-  const hasArtists = artists.length > 0
-  const hasPublishers = publishers.length > 0
+  const designerList = designers || []
+  const artistList = artists || []
+  const publisherList = publishers || []
+
+  const hasDesigners = designerList.length > 0
+  const hasArtists = artistList.length > 0
+  const hasPublishers = publisherList.length > 0
 
   if (!hasDesigners && !hasArtists && !hasPublishers) return null
 
@@ -135,8 +139,8 @@ export function CreditsSection({
       {hasDesigners && (
         <CreditRow
           icon={showIcons ? <Pencil className={iconSize} /> : null}
-          label={designers.length === 1 ? 'Designer' : 'Designers'}
-          items={designers}
+          label={designerList.length === 1 ? 'Designer' : 'Designers'}
+          items={designerList}
           urlPrefix="/designers/"
           limit={limit}
           variant={variant}
@@ -145,8 +149,8 @@ export function CreditsSection({
       {hasArtists && (
         <CreditRow
           icon={showIcons ? <Palette className={iconSize} /> : null}
-          label={artists.length === 1 ? 'Artist' : 'Artists'}
-          items={artists}
+          label={artistList.length === 1 ? 'Artist' : 'Artists'}
+          items={artistList}
           urlPrefix="/artists/"
           limit={limit}
           variant={variant}
@@ -155,8 +159,8 @@ export function CreditsSection({
       {hasPublishers && (
         <CreditRow
           icon={showIcons ? <Building2 className={iconSize} /> : null}
-          label={publishers.length === 1 ? 'Publisher' : 'Publishers'}
-          items={publishers}
+          label={publisherList.length === 1 ? 'Publisher' : 'Publishers'}
+          items={publisherList}
           urlPrefix="/publishers/"
           limit={limit}
           variant={variant}

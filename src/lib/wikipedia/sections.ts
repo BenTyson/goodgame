@@ -243,9 +243,10 @@ function cleanSectionWikitext(wikitext: string): string {
       // Convert bold/italic markup
       .replace(/'''([^']+)'''/g, '$1')
       .replace(/''([^']+)''/g, '$1')
-      // Clean up whitespace
+      // Normalize multiple blank lines to single paragraph break
       .replace(/\n{3,}/g, '\n\n')
-      .replace(/^\s+|\s+$/gm, '')
+      // Trim horizontal whitespace from each line (preserve newlines)
+      .replace(/^[^\S\n]+|[^\S\n]+$/gm, '')
       .trim()
   )
 }

@@ -67,11 +67,7 @@ src/app/
 ├── games/
 │   ├── page.tsx              # All games listing
 │   └── [slug]/
-│       ├── page.tsx          # Game hub
-│       ├── rules/page.tsx
-│       ├── score-sheet/page.tsx
-│       ├── setup/page.tsx
-│       └── reference/page.tsx
+│       └── page.tsx          # Tabbed game page (Overview|Rules|Setup|ScoreSheet)
 ├── categories/
 │   ├── page.tsx              # Categories listing
 │   └── [slug]/page.tsx       # Category detail
@@ -143,9 +139,10 @@ src/app/
 │   │   ├── route.ts           # GET, PATCH games
 │   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
 │   │   └── [id]/
-│   │       ├── reset-content/route.ts  # POST reset parsed content
-│   │       ├── sync-bgg/route.ts       # POST re-sync BGG data
-│   │       └── wikipedia/route.ts      # GET status, POST fetch Wikipedia summary
+│   │       ├── reset-content/route.ts    # POST reset parsed content
+│   │       ├── sync-bgg/route.ts         # POST re-sync BGG data
+│   │       ├── resync-wikipedia/route.ts # POST re-sync Wikipedia data
+│   │       └── wikipedia/route.ts        # GET status, POST fetch Wikipedia summary
 │   ├── families/
 │   │   └── [id]/
 │   │       ├── wikipedia/route.ts  # POST fetch Wikipedia, PATCH link games
@@ -186,6 +183,9 @@ src/components/
 ├── games/                     # Game page components
 │   ├── GameCard.tsx           # Game card for listings
 │   ├── GameGrid.tsx           # Responsive game grid
+│   ├── GamePageTabs.tsx       # Hash-based tab container with URL sync
+│   ├── GameHero.tsx           # Simplified hero with single image, key stats
+│   ├── QuickStatsBar.tsx      # Players/time/complexity/age badges
 │   ├── ImageGallery.tsx       # Game image gallery with lightbox
 │   ├── RelatedGames.tsx       # Related games section
 │   ├── TaxonomySection.tsx    # Categories, mechanics, themes, experiences badges
@@ -195,6 +195,12 @@ src/components/
 │   ├── ComponentsList.tsx     # "What's in the Box" collapsible grid
 │   ├── WikipediaContent.tsx   # Gameplay/Reception with CC-BY-SA attribution
 │   ├── GameRelationsSection.tsx # Base game, expansions, family link
+│   ├── tabs/                  # Tabbed game page content
+│   │   ├── index.ts           # Barrel exports
+│   │   ├── OverviewTab.tsx    # Discovery content (about, credits, relations)
+│   │   ├── RulesTab.tsx       # How to Play with Wikipedia integration
+│   │   ├── SetupTab.tsx       # Setup checklist and components
+│   │   └── ScoreSheetTab.tsx  # Score sheet generator
 │   └── filters/               # V2 Filter UI (FilterBar, FilterSidebar, FilterRail, etc.)
 ├── families/                  # FamilyCard, FamilyBadge
 ├── publishers/                # PublisherCard
@@ -327,7 +333,10 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
   ├── types.ts                 # CrunchBreakdown, CrunchResult, RulesContent, etc.
   └── discovery.ts             # Publisher URL pattern matching
 src/lib/wikipedia/             # Wikipedia integration utilities
-  └── index.ts                 # fetchWikipediaContent(), summarizeWikipediaContent(), formatSummaryForPrompt()
+  ├── index.ts                 # enrichGameFromWikipedia(), prepareWikipediaStorageData()
+  ├── client.ts                # Rate-limited MediaWiki API client (follows redirects)
+  ├── sections.ts              # Section extraction with cleanSectionWikitext()
+  └── types.ts                 # MediaWiki API response types
 src/lib/vecna/                 # Vecna pipeline utilities
   ├── types.ts                 # VecnaState, Phase, ProcessingMode, ProcessingResult, etc.
   ├── pipeline.ts              # Pipeline orchestration (isBlockedState, calculatePipelineProgress)
@@ -511,7 +520,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | `/marketplace/transactions` | Transactions dashboard (purchases + sales) |
 | `/marketplace/transactions/[id]` | Transaction detail |
 | `/games` | Browse all games |
-| `/games/[slug]` | Game hub page |
+| `/games/[slug]` | Game page (tabbed: Overview, Rules, Setup, Score Sheet) |
+| `/games/[slug]#rules` | Game page - How to Play tab |
+| `/games/[slug]#setup` | Game page - Setup tab |
+| `/games/[slug]#score-sheet` | Game page - Score Sheet tab |
 | `/shelf` | User's game collection |
 | `/settings` | Profile settings (includes Stripe onboarding) |
 | `/u/[username]` | Public user profile |

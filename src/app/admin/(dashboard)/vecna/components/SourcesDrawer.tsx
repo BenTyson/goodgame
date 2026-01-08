@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sheet,
   SheetContent,
@@ -10,7 +11,9 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { VecnaGame } from '@/lib/vecna'
 
@@ -53,6 +56,54 @@ function DataField({ label, value, className }: { label: string; value: React.Re
 }
 
 export function SourcesDrawer({ open, onOpenChange, game }: SourcesDrawerProps) {
+  const router = useRouter()
+  const [isResyncing, setIsResyncing] = useState(false)
+  const [resyncStatus, setResyncStatus] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
+
+  const handleResyncWikipedia = async () => {
+    if (!game) return
+
+    setIsResyncing(true)
+    setResyncStatus(null)
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}/resync-wikipedia`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const updated = Object.entries(data.updated)
+          .filter(([, v]) => v)
+          .map(([k]) => k)
+        setResyncStatus({
+          success: true,
+          message: updated.length > 0
+            ? `Updated: ${updated.join(', ')}`
+            : 'Re-synced (no new data found)',
+        })
+        // Refresh the page data
+        router.refresh()
+      } else {
+        setResyncStatus({
+          success: false,
+          message: data.error || 'Re-sync failed',
+        })
+      }
+    } catch (error) {
+      setResyncStatus({
+        success: false,
+        message: error instanceof Error ? error.message : 'Re-sync failed',
+      })
+    } finally {
+      setIsResyncing(false)
+    }
+  }
+
   if (!game) return null
 
   const bgg = game.bgg_raw_data
@@ -157,6 +208,42 @@ export function SourcesDrawer({ open, onOpenChange, game }: SourcesDrawerProps) 
 
             {/* Wikipedia Tab */}
             <TabsContent value="wikipedia" className="mt-0 space-y-4">
+              {/* Resync Button */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResyncWikipedia}
+                  disabled={isResyncing || !game.wikipedia_url}
+                  className="gap-2"
+                >
+                  <RefreshCw className={cn('h-4 w-4', isResyncing && 'animate-spin')} />
+                  {isResyncing ? 'Re-syncing...' : 'Re-sync Wikipedia'}
+                </Button>
+                {!game.wikipedia_url && (
+                  <span className="text-xs text-muted-foreground">No Wikipedia URL</span>
+                )}
+              </div>
+
+              {/* Resync Status */}
+              {resyncStatus && (
+                <div
+                  className={cn(
+                    'p-3 rounded-lg flex items-start gap-2 text-sm',
+                    resyncStatus.success
+                      ? 'bg-green-50 border border-green-200 text-green-700'
+                      : 'bg-red-50 border border-red-200 text-red-700'
+                  )}
+                >
+                  {resyncStatus.success ? (
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  )}
+                  <span>{resyncStatus.message}</span>
+                </div>
+              )}
+
               {game.wikipedia_summary && (
                 <div className="space-y-1">
                   <h4 className="font-medium text-sm">AI Summary</h4>

@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Category, Mechanic, Theme, PlayerExperience } from '@/types/database'
 
-// Extended types with is_primary flag
-type CategoryWithPrimary = Category & { is_primary?: boolean }
-type ThemeWithPrimary = Theme & { is_primary?: boolean }
-type ExperienceWithPrimary = PlayerExperience & { is_primary?: boolean }
+// Extended types with is_primary flag - accepts null from database
+type CategoryWithPrimary = Category & { is_primary?: boolean | null }
+type ThemeWithPrimary = Theme & { is_primary?: boolean | null }
+type ExperienceWithPrimary = PlayerExperience & { is_primary?: boolean | null }
 
 interface TaxonomySectionProps {
   categories?: CategoryWithPrimary[]
@@ -31,7 +31,7 @@ interface TaxonomySectionProps {
 interface TaxonomyRowProps {
   icon: React.ReactNode
   label: string
-  items: Array<{ slug: string; name: string; is_primary?: boolean }>
+  items: Array<{ slug: string; name: string; is_primary?: boolean | null }>
   colorClass: string
   urlPrefix: string
   collapseAfter: number

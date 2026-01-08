@@ -805,6 +805,55 @@ POST /api/admin/games/[id]/sync-bgg
 - When BGG data has been updated upstream
 - To refresh taxonomy assignments without re-importing
 
+### Re-sync Wikipedia (2026-01-08)
+
+Added ability to re-sync a game's Wikipedia data without re-importing the entire game. This is useful when Wikipedia extraction code has been updated or when Wikipedia articles have changed.
+
+**Features:**
+- "Re-sync Wikipedia" button in Reset State section (Pipeline tab)
+- Only appears if game has a Wikipedia URL
+- Re-fetches all Wikipedia sections (gameplay, origins, reception, infobox)
+- Re-extracts images, external links, and awards
+- Follows Wikipedia redirects automatically
+- Page refreshes to show updated data
+
+**API Endpoint:**
+```
+POST /api/admin/games/[id]/resync-wikipedia
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "gameId": "uuid",
+  "gameName": "Ark Nova",
+  "wikipediaUrl": "https://en.wikipedia.org/wiki/Ark_Nova",
+  "updated": {
+    "gameplay": true,
+    "origins": true,
+    "reception": true,
+    "infobox": true,
+    "images": true,
+    "externalLinks": true,
+    "awards": true
+  }
+}
+```
+
+**Use Cases:**
+- After fixing Wikipedia extraction code (e.g., paragraph preservation bug)
+- When Wikipedia article has been updated with new content
+- To refresh gameplay/reception sections without re-importing
+- After fixing redirect handling in Wikipedia client
+
+**Bug Fixes Applied (2026-01-08):**
+- Fixed `cleanSectionWikitext()` in `sections.ts` to preserve paragraph breaks
+  - Changed `\s` to `[^\S\n]` to match whitespace except newlines
+  - Wikipedia gameplay now correctly shows separate paragraphs
+- Added `redirects: 'true'` to all Wikipedia parse API calls in `client.ts`
+  - Articles like "Ark_Nova_(board_game)" that redirect now work correctly
+
 ### Auto-Process Pipeline (2026-01-06)
 
 Added automated pipeline processing that chains parse → taxonomy → generate with real-time progress modal.
