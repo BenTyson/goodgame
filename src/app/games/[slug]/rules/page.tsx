@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, ExternalLink, Users, Clock, Target } from 'lucide-react'
+import { ArrowLeft, BookOpen, ExternalLink, Users, Clock } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ComplexityDisplay } from '@/components/games'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -928,12 +929,12 @@ export default async function RulesPage({ params }: RulesPageProps) {
             {game.play_time_min}-{game.play_time_max} min
           </Badge>
         )}
-        {game.weight && (
-          <Badge variant="secondary" className="gap-1.5 py-1.5">
-            <Target className="h-4 w-4" />
-            Complexity: {game.weight.toFixed(1)}/5
-          </Badge>
-        )}
+        <ComplexityDisplay
+          crunchScore={game.crunch_score}
+          crunchBreakdown={game.crunch_breakdown as import('@/types/database').CrunchBreakdown | null}
+          weight={game.weight}
+          variant="badge"
+        />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">

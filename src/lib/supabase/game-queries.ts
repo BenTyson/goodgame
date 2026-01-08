@@ -7,7 +7,10 @@ import type {
   AffiliateLink,
   Designer,
   Publisher,
+  Artist,
   Mechanic,
+  Theme,
+  PlayerExperience,
   ComplexityTier,
   Database
 } from '@/types/database'
@@ -530,6 +533,45 @@ export async function getGameWithDetails(slug: string) {
     .filter(m => m !== null)
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // Get themes via junction table
+  const { data: themeLinks } = await supabase
+    .from('game_themes')
+    .select('theme_id, is_primary, themes(*)')
+    .eq('game_id', game.id)
+
+  const themes = (themeLinks || [])
+    .map(link => ({
+      ...(link.themes as Theme),
+      is_primary: link.is_primary ?? false
+    }))
+    .filter(t => t.id !== undefined)
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+
+  // Get player experiences via junction table
+  const { data: experienceLinks } = await supabase
+    .from('game_player_experiences')
+    .select('player_experience_id, is_primary, player_experiences(*)')
+    .eq('game_id', game.id)
+
+  const player_experiences = (experienceLinks || [])
+    .map(link => ({
+      ...(link.player_experiences as PlayerExperience),
+      is_primary: link.is_primary ?? false
+    }))
+    .filter(e => e.id !== undefined)
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+
+  // Get artists via junction table
+  const { data: artistLinks } = await supabase
+    .from('game_artists')
+    .select('artist_id, display_order, artists(*)')
+    .eq('game_id', game.id)
+    .order('display_order')
+
+  const artists_list = (artistLinks || [])
+    .map(link => link.artists as Artist)
+    .filter(a => a !== null)
+
   // Get complexity tier if game has one
   let complexity_tier: ComplexityTier | null = null
   if (game.complexity_tier_id) {
@@ -548,7 +590,10 @@ export async function getGameWithDetails(slug: string) {
     affiliate_links: affiliateLinks || [],
     designers_list,
     publishers_list,
+    artists_list,
     mechanics,
+    themes,
+    player_experiences,
     complexity_tier
   }
 }

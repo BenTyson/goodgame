@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Boxes, ExternalLink, Users, Clock, CheckCircle2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ComplexityDisplay } from '@/components/games'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SetupChecklist } from '@/components/setup/SetupChecklist'
@@ -1052,6 +1053,12 @@ export default async function SetupPage({ params }: SetupPageProps) {
             {game.play_time_min}-{game.play_time_max} min
           </Badge>
         )}
+        <ComplexityDisplay
+          crunchScore={game.crunch_score}
+          crunchBreakdown={game.crunch_breakdown as import('@/types/database').CrunchBreakdown | null}
+          weight={game.weight}
+          variant="badge"
+        />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">

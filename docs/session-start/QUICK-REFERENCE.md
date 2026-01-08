@@ -183,7 +183,18 @@ src/components/
 ├── ui/                        # shadcn/ui + custom UI components
 │   └── auto-resize-textarea.tsx  # Textarea that expands with content
 ├── layout/                    # Header, Footer, ThemeProvider
-├── games/                     # GameCard, GameGrid, ImageGallery, RelatedGames
+├── games/                     # Game page components
+│   ├── GameCard.tsx           # Game card for listings
+│   ├── GameGrid.tsx           # Responsive game grid
+│   ├── ImageGallery.tsx       # Game image gallery with lightbox
+│   ├── RelatedGames.tsx       # Related games section
+│   ├── TaxonomySection.tsx    # Categories, mechanics, themes, experiences badges
+│   ├── ComplexityDisplay.tsx  # Crunch Score with breakdown tooltip (falls back to weight)
+│   ├── AgeRating.tsx          # "Ages X+" badge with tier classification
+│   ├── CreditsSection.tsx     # Designers, Artists, Publishers with links
+│   ├── ComponentsList.tsx     # "What's in the Box" collapsible grid
+│   ├── WikipediaContent.tsx   # Gameplay/Reception with CC-BY-SA attribution
+│   ├── GameRelationsSection.tsx # Base game, expansions, family link
 │   └── filters/               # V2 Filter UI (FilterBar, FilterSidebar, FilterRail, etc.)
 ├── families/                  # FamilyCard, FamilyBadge
 ├── publishers/                # PublisherCard
@@ -383,6 +394,10 @@ UserActivity     // Activity record
 NotificationType // 'new_follower' | 'rating' | marketplace notifications
 UserNotification // Notification record
 ReviewWithUser   // Review with user profile
+
+// Rulebook types (from src/lib/rulebook/types.ts)
+CrunchBreakdown    // Complexity breakdown (setup, teach, decisions, etc.)
+ComponentList      // Parsed component counts (cards, dice, tokens, etc.)
 
 // Taxonomy types
 TaxonomySuggestion // AI-generated taxonomy suggestion

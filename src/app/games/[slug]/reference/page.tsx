@@ -1,11 +1,12 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Zap, ExternalLink, Users, Clock } from 'lucide-react'
+import { ArrowLeft, Zap, ExternalLink, Users, Clock, BookOpen, FileText, Boxes } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PrintButton } from '@/components/ui/print-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ComplexityDisplay } from '@/components/games'
 import { Separator } from '@/components/ui/separator'
 import { getGameBySlug, getAllGameSlugs } from '@/lib/supabase/queries'
 import type { ReferenceContent } from '@/types/database'
@@ -88,9 +89,59 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
             </Link>
           </Button>
         </div>
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold mb-4">{game.name} Quick Reference</h1>
-          <p className="text-muted-foreground">Reference content is being generated. Check back soon!</p>
+
+        {/* Improved empty state */}
+        <div className="max-w-md mx-auto text-center py-12">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+            <Zap className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">{game.name} Quick Reference</h1>
+          <p className="text-muted-foreground mb-6">
+            A printable quick reference card is being generated for this game. Check back soon!
+          </p>
+
+          {/* Alternative resources */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">In the meantime, try these resources:</p>
+            <div className="flex flex-col gap-2">
+              {game.has_rules && (
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <Link href={`/games/${game.slug}/rules`}>
+                    <BookOpen className="h-4 w-4" />
+                    Full Rules Summary
+                  </Link>
+                </Button>
+              )}
+              {game.has_setup_guide && (
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <Link href={`/games/${game.slug}/setup`}>
+                    <Boxes className="h-4 w-4" />
+                    Setup Guide
+                  </Link>
+                </Button>
+              )}
+              {game.has_score_sheet && (
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <Link href={`/games/${game.slug}/score-sheet`}>
+                    <FileText className="h-4 w-4" />
+                    Score Sheet
+                  </Link>
+                </Button>
+              )}
+              {game.bgg_id && (
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <a
+                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View on BoardGameGeek
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -139,6 +190,12 @@ export default async function ReferencePage({ params }: ReferencePageProps) {
                   {game.play_time_min}-{game.play_time_max} min
                 </span>
               )}
+              <ComplexityDisplay
+                crunchScore={game.crunch_score}
+                crunchBreakdown={game.crunch_breakdown as import('@/types/database').CrunchBreakdown | null}
+                weight={game.weight}
+                variant="compact"
+              />
             </div>
           </div>
         </div>

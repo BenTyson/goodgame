@@ -6,7 +6,6 @@ import { Suspense } from 'react'
 import {
   Users,
   Clock,
-  Brain,
   Calendar,
   ExternalLink,
   BookOpen,
@@ -17,17 +16,32 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ImageGallery, RelatedGamesAsync, RelatedGamesSkeleton, AwardBadgeList, FamilyBadge } from '@/components/games'
+import {
+  ImageGallery,
+  RelatedGamesAsync,
+  RelatedGamesSkeleton,
+  AwardBadgeList,
+  TaxonomySection,
+  CategoryBadges,
+  ComplexityDisplay,
+  AgeRating,
+  CreditsSection,
+  ComponentsList,
+  WikipediaGameplay,
+  WikipediaReception,
+  GameRelationsSection,
+} from '@/components/games'
 import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
 import { ReviewSection, AggregateRating } from '@/components/reviews'
-import { getGameWithDetails, getAllGameSlugs, getGameAwards, getGameFamily } from '@/lib/supabase/queries'
+import { getGameWithDetails, getAllGameSlugs, getGameAwards } from '@/lib/supabase/queries'
+import { getGameRelationsGrouped } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 import { getInitials, getInitialsColor } from '@/components/publishers'
+import type { CrunchBreakdown, ComponentList as ComponentListType } from '@/types/database'
 
 interface GamePageProps {
   params: Promise<{ slug: string }>
@@ -107,12 +121,18 @@ export default async function GamePage({ params }: GamePageProps) {
     { name: game.name, href: `/games/${game.slug}` },
   ]
 
-  const [gameAwards, gameFamily, reviewsData, aggregateRating] = await Promise.all([
+  // Parallel data fetching
+  const [gameAwards, gameRelations, reviewsData, aggregateRating] = await Promise.all([
     getGameAwards(game.id),
-    getGameFamily(game.id),
+    getGameRelationsGrouped(game.id),
     getGameReviews(game.id),
     getGameAggregateRating(game.id),
   ])
+
+  // Check for available data
+  const hasRelations = gameRelations.baseGame || gameRelations.expansions.length > 0 || gameRelations.otherRelations.length > 0
+  const hasWikipediaContent = game.wikipedia_gameplay || game.wikipedia_reception
+  const hasComponentList = game.component_list && Object.keys(game.component_list as object).length > 0
 
   return (
     <>
@@ -120,414 +140,445 @@ export default async function GamePage({ params }: GamePageProps) {
       <BreadcrumbJsonLd items={breadcrumbs} />
       <div className="container py-8 md:py-12">
         {/* Breadcrumb */}
-      <nav className="mb-6 text-sm text-muted-foreground">
-        <Link href="/games" className="hover:text-foreground">
-          Games
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-foreground">{game.name}</span>
-      </nav>
+        <nav className="mb-6 text-sm text-muted-foreground">
+          <Link href="/games" className="hover:text-foreground transition-colors">
+            Games
+          </Link>
+          <span className="mx-2">/</span>
+          <span className="text-foreground">{game.name}</span>
+        </nav>
 
-      {/* Hero section */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Game images */}
-        <div className="lg:col-span-1">
-          {game.images && game.images.length > 0 ? (
-            <ImageGallery images={game.images} gameName={game.name} />
-          ) : (
-            <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-              {game.wikidata_image_url ? (
-                <Image
-                  src={game.wikidata_image_url}
-                  alt={game.name}
-                  fill
-                  className="object-cover"
-                  priority
-                  unoptimized
-                />
-              ) : game.box_image_url ? (
-                <Image
-                  src={game.box_image_url}
-                  alt={game.name}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                  <span className="text-8xl font-bold text-primary/40">
-                    {game.name.charAt(0)}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Game info */}
-        <div className="lg:col-span-2">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            {game.categories?.map((category) => (
-              <Link
-                key={category.slug}
-                href={`/categories/${category.slug}`}
-              >
-                <Badge variant="secondary">{category.name}</Badge>
-              </Link>
-            ))}
+        {/* Hero section */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Game images */}
+          <div className="lg:col-span-1">
+            {game.images && game.images.length > 0 ? (
+              <ImageGallery images={game.images} gameName={game.name} />
+            ) : (
+              <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+                {game.wikidata_image_url ? (
+                  <Image
+                    src={game.wikidata_image_url}
+                    alt={game.name}
+                    fill
+                    className="object-cover"
+                    priority
+                    unoptimized
+                  />
+                ) : game.box_image_url ? (
+                  <Image
+                    src={game.box_image_url}
+                    alt={game.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                    <span className="text-8xl font-bold text-primary/40">
+                      {game.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            {game.name}
-          </h1>
+          {/* Game info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Categories (primary taxonomy) */}
+            {game.categories && game.categories.length > 0 && (
+              <CategoryBadges categories={game.categories} limit={4} />
+            )}
 
-          {game.tagline && (
-            <p className="mt-2 text-xl text-muted-foreground">{game.tagline}</p>
-          )}
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+                {game.name}
+              </h1>
+              {game.tagline && (
+                <p className="mt-2 text-xl text-muted-foreground">{game.tagline}</p>
+              )}
+            </div>
 
-          {/* Community Rating */}
-          {aggregateRating.count > 0 && (
-            <div className="mt-4">
+            {/* Community Rating */}
+            {aggregateRating.count > 0 && (
               <AggregateRating
                 average={aggregateRating.average}
                 count={aggregateRating.count}
               />
-            </div>
-          )}
-
-          {/* Quick stats */}
-          <div className="mt-6 flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Players</p>
-                <p className="font-medium">
-                  {game.player_count_min === game.player_count_max
-                    ? game.player_count_min
-                    : `${game.player_count_min}-${game.player_count_max}`}
-                  {game.player_count_best && game.player_count_best.length > 0 && (
-                    <span className="text-muted-foreground">
-                      {' '}
-                      (best: {game.player_count_best.join(', ')})
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {game.play_time_min && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Play Time</p>
-                  <p className="font-medium">
-                    {game.play_time_min === game.play_time_max
-                      ? `${game.play_time_min} min`
-                      : `${game.play_time_min}-${game.play_time_max} min`}
-                  </p>
-                </div>
-              </div>
             )}
 
-            {game.weight && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-                <Brain className="h-5 w-5 text-muted-foreground" />
+            {/* Quick stats */}
+            <div className="flex flex-wrap gap-3">
+              {/* Players */}
+              <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5">
+                <Users className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Complexity</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Players</p>
                   <p className="font-medium">
-                    {game.weight.toFixed(1)} / 5
-                    {game.complexity_tier && (
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        ({game.complexity_tier.name})
+                    {game.player_count_min === game.player_count_max
+                      ? game.player_count_min
+                      : `${game.player_count_min}-${game.player_count_max}`}
+                    {game.player_count_best && game.player_count_best.length > 0 && (
+                      <span className="text-sm text-muted-foreground ml-1">
+                        (best: {game.player_count_best.join(', ')})
                       </span>
                     )}
                   </p>
                 </div>
               </div>
-            )}
 
-            {game.year_published && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Published</p>
-                  <p className="font-medium">{game.year_published}</p>
+              {/* Play Time */}
+              {game.play_time_min && (
+                <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Play Time</p>
+                    <p className="font-medium">
+                      {game.play_time_min === game.play_time_max
+                        ? `${game.play_time_min} min`
+                        : `${game.play_time_min}-${game.play_time_max} min`}
+                    </p>
+                  </div>
                 </div>
+              )}
+
+              {/* Complexity - using ComplexityDisplay component */}
+              {(game.crunch_score || game.weight) && (
+                <ComplexityDisplay
+                  crunchScore={game.crunch_score}
+                  crunchBreakdown={game.crunch_breakdown as CrunchBreakdown | null}
+                  weight={game.weight}
+                  complexityTier={game.complexity_tier}
+                  variant="badge"
+                />
+              )}
+
+              {/* Age Rating */}
+              {game.min_age && (
+                <AgeRating age={game.min_age} variant="badge" />
+              )}
+
+              {/* Year Published */}
+              {game.year_published && (
+                <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Published</p>
+                    <p className="font-medium">{game.year_published}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Credits - Designers, Artists, Publishers */}
+            <CreditsSection
+              designers={game.designers_list}
+              artists={game.artists_list}
+              publishers={game.publishers_list}
+              variant="compact"
+              limit={4}
+            />
+
+            {/* Awards */}
+            {gameAwards.length > 0 && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">Awards</p>
+                <AwardBadgeList
+                  awards={gameAwards}
+                  variant="compact"
+                  limit={4}
+                />
               </div>
             )}
-          </div>
 
-          {/* Designer & Publisher */}
-          {(game.designers_list?.length || game.publishers_list?.length || game.designers?.length || game.publisher) && (
-            <div className="mt-4 text-sm text-muted-foreground">
-              {/* Use linked designers if available, fall back to text array */}
-              {game.designers_list && game.designers_list.length > 0 ? (
-                <p>
-                  <span className="font-medium text-foreground">Designer:</span>{' '}
-                  {game.designers_list.map((designer, idx) => (
-                    <span key={designer.id}>
-                      <Link
-                        href={`/designers/${designer.slug}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {designer.name}
-                      </Link>
-                      {idx < game.designers_list!.length - 1 && ', '}
-                    </span>
-                  ))}
-                </p>
-              ) : game.designers && game.designers.length > 0 ? (
-                <p>
-                  <span className="font-medium text-foreground">Designer:</span>{' '}
-                  {game.designers.join(', ')}
-                </p>
-              ) : null}
-              {/* Use linked publishers if available, fall back to text field */}
-              {game.publishers_list && game.publishers_list.length > 0 ? (
-                <p>
-                  <span className="font-medium text-foreground">Publisher:</span>{' '}
-                  {game.publishers_list.map((publisher, idx) => (
-                    <span key={publisher.id}>
-                      <Link
-                        href={`/publishers/${publisher.slug}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {publisher.name}
-                      </Link>
-                      {idx < game.publishers_list!.length - 1 && ', '}
-                    </span>
-                  ))}
-                </p>
-              ) : game.publisher ? (
-                <p>
-                  <span className="font-medium text-foreground">Publisher:</span>{' '}
-                  {game.publisher}
-                </p>
-              ) : null}
-            </div>
-          )}
-
-          {/* Awards */}
-          {gameAwards.length > 0 && (
-            <div className="mt-6">
-              <p className="text-sm font-medium text-foreground mb-2">Awards</p>
-              <AwardBadgeList
-                awards={gameAwards}
+            {/* Game Family */}
+            {gameRelations.family && !gameRelations.baseGame && (
+              <GameRelationsSection
+                baseGame={null}
+                expansions={[]}
+                otherRelations={[]}
+                family={gameRelations.family}
                 variant="compact"
-                limit={4}
+              />
+            )}
+
+            {/* Buy buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <BuyButtons
+                amazonAsin={game.amazon_asin}
+                gameSlug={game.slug}
+              />
+              <AddToShelfButton gameId={game.id} />
+            </div>
+          </div>
+        </div>
+
+        {/* Full Taxonomy Section (all 4 dimensions) */}
+        {(game.mechanics?.length > 0 || game.themes?.length > 0 || game.player_experiences?.length > 0) && (
+          <>
+            <Separator className="my-10" />
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight mb-4">
+                Game Classification
+              </h2>
+              <TaxonomySection
+                categories={game.categories}
+                mechanics={game.mechanics}
+                themes={game.themes}
+                playerExperiences={game.player_experiences}
+                collapseAfter={6}
               />
             </div>
-          )}
+          </>
+        )}
 
-          {/* Game Family */}
-          {gameFamily && (
-            <div className="mt-6">
-              <FamilyBadge family={gameFamily} />
+        {/* Game Relations Section */}
+        {hasRelations && (
+          <>
+            <Separator className="my-10" />
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-6">
+                {gameRelations.baseGame ? 'This is an Expansion' : 'Related Games'}
+              </h2>
+              <GameRelationsSection
+                baseGame={gameRelations.baseGame}
+                expansions={gameRelations.expansions}
+                otherRelations={gameRelations.otherRelations}
+                family={gameRelations.family}
+              />
             </div>
-          )}
+          </>
+        )}
 
-          {/* Buy buttons */}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <BuyButtons
-              amazonAsin={game.amazon_asin}
-              gameSlug={game.slug}
+        {/* Content sections */}
+        {availableSections.length > 0 && (
+          <>
+            <Separator className="my-10" />
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-6">
+                Game Resources
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {availableSections.map((section) => (
+                  <Link
+                    key={section.key}
+                    href={`/games/${game.slug}/${section.href}`}
+                    className="group"
+                  >
+                    <Card className="h-full transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5">
+                      <CardHeader className="pb-2">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-transform duration-300 group-hover:scale-110">
+                          <section.icon className="h-6 w-6 text-primary" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <CardTitle className="text-lg">{section.title}</CardTitle>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {section.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* About Section with Description + Wikipedia + Components */}
+        {(game.description || hasWikipediaContent || hasComponentList) && (
+          <>
+            <Separator className="my-10" />
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold tracking-tight">
+                About {game.name}
+              </h2>
+
+              {/* Description */}
+              {game.description && (
+                <p className="text-muted-foreground leading-relaxed max-w-3xl">
+                  {game.description}
+                </p>
+              )}
+
+              {/* Wikipedia Gameplay */}
+              {game.wikipedia_gameplay && (
+                <WikipediaGameplay
+                  gameplay={game.wikipedia_gameplay}
+                  wikipediaUrl={game.wikipedia_url}
+                />
+              )}
+
+              {/* Components List */}
+              {hasComponentList && (
+                <ComponentsList
+                  components={game.component_list as ComponentListType}
+                  variant="grid"
+                />
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Reception Section (Wikipedia) */}
+        {game.wikipedia_reception && (
+          <>
+            <Separator className="my-10" />
+            <WikipediaReception
+              reception={game.wikipedia_reception}
+              wikipediaUrl={game.wikipedia_url}
             />
-            <AddToShelfButton gameId={game.id} />
-          </div>
-        </div>
-      </div>
+          </>
+        )}
 
-      <Separator className="my-10" />
-
-      {/* Content sections */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-6">
-          Game Resources
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {availableSections.map((section) => (
-            <Link
-              key={section.key}
-              href={`/games/${game.slug}/${section.href}`}
-              className="group"
-            >
-              <Card className="h-full transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5" interactive>
-                <CardHeader className="pb-2">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-transform duration-300 group-hover:scale-110">
-                    <section.icon className="h-6 w-6 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-lg">{section.title}</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {section.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Description */}
-      {game.description && (
-        <>
-          <Separator className="my-10" />
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">
-              About {game.name}
-            </h2>
-            <p className="text-muted-foreground leading-relaxed max-w-3xl">
-              {game.description}
-            </p>
-          </div>
-        </>
-      )}
-
-      {/* About the Publisher */}
-      {game.publishers_list && game.publishers_list.length > 0 && (
-        <>
-          <Separator className="my-10" />
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-6">
-              About the Publisher
-            </h2>
-            {game.publishers_list.slice(0, 1).map((publisher) => {
-              const initials = getInitials(publisher.name)
-              const colorClass = getInitialsColor(publisher.name)
-              return (
-                <div key={publisher.id} className="flex flex-col sm:flex-row gap-6">
-                  {/* Publisher Logo/Initials */}
-                  <div className="shrink-0">
-                    {publisher.logo_url ? (
-                      <Image
-                        src={publisher.logo_url}
-                        alt={publisher.name}
-                        width={80}
-                        height={80}
-                        className="rounded-xl object-contain"
-                      />
-                    ) : (
-                      <div className={`flex h-20 w-20 items-center justify-center rounded-xl ${colorClass} text-white font-bold text-2xl`}>
-                        {initials}
+        {/* About the Publisher */}
+        {game.publishers_list && game.publishers_list.length > 0 && (
+          <>
+            <Separator className="my-10" />
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-6">
+                About the Publisher{game.publishers_list.length > 1 ? 's' : ''}
+              </h2>
+              <div className="space-y-6">
+                {game.publishers_list.map((publisher) => {
+                  const initials = getInitials(publisher.name)
+                  const colorClass = getInitialsColor(publisher.name)
+                  return (
+                    <div key={publisher.id} className="flex flex-col sm:flex-row gap-6">
+                      {/* Publisher Logo/Initials */}
+                      <div className="shrink-0">
+                        {publisher.logo_url ? (
+                          <Image
+                            src={publisher.logo_url}
+                            alt={publisher.name}
+                            width={80}
+                            height={80}
+                            className="rounded-xl object-contain"
+                          />
+                        ) : (
+                          <div className={`flex h-20 w-20 items-center justify-center rounded-xl ${colorClass} text-white font-bold text-2xl`}>
+                            {initials}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Publisher Info */}
-                  <div className="flex-1">
-                    <Link
-                      href={`/publishers/${publisher.slug}`}
-                      className="text-xl font-semibold hover:text-primary transition-colors"
-                    >
-                      {publisher.name}
-                    </Link>
-                    {publisher.description ? (
-                      <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
-                        {publisher.description}
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
-                        {publisher.name} is a board game publisher known for creating engaging tabletop experiences. Visit their website to explore their full catalog of games.
-                      </p>
-                    )}
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/publishers/${publisher.slug}`} className="gap-2">
-                          <Building2 className="h-4 w-4" />
-                          View All Games
+                      {/* Publisher Info */}
+                      <div className="flex-1">
+                        <Link
+                          href={`/publishers/${publisher.slug}`}
+                          className="text-xl font-semibold hover:text-primary transition-colors"
+                        >
+                          {publisher.name}
                         </Link>
-                      </Button>
-                      {publisher.website && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a
-                            href={publisher.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="gap-2"
-                          >
-                            Visit Website
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      )}
+                        {publisher.description ? (
+                          <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
+                            {publisher.description}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
+                            {publisher.name} is a board game publisher known for creating engaging tabletop experiences.
+                          </p>
+                        )}
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/publishers/${publisher.slug}`} className="gap-2">
+                              <Building2 className="h-4 w-4" />
+                              View All Games
+                            </Link>
+                          </Button>
+                          {publisher.website && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a
+                                href={publisher.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="gap-2"
+                              >
+                                Visit Website
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {/* Reviews Section */}
-      <Separator className="my-10" />
-      <ReviewSection
-        gameId={game.id}
-        gameName={game.name}
-        initialReviews={reviewsData.reviews}
-        initialHasMore={reviewsData.hasMore}
-      />
-
-      {/* External links */}
-      {(game.bgg_id || game.official_website || game.rulebook_url) && (
-        <>
-          <Separator className="my-10" />
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">
-              External Links
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {game.official_website && (
-                <Button variant="outline" asChild>
-                  <a
-                    href={game.official_website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-2"
-                  >
-                    Official Website
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {game.rulebook_url && (
-                <Button variant="outline" asChild>
-                  <a
-                    href={game.rulebook_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-2"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Official Rulebook
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {game.bgg_id && (
-                <Button variant="outline" asChild>
-                  <a
-                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-2"
-                  >
-                    BoardGameGeek
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Related games */}
-      <Separator className="my-10" />
-      <Suspense fallback={<RelatedGamesSkeleton />}>
-        <RelatedGamesAsync gameSlug={game.slug} />
-      </Suspense>
+        {/* Reviews Section */}
+        <Separator className="my-10" />
+        <ReviewSection
+          gameId={game.id}
+          gameName={game.name}
+          initialReviews={reviewsData.reviews}
+          initialHasMore={reviewsData.hasMore}
+        />
+
+        {/* External links */}
+        {(game.bgg_id || game.official_website || game.rulebook_url) && (
+          <>
+            <Separator className="my-10" />
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-4">
+                External Links
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {game.official_website && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={game.official_website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="gap-2"
+                    >
+                      Official Website
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+                {game.rulebook_url && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={game.rulebook_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="gap-2"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Official Rulebook
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+                {game.bgg_id && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="gap-2"
+                    >
+                      BoardGameGeek
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Related games */}
+        <Separator className="my-10" />
+        <Suspense fallback={<RelatedGamesSkeleton />}>
+          <RelatedGamesAsync gameSlug={game.slug} />
+        </Suspense>
       </div>
     </>
   )

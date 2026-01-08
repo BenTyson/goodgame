@@ -5,7 +5,8 @@ import type {
   GameFamily,
   GameFamilyWithGames,
   GameRelationWithTarget,
-  GameRelationWithSource
+  GameRelationWithSource,
+  RelationType
 } from '@/types/database'
 
 // ===========================================
@@ -232,4 +233,113 @@ export async function getAllGameRelations(gameId: string): Promise<{
   ])
 
   return { direct, inverse }
+}
+
+// ===========================================
+// GROUPED RELATIONS FOR DISPLAY
+// ===========================================
+
+export interface GroupedGameRelations {
+  /** If this game is an expansion, shows the base game */
+  baseGame: Game | null
+  /** Expansions for this game (if it's a base game) */
+  expansions: Game[]
+  /** Other related games grouped by relation type */
+  otherRelations: {
+    type: RelationType
+    label: string
+    games: Game[]
+  }[]
+  /** The game's family if it has one */
+  family: GameFamily | null
+}
+
+/**
+ * Gets all game relations organized for display on the public game page.
+ * Combines direct and inverse relations into user-friendly groups.
+ */
+export async function getGameRelationsGrouped(gameId: string): Promise<GroupedGameRelations> {
+  const [{ direct, inverse }, family] = await Promise.all([
+    getAllGameRelations(gameId),
+    getGameFamily(gameId)
+  ])
+
+  let baseGame: Game | null = null
+  const expansions: Game[] = []
+  const otherRelationsMap = new Map<RelationType, Game[]>()
+
+  // Process direct relations (this game -> target)
+  for (const relation of direct) {
+    if (relation.relation_type === 'expansion_of') {
+      // This game is an expansion OF the target (target is base game)
+      baseGame = relation.target_game
+    } else if (relation.relation_type === 'base_game_of') {
+      // This game is the base game OF the target (target is expansion)
+      expansions.push(relation.target_game)
+    } else {
+      // Other relation types
+      const existing = otherRelationsMap.get(relation.relation_type as RelationType) || []
+      existing.push(relation.target_game)
+      otherRelationsMap.set(relation.relation_type as RelationType, existing)
+    }
+  }
+
+  // Process inverse relations (source -> this game)
+  for (const relation of inverse) {
+    if (relation.relation_type === 'expansion_of') {
+      // Source game is an expansion OF this game (this is base game)
+      expansions.push(relation.source_game)
+    } else if (relation.relation_type === 'base_game_of') {
+      // Source game is base game OF this game (this is expansion)
+      if (!baseGame) {
+        baseGame = relation.source_game
+      }
+    } else {
+      // Other inverse relations
+      const inverseType = getInverseRelationType(relation.relation_type as RelationType)
+      const existing = otherRelationsMap.get(inverseType) || []
+      existing.push(relation.source_game)
+      otherRelationsMap.set(inverseType, existing)
+    }
+  }
+
+  // Convert map to array with labels
+  const relationLabels: Record<RelationType, string> = {
+    'expansion_of': 'Expansion of',
+    'base_game_of': 'Base Game',
+    'sequel_to': 'Sequels',
+    'prequel_to': 'Prequels',
+    'reimplementation_of': 'Reimplementations',
+    'spin_off_of': 'Spin-offs',
+    'standalone_in_series': 'Related in Series'
+  }
+
+  const otherRelations = Array.from(otherRelationsMap.entries())
+    .filter(([, games]) => games.length > 0)
+    .map(([type, games]) => ({
+      type,
+      label: relationLabels[type] || type,
+      games
+    }))
+
+  return {
+    baseGame,
+    expansions,
+    otherRelations,
+    family
+  }
+}
+
+/** Get the inverse relation type for display purposes */
+function getInverseRelationType(type: RelationType): RelationType {
+  const inverses: Record<RelationType, RelationType> = {
+    'expansion_of': 'base_game_of',
+    'base_game_of': 'expansion_of',
+    'sequel_to': 'prequel_to',
+    'prequel_to': 'sequel_to',
+    'reimplementation_of': 'reimplementation_of',
+    'spin_off_of': 'spin_off_of',
+    'standalone_in_series': 'standalone_in_series'
+  }
+  return inverses[type] || type
 }

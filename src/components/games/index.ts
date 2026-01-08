@@ -9,3 +9,12 @@ export { RelatedGamesAsync } from './RelatedGamesAsync'
 export { RelatedGamesSkeleton } from './RelatedGamesSkeleton'
 export { AwardBadge, AwardBadgeList } from './AwardBadge'
 export { FamilyBadge } from './FamilyBadge'
+
+// New components for comprehensive game page
+export { TaxonomySection, CategoryBadges } from './TaxonomySection'
+export { ComplexityDisplay } from './ComplexityDisplay'
+export { AgeRating } from './AgeRating'
+export { CreditsSection, InlineCredits } from './CreditsSection'
+export { ComponentsList } from './ComponentsList'
+export { WikipediaContent, WikipediaGameplay, WikipediaReception } from './WikipediaContent'
+export { GameRelationsSection } from './GameRelationsSection'

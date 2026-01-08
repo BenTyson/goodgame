@@ -4,6 +4,9 @@
 export type { Database, Json, Tables, TablesInsert, TablesUpdate } from './supabase'
 import type { Database } from './supabase'
 
+// Re-export rulebook types used on public pages
+export type { CrunchBreakdown, ComponentList } from '@/lib/rulebook/types'
+
 // Convenience types for common table rows
 export type Game = Database['public']['Tables']['games']['Row']
 export type GameInsert = Database['public']['Tables']['games']['Insert']
