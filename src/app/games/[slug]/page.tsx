@@ -114,6 +114,7 @@ export default async function GamePage({ params }: GamePageProps) {
           gameRelations={gameRelations}
           initialReviews={reviewsData.reviews}
           initialHasMore={reviewsData.hasMore}
+          reviewVideos={game.review_videos}
         />
       ),
     },
@@ -129,6 +130,7 @@ export default async function GamePage({ params }: GamePageProps) {
           wikipediaGameplay={game.wikipedia_gameplay}
           wikipediaUrl={game.wikipedia_url}
           keyReminders={(game.reference_content as ReferenceContent | null)?.reminders || (game.reference_content as ReferenceContent | null)?.quickReminders}
+          gameplayVideos={game.gameplay_videos}
         />
       ),
     },

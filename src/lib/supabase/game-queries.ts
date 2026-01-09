@@ -591,6 +591,22 @@ export async function getGameWithDetails(slug: string) {
     .eq('is_featured', true)
     .single()
 
+  // Get gameplay videos (for How to Play tab)
+  const { data: gameplayVideos } = await supabase
+    .from('game_videos')
+    .select('*')
+    .eq('game_id', game.id)
+    .eq('video_type', 'gameplay')
+    .order('display_order')
+
+  // Get review videos (for Reviews section)
+  const { data: reviewVideos } = await supabase
+    .from('game_videos')
+    .select('*')
+    .eq('game_id', game.id)
+    .eq('video_type', 'review')
+    .order('display_order')
+
   return {
     ...game,
     images: images || [],
@@ -603,7 +619,9 @@ export async function getGameWithDetails(slug: string) {
     themes,
     player_experiences,
     complexity_tier,
-    featured_video: featuredVideo || null
+    featured_video: featuredVideo || null,
+    gameplay_videos: gameplayVideos || [],
+    review_videos: reviewVideos || []
   }
 }
 

@@ -6,6 +6,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload'
 import { VideoManager, type GameVideo } from '@/components/admin/VideoManager'
 import { WikimediaCommonsSearch } from './WikimediaCommonsSearch'
 import { AvailableImageSources } from './AvailableImageSources'
+import { YouTubeVideoSearch } from './YouTubeVideoSearch'
 import { ImageIcon, Film } from 'lucide-react'
 import type { Game, GameImage } from '@/types/database'
 
@@ -29,6 +30,10 @@ export function MediaTab({
   // State for tracking image import
   const [importingImages, setImportingImages] = useState<Set<string>>(new Set())
   const [importedImages, setImportedImages] = useState<Set<string>>(new Set())
+
+  // State for tracking video import
+  const [importingVideos, setImportingVideos] = useState<Set<string>>(new Set())
+  const [importedVideos, setImportedVideos] = useState<Set<string>>(new Set())
 
   // Import external image to gallery
   const importExternalImage = useCallback(async (
@@ -97,6 +102,27 @@ export function MediaTab({
     markUnsaved()
   }, [images, onImagesChange, markUnsaved])
 
+  // Handlers for YouTubeVideoSearch
+  const handleVideoImportStart = useCallback((key: string) => {
+    setImportingVideos(prev => new Set(prev).add(key))
+  }, [])
+
+  const handleVideoImportEnd = useCallback((key: string, success: boolean) => {
+    setImportingVideos(prev => {
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+    if (success) {
+      setImportedVideos(prev => new Set(prev).add(key))
+    }
+  }, [])
+
+  const handleVideoAdded = useCallback((video: GameVideo) => {
+    onVideosChange([...videos, video])
+    markUnsaved()
+  }, [videos, onVideosChange, markUnsaved])
+
   return (
     <div className="space-y-6">
       {/* Images Section */}
@@ -163,7 +189,7 @@ export function MediaTab({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <VideoManager
             gameId={game.id}
             videos={videos}
@@ -171,6 +197,18 @@ export function MediaTab({
               onVideosChange(newVideos)
               markUnsaved()
             }}
+          />
+
+          {/* Search YouTube */}
+          <YouTubeVideoSearch
+            gameName={game.name}
+            gameId={game.id}
+            videos={videos}
+            onVideoAdded={handleVideoAdded}
+            importingVideos={importingVideos}
+            importedVideos={importedVideos}
+            onImportStart={handleVideoImportStart}
+            onImportEnd={handleVideoImportEnd}
           />
         </CardContent>
       </Card>

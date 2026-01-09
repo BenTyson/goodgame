@@ -156,6 +156,7 @@ src/app/
 │   │   ├── validate/route.ts  # POST validate rulebook URL
 │   │   └── generate-content/route.ts  # POST generate rules/setup/reference
 │   ├── game-videos/route.ts   # POST/PATCH/DELETE video management
+│   ├── youtube/search/route.ts # YouTube video search (Data API v3)
 │   └── upload/route.ts        # POST image upload
 ├── marketplace/
 │   ├── page.tsx               # Browse marketplace listings
@@ -189,6 +190,7 @@ src/components/
 │   ├── GameHero.tsx           # Simplified hero with single image, key stats
 │   ├── QuickStatsBar.tsx      # Players/time/complexity/age badges
 │   ├── ImageGallery.tsx       # Game image gallery with lightbox
+│   ├── VideoCarousel.tsx      # Video carousel with modal player (gameplay/review)
 │   ├── RelatedGames.tsx       # Related games section
 │   ├── TaxonomySection.tsx    # Categories, mechanics, themes, experiences badges
 │   ├── ComplexityDisplay.tsx  # Crunch Score with breakdown tooltip (falls back to weight)
@@ -232,6 +234,7 @@ src/components/
 │   │   ├── MediaTab.tsx           # Images + Videos management (orchestrates sub-components)
 │   │   ├── WikimediaCommonsSearch.tsx  # Commons image search with results grid
 │   │   ├── AvailableImageSources.tsx   # Wikipedia/Wikidata/BGG source images
+│   │   ├── YouTubeVideoSearch.tsx      # YouTube video search (Data API v3)
 │   │   └── TaxonomySelector.tsx   # Multi-select with AI badges (auto-selects ≥70%)
 │   ├── rulebook/              # RulebookEditor sub-components
 │   │   ├── RulebookUrlSection.tsx
@@ -339,6 +342,10 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
   ├── types.ts                 # CrunchBreakdown, CrunchResult, RulesContent, etc.
   ├── discovery.ts             # Publisher URL pattern matching
   └── thumbnail.ts             # PDF → PNG thumbnail generator (unpdf + @napi-rs/canvas)
+src/lib/youtube/               # YouTube Data API v3 integration
+  ├── client.ts                # YouTube search and video details
+  ├── types.ts                 # API response types (YouTubeVideo, etc.)
+  └── index.ts                 # Barrel exports
 src/lib/wikipedia/             # Wikipedia integration utilities
   ├── index.ts                 # enrichGameFromWikipedia(), prepareWikipediaStorageData()
   ├── client.ts                # Rate-limited MediaWiki API client (follows redirects)
@@ -490,6 +497,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3399  # For Stripe redirects
 
 # Admin
 ADMIN_EMAILS=your-email@gmail.com
+
+# YouTube (for video search in admin)
+YOUTUBE_API_KEY=...
 
 # Stripe (for marketplace payments)
 STRIPE_SECRET_KEY=sk_test_...

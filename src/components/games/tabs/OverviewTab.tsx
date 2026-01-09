@@ -9,6 +9,7 @@ import { WikipediaGameplay, WikipediaReception } from '@/components/games/Wikipe
 import { GameRelationsSection } from '@/components/games/GameRelationsSection'
 import { AwardBadgeList } from '@/components/games/AwardBadge'
 import { ImageGallery } from '@/components/games/ImageGallery'
+import { VideoCarousel } from '@/components/games/VideoCarousel'
 import { ReviewSection } from '@/components/reviews'
 import { cn } from '@/lib/utils'
 import type {
@@ -108,10 +109,17 @@ function GameplayTeaser({
   content: string
   onNavigate: () => void
 }) {
-  // Clean and truncate content
-  const cleaned = content.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim()
-  const truncated = cleaned.length > 200
-    ? cleaned.slice(0, cleaned.lastIndexOf(' ', 200)) + '...'
+  // Clean and truncate content - remove citations, wiki markup, and normalize whitespace
+  const cleaned = content
+    .replace(/\[\d+\]/g, '')                    // Remove citation markers [1], [2], etc.
+    .replace(/thumb\|/gi, '')                   // Remove thumb| prefix
+    .replace(/\[\[File:[^\]]*\]\]/gi, '')       // Remove [[File:...]] patterns
+    .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1') // Convert [[Link|Text]] to Text
+    .replace(/\[\[([^\]]*)\]\]/g, '$1')         // Convert [[Link]] to Link
+    .replace(/\s+/g, ' ')
+    .trim()
+  const truncated = cleaned.length > 450
+    ? cleaned.slice(0, cleaned.lastIndexOf(' ', 450)) + '...'
     : cleaned
 
   return (
@@ -243,6 +251,13 @@ export interface FeaturedVideo {
   video_type: string
 }
 
+interface GameVideo {
+  id: string
+  youtube_video_id: string
+  title: string | null
+  video_type: string
+}
+
 export interface OverviewTabProps {
   game: {
     id: string
@@ -273,6 +288,7 @@ export interface OverviewTabProps {
   gameRelations: GroupedGameRelations
   initialReviews: ReviewWithUser[]
   initialHasMore: boolean
+  reviewVideos?: GameVideo[]
 }
 
 export function OverviewTab({
@@ -281,6 +297,7 @@ export function OverviewTab({
   gameRelations,
   initialReviews,
   initialHasMore,
+  reviewVideos,
 }: OverviewTabProps) {
   const hasWikipediaContent = game.wikipedia_gameplay || game.wikipedia_reception
   const hasRelations = gameRelations.baseGame || gameRelations.expansions.length > 0 || gameRelations.otherRelations.length > 0
@@ -376,7 +393,14 @@ export function OverviewTab({
         )}
 
         {/* Reviews */}
-        <section>
+        <section className="space-y-6">
+          <h2 className="text-[22px] font-light uppercase tracking-widest">Reviews</h2>
+
+          {/* Review Videos */}
+          {reviewVideos && reviewVideos.length > 0 && (
+            <VideoCarousel videos={reviewVideos} gameName={game.name} />
+          )}
+
           <ReviewSection
             gameId={game.id}
             gameName={game.name}

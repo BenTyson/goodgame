@@ -1,8 +1,69 @@
 # Current Status
 
-> Last Updated: 2026-01-09 (Video Management & MediaTab Refactor)
+> Last Updated: 2026-01-09 (YouTube Search & Public Video Carousels)
 
-## Current Phase: 61 - Video Management & Media Tab Refactor
+## Current Phase: 62 - YouTube Search & Public Video Carousels
+
+YouTube video search for admin + public video carousels + Rules Tab UI overhaul.
+
+### Session Summary (2026-01-09) - YouTube Search & Video Carousels
+
+**YouTube Video Search (Admin):**
+- YouTube Data API v3 integration for video search
+- New `YouTubeVideoSearch` component in Media tab
+- Default search: "{game name} Board Game Overview"
+- Video type selector (overview/gameplay/review)
+- Import buttons with state tracking (importing/imported)
+- Red YouTube branding on search button
+
+**Public Video Carousels:**
+- New `VideoCarousel` component with horizontal scrolling thumbnails
+- Modal player with keyboard navigation (Escape, Arrow keys)
+- Gameplay videos on Rules tab (below Quick Start)
+- Review videos on Overview tab (in Reviews section)
+- Subtle hover play button overlay
+
+**Rules Tab UI Overhaul:**
+- Simplified intro (paragraph only, no heading)
+- Quick Start as clean numbered badges (no card wrapper)
+- Scoring moved to main content as grid cards
+- Turn Structure moved to sidebar
+- Sidebar titles changed to teal (`text-primary`)
+- Removed Key Reminders section (redundant)
+- WikipediaIntro: removed Quote icon, added "GAMEPLAY" section title
+
+**Wikipedia Markup Cleaning:**
+- Fixed "thumb|..." artifacts from Wikipedia content
+- Regex cleanup for `[[File:...]]`, `[[Link|Text]]`, citation markers
+- Applied to both RulesTab and OverviewTab
+- Increased How It Plays truncation from 200 to 450 chars
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/youtube/types.ts` | YouTube API response types |
+| `src/lib/youtube/client.ts` | YouTube Data API client |
+| `src/lib/youtube/index.ts` | Barrel exports |
+| `src/app/api/admin/youtube/search/route.ts` | Admin YouTube search endpoint |
+| `src/components/admin/game-editor/YouTubeVideoSearch.tsx` | YouTube search component |
+| `src/components/games/VideoCarousel.tsx` | Video carousel with modal player |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/admin/game-editor/MediaTab.tsx` | Added YouTubeVideoSearch integration |
+| `src/components/admin/game-editor/index.ts` | Export YouTubeVideoSearch |
+| `src/lib/supabase/game-queries.ts` | Added gameplay_videos and review_videos queries |
+| `src/components/games/tabs/RulesTab.tsx` | UI overhaul, VideoCarousel, Wikipedia cleanup |
+| `src/components/games/tabs/OverviewTab.tsx` | Review videos carousel, Wikipedia cleanup |
+| `src/app/games/[slug]/page.tsx` | Pass gameplayVideos to RulesTab |
+| `src/components/games/index.ts` | Export VideoCarousel |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 61 - Video Management & Media Tab Refactor
 
 YouTube video management for games and admin Media tab componentization.
 
@@ -28,25 +89,6 @@ YouTube video management for games and admin Media tab componentization.
   - `AvailableImageSources.tsx` - Wikipedia/Wikidata/BGG source images
 - `GameEditor.tsx` reduced from ~560 to ~237 lines (~58% reduction)
 - Pattern matches other tabs (DetailsTab, SourcesTab, etc.)
-
-**New Files:**
-| File | Purpose |
-|------|---------|
-| `src/components/admin/VideoManager.tsx` | Video management UI component |
-| `src/components/admin/game-editor/MediaTab.tsx` | Media tab wrapper |
-| `src/components/admin/game-editor/WikimediaCommonsSearch.tsx` | Commons search component |
-| `src/components/admin/game-editor/AvailableImageSources.tsx` | External sources component |
-| `src/app/api/admin/game-videos/route.ts` | Video CRUD API |
-| `supabase/migrations/00067_game_videos.sql` | Video table schema |
-
-**Files Modified:**
-| File | Changes |
-|------|---------|
-| `src/components/admin/GameEditor.tsx` | Refactored to use MediaTab component |
-| `src/components/admin/game-editor/index.ts` | Added MediaTab exports |
-| `src/lib/supabase/game-queries.ts` | Added featured video to getGameWithDetails |
-| `src/components/games/tabs/OverviewTab.tsx` | Dynamic video section |
-| `src/app/admin/(dashboard)/games/[id]/page.tsx` | Fetch videos with game data |
 
 **Build Status:** ✓ Compiled successfully
 

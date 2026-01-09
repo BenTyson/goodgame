@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ExternalLink, Quote, BookOpen, FileText, ChevronDown } from 'lucide-react'
+import { ExternalLink, BookOpen, FileText, ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { VideoCarousel } from '../VideoCarousel'
 
 // Placeholder content for when thumbnail is unavailable
 function RulebookPlaceholder() {
@@ -123,30 +124,36 @@ function RulebookPreview({
 // Wikipedia gameplay section with subtle attribution
 function WikipediaIntro({
   content,
-  wikipediaUrl
+  wikipediaUrl,
+  title = 'Gameplay'
 }: {
   content: string
   wikipediaUrl?: string | null
+  title?: string
 }) {
-  // Clean content: remove citation markers, preserve paragraph breaks
-  const cleaned = content.replace(/\[\d+\]/g, '').trim()
+  // Clean content: remove citations, wiki markup, preserve paragraph breaks
+  const cleaned = content
+    .replace(/\[\d+\]/g, '')                    // Remove citation markers [1], [2], etc.
+    .replace(/thumb\|/gi, '')                   // Remove thumb| prefix
+    .replace(/\[\[File:[^\]]*\]\]/gi, '')       // Remove [[File:...]] patterns
+    .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1') // Convert [[Link|Text]] to Text
+    .replace(/\[\[([^\]]*)\]\]/g, '$1')         // Convert [[Link]] to Link
+    .trim()
   // Split into paragraphs by double newlines
   const paragraphs = cleaned.split(/\n\n+/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
 
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Quote className="absolute -left-1 -top-1 h-6 w-6 text-muted-foreground/20" />
-        <blockquote className="pl-6 border-l-2 border-primary/30 space-y-3">
-          {paragraphs.map((paragraph, i) => (
-            <p key={i} className="text-muted-foreground leading-relaxed">
-              {paragraph}
-            </p>
-          ))}
-        </blockquote>
+    <div>
+      <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">{title}</h2>
+      <div className="space-y-3">
+        {paragraphs.map((paragraph, i) => (
+          <p key={i} className="text-muted-foreground leading-relaxed">
+            {paragraph}
+          </p>
+        ))}
       </div>
       {wikipediaUrl && (
-        <p className="text-xs text-muted-foreground/60">
+        <p className="text-xs text-muted-foreground/60 mt-4">
           via{' '}
           <Link
             href={wikipediaUrl}
@@ -193,6 +200,13 @@ function isAIContent(content: RulesContent): content is AIRulesContent {
   return 'coreRules' in content || 'endGame' in content || 'endGameConditions' in content
 }
 
+interface GameVideo {
+  id: string
+  youtube_video_id: string
+  title: string | null
+  video_type: string
+}
+
 export interface RulesTabProps {
   game: {
     slug: string
@@ -209,9 +223,10 @@ export interface RulesTabProps {
   wikipediaGameplay?: string | null
   wikipediaUrl?: string | null
   keyReminders?: string[] | null
+  gameplayVideos?: GameVideo[]
 }
 
-export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyReminders }: RulesTabProps) {
+export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyReminders, gameplayVideos }: RulesTabProps) {
   if (!content) {
     return (
       <div className="text-center py-12">
@@ -225,31 +240,49 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
   return (
     <div className="grid gap-8 lg:grid-cols-3">
       {/* Main content */}
-      <div className="lg:col-span-2 space-y-8">
-        {/* Intro */}
-        <div>
-          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Intro to {game.name || 'the Game'}</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            {content.overview}
-          </p>
+      <div className="lg:col-span-2 space-y-10">
+        {/* Intro - clean and minimal */}
+        <p className="text-lg text-muted-foreground leading-relaxed">
+          {content.overview}
+        </p>
+
+        {/* Quick Start - clean numbered list */}
+        <div className="space-y-4">
+          {content.quickStart.map((item, i) => (
+            <div key={i} className="flex gap-4 items-start">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
+                {i + 1}
+              </span>
+              <p className="text-muted-foreground pt-0.5">{item}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Quick Start */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Start (TL;DR)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {content.quickStart.map((item, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary font-bold">{i + 1}.</span>
-                  {item}
-                </li>
+        {/* Scoring */}
+        {(isAI ? (content as AIRulesContent).scoring : (content as LegacyRulesContent).scoring) && (
+          <div>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Scoring</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {(isAI
+                ? (content as AIRulesContent).scoring
+                : (content as LegacyRulesContent).scoring
+              )?.map((item, i) => (
+                <div key={i} className="rounded-xl border border-border/50 bg-card/50 p-4">
+                  <p className="font-medium text-sm mb-1">{item.category}</p>
+                  <p className="text-xs text-muted-foreground">{item.points}</p>
+                </div>
               ))}
-            </ul>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Gameplay Videos */}
+        {gameplayVideos && gameplayVideos.length > 0 && (
+          <div>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Watch How to Play</h2>
+            <VideoCarousel videos={gameplayVideos} gameName={game.name || 'this game'} />
+          </div>
+        )}
 
         {/* Wikipedia Introduction */}
         {wikipediaGameplay && (
@@ -304,28 +337,10 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
           </div>
         ) : null}
 
-        {/* Turn Structure */}
-        <div>
-          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Turn Structure</h2>
-          <div className="space-y-3">
-            {content.turnStructure.map((phase, i) => (
-              <div key={i} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{'phase' in phase ? phase.phase : phase.title}</p>
-                  <p className="text-sm text-muted-foreground">{phase.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
 
       {/* Sidebar */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Rulebook Preview */}
         {game.rulebook_url && (
           <RulebookPreview
@@ -335,120 +350,83 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
           />
         )}
 
-        {/* Scoring */}
-        {(isAI ? (content as AIRulesContent).scoring : (content as LegacyRulesContent).scoring) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Scoring</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {(isAI
-                  ? (content as AIRulesContent).scoring
-                  : (content as LegacyRulesContent).scoring
-                )?.map((item, i) => (
-                  <div key={i} className="border-b border-border/50 pb-3 last:border-0 last:pb-0">
-                    <p className="font-medium text-sm">{item.category}</p>
-                    <p className="text-sm text-muted-foreground">{item.points}</p>
+        {/* Turn Structure */}
+        {content.turnStructure && content.turnStructure.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-primary mb-4">Turn Structure</h3>
+            <div className="space-y-3">
+              {content.turnStructure.map((phase, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{'phase' in phase ? phase.phase : phase.title}</p>
+                    <p className="text-xs text-muted-foreground">{phase.description}</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* End Game & Winning */}
+        {/* End Game */}
         {isAI && ((content as AIRulesContent).endGame || (content as AIRulesContent).endGameConditions) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">End Game & Winning</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-primary mb-4">End Game</h3>
+            <div className="space-y-3 text-sm">
               {(content as AIRulesContent).endGameConditions && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Game Ends When:</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    {(content as AIRulesContent).endGameConditions!.map((condition, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-primary">•</span>
-                        {condition}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="space-y-1.5 text-muted-foreground">
+                  {(content as AIRulesContent).endGameConditions!.map((condition, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary shrink-0">•</span>
+                      <span>{condition}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
               {(content as AIRulesContent).winCondition && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Winner:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {(content as AIRulesContent).winCondition}
-                  </p>
-                </div>
+                <p className="text-muted-foreground pt-2 border-t border-border/50">
+                  <span className="font-medium text-foreground">Winner: </span>
+                  {(content as AIRulesContent).winCondition}
+                </p>
               )}
               {!(content as AIRulesContent).endGameConditions && (content as AIRulesContent).endGame && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground">
                   {(content as AIRulesContent).endGame}
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        {/* Key Reminders */}
-        {keyReminders && keyReminders.length > 0 && (
-          <Card className="border-amber-500/20 bg-amber-500/5">
-            <CardHeader>
-              <CardTitle className="text-lg">Key Reminders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {keyReminders.map((reminder, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-amber-500">•</span>
-                    {reminder}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Tips card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Strategy Tips</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Tips */}
+        {content.tips && content.tips.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-primary mb-4">Tips</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               {content.tips.map((tip, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  {tip}
+                  <span className="text-primary shrink-0">•</span>
+                  <span>{tip}</span>
                 </li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Buy card */}
+        {/* Buy button - simple and minimal */}
         {game.amazon_asin && (
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground mb-3">
-                Ready to play?
-              </p>
-              <Button className="w-full" asChild>
-                <a
-                  href={`https://www.amazon.com/dp/${game.amazon_asin}?tag=goodgame-20`}
-                  target="_blank"
-                  rel="noopener sponsored"
-                >
-                  Buy on Amazon
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+          <Button variant="outline" className="w-full" asChild>
+            <a
+              href={`https://www.amazon.com/dp/${game.amazon_asin}?tag=goodgame-20`}
+              target="_blank"
+              rel="noopener sponsored"
+            >
+              Buy on Amazon
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
         )}
       </div>
     </div>

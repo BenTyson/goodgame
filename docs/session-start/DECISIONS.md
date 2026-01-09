@@ -72,6 +72,13 @@
 | Theme question | Skip for social games | Party games are theme-light |
 | Nav placement | Featured pill button after Shelf | Prominent but not intrusive |
 
+## External APIs
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| YouTube API | Data API v3 (search + videos) | Video search in admin Media tab |
+| YouTube thumbnails | `img.youtube.com/vi/{id}/mqdefault.jpg` | Free, no API call needed |
+
 ## AI-Powered Data Enrichment
 
 | Decision | Choice | Rationale |
