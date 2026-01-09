@@ -5,8 +5,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Upload, X, Star, Loader2, ImageIcon, CloudUpload, AlertCircle, Pencil, Link2, Copyright, FileCheck, Crop, RefreshCw } from 'lucide-react'
+import { X, Star, Loader2, ImageIcon, CloudUpload, AlertCircle, Pencil, Link2, Copyright, FileCheck, Crop, RefreshCw } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Dialog,
@@ -64,7 +63,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const [pendingFileName, setPendingFileName] = useState<string>('')
   const [cropModalOpen, setCropModalOpen] = useState(false)
-  const [selectedImageType, setSelectedImageType] = useState<ImageType>('cover')
+  const [initialImageType, setInitialImageType] = useState<ImageType | undefined>(undefined)
 
   // Re-crop state (for existing images)
   const [recropImage, setRecropImage] = useState<GameImage | null>(null)
@@ -129,23 +128,58 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    // Take only the first file for cropping (multiple uploads come back through the modal)
-    const file = files[0]
+    const fileArray = Array.from(files)
     e.target.value = '' // Reset input
-
     setError(null)
 
-    try {
-      const dataUrl = await readFileAsDataURL(file)
-      setPendingImage(dataUrl)
-      setPendingFileName(file.name)
-      setCropModalOpen(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to read file')
+    if (fileArray.length === 1) {
+      // Single file - go through cropper
+      try {
+        const dataUrl = await readFileAsDataURL(fileArray[0])
+        setPendingImage(dataUrl)
+        setPendingFileName(fileArray[0].name)
+        setCropModalOpen(true)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to read file')
+      }
+    } else {
+      // Multiple files - upload directly as gallery
+      await uploadMultipleFiles(fileArray)
     }
   }
 
-  const handleCropComplete = async (blob: Blob, attribution: ImageAttribution) => {
+  const uploadMultipleFiles = useCallback(async (files: File[]) => {
+    setUploading(true)
+    setError(null)
+
+    const uploadedImages: GameImage[] = []
+    const errors: string[] = []
+
+    for (const file of files) {
+      try {
+        // Convert file to blob
+        const blob = new Blob([await file.arrayBuffer()], { type: file.type })
+        const image = await uploadFile(blob, 'gallery', file.name, {})
+        if (image) {
+          uploadedImages.push(image)
+        }
+      } catch (err) {
+        errors.push(`${file.name}: ${err instanceof Error ? err.message : 'Upload failed'}`)
+      }
+    }
+
+    if (uploadedImages.length > 0) {
+      onImagesChange([...images, ...uploadedImages])
+    }
+
+    if (errors.length > 0) {
+      setError(`Some uploads failed: ${errors.join(', ')}`)
+    }
+
+    setUploading(false)
+  }, [images, onImagesChange, uploadFile])
+
+  const handleCropComplete = async (blob: Blob, attribution: ImageAttribution, imageType: ImageType) => {
     setUploading(true)
     setError(null)
 
@@ -153,7 +187,6 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
       if (recropImage) {
         // Re-cropping an existing image - replace it
         const oldImage = recropImage
-        const imageType = (oldImage.image_type as ImageType) || 'gallery'
 
         // Preserve existing attribution if not provided in the modal
         const mergedAttribution: ImageAttribution = {
@@ -163,7 +196,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           license: attribution.license || (oldImage as unknown as ImageAttribution).license,
         }
 
-        // Upload the new cropped image
+        // Upload the new cropped image with potentially new image type
         const newImage = await uploadFile(blob, imageType, pendingFileName, mergedAttribution)
 
         if (newImage) {
@@ -196,7 +229,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         setRecropImage(null)
       } else {
         // New image upload
-        const image = await uploadFile(blob, selectedImageType, pendingFileName, attribution)
+        const image = await uploadFile(blob, imageType, pendingFileName, attribution)
         if (image) {
           onImagesChange([...images, image])
         }
@@ -214,7 +247,9 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     setRecropImage(image)
     setPendingImage(image.url)
     setPendingFileName(`recrop-${image.id}`)
-    setSelectedImageType((image.image_type as ImageType) || 'gallery')
+    // For re-crop, use existing type (gallery maps to undefined/Original)
+    const existingType = image.image_type as ImageType | undefined
+    setInitialImageType(existingType === 'gallery' ? undefined : existingType)
     setCropModalOpen(true)
   }
 
@@ -227,20 +262,23 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     )
     if (files.length === 0) return
 
-    // Take only the first file for cropping
-    const file = files[0]
-
     setError(null)
 
-    try {
-      const dataUrl = await readFileAsDataURL(file)
-      setPendingImage(dataUrl)
-      setPendingFileName(file.name)
-      setCropModalOpen(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to read file')
+    if (files.length === 1) {
+      // Single file - go through cropper
+      try {
+        const dataUrl = await readFileAsDataURL(files[0])
+        setPendingImage(dataUrl)
+        setPendingFileName(files[0].name)
+        setCropModalOpen(true)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to read file')
+      }
+    } else {
+      // Multiple files - upload directly as gallery
+      await uploadMultipleFiles(files)
     }
-  }, [])
+  }, [uploadMultipleFiles])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -429,58 +467,6 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
         </div>
       )}
 
-      {/* Image Type Selector */}
-      <div className="space-y-3">
-        <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-          Image Type
-        </Label>
-        <RadioGroup
-          value={selectedImageType}
-          onValueChange={(value) => setSelectedImageType(value as ImageType)}
-          className="grid grid-cols-3 gap-3"
-        >
-          <label
-            htmlFor="type-cover"
-            className={cn(
-              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
-              selectedImageType === 'cover'
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border hover:border-primary/50'
-            )}
-          >
-            <RadioGroupItem value="cover" id="type-cover" className="sr-only" />
-            <span className="text-sm font-medium">Cover</span>
-            <span className="text-xs text-muted-foreground text-center">4:3 ratio</span>
-          </label>
-          <label
-            htmlFor="type-hero"
-            className={cn(
-              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
-              selectedImageType === 'hero'
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border hover:border-primary/50'
-            )}
-          >
-            <RadioGroupItem value="hero" id="type-hero" className="sr-only" />
-            <span className="text-sm font-medium">Hero</span>
-            <span className="text-xs text-muted-foreground text-center">16:9 ratio</span>
-          </label>
-          <label
-            htmlFor="type-gallery"
-            className={cn(
-              'flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
-              selectedImageType === 'gallery'
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border hover:border-primary/50'
-            )}
-          >
-            <RadioGroupItem value="gallery" id="type-gallery" className="sr-only" />
-            <span className="text-sm font-medium">Gallery</span>
-            <span className="text-xs text-muted-foreground text-center">Free crop</span>
-          </label>
-        </RadioGroup>
-      </div>
-
       {/* Upload Zone */}
       <div
         className={cn(
@@ -500,6 +486,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           className="hidden"
           id="image-upload"
           disabled={uploading}
+          multiple
         />
         <label htmlFor="image-upload" className="cursor-pointer">
           <div className="flex flex-col items-center gap-3">
@@ -518,10 +505,10 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
             </div>
             <div className="text-center">
               <p className="font-medium">
-                {uploading ? 'Uploading...' : 'Drop an image or click to upload'}
+                {uploading ? 'Uploading...' : 'Drop images or click to upload'}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                JPG, PNG, WebP, or GIF up to 5MB
+                JPG, PNG, WebP, or GIF up to 5MB each
               </p>
             </div>
           </div>
@@ -537,7 +524,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
             <span className="text-xs text-muted-foreground">({images.length} image{images.length !== 1 ? 's' : ''})</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {images.map((image) => (
+            {[...images].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)).map((image) => (
               <Card
                 key={image.id}
                 className={cn(
@@ -644,9 +631,8 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
               setRecropImage(null)
             }
           }}
-          imageType={selectedImageType}
+          initialImageType={initialImageType}
           onCropComplete={handleCropComplete}
-          fileName={pendingFileName}
         />
       )}
 

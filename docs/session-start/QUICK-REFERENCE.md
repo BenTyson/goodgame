@@ -155,6 +155,7 @@ src/app/
 │   │   ├── upload/route.ts    # POST upload rulebook PDF
 │   │   ├── validate/route.ts  # POST validate rulebook URL
 │   │   └── generate-content/route.ts  # POST generate rules/setup/reference
+│   ├── game-videos/route.ts   # POST/PATCH/DELETE video management
 │   └── upload/route.ts        # POST image upload
 ├── marketplace/
 │   ├── page.tsx               # Browse marketplace listings
@@ -217,6 +218,7 @@ src/components/
 │   ├── RulebookEditor.tsx     # Rulebook editor (uses sub-components)
 │   ├── ImageUpload.tsx        # Image uploader with unified gallery, primary indicator, crop flow
 │   ├── ImageCropper.tsx       # Cropper modal (react-easy-crop)
+│   ├── VideoManager.tsx       # YouTube video management (add/delete/feature videos)
 │   ├── TempImage.tsx          # SourcedImage component (badges: BGG/Wikidata/Wikipedia/Uploaded)
 │   ├── CardHeaderWithIcon.tsx # Shared card header with icon (used across tabs)
 │   ├── SwitchField.tsx        # Shared switch toggle with label/description
@@ -227,6 +229,9 @@ src/components/
 │   │   ├── RulebookTab.tsx        # Rulebook URL, parsing, parsed text viewer
 │   │   ├── ContentTab.tsx         # Rules, setup, reference content
 │   │   ├── SourcesTab.tsx         # BGG/Wikidata/Wikipedia data display
+│   │   ├── MediaTab.tsx           # Images + Videos management (orchestrates sub-components)
+│   │   ├── WikimediaCommonsSearch.tsx  # Commons image search with results grid
+│   │   ├── AvailableImageSources.tsx   # Wikipedia/Wikidata/BGG source images
 │   │   └── TaxonomySelector.tsx   # Multi-select with AI badges (auto-selects ≥70%)
 │   ├── rulebook/              # RulebookEditor sub-components
 │   │   ├── RulebookUrlSection.tsx
@@ -372,7 +377,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (66 files)
+supabase/migrations/           # Database schema (67 files)
 ```
 
 ### Type Definitions
@@ -384,6 +389,7 @@ GameInsert       // For inserting new games
 Category         // Category type
 Collection       // Collection type
 GameImage        // Game image type
+GameVideo        // Game video type (youtube_video_id, video_type, is_featured)
 Award            // Award organization type
 AwardCategory    // Award category type
 GameAward        // Game-award link type

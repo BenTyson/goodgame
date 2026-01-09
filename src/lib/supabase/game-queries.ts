@@ -583,6 +583,14 @@ export async function getGameWithDetails(slug: string) {
     complexity_tier = tierData
   }
 
+  // Get featured video (for the Watch section)
+  const { data: featuredVideo } = await supabase
+    .from('game_videos')
+    .select('*')
+    .eq('game_id', game.id)
+    .eq('is_featured', true)
+    .single()
+
   return {
     ...game,
     images: images || [],
@@ -594,7 +602,8 @@ export async function getGameWithDetails(slug: string) {
     mechanics,
     themes,
     player_experiences,
-    complexity_tier
+    complexity_tier,
+    featured_video: featuredVideo || null
   }
 }
 

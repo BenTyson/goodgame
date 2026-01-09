@@ -1,8 +1,58 @@
 # Current Status
 
-> Last Updated: 2026-01-08 (Rulebook Thumbnails & PDF Upload)
+> Last Updated: 2026-01-09 (Video Management & MediaTab Refactor)
 
-## Current Phase: 60 - Rulebook Thumbnails & Upload
+## Current Phase: 61 - Video Management & Media Tab Refactor
+
+YouTube video management for games and admin Media tab componentization.
+
+### Session Summary (2026-01-09) - Video Management & MediaTab Refactor
+
+**Video Management Feature:**
+- New `game_videos` table for YouTube video links with type categorization
+- Video types: `overview`, `gameplay`, `review`
+- Featured video flag (one per game) for public display
+- Full CRUD API at `/api/admin/game-videos`
+- `VideoManager` component with thumbnail previews, type badges, featured selection
+
+**Dynamic Video on Game Pages:**
+- Featured video displays in "Watch" section on `/games/[slug]`
+- Fetched via `getGameWithDetails()` query
+- Only renders when a featured video exists (no more placeholder)
+
+**MediaTab Component Refactor:**
+- Extracted ~300 lines from `GameEditor.tsx` into modular components
+- New components in `game-editor/`:
+  - `MediaTab.tsx` - Main tab orchestrator
+  - `WikimediaCommonsSearch.tsx` - Commons search with results grid
+  - `AvailableImageSources.tsx` - Wikipedia/Wikidata/BGG source images
+- `GameEditor.tsx` reduced from ~560 to ~237 lines (~58% reduction)
+- Pattern matches other tabs (DetailsTab, SourcesTab, etc.)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/admin/VideoManager.tsx` | Video management UI component |
+| `src/components/admin/game-editor/MediaTab.tsx` | Media tab wrapper |
+| `src/components/admin/game-editor/WikimediaCommonsSearch.tsx` | Commons search component |
+| `src/components/admin/game-editor/AvailableImageSources.tsx` | External sources component |
+| `src/app/api/admin/game-videos/route.ts` | Video CRUD API |
+| `supabase/migrations/00067_game_videos.sql` | Video table schema |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/admin/GameEditor.tsx` | Refactored to use MediaTab component |
+| `src/components/admin/game-editor/index.ts` | Added MediaTab exports |
+| `src/lib/supabase/game-queries.ts` | Added featured video to getGameWithDetails |
+| `src/components/games/tabs/OverviewTab.tsx` | Dynamic video section |
+| `src/app/admin/(dashboard)/games/[id]/page.tsx` | Fetch videos with game data |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 60 - Rulebook Thumbnails & Upload
 
 Server-side PDF thumbnail generation and admin PDF upload functionality for rulebooks.
 
@@ -211,12 +261,13 @@ src/components/games/GameRelationsSection.tsx
 
 ### Admin
 - **Vecna Pipeline** (`/admin/vecna`) - 4-phase content pipeline, 2-tab game panel (Pipeline + Details)
-- **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Rulebook, Content, Sources, Images
+- **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Rulebook, Content, Sources, Media
 - **Import Wizard** (`/admin/import`) - BGG game import with relation management and real-time progress
 - Rulebook parsing + Crunch Score generation
 - AI content generation (rules, setup, reference)
 - Publisher/Family/Taxonomy management
 - Parallel enrichment with Wikidata + Wikipedia + Wikimedia Commons
+- YouTube video management with type categorization (overview/gameplay/review)
 
 ### Environments
 
@@ -231,7 +282,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-66 migrations in `supabase/migrations/` covering:
+67 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities
 - Content: game content, images, families, relations

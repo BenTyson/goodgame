@@ -235,6 +235,14 @@ interface Family {
   slug: string
 }
 
+export interface FeaturedVideo {
+  id: string
+  youtube_video_id: string
+  youtube_url: string
+  title: string | null
+  video_type: string
+}
+
 export interface OverviewTabProps {
   game: {
     id: string
@@ -259,6 +267,7 @@ export interface OverviewTabProps {
     year_published?: number | null
     crunch_score?: number | null
     crunch_breakdown?: Json | null
+    featured_video?: FeaturedVideo | null
   }
   gameAwards: GameAwardWithDetails[]
   gameRelations: GroupedGameRelations
@@ -298,14 +307,16 @@ export function OverviewTab({
           )}
         </section>
 
-        {/* Video Section - Placeholder for now */}
-        <section>
-          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Watch</h2>
-          <YouTubeEmbed
-            videoId="47rBawxfKyY"
-            title={`${game.name} - How to Play`}
-          />
-        </section>
+        {/* Video Section */}
+        {game.featured_video && (
+          <section>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Watch</h2>
+            <YouTubeEmbed
+              videoId={game.featured_video.youtube_video_id}
+              title={game.featured_video.title || `${game.name} - Overview`}
+            />
+          </section>
+        )}
 
         {/* How It Plays - Teaser with CTA to How to Play tab */}
         {game.wikipedia_gameplay && (

@@ -1049,6 +1049,53 @@ export type Database = {
           },
         ]
       }
+      game_videos: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          game_id: string
+          id: string
+          is_featured: boolean | null
+          title: string | null
+          updated_at: string | null
+          video_type: string
+          youtube_url: string
+          youtube_video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          game_id: string
+          id?: string
+          is_featured?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          video_type: string
+          youtube_url: string
+          youtube_video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          game_id?: string
+          id?: string
+          is_featured?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          video_type?: string
+          youtube_url?: string
+          youtube_video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_videos_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           amazon_asin: string | null

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
-import { Crop, ZoomIn, ZoomOut, Link2, Copyright, FileCheck } from 'lucide-react';
+import { Crop, ZoomIn, ZoomOut, Link2, Copyright, FileCheck, Image, RectangleHorizontal, Images } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import {
   Dialog,
@@ -17,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -35,7 +35,6 @@ import {
   getCroppedImg,
   ASPECT_RATIOS,
   IMAGE_TYPE_RATIOS,
-  type AspectRatioKey,
   type ImageType,
 } from '@/lib/utils/image-crop';
 
@@ -55,10 +54,10 @@ interface ImageCropperProps {
   open: boolean;
   /** Callback when dialog is closed */
   onOpenChange: (open: boolean) => void;
-  /** The image type being uploaded (determines allowed aspect ratios) */
-  imageType: ImageType;
+  /** Initial image type (for re-cropping existing images) */
+  initialImageType?: ImageType;
   /** Callback when crop is complete */
-  onCropComplete: (blob: Blob, attribution: ImageAttribution) => void;
+  onCropComplete: (blob: Blob, attribution: ImageAttribution, imageType: ImageType) => void;
   /** Optional: original filename for output naming */
   fileName?: string;
 }
@@ -85,7 +84,7 @@ export function ImageCropper({
   image,
   open,
   onOpenChange,
-  imageType,
+  initialImageType,
   onCropComplete,
 }: ImageCropperProps) {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
@@ -94,17 +93,77 @@ export function ImageCropper({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAttribution, setShowAttribution] = useState(false);
 
+  // Image type selection - null means "original" (no crop constraint)
+  const [selectedImageType, setSelectedImageType] = useState<ImageType | null>(initialImageType || null);
+
+  // Original image aspect ratio (calculated when media loads)
+  const [originalAspect, setOriginalAspect] = useState<number | undefined>(undefined);
+
   // Attribution fields
   const [source, setSource] = useState<ImageSource | ''>('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [attribution, setAttribution] = useState('');
   const [license, setLicense] = useState('');
 
-  // Determine initial aspect ratio based on image type (used as default)
-  const defaultRatio = IMAGE_TYPE_RATIOS[imageType];
-  const [selectedRatio, setSelectedRatio] = useState<AspectRatioKey>(
-    defaultRatio || '4:3'
-  );
+  // Determine aspect ratio: use type-specific ratio if selected, otherwise original
+  const getAspectRatio = (): number | undefined => {
+    if (!selectedImageType) return originalAspect; // Original ratio
+    const typeRatio = IMAGE_TYPE_RATIOS[selectedImageType];
+    if (typeRatio === null) return originalAspect; // Gallery = original
+    return ASPECT_RATIOS[typeRatio];
+  };
+
+  // Track media loaded state
+  const [mediaLoaded, setMediaLoaded] = useState(false);
+
+  // Key to force Cropper remount when aspect changes
+  const [cropperKey, setCropperKey] = useState(0);
+
+  // Ref to track if we've done initial aspect setup (prevents infinite remount loop)
+  const initialAspectSet = useRef(false);
+
+  // Reset state when dialog opens (useEffect because onOpenChange doesn't fire on prop changes)
+  useEffect(() => {
+    if (open) {
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setMediaLoaded(false);
+      setOriginalAspect(undefined);
+      setSelectedImageType(initialImageType || null);
+      setSource('');
+      setSourceUrl('');
+      setAttribution('');
+      setLicense('');
+      setShowAttribution(false);
+      initialAspectSet.current = false; // Reset for new image
+      // Increment key to force Cropper remount with fresh state
+      setCropperKey(k => k + 1);
+    }
+  }, [open, initialImageType]);
+
+  // Update aspect ratio when image type changes
+  const handleImageTypeChange = (type: ImageType | null) => {
+    setSelectedImageType(type);
+    // Reset crop position when changing type
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    // Force remount to recalculate crop area
+    setCropperKey(k => k + 1);
+  };
+
+  // Calculate original aspect ratio when media loads
+  const handleMediaLoaded = useCallback((mediaSize: { naturalWidth: number; naturalHeight: number }) => {
+    const aspect = mediaSize.naturalWidth / mediaSize.naturalHeight;
+    setOriginalAspect(aspect);
+    setMediaLoaded(true);
+
+    // Force one remount after initial aspect is set (but not on subsequent loads)
+    if (!initialAspectSet.current) {
+      initialAspectSet.current = true;
+      // Use setTimeout to ensure state is updated before remount
+      setTimeout(() => setCropperKey(k => k + 1), 0);
+    }
+  }, []);
 
   const onCropAreaChange = useCallback(
     (_croppedArea: Area, croppedAreaPixels: Area) => {
@@ -130,25 +189,42 @@ export function ImageCropper({
   };
 
   const handleApplyCrop = useCallback(async () => {
-    if (!croppedAreaPixels) return;
-
     setIsProcessing(true);
     try {
-      const croppedBlob = await getCroppedImg(image, croppedAreaPixels);
       const attributionData: ImageAttribution = {};
       if (source) attributionData.source = source;
       if (sourceUrl) attributionData.source_url = sourceUrl;
       if (attribution) attributionData.attribution = attribution;
       if (license) attributionData.license = license;
 
-      onCropComplete(croppedBlob, attributionData);
+      let outputBlob: Blob;
+
+      // If Original is selected and zoom is 1 (no changes), skip cropping entirely
+      const isOriginalUnchanged = !selectedImageType && zoom === 1;
+
+      if (isOriginalUnchanged) {
+        // Convert base64/URL image to blob without cropping
+        const response = await fetch(image);
+        outputBlob = await response.blob();
+      } else {
+        // Apply crop
+        if (!croppedAreaPixels) {
+          setIsProcessing(false);
+          return;
+        }
+        outputBlob = await getCroppedImg(image, croppedAreaPixels);
+      }
+
+      // Default to 'gallery' if no type selected (original ratio)
+      const imageType: ImageType = selectedImageType || 'gallery';
+      onCropComplete(outputBlob, attributionData, imageType);
       onOpenChange(false);
     } catch (error) {
       console.error('Error cropping image:', error);
     } finally {
       setIsProcessing(false);
     }
-  }, [croppedAreaPixels, image, onCropComplete, onOpenChange, source, sourceUrl, attribution, license]);
+  }, [croppedAreaPixels, image, onCropComplete, onOpenChange, source, sourceUrl, attribution, license, selectedImageType, zoom]);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
@@ -157,27 +233,8 @@ export function ImageCropper({
     setZoom(1);
   }, [onOpenChange]);
 
-  // Reset state when dialog opens
-  const handleOpenChange = useCallback(
-    (newOpen: boolean) => {
-      if (newOpen) {
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setSelectedRatio(defaultRatio || '4:3');
-        // Reset attribution fields
-        setSource('');
-        setSourceUrl('');
-        setAttribution('');
-        setLicense('');
-        setShowAttribution(false);
-      }
-      onOpenChange(newOpen);
-    },
-    [onOpenChange, defaultRatio]
-  );
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -192,13 +249,15 @@ export function ImageCropper({
         {/* Crop Area */}
         <div className="relative h-72 w-full overflow-hidden rounded-lg bg-muted">
           <Cropper
+            key={`${cropperKey}-${selectedImageType || 'original'}`}
             image={image}
             crop={crop}
             zoom={zoom}
-            aspect={ASPECT_RATIOS[selectedRatio]}
+            aspect={getAspectRatio()}
             onCropChange={setCrop}
             onCropComplete={onCropAreaChange}
             onZoomChange={setZoom}
+            onMediaLoaded={handleMediaLoaded}
             showGrid
             objectFit="contain"
             classes={{
@@ -231,33 +290,67 @@ export function ImageCropper({
             </div>
           </div>
 
-          {/* Aspect Ratio Selector */}
+          {/* Image Type Selector */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Aspect Ratio</Label>
-            <RadioGroup
-              value={selectedRatio}
-              onValueChange={(value) =>
-                setSelectedRatio(value as AspectRatioKey)
-              }
-              className="flex gap-4"
-            >
-              {(Object.keys(ASPECT_RATIOS) as AspectRatioKey[]).map(
-                (ratio) => (
-                  <div key={ratio} className="flex items-center space-x-2">
-                    <RadioGroupItem value={ratio} id={`ratio-${ratio}`} />
-                    <Label
-                      htmlFor={`ratio-${ratio}`}
-                      className="cursor-pointer text-sm"
-                    >
-                      {ratio}
-                      {ratio === defaultRatio && (
-                        <span className="ml-1 text-xs text-muted-foreground">(default)</span>
-                      )}
-                    </Label>
-                  </div>
-                )
-              )}
-            </RadioGroup>
+            <Label className="text-sm font-medium">Crop Ratio (optional)</Label>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => handleImageTypeChange(null)}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-colors',
+                  selectedImageType === null
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
+              >
+                <Images className="h-4 w-4" />
+                <span className="text-sm font-medium">Original</span>
+                <span className="text-xs text-muted-foreground">As-is</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImageTypeChange('cover')}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-colors',
+                  selectedImageType === 'cover'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
+              >
+                <Image className="h-4 w-4" />
+                <span className="text-sm font-medium">Cover</span>
+                <span className="text-xs text-muted-foreground">4:3</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImageTypeChange('hero')}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-colors',
+                  selectedImageType === 'hero'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
+              >
+                <RectangleHorizontal className="h-4 w-4" />
+                <span className="text-sm font-medium">Hero</span>
+                <span className="text-xs text-muted-foreground">16:9</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImageTypeChange('gallery')}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-colors',
+                  selectedImageType === 'gallery'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                )}
+              >
+                <Crop className="h-4 w-4" />
+                <span className="text-sm font-medium">Custom</span>
+                <span className="text-xs text-muted-foreground">Free</span>
+              </button>
+            </div>
           </div>
 
           {/* Attribution Section (Collapsible) */}
