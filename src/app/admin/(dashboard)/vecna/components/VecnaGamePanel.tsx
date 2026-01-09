@@ -542,6 +542,7 @@ export function VecnaGamePanel({
           {(showRulebookDiscovery || needsRulebook) && (
             <RulebookDiscovery
               gameId={game.id}
+              gameSlug={game.slug}
               gameName={game.name}
               currentRulebookUrl={game.rulebook_url}
               onRulebookSet={handleRulebookSet}

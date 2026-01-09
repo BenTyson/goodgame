@@ -84,7 +84,7 @@ export function SetupTab({ game, content }: SetupTabProps) {
         {/* AI Content - Before You Start */}
         {isAI && (content as AISetupContent).beforeYouStart && (
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <h3 className="font-semibold mb-3">Before You Start</h3>
+            <h3 className="text-[22px] font-light uppercase tracking-widest mb-4">Before You Start</h3>
             <ul className="space-y-1.5">
               {(content as AISetupContent).beforeYouStart!.map((item, i) => (
                 <li key={i} className="flex gap-2 text-sm">
@@ -100,7 +100,7 @@ export function SetupTab({ game, content }: SetupTabProps) {
         {isAI ? (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-3">Setup Steps</h2>
+              <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Setup Steps</h2>
               <div className="space-y-3">
                 {(content as AISetupContent).steps.map((step) => (
                   <div key={step.step} className="flex gap-3">
@@ -122,7 +122,7 @@ export function SetupTab({ game, content }: SetupTabProps) {
             {/* Player Setup */}
             {(content as AISetupContent).playerSetup && (
               <div>
-                <h2 className="text-xl font-bold mb-3">Player Setup</h2>
+                <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Player Setup</h2>
                 <p className="text-sm text-muted-foreground mb-2">
                   {(content as AISetupContent).playerSetup.description}
                 </p>
@@ -140,7 +140,7 @@ export function SetupTab({ game, content }: SetupTabProps) {
             {/* First Player */}
             {firstPlayerRule && (
               <div>
-                <h2 className="text-xl font-bold mb-2">First Player</h2>
+                <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">First Player</h2>
                 <p className="text-sm text-muted-foreground">{firstPlayerRule}</p>
               </div>
             )}

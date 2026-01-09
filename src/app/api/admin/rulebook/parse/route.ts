@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { parsePdfFromUrl, generateCrunchScore, parseStructuredRulebook } from '@/lib/rulebook'
+import { generateRulebookThumbnail } from '@/lib/rulebook/thumbnail'
 import { generateJSON } from '@/lib/ai/claude'
 import { getDataExtractionPrompt, getTaxonomyExtractionPrompt, RULEBOOK_SYSTEM_PROMPT } from '@/lib/rulebook/prompts'
 import type { ExtractedGameData } from '@/lib/rulebook/types'
@@ -218,6 +219,18 @@ export async function POST(request: NextRequest) {
       cleaningApplied: structuredText.metadata.cleaningApplied,
     })
 
+    // Generate rulebook thumbnail (first page preview)
+    let thumbnailResult: { thumbnailUrl: string; storagePath: string } | null = null
+    try {
+      thumbnailResult = await generateRulebookThumbnail(url, game.slug)
+      if (thumbnailResult) {
+        console.log('Thumbnail generated:', thumbnailResult.thumbnailUrl)
+      }
+    } catch (error) {
+      console.error('Thumbnail generation failed:', error)
+      // Continue without thumbnail - not critical
+    }
+
     // Log successful parse with the parsed text
     const { data: parseLog } = await supabase.from('rulebook_parse_log').insert({
       game_id: gameId,
@@ -237,6 +250,7 @@ export async function POST(request: NextRequest) {
       rulebook_source: 'publisher_website',
       rulebook_parsed_at: new Date().toISOString(),
       ...(parseLog?.id && { latest_parse_log_id: parseLog.id }),
+      ...(thumbnailResult && { rulebook_thumbnail_url: thumbnailResult.thumbnailUrl }),
     }
 
     // Add Crunch Score if generated
@@ -309,6 +323,11 @@ export async function POST(request: NextRequest) {
         totalWords: structuredText.metadata.totalWords,
         cleaningApplied: structuredText.metadata.cleaningApplied,
       },
+      // Thumbnail info
+      thumbnail: thumbnailResult ? {
+        url: thumbnailResult.thumbnailUrl,
+        storagePath: thumbnailResult.storagePath,
+      } : null,
       processingTimeMs: processingTime,
     })
   } catch (error) {

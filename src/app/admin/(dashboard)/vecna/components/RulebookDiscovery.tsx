@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   FileText,
   Search,
@@ -12,6 +12,7 @@ import {
   Database,
   Globe,
   Building2,
+  Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,6 +45,7 @@ interface DiscoveryResult {
 
 interface RulebookDiscoveryProps {
   gameId: string
+  gameSlug: string
   gameName: string
   currentRulebookUrl: string | null
   onRulebookSet: (url: string) => void
@@ -58,15 +60,18 @@ const SOURCE_CONFIG: Record<string, { icon: typeof Database; label: string; colo
 
 export function RulebookDiscovery({
   gameId,
+  gameSlug,
   gameName,
   currentRulebookUrl,
   onRulebookSet,
 }: RulebookDiscoveryProps) {
   const [isDiscovering, setIsDiscovering] = useState(false)
   const [isSetting, setIsSetting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [result, setResult] = useState<DiscoveryResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [manualUrl, setManualUrl] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const runDiscovery = async () => {
     setIsDiscovering(true)
@@ -119,6 +124,55 @@ export function RulebookDiscovery({
   const handleManualSubmit = () => {
     if (manualUrl.trim()) {
       setRulebookUrl(manualUrl.trim(), 'manual')
+    }
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      setError('Please select a PDF file')
+      return
+    }
+
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('File size exceeds 50MB limit')
+      return
+    }
+
+    setIsUploading(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('gameId', gameId)
+      formData.append('gameSlug', gameSlug)
+
+      const response = await fetch('/api/admin/rulebook/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Upload failed')
+      }
+
+      const data = await response.json()
+      onRulebookSet(data.url)
+
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -179,6 +233,40 @@ export function RulebookDiscovery({
               {isSetting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set URL'}
             </Button>
           </div>
+        </div>
+
+        {/* File upload */}
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Or upload a PDF:</div>
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleFileUpload}
+              className="hidden"
+              id={`rulebook-upload-${gameId}`}
+            />
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Upload PDF File
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Max file size: 50MB</p>
         </div>
 
         {/* Discovery button */}

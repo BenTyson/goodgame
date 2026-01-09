@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -653,16 +678,19 @@ export type Database = {
           category_id: string
           game_id: string
           is_primary: boolean | null
+          source: string | null
         }
         Insert: {
           category_id: string
           game_id: string
           is_primary?: boolean | null
+          source?: string | null
         }
         Update: {
           category_id?: string
           game_id?: string
           is_primary?: boolean | null
+          source?: string | null
         }
         Relationships: [
           {
@@ -770,6 +798,7 @@ export type Database = {
       game_images: {
         Row: {
           alt_text: string | null
+          attribution: string | null
           caption: string | null
           created_at: string | null
           display_order: number
@@ -779,6 +808,9 @@ export type Database = {
           id: string
           image_type: string
           is_primary: boolean | null
+          license: string | null
+          source: Database["public"]["Enums"]["image_source"] | null
+          source_url: string | null
           storage_path: string | null
           updated_at: string | null
           url: string
@@ -786,6 +818,7 @@ export type Database = {
         }
         Insert: {
           alt_text?: string | null
+          attribution?: string | null
           caption?: string | null
           created_at?: string | null
           display_order?: number
@@ -795,6 +828,9 @@ export type Database = {
           id?: string
           image_type?: string
           is_primary?: boolean | null
+          license?: string | null
+          source?: Database["public"]["Enums"]["image_source"] | null
+          source_url?: string | null
           storage_path?: string | null
           updated_at?: string | null
           url: string
@@ -802,6 +838,7 @@ export type Database = {
         }
         Update: {
           alt_text?: string | null
+          attribution?: string | null
           caption?: string | null
           created_at?: string | null
           display_order?: number
@@ -811,6 +848,9 @@ export type Database = {
           id?: string
           image_type?: string
           is_primary?: boolean | null
+          license?: string | null
+          source?: Database["public"]["Enums"]["image_source"] | null
+          source_url?: string | null
           storage_path?: string | null
           updated_at?: string | null
           url?: string
@@ -830,14 +870,17 @@ export type Database = {
         Row: {
           game_id: string
           mechanic_id: string
+          source: string | null
         }
         Insert: {
           game_id: string
           mechanic_id: string
+          source?: string | null
         }
         Update: {
           game_id?: string
           mechanic_id?: string
+          source?: string | null
         }
         Relationships: [
           {
@@ -974,16 +1017,19 @@ export type Database = {
         Row: {
           game_id: string
           is_primary: boolean | null
+          source: string | null
           theme_id: string
         }
         Insert: {
           game_id: string
           is_primary?: boolean | null
+          source?: string | null
           theme_id: string
         }
         Update: {
           game_id?: string
           is_primary?: boolean | null
+          source?: string | null
           theme_id?: string
         }
         Relationships: [
@@ -1059,6 +1105,7 @@ export type Database = {
           reference_content: Json | null
           rulebook_parsed_at: string | null
           rulebook_source: string | null
+          rulebook_thumbnail_url: string | null
           rulebook_url: string | null
           rules_content: Json | null
           setup_content: Json | null
@@ -1142,6 +1189,7 @@ export type Database = {
           reference_content?: Json | null
           rulebook_parsed_at?: string | null
           rulebook_source?: string | null
+          rulebook_thumbnail_url?: string | null
           rulebook_url?: string | null
           rules_content?: Json | null
           setup_content?: Json | null
@@ -1225,6 +1273,7 @@ export type Database = {
           reference_content?: Json | null
           rulebook_parsed_at?: string | null
           rulebook_source?: string | null
+          rulebook_thumbnail_url?: string | null
           rulebook_url?: string | null
           rules_content?: Json | null
           setup_content?: Json | null
@@ -2218,6 +2267,7 @@ export type Database = {
           id: string
           page_count: number | null
           parsed_text: string | null
+          parsed_text_structured: Json | null
           processing_time_ms: number | null
           rulebook_url: string
           status: string
@@ -2231,6 +2281,7 @@ export type Database = {
           id?: string
           page_count?: number | null
           parsed_text?: string | null
+          parsed_text_structured?: Json | null
           processing_time_ms?: number | null
           rulebook_url: string
           status: string
@@ -2244,6 +2295,7 @@ export type Database = {
           id?: string
           page_count?: number | null
           parsed_text?: string | null
+          parsed_text_structured?: Json | null
           processing_time_ms?: number | null
           rulebook_url?: string
           status?: string
@@ -3653,6 +3705,7 @@ export type Database = {
           reference_content: Json | null
           rulebook_parsed_at: string | null
           rulebook_source: string | null
+          rulebook_thumbnail_url: string | null
           rulebook_url: string | null
           rules_content: Json | null
           setup_content: Json | null
@@ -3857,6 +3910,13 @@ export type Database = {
         | "very_good"
         | "good"
         | "acceptable"
+      image_source:
+        | "publisher"
+        | "wikimedia"
+        | "bgg"
+        | "user_upload"
+        | "press_kit"
+        | "promotional"
       listing_status:
         | "draft"
         | "active"
@@ -4053,6 +4113,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: [
@@ -4084,6 +4147,14 @@ export const Constants = {
         "very_good",
         "good",
         "acceptable",
+      ],
+      image_source: [
+        "publisher",
+        "wikimedia",
+        "bgg",
+        "user_upload",
+        "press_kit",
+        "promotional",
       ],
       listing_status: [
         "draft",

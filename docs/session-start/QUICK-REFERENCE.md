@@ -151,7 +151,8 @@ src/app/
 │   │   ├── analyze/route.ts   # POST analyze BGG IDs before import
 │   │   └── execute/route.ts   # POST execute import with SSE progress
 │   ├── rulebook/
-│   │   ├── parse/route.ts     # POST parse rulebook + extract taxonomy
+│   │   ├── parse/route.ts     # POST parse rulebook + generate thumbnail
+│   │   ├── upload/route.ts    # POST upload rulebook PDF
 │   │   ├── validate/route.ts  # POST validate rulebook URL
 │   │   └── generate-content/route.ts  # POST generate rules/setup/reference
 │   └── upload/route.ts        # POST image upload
@@ -331,7 +332,8 @@ src/lib/rulebook/              # Rulebook parsing and Crunch Score
   ├── parser.ts                # PDF text extraction
   ├── prompts.ts               # AI prompts for extraction (Crunch Score, taxonomy, content generation)
   ├── types.ts                 # CrunchBreakdown, CrunchResult, RulesContent, etc.
-  └── discovery.ts             # Publisher URL pattern matching
+  ├── discovery.ts             # Publisher URL pattern matching
+  └── thumbnail.ts             # PDF → PNG thumbnail generator (unpdf + @napi-rs/canvas)
 src/lib/wikipedia/             # Wikipedia integration utilities
   ├── index.ts                 # enrichGameFromWikipedia(), prepareWikipediaStorageData()
   ├── client.ts                # Rate-limited MediaWiki API client (follows redirects)
@@ -370,7 +372,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (62 files)
+supabase/migrations/           # Database schema (66 files)
 ```
 
 ### Type Definitions

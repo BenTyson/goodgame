@@ -6,13 +6,47 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Upload, X, Star, Loader2, ImageIcon, CloudUpload, AlertCircle } from 'lucide-react'
+import { Upload, X, Star, Loader2, ImageIcon, CloudUpload, AlertCircle, Pencil, Link2, Copyright, FileCheck, Crop, RefreshCw } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { Database } from '@/types/supabase'
 import type { GameImage } from '@/types/database'
 import { cn } from '@/lib/utils'
 
-import { ImageCropper } from './ImageCropper'
+import { ImageCropper, type ImageAttribution, type ImageSource } from './ImageCropper'
 import { readFileAsDataURL, type ImageType } from '@/lib/utils/image-crop'
+
+const SOURCE_OPTIONS: { value: ImageSource; label: string }[] = [
+  { value: 'publisher', label: 'Publisher Website' },
+  { value: 'press_kit', label: 'Press Kit / Media Kit' },
+  { value: 'promotional', label: 'Promotional Material' },
+  { value: 'wikimedia', label: 'Wikimedia Commons' },
+  { value: 'user_upload', label: 'Personal Photo' },
+  { value: 'bgg', label: 'BoardGameGeek (dev only)' },
+]
+
+const LICENSE_OPTIONS = [
+  { value: 'fair_use', label: 'Fair Use (editorial)' },
+  { value: 'with_permission', label: 'Used with Permission' },
+  { value: 'cc_by_sa_4', label: 'CC BY-SA 4.0' },
+  { value: 'cc_by_4', label: 'CC BY 4.0' },
+  { value: 'cc0', label: 'CC0 (Public Domain)' },
+  { value: 'proprietary', label: 'Proprietary' },
+]
 
 interface ImageUploadProps {
   gameId: string
@@ -32,12 +66,28 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [selectedImageType, setSelectedImageType] = useState<ImageType>('cover')
 
+  // Re-crop state (for existing images)
+  const [recropImage, setRecropImage] = useState<GameImage | null>(null)
+
+  // Edit modal state
+  const [editingImage, setEditingImage] = useState<GameImage | null>(null)
+
+  // Delete confirmation state
+  const [deletingImage, setDeletingImage] = useState<GameImage | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const [editSource, setEditSource] = useState<ImageSource | ''>('')
+  const [editSourceUrl, setEditSourceUrl] = useState('')
+  const [editAttribution, setEditAttribution] = useState('')
+  const [editLicense, setEditLicense] = useState('')
+  const [saving, setSaving] = useState(false)
+
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const uploadFile = async (file: File | Blob, imageType: ImageType, fileName?: string): Promise<GameImage | null> => {
+  const uploadFile = async (file: File | Blob, imageType: ImageType, fileName?: string, attribution?: ImageAttribution): Promise<GameImage | null> => {
     const formData = new FormData()
 
     // If it's a Blob (from cropper), convert to File with name
@@ -52,6 +102,14 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     formData.append('gameId', gameId)
     formData.append('gameSlug', gameSlug)
     formData.append('imageType', imageType)
+
+    // Add attribution data if provided
+    if (attribution) {
+      if (attribution.source) formData.append('source', attribution.source)
+      if (attribution.source_url) formData.append('source_url', attribution.source_url)
+      if (attribution.attribution) formData.append('attribution', attribution.attribution)
+      if (attribution.license) formData.append('license', attribution.license)
+    }
 
     const response = await fetch('/api/admin/upload', {
       method: 'POST',
@@ -87,14 +145,61 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     }
   }
 
-  const handleCropComplete = async (blob: Blob) => {
+  const handleCropComplete = async (blob: Blob, attribution: ImageAttribution) => {
     setUploading(true)
     setError(null)
 
     try {
-      const image = await uploadFile(blob, selectedImageType, pendingFileName)
-      if (image) {
-        onImagesChange([...images, image])
+      if (recropImage) {
+        // Re-cropping an existing image - replace it
+        const oldImage = recropImage
+        const imageType = (oldImage.image_type as ImageType) || 'gallery'
+
+        // Preserve existing attribution if not provided in the modal
+        const mergedAttribution: ImageAttribution = {
+          source: attribution.source || (oldImage as unknown as ImageAttribution).source,
+          source_url: attribution.source_url || (oldImage as unknown as ImageAttribution).source_url,
+          attribution: attribution.attribution || (oldImage as unknown as ImageAttribution).attribution,
+          license: attribution.license || (oldImage as unknown as ImageAttribution).license,
+        }
+
+        // Upload the new cropped image
+        const newImage = await uploadFile(blob, imageType, pendingFileName, mergedAttribution)
+
+        if (newImage) {
+          // If the old image was primary, make the new one primary too
+          if (oldImage.is_primary) {
+            await supabase
+              .from('game_images')
+              .update({ is_primary: true })
+              .eq('id', newImage.id)
+            newImage.is_primary = true
+          }
+
+          // Delete the old image
+          await fetch('/api/admin/upload', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageId: oldImage.id,
+              storagePath: oldImage.storage_path
+            })
+          })
+
+          // Update local state - replace old with new
+          const updated = images.map(img =>
+            img.id === oldImage.id ? newImage : img
+          )
+          onImagesChange(updated)
+        }
+
+        setRecropImage(null)
+      } else {
+        // New image upload
+        const image = await uploadFile(blob, selectedImageType, pendingFileName, attribution)
+        if (image) {
+          onImagesChange([...images, image])
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
@@ -103,6 +208,14 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     setUploading(false)
     setPendingImage(null)
     setPendingFileName('')
+  }
+
+  const openRecropModal = (image: GameImage) => {
+    setRecropImage(image)
+    setPendingImage(image.url)
+    setPendingFileName(`recrop-${image.id}`)
+    setSelectedImageType((image.image_type as ImageType) || 'gallery')
+    setCropModalOpen(true)
   }
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -172,14 +285,53 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
     }
   }
 
-  const deleteImage = async (image: GameImage) => {
+  // Force sync the primary image to the games table (for when they're out of sync)
+  const syncPrimaryImage = async (image: GameImage) => {
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/upload', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId,
+          imageId: image.id,
+          imageUrl: image.url
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sync image')
+      }
+
+      // Verify by fetching the game directly
+      const verifyResponse = await fetch(`/api/admin/games/${gameId}/verify-image`)
+      const verifyData = await verifyResponse.json()
+
+      console.log('Sync response:', data)
+      console.log('Verification:', verifyData)
+
+      alert(`Primary image synced!\n\nSent URL: ${image.url}\n\nDatabase now has:\nbox_image_url: ${verifyData.box_image_url || 'null'}\n\nMatch: ${verifyData.box_image_url === image.url ? 'YES' : 'NO - MISMATCH!'}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sync image')
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingImage) return
+
+    setDeleting(true)
+    setError(null)
+
     try {
       const response = await fetch('/api/admin/upload', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageId: image.id,
-          storagePath: image.storage_path
+          imageId: deletingImage.id,
+          storagePath: deletingImage.storage_path
         })
       })
 
@@ -189,10 +341,10 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
       }
 
       // Update local state
-      const remaining = images.filter(img => img.id !== image.id)
+      const remaining = images.filter(img => img.id !== deletingImage.id)
 
       // If deleted image was primary and there are remaining images, make first one primary
-      if (image.is_primary && remaining.length > 0) {
+      if (deletingImage.is_primary && remaining.length > 0) {
         remaining[0].is_primary = true
         await supabase
           .from('game_images')
@@ -201,8 +353,69 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
       }
 
       onImagesChange(remaining)
+      setDeletingImage(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const openEditModal = (image: GameImage) => {
+    setEditingImage(image)
+    // Type-safe access to the new fields (they may not be on the GameImage type yet)
+    const imgAny = image as GameImage & { source?: string; source_url?: string; attribution?: string; license?: string }
+    setEditSource((imgAny.source as ImageSource) || '')
+    setEditSourceUrl(imgAny.source_url || '')
+    setEditAttribution(imgAny.attribution || '')
+    setEditLicense(imgAny.license || '')
+  }
+
+  const closeEditModal = () => {
+    setEditingImage(null)
+    setEditSource('')
+    setEditSourceUrl('')
+    setEditAttribution('')
+    setEditLicense('')
+  }
+
+  const saveImageMetadata = async () => {
+    if (!editingImage) return
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/upload', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_metadata',
+          imageId: editingImage.id,
+          source: editSource || null,
+          source_url: editSourceUrl || null,
+          attribution: editAttribution || null,
+          license: editLicense || null,
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+
+      // Update local state
+      const updated = images.map(img =>
+        img.id === editingImage.id
+          ? { ...img, source: editSource || null, source_url: editSourceUrl || null, attribution: editAttribution || null, license: editLicense || null } as GameImage
+          : img
+      )
+      onImagesChange(updated)
+      closeEditModal()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -346,7 +559,18 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
                 )}
                 {/* Hover overlay with actions */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  {!image.is_primary && (
+                  {image.is_primary ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => syncPrimaryImage(image)}
+                      title="Sync to game card"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  ) : (
                     <Button
                       type="button"
                       variant="secondary"
@@ -360,10 +584,30 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
                   )}
                   <Button
                     type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => openRecropModal(image)}
+                    title="Re-crop image"
+                  >
+                    <Crop className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => openEditModal(image)}
+                    title="Edit attribution"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
                     variant="destructive"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => deleteImage(image)}
+                    onClick={() => setDeletingImage(image)}
                     title="Delete"
                   >
                     <X className="h-4 w-4" />
@@ -397,6 +641,7 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
             if (!open) {
               setPendingImage(null)
               setPendingFileName('')
+              setRecropImage(null)
             }
           }}
           imageType={selectedImageType}
@@ -404,6 +649,168 @@ export function ImageUpload({ gameId, gameSlug, images, onImagesChange }: ImageU
           fileName={pendingFileName}
         />
       )}
+
+      {/* Edit Image Metadata Modal */}
+      <Dialog open={!!editingImage} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Edit Image Attribution
+            </DialogTitle>
+            <DialogDescription>
+              Update the source and licensing information for this image.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingImage && (
+            <div className="space-y-4">
+              {/* Preview */}
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={editingImage.url}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Source Type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <FileCheck className="h-4 w-4" />
+                  Source Type
+                </Label>
+                <Select value={editSource} onValueChange={(v) => setEditSource(v as ImageSource)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Where is this image from?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOURCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Source URL */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  Source URL
+                </Label>
+                <Input
+                  placeholder="https://publisher.com/game-page"
+                  value={editSourceUrl}
+                  onChange={(e) => setEditSourceUrl(e.target.value)}
+                />
+              </div>
+
+              {/* Attribution Text */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Copyright className="h-4 w-4" />
+                  Attribution Text
+                </Label>
+                <Input
+                  placeholder="© Capstone Games"
+                  value={editAttribution}
+                  onChange={(e) => setEditAttribution(e.target.value)}
+                />
+              </div>
+
+              {/* License */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">License</Label>
+                <Select value={editLicense} onValueChange={setEditLicense}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select license type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LICENSE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditModal} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={saveImageMetadata} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!deletingImage} onOpenChange={(open) => !open && setDeletingImage(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Delete Image
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this image? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deletingImage && (
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+              <img
+                src={deletingImage.url}
+                alt="Image to delete"
+                className="w-full h-full object-cover"
+              />
+              {deletingImage.is_primary && (
+                <div className="absolute top-2 left-2 flex items-center gap-1 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                  <Star className="h-3 w-3 fill-current" />
+                  Primary
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeletingImage(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

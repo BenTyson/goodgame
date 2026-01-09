@@ -47,18 +47,11 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (parseLog) {
-        const log = parseLog as {
-          parsed_text?: string
-          parsed_text_structured?: ParsedTextStructured
-          word_count?: number
-          page_count?: number
-          created_at?: string
-        }
-        parsedText = log.parsed_text || null
-        parsedTextStructured = log.parsed_text_structured || null
-        wordCount = log.word_count || null
-        pageCount = log.page_count || null
-        parsedAt = log.created_at || null
+        parsedText = parseLog.parsed_text || null
+        parsedTextStructured = parseLog.parsed_text_structured as unknown as ParsedTextStructured | null
+        wordCount = parseLog.word_count || null
+        pageCount = parseLog.page_count || null
+        parsedAt = parseLog.created_at || null
       }
     }
 
@@ -74,18 +67,11 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (recentLog) {
-        const log = recentLog as {
-          parsed_text?: string
-          parsed_text_structured?: ParsedTextStructured
-          word_count?: number
-          page_count?: number
-          created_at?: string
-        }
-        parsedText = log.parsed_text || null
-        parsedTextStructured = log.parsed_text_structured || null
-        wordCount = log.word_count || null
-        pageCount = log.page_count || null
-        parsedAt = log.created_at || null
+        parsedText = recentLog.parsed_text || null
+        parsedTextStructured = recentLog.parsed_text_structured as unknown as ParsedTextStructured | null
+        wordCount = recentLog.word_count || null
+        pageCount = recentLog.page_count || null
+        parsedAt = recentLog.created_at || null
       }
     }
 

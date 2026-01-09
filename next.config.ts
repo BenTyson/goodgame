@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Mark native Node.js modules as external for server builds
+  serverExternalPackages: ['@napi-rs/canvas'],
   images: {
     remotePatterns: [
       {

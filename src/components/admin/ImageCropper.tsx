@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
-import { Crop, ZoomIn, ZoomOut } from 'lucide-react';
+import { Crop, ZoomIn, ZoomOut, Link2, Copyright, FileCheck } from 'lucide-react';
 
 import {
   Dialog,
@@ -16,7 +16,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 import {
   getCroppedImg,
@@ -25,6 +38,15 @@ import {
   type AspectRatioKey,
   type ImageType,
 } from '@/lib/utils/image-crop';
+
+export type ImageSource = 'publisher' | 'wikimedia' | 'bgg' | 'user_upload' | 'press_kit' | 'promotional';
+
+export interface ImageAttribution {
+  source?: ImageSource;
+  source_url?: string;
+  attribution?: string;
+  license?: string;
+}
 
 interface ImageCropperProps {
   /** The image source (base64 or URL) to crop */
@@ -36,10 +58,28 @@ interface ImageCropperProps {
   /** The image type being uploaded (determines allowed aspect ratios) */
   imageType: ImageType;
   /** Callback when crop is complete */
-  onCropComplete: (blob: Blob) => void;
+  onCropComplete: (blob: Blob, attribution: ImageAttribution) => void;
   /** Optional: original filename for output naming */
   fileName?: string;
 }
+
+const SOURCE_OPTIONS: { value: ImageSource; label: string; defaultAttribution?: string }[] = [
+  { value: 'publisher', label: 'Publisher Website', defaultAttribution: '© Publisher Name' },
+  { value: 'press_kit', label: 'Press Kit / Media Kit', defaultAttribution: 'Used with permission' },
+  { value: 'promotional', label: 'Promotional Material', defaultAttribution: '© Publisher Name' },
+  { value: 'wikimedia', label: 'Wikimedia Commons', defaultAttribution: 'CC BY-SA 4.0' },
+  { value: 'user_upload', label: 'Personal Photo', defaultAttribution: 'User uploaded' },
+  { value: 'bgg', label: 'BoardGameGeek (dev only)', defaultAttribution: '© BoardGameGeek' },
+];
+
+const LICENSE_OPTIONS = [
+  { value: 'fair_use', label: 'Fair Use (editorial)' },
+  { value: 'with_permission', label: 'Used with Permission' },
+  { value: 'cc_by_sa_4', label: 'CC BY-SA 4.0' },
+  { value: 'cc_by_4', label: 'CC BY 4.0' },
+  { value: 'cc0', label: 'CC0 (Public Domain)' },
+  { value: 'proprietary', label: 'Proprietary' },
+];
 
 export function ImageCropper({
   image,
@@ -52,6 +92,13 @@ export function ImageCropper({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAttribution, setShowAttribution] = useState(false);
+
+  // Attribution fields
+  const [source, setSource] = useState<ImageSource | ''>('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [attribution, setAttribution] = useState('');
+  const [license, setLicense] = useState('');
 
   // Determine initial aspect ratio based on image type (used as default)
   const defaultRatio = IMAGE_TYPE_RATIOS[imageType];
@@ -66,20 +113,42 @@ export function ImageCropper({
     []
   );
 
+  const handleSourceChange = (value: ImageSource) => {
+    setSource(value);
+    const option = SOURCE_OPTIONS.find(o => o.value === value);
+    if (option?.defaultAttribution && !attribution) {
+      setAttribution(option.defaultAttribution);
+    }
+    // Auto-set license for known sources
+    if (value === 'wikimedia' && !license) {
+      setLicense('cc_by_sa_4');
+    } else if ((value === 'publisher' || value === 'promotional') && !license) {
+      setLicense('fair_use');
+    } else if (value === 'press_kit' && !license) {
+      setLicense('with_permission');
+    }
+  };
+
   const handleApplyCrop = useCallback(async () => {
     if (!croppedAreaPixels) return;
 
     setIsProcessing(true);
     try {
       const croppedBlob = await getCroppedImg(image, croppedAreaPixels);
-      onCropComplete(croppedBlob);
+      const attributionData: ImageAttribution = {};
+      if (source) attributionData.source = source;
+      if (sourceUrl) attributionData.source_url = sourceUrl;
+      if (attribution) attributionData.attribution = attribution;
+      if (license) attributionData.license = license;
+
+      onCropComplete(croppedBlob, attributionData);
       onOpenChange(false);
     } catch (error) {
       console.error('Error cropping image:', error);
     } finally {
       setIsProcessing(false);
     }
-  }, [croppedAreaPixels, image, onCropComplete, onOpenChange]);
+  }, [croppedAreaPixels, image, onCropComplete, onOpenChange, source, sourceUrl, attribution, license]);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
@@ -95,6 +164,12 @@ export function ImageCropper({
         setCrop({ x: 0, y: 0 });
         setZoom(1);
         setSelectedRatio(defaultRatio || '4:3');
+        // Reset attribution fields
+        setSource('');
+        setSourceUrl('');
+        setAttribution('');
+        setLicense('');
+        setShowAttribution(false);
       }
       onOpenChange(newOpen);
     },
@@ -103,20 +178,19 @@ export function ImageCropper({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-2xl" showCloseButton={false}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crop className="h-5 w-5" />
             Crop Image
           </DialogTitle>
           <DialogDescription>
-            Adjust the crop area and select an aspect ratio.
-            {defaultRatio && ` Default for ${imageType}: ${defaultRatio}`}
+            Adjust the crop area and add source attribution.
           </DialogDescription>
         </DialogHeader>
 
         {/* Crop Area */}
-        <div className="relative h-80 w-full overflow-hidden rounded-lg bg-muted">
+        <div className="relative h-72 w-full overflow-hidden rounded-lg bg-muted">
           <Cropper
             image={image}
             crop={crop}
@@ -126,6 +200,7 @@ export function ImageCropper({
             onCropComplete={onCropAreaChange}
             onZoomChange={setZoom}
             showGrid
+            objectFit="contain"
             classes={{
               containerClassName: 'rounded-lg',
             }}
@@ -184,6 +259,86 @@ export function ImageCropper({
               )}
             </RadioGroup>
           </div>
+
+          {/* Attribution Section (Collapsible) */}
+          <Collapsible open={showAttribution} onOpenChange={setShowAttribution}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between gap-2 text-muted-foreground hover:text-foreground">
+                <span className="flex items-center gap-2">
+                  <Copyright className="h-4 w-4" />
+                  Source Attribution
+                  {source && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{source}</span>}
+                </span>
+                <span className="text-xs">{showAttribution ? 'Hide' : 'Add'}</span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-4">
+              {/* Source Type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <FileCheck className="h-4 w-4" />
+                  Source Type
+                </Label>
+                <Select value={source} onValueChange={(v) => handleSourceChange(v as ImageSource)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Where is this image from?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOURCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Source URL */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  Source URL
+                </Label>
+                <Input
+                  placeholder="https://publisher.com/game-page"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Link to where you got this image</p>
+              </div>
+
+              {/* Attribution Text */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Copyright className="h-4 w-4" />
+                  Attribution Text
+                </Label>
+                <Input
+                  placeholder="© Capstone Games"
+                  value={attribution}
+                  onChange={(e) => setAttribution(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Copyright notice to display</p>
+              </div>
+
+              {/* License */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">License</Label>
+                <Select value={license} onValueChange={setLicense}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select license type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LICENSE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         <DialogFooter>
@@ -191,7 +346,7 @@ export function ImageCropper({
             Cancel
           </Button>
           <Button onClick={handleApplyCrop} disabled={isProcessing}>
-            {isProcessing ? 'Processing...' : 'Apply Crop'}
+            {isProcessing ? 'Processing...' : 'Upload Image'}
           </Button>
         </DialogFooter>
       </DialogContent>

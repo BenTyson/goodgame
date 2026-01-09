@@ -177,6 +177,8 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 60. `00060_vecna_state.sql` - Vecna processing state enum and columns
 61. `00061_taxonomy_source.sql` - Taxonomy source tracking on junction tables
 62. `00062_fix_taxonomy_source_default.sql` - Backfill BGG as default source
+63. `00065_rulebook_thumbnail.sql` - Rulebook thumbnail URL column on games
+64. `00066_rulebooks_storage.sql` - Rulebooks storage bucket for PDF uploads
 
 ## Core Enums
 
@@ -373,6 +375,7 @@ Primary table for all game metadata. Includes generated `fts` column for full-te
 | rulebook_url | TEXT | URL to official rulebook PDF (Wikidata P953 or publisher) |
 | rulebook_source | TEXT | How rulebook was found (auto-discover, manual, publisher, wikidata) |
 | rulebook_parsed_at | TIMESTAMPTZ | When rulebook was last parsed |
+| rulebook_thumbnail_url | TEXT | PNG thumbnail of first page (generated during parse) |
 | crunch_score | DECIMAL(3,1) | Crunch Score (1.0-10.0) - AI complexity rating |
 | crunch_breakdown | JSONB | Crunch dimension scores (rulesDensity, decisionSpace, etc.) |
 | crunch_generated_at | TIMESTAMPTZ | When Crunch Score was generated |
@@ -1399,12 +1402,15 @@ ORDER BY display_order;
 
 | Bucket | Public | Size Limit | MIME Types | Purpose |
 |--------|--------|------------|------------|---------|
-| `game-images` | Yes | 10MB | jpeg, png, webp | Game box art and gallery |
+| `game-images` | Yes | 5MB | jpeg, png, webp, gif | Game box art, gallery, rulebook thumbnails |
 | `user-avatars` | Yes | 5MB | jpeg, png, webp | User profile images |
 | `listing-images` | Yes | 10MB | jpeg, png, webp, gif | Marketplace listing photos |
+| `rulebooks` | Yes | 50MB | application/pdf | Uploaded rulebook PDFs |
 
 **Storage path conventions:**
 - Game images: `{game_id}/{image_type}/{filename}`
+- Rulebook thumbnails: `rulebook-thumbnails/{game_slug}.png`
+- Rulebook PDFs: `{game_slug}.pdf`
 - User avatars: `{user_id}/{filename}`
 - Listing images: `{user_id}/{listing_id}/{filename}`
 

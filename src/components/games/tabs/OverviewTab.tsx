@@ -1,14 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { ExternalLink, BookOpen, ChevronDown, ChevronUp, ImageIcon, Brain } from 'lucide-react'
+import { ExternalLink, BookOpen, Brain } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { TaxonomySection } from '@/components/games/TaxonomySection'
 import { CreditsSection } from '@/components/games/CreditsSection'
-import { ComponentsList } from '@/components/games/ComponentsList'
 import { WikipediaGameplay, WikipediaReception } from '@/components/games/WikipediaContent'
 import { GameRelationsSection } from '@/components/games/GameRelationsSection'
 import { AwardBadgeList } from '@/components/games/AwardBadge'
@@ -32,7 +28,7 @@ import type { GameAwardWithDetails } from '@/lib/supabase/award-queries'
 import type { ReviewWithUser } from '@/lib/supabase/review-queries'
 import type { GroupedGameRelations } from '@/lib/supabase/family-queries'
 
-// Sidebar taxonomy component
+// Sidebar taxonomy component with colorful badges
 function SidebarTaxonomy({
   categories,
   mechanics,
@@ -45,10 +41,30 @@ function SidebarTaxonomy({
   experiences?: { slug: string; name: string }[]
 }) {
   const sections = [
-    { label: 'Categories', items: categories, prefix: '/games?categories=' },
-    { label: 'Mechanics', items: mechanics, prefix: '/games?mechanics=' },
-    { label: 'Themes', items: themes, prefix: '/games?themes=' },
-    { label: 'Experience', items: experiences, prefix: '/games?experiences=' },
+    {
+      label: 'Categories',
+      items: categories,
+      prefix: '/games?categories=',
+      badgeClass: 'border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60',
+    },
+    {
+      label: 'Mechanics',
+      items: mechanics,
+      prefix: '/games?mechanics=',
+      badgeClass: 'border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/60',
+    },
+    {
+      label: 'Themes',
+      items: themes,
+      prefix: '/games?themes=',
+      badgeClass: 'border-purple-500/40 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/60',
+    },
+    {
+      label: 'Experience',
+      items: experiences,
+      prefix: '/games?experiences=',
+      badgeClass: 'border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/60',
+    },
   ].filter(s => s.items && s.items.length > 0)
 
   if (sections.length === 0) return null
@@ -57,21 +73,24 @@ function SidebarTaxonomy({
     <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur p-6 space-y-5">
       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Classification</h3>
       {sections.map((section) => (
-        <div key={section.label} className="space-y-2">
+        <div key={section.label} className="space-y-2.5">
           <p className="text-xs font-medium text-muted-foreground">{section.label}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {section.items!.slice(0, 5).map((item) => (
+          <div className="flex flex-wrap gap-2">
+            {section.items!.slice(0, 6).map((item) => (
               <Link
                 key={item.slug}
                 href={`${section.prefix}${item.slug}`}
-                className="text-xs px-2 py-1 rounded-md bg-muted/50 hover:bg-muted text-foreground transition-colors"
+                className={cn(
+                  'text-xs px-2.5 py-1 rounded-full border bg-transparent transition-all duration-200',
+                  section.badgeClass
+                )}
               >
                 {item.name}
               </Link>
             ))}
-            {section.items!.length > 5 && (
-              <span className="text-xs px-2 py-1 text-muted-foreground">
-                +{section.items!.length - 5}
+            {section.items!.length > 6 && (
+              <span className="text-xs px-2.5 py-1 text-muted-foreground">
+                +{section.items!.length - 6}
               </span>
             )}
           </div>
@@ -254,10 +273,7 @@ export function OverviewTab({
   initialReviews,
   initialHasMore,
 }: OverviewTabProps) {
-  const [showGallery, setShowGallery] = useState(false)
-
   const hasWikipediaContent = game.wikipedia_gameplay || game.wikipedia_reception
-  const hasComponentList = game.component_list && Object.keys(game.component_list as object).length > 0
   const hasRelations = gameRelations.baseGame || gameRelations.expansions.length > 0 || gameRelations.otherRelations.length > 0
   const hasTaxonomy = (game.mechanics && game.mechanics.length > 0) ||
                       (game.themes && game.themes.length > 0) ||
@@ -274,7 +290,7 @@ export function OverviewTab({
       <div className={cn('space-y-12', hasSidebar ? 'lg:col-span-2' : 'lg:col-span-3')}>
         {/* About Section */}
         <section>
-          <h2 className="text-2xl font-bold tracking-tight mb-4">About</h2>
+          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">About</h2>
           {game.description && (
             <p className="text-muted-foreground leading-relaxed">
               {game.description}
@@ -284,9 +300,9 @@ export function OverviewTab({
 
         {/* Video Section - Placeholder for now */}
         <section>
-          <h2 className="text-2xl font-bold tracking-tight mb-4">Watch</h2>
+          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Watch</h2>
           <YouTubeEmbed
-            videoId="oPW0jMG1DTM"
+            videoId="47rBawxfKyY"
             title={`${game.name} - How to Play`}
           />
         </section>
@@ -294,7 +310,7 @@ export function OverviewTab({
         {/* How It Plays - Teaser with CTA to How to Play tab */}
         {game.wikipedia_gameplay && (
           <section>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">How It Plays</h2>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">How It Plays</h2>
             <GameplayTeaser
               content={game.wikipedia_gameplay}
               onNavigate={() => {
@@ -307,66 +323,15 @@ export function OverviewTab({
         {/* Image Gallery */}
         {hasImages && (
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold tracking-tight">Gallery</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowGallery(!showGallery)}
-                className="gap-2"
-              >
-                <ImageIcon className="h-4 w-4" />
-                {game.images!.length} images
-                {showGallery ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </div>
-            {showGallery && (
-              <ImageGallery images={game.images!} gameName={game.name} />
-            )}
-          </section>
-        )}
-
-        {/* Components List */}
-        {hasComponentList && (
-          <section>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">What&apos;s in the Box</h2>
-            <ComponentsList
-              components={game.component_list as ComponentListType}
-              variant="grid"
-            />
-          </section>
-        )}
-
-        {/* Taxonomy Section */}
-        {hasTaxonomy && (
-          <section>
-            <Collapsible defaultOpen={false}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold tracking-tight">Game Classification</h2>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                    Show details
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent>
-                <TaxonomySection
-                  categories={game.categories || undefined}
-                  mechanics={game.mechanics || undefined}
-                  themes={game.themes || undefined}
-                  playerExperiences={game.player_experiences || undefined}
-                  collapseAfter={6}
-                />
-              </CollapsibleContent>
-            </Collapsible>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Gallery</h2>
+            <ImageGallery images={game.images!} gameName={game.name} />
           </section>
         )}
 
         {/* Game Relations */}
         {hasRelations && (
           <section>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">
               {gameRelations.baseGame ? 'Related Games' : 'Expansions & Related'}
             </h2>
             <GameRelationsSection
@@ -381,7 +346,7 @@ export function OverviewTab({
         {/* Awards */}
         {gameAwards.length > 0 && (
           <section>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">Awards & Recognition</h2>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Awards & Recognition</h2>
             <AwardBadgeList
               awards={gameAwards}
               variant="default"
@@ -412,7 +377,7 @@ export function OverviewTab({
         {/* External Links */}
         {(game.bgg_id || game.official_website || game.rulebook_url) && (
           <section>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">External Links</h2>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">External Links</h2>
             <div className="flex flex-wrap gap-3">
               {game.official_website && (
                 <Button variant="outline" asChild>

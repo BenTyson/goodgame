@@ -1,8 +1,58 @@
 # Current Status
 
-> Last Updated: 2026-01-08 (Game Page UX Overhaul - Tabbed Design)
+> Last Updated: 2026-01-08 (Rulebook Thumbnails & PDF Upload)
 
-## Current Phase: 59 - Game Page UX Overhaul
+## Current Phase: 60 - Rulebook Thumbnails & Upload
+
+Server-side PDF thumbnail generation and admin PDF upload functionality for rulebooks.
+
+### Session Summary (2026-01-08) - Rulebook Thumbnails & PDF Upload
+
+**Rulebook Thumbnail Generation:**
+- Server-side thumbnail generation using `unpdf.renderPageAsImage()` + `@napi-rs/canvas`
+- Generates PNG preview from first page of PDF rulebooks
+- Auto-generates during parse flow, stores in Supabase storage
+- Zero client-side bundle impact (all server-side)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/rulebook/thumbnail.ts` | PDF → PNG thumbnail generator |
+| `src/app/api/admin/rulebook/upload/route.ts` | PDF file upload endpoint |
+| `supabase/migrations/00065_rulebook_thumbnail.sql` | `rulebook_thumbnail_url` column |
+| `supabase/migrations/00066_rulebooks_storage.sql` | `rulebooks` storage bucket |
+
+**Rulebook Upload Feature (Vecna Admin):**
+- New "Upload PDF File" button in Rulebook Discovery panel
+- Validates PDF magic bytes and 50MB size limit
+- Uploads to dedicated `rulebooks` storage bucket
+- Updates game record with public URL
+
+**RulebookPreview Component Redesign:**
+- Full-bleed thumbnail fills card (no padding at top/corners)
+- "Official Rulebook" overlay with gradient at top
+- Encouraging message: "The best way to learn {game} (other than playing it) is to read the rulebook!"
+- Button: "Read the Official Rules"
+- Hover overlay for quick access
+
+**Build Configuration:**
+- Added `serverExternalPackages: ['@napi-rs/canvas']` to Next.js config for native module support
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/games/tabs/RulesTab.tsx` | Redesigned RulebookPreview with thumbnails |
+| `src/app/api/admin/rulebook/parse/route.ts` | Integrated thumbnail generation |
+| `src/app/admin/(dashboard)/vecna/components/RulebookDiscovery.tsx` | Added file upload UI |
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Pass gameSlug prop |
+| `next.config.ts` | serverExternalPackages for native modules |
+| `src/types/supabase.ts` | Regenerated with new columns |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 59 - Game Page UX Overhaul
 
 Apple-inspired tabbed redesign of `/games/[slug]` consolidating hub + sub-pages into a single-page tabbed experience.
 
@@ -181,7 +231,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-62+ migrations in `supabase/migrations/` covering:
+66 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities
 - Content: game content, images, families, relations

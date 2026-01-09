@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import type { GameImage } from '@/types/database'
 
 interface ImageGalleryProps {
@@ -14,189 +13,221 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ images, gameName }: ImageGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const isLightboxOpen = selectedIndex !== null
+
+  const goToPrevious = useCallback(() => {
+    if (selectedIndex === null) return
+    setSelectedIndex(selectedIndex === 0 ? images.length - 1 : selectedIndex - 1)
+  }, [selectedIndex, images.length])
+
+  const goToNext = useCallback(() => {
+    if (selectedIndex === null) return
+    setSelectedIndex(selectedIndex === images.length - 1 ? 0 : selectedIndex + 1)
+  }, [selectedIndex, images.length])
+
+  const closeLightbox = useCallback(() => {
+    setSelectedIndex(null)
+  }, [])
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isLightboxOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowLeft') goToPrevious()
+      if (e.key === 'ArrowRight') goToNext()
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isLightboxOpen, closeLightbox, goToPrevious, goToNext])
 
   if (images.length === 0) {
     return null
   }
 
-  const selectedImage = images[selectedIndex]
-
-  const goToPrevious = () => {
-    setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-  }
-
-  const goToNext = () => {
-    setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-  }
-
-  const openLightbox = () => {
-    setIsLightboxOpen(true)
-    document.body.style.overflow = 'hidden'
-  }
-
-  const closeLightbox = () => {
-    setIsLightboxOpen(false)
-    document.body.style.overflow = ''
-  }
+  const selectedImage = selectedIndex !== null ? images[selectedIndex] : null
 
   return (
     <>
-      <div className="space-y-4">
-        {/* Main Image */}
-        <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-muted group">
-          <Image
-            src={selectedImage.url}
-            alt={selectedImage.alt_text || `${gameName} image`}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-            priority
-          />
-
-          {/* Zoom button */}
-          <button
-            onClick={openLightbox}
-            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-            aria-label="View full size"
-          >
-            <ZoomIn className="h-5 w-5" />
-          </button>
-
-          {/* Caption */}
-          {selectedImage.caption && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-8">
-              <p className="text-sm text-white">{selectedImage.caption}</p>
-            </div>
-          )}
-
-          {/* Navigation arrows for main image */}
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={goToPrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-              <button
-                onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                aria-label="Next image"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </>
-          )}
+      {/* Thumbnail Strip */}
+      <div className="relative -mx-1">
+        <div className="flex gap-3 overflow-x-auto px-1 py-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          {images.map((image, index) => (
+            <button
+              key={image.id}
+              onClick={() => setSelectedIndex(index)}
+              className={cn(
+                'group relative h-32 w-44 shrink-0 overflow-hidden rounded-xl bg-muted',
+                'ring-offset-background transition-all duration-200',
+                'hover:ring-2 hover:ring-primary hover:ring-offset-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
+              )}
+              aria-label={`View ${image.alt_text || `image ${index + 1}`}`}
+            >
+              <Image
+                src={image.url}
+                alt={image.alt_text || `${gameName} thumbnail ${index + 1}`}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="176px"
+              />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
+            </button>
+          ))}
         </div>
 
-        {/* Thumbnails */}
-        {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {images.map((image, index) => (
-              <button
-                key={image.id}
-                onClick={() => setSelectedIndex(index)}
-                className={cn(
-                  'relative h-16 w-24 shrink-0 overflow-hidden rounded-lg transition-all',
-                  index === selectedIndex
-                    ? 'ring-2 ring-primary ring-offset-2'
-                    : 'opacity-70 hover:opacity-100'
-                )}
-                aria-label={`View image ${index + 1}`}
-              >
-                <Image
-                  src={image.url}
-                  alt={image.alt_text || `${gameName} thumbnail ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                />
-              </button>
-            ))}
-          </div>
+        {/* Fade edges for scroll indication */}
+        {images.length > 4 && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
         )}
-
-        {/* Image type badge */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="capitalize">{selectedImage.image_type}</span>
-          <span>•</span>
-          <span>
-            {selectedIndex + 1} of {images.length}
-          </span>
-        </div>
       </div>
 
       {/* Lightbox */}
-      {isLightboxOpen && (
+      {isLightboxOpen && selectedImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-          onClick={closeLightbox}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image lightbox"
         >
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 h-12 w-12 text-white hover:bg-white/10"
-            onClick={closeLightbox}
-            aria-label="Close lightbox"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-
-          {/* Navigation */}
-          {images.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-4 h-12 w-12 text-white hover:bg-white/10"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  goToPrevious()
-                }}
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="h-8 w-8" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 h-12 w-12 text-white hover:bg-white/10"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  goToNext()
-                }}
-                aria-label="Next image"
-              >
-                <ChevronRight className="h-8 w-8" />
-              </Button>
-            </>
-          )}
-
-          {/* Image */}
+          {/* Backdrop with blur */}
           <div
-            className="relative max-h-[90vh] max-w-[90vw]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={selectedImage.url}
-              alt={selectedImage.alt_text || `${gameName} image`}
-              width={selectedImage.width || 900}
-              height={selectedImage.height || 600}
-              className="max-h-[90vh] w-auto object-contain"
-              priority
-            />
-            {selectedImage.caption && (
-              <p className="mt-4 text-center text-white">{selectedImage.caption}</p>
-            )}
-          </div>
+            className="absolute inset-0 bg-black/95 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={closeLightbox}
+          />
 
-          {/* Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white">
-            {selectedIndex + 1} / {images.length}
+          {/* Content container */}
+          <div className="relative z-10 flex h-full w-full flex-col items-center justify-center p-4 md:p-8">
+            {/* Top bar */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 md:p-6">
+              {/* Counter */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-white/90">
+                  {selectedIndex + 1} / {images.length}
+                </span>
+                {selectedImage.image_type && (
+                  <>
+                    <span className="h-1 w-1 rounded-full bg-white/30" />
+                    <span className="text-sm text-white/60 capitalize">
+                      {selectedImage.image_type.replace('_', ' ')}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={closeLightbox}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-full',
+                  'bg-white/10 text-white/90 backdrop-blur-sm',
+                  'transition-all duration-200 hover:bg-white/20 hover:scale-105',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50'
+                )}
+                aria-label="Close lightbox"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Main image */}
+            <div
+              className="relative flex max-h-[75vh] max-w-[90vw] items-center justify-center animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={selectedImage.url}
+                alt={selectedImage.alt_text || `${gameName} image`}
+                width={selectedImage.width || 1200}
+                height={selectedImage.height || 800}
+                className="max-h-[75vh] w-auto rounded-lg object-contain shadow-2xl"
+                priority
+              />
+            </div>
+
+            {/* Caption */}
+            {selectedImage.caption && (
+              <p className="mt-4 max-w-2xl text-center text-sm text-white/80 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {selectedImage.caption}
+              </p>
+            )}
+
+            {/* Navigation arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToPrevious()
+                  }}
+                  className={cn(
+                    'absolute left-4 md:left-8 top-1/2 -translate-y-1/2',
+                    'flex h-12 w-12 items-center justify-center rounded-full',
+                    'bg-white/10 text-white/90 backdrop-blur-sm',
+                    'transition-all duration-200 hover:bg-white/20 hover:scale-105',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50'
+                  )}
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToNext()
+                  }}
+                  className={cn(
+                    'absolute right-4 md:right-8 top-1/2 -translate-y-1/2',
+                    'flex h-12 w-12 items-center justify-center rounded-full',
+                    'bg-white/10 text-white/90 backdrop-blur-sm',
+                    'transition-all duration-200 hover:bg-white/20 hover:scale-105',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50'
+                  )}
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            {/* Thumbnail strip in lightbox */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 rounded-full bg-black/40 p-2 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+                {images.map((image, index) => (
+                  <button
+                    key={image.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedIndex(index)
+                    }}
+                    className={cn(
+                      'relative h-12 w-16 shrink-0 overflow-hidden rounded-md transition-all duration-200',
+                      index === selectedIndex
+                        ? 'ring-2 ring-white ring-offset-1 ring-offset-black/50 scale-105'
+                        : 'opacity-50 hover:opacity-80'
+                    )}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={image.alt_text || `Thumbnail ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

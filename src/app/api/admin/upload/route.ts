@@ -20,6 +20,12 @@ export async function POST(request: NextRequest) {
     const gameSlug = formData.get('gameSlug') as string
     const imageType = (formData.get('imageType') as string) || 'gallery'
 
+    // Attribution fields
+    const source = formData.get('source') as string | null
+    const sourceUrl = formData.get('source_url') as string | null
+    const attribution = formData.get('attribution') as string | null
+    const license = formData.get('license') as string | null
+
     // Validate imageType
     const validImageTypes = ['cover', 'hero', 'gallery']
     if (!validImageTypes.includes(imageType)) {
@@ -72,6 +78,13 @@ export async function POST(request: NextRequest) {
     // Cover images are primary by default if no other images exist
     const isPrimary = imageType === 'cover' && count === 0
 
+    // Validate source if provided
+    const validSources = ['publisher', 'wikimedia', 'bgg', 'user_upload', 'press_kit', 'promotional'] as const
+    type ImageSource = typeof validSources[number]
+    const validatedSource: ImageSource | null = source && validSources.includes(source as ImageSource)
+      ? source as ImageSource
+      : null
+
     // Create database record
     const { data: imageRecord, error: dbError } = await adminClient
       .from('game_images')
@@ -82,7 +95,12 @@ export async function POST(request: NextRequest) {
         image_type: imageType,
         is_primary: isPrimary,
         display_order: count || 0,
-        file_size: file.size
+        file_size: file.size,
+        // Attribution fields
+        source: validatedSource,
+        source_url: sourceUrl || null,
+        attribution: attribution || null,
+        license: license || null,
       })
       .select()
       .single()
@@ -123,7 +141,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Set primary image and sync to games table
+// Set primary image OR update image metadata
 export async function PATCH(request: NextRequest) {
   const rateLimited = applyRateLimit(request, RateLimits.ADMIN_STANDARD)
   if (rateLimited) return rateLimited
@@ -134,28 +152,70 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const { gameId, imageId, imageUrl } = await request.json()
+    const body = await request.json()
+    const adminClient = createAdminClient()
+
+    // Handle metadata update
+    if (body.action === 'update_metadata') {
+      const { imageId, source, source_url, attribution, license } = body
+
+      if (!imageId) {
+        return ApiErrors.validation('Missing imageId')
+      }
+
+      // Validate source if provided
+      const validSources = ['publisher', 'wikimedia', 'bgg', 'user_upload', 'press_kit', 'promotional'] as const
+      type ImageSourceType = typeof validSources[number]
+      const validatedSource: ImageSourceType | null = source && validSources.includes(source)
+        ? source as ImageSourceType
+        : null
+
+      const { error: updateError } = await adminClient
+        .from('game_images')
+        .update({
+          source: validatedSource,
+          source_url: source_url || null,
+          attribution: attribution || null,
+          license: license || null,
+        })
+        .eq('id', imageId)
+
+      if (updateError) {
+        return ApiErrors.database(updateError, { route: 'PATCH /api/admin/upload (metadata)' })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Handle set primary image (existing logic)
+    const { gameId, imageId, imageUrl } = body
 
     if (!gameId || !imageId || !imageUrl) {
       return ApiErrors.validation('Missing required fields')
     }
 
-    const adminClient = createAdminClient()
-
     // Clear all primary flags for this game
-    await adminClient
+    const { error: clearError } = await adminClient
       .from('game_images')
       .update({ is_primary: false })
       .eq('game_id', gameId)
 
+    if (clearError) {
+      console.error('Error clearing primary flags:', clearError)
+    }
+
     // Set the new primary
-    await adminClient
+    const { error: setPrimaryError } = await adminClient
       .from('game_images')
       .update({ is_primary: true })
       .eq('id', imageId)
 
+    if (setPrimaryError) {
+      console.error('Error setting primary:', setPrimaryError)
+    }
+
     // Sync to games table
-    const { error: gameError } = await adminClient
+    const { data: updateData, error: gameError } = await adminClient
       .from('games')
       .update({
         box_image_url: imageUrl,
@@ -163,12 +223,17 @@ export async function PATCH(request: NextRequest) {
         thumbnail_url: imageUrl,
       })
       .eq('id', gameId)
+      .select('id, box_image_url')
+      .single()
 
     if (gameError) {
+      console.error('Error syncing to games table:', gameError, { gameId, imageUrl })
       return ApiErrors.database(gameError, { route: 'PATCH /api/admin/upload' })
     }
 
-    return NextResponse.json({ success: true })
+    console.log('Successfully synced primary image:', { gameId, imageUrl, updateData })
+
+    return NextResponse.json({ success: true, synced: updateData })
   } catch (error) {
     return ApiErrors.internal(error, { route: 'PATCH /api/admin/upload' })
   }

@@ -123,8 +123,7 @@ export function WikipediaContent({
       <Card className={className}>
         <CardHeader className="pb-3">
           {title && (
-            <CardTitle className="text-base flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-[22px] font-light uppercase tracking-widest">
               {title}
             </CardTitle>
           )}
@@ -176,8 +175,7 @@ export function WikipediaContent({
   return (
     <div className={cn('space-y-3', className)}>
       {title && (
-        <h3 className="font-semibold flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-[22px] font-light uppercase tracking-widest mb-4">
           {title}
         </h3>
       )}
