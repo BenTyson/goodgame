@@ -6,6 +6,8 @@ import {
   enrichGameFromWikipedia,
   prepareWikipediaStorageData,
 } from '@/lib/wikipedia'
+import { syncGameAwardsFromWikipedia } from '@/lib/supabase/award-queries'
+import { getGameASINByBggId } from '@/lib/wikidata/client'
 
 interface ResyncResponse {
   success: boolean
@@ -20,6 +22,8 @@ interface ResyncResponse {
     images: boolean
     externalLinks: boolean
     awards: boolean
+    awardsSynced: number
+    asin: boolean
   }
   error?: string
 }
@@ -74,6 +78,8 @@ export async function POST(
           images: false,
           externalLinks: false,
           awards: false,
+          awardsSynced: 0,
+          asin: false,
         },
         error: 'Game has no Wikipedia URL. Import or set one first.',
       } satisfies ResyncResponse, { status: 400 })
@@ -112,6 +118,8 @@ export async function POST(
           images: false,
           externalLinks: false,
           awards: false,
+          awardsSynced: 0,
+          asin: false,
         },
         error: enrichmentResult.error || 'Wikipedia article not found or extraction failed',
       } satisfies ResyncResponse, { status: 400 })
@@ -120,19 +128,56 @@ export async function POST(
     // Prepare storage data
     const storageData = prepareWikipediaStorageData(enrichmentResult)
 
-    // Update the database with new Wikipedia data
+    // Fetch ASIN from Wikidata if game has BGG ID and no ASIN yet
+    let asinUpdated = false
+    let fetchedAsin: string | null = null
+    if (game.bgg_id) {
+      // Check if game already has an ASIN
+      const { data: currentGame } = await adminClient
+        .from('games')
+        .select('amazon_asin')
+        .eq('id', gameId)
+        .single()
+
+      if (!currentGame?.amazon_asin) {
+        console.log(`[Resync] Fetching ASIN from Wikidata for BGG ID: ${game.bgg_id}`)
+        fetchedAsin = await getGameASINByBggId(String(game.bgg_id))
+        if (fetchedAsin) {
+          asinUpdated = true
+        }
+      }
+    }
+
+    // Update the database with new Wikipedia data (and ASIN if found)
+    const updateData: Record<string, unknown> = {
+      ...storageData,
+      wikipedia_fetched_at: new Date().toISOString(),
+    }
+
+    if (fetchedAsin) {
+      updateData.amazon_asin = fetchedAsin
+    }
+
     const { error: updateError } = await adminClient
       .from('games')
-      .update({
-        ...storageData,
-        wikipedia_fetched_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', gameId)
 
     if (updateError) {
       return ApiErrors.database(updateError, {
         route: 'POST /api/admin/games/[id]/resync-wikipedia',
       })
+    }
+
+    // Sync Wikipedia awards to game_awards table
+    let awardsSynced = 0
+    if (enrichmentResult.awards && enrichmentResult.awards.length > 0) {
+      console.log(`[Resync] Syncing ${enrichmentResult.awards.length} awards to game_awards table`)
+      const syncResult = await syncGameAwardsFromWikipedia(gameId, enrichmentResult.awards)
+      awardsSynced = syncResult.synced
+      if (syncResult.errors.length > 0) {
+        console.warn(`[Resync] Award sync errors:`, syncResult.errors)
+      }
     }
 
     console.log(`[Resync] Wikipedia re-sync complete for: ${game.name}`)
@@ -151,6 +196,8 @@ export async function POST(
         images: (enrichmentResult.images?.length ?? 0) > 0,
         externalLinks: (enrichmentResult.externalLinks?.length ?? 0) > 0,
         awards: (enrichmentResult.awards?.length ?? 0) > 0,
+        awardsSynced,
+        asin: asinUpdated,
       },
     }
 

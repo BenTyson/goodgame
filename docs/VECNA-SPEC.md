@@ -900,3 +900,78 @@ Body: {
 - Error display inline
 - Cancel button to abort stream
 - "Close & Refresh" on completion
+
+### Awards Sync from Wikipedia (2026-01-09)
+
+Added automatic sync of Wikipedia-extracted awards to the normalized `game_awards` table during Wikipedia resync.
+
+**Features:**
+- `syncGameAwardsFromWikipedia()` function in `award-queries.ts`
+- Fuzzy matching via `WIKIPEDIA_TO_SLUG_MAP` for known awards
+- Automatic upsert to `game_awards` table with proper foreign keys
+- Integrated into `/api/admin/games/[id]/resync-wikipedia` endpoint
+
+**Supported Awards:**
+| Wikipedia Name | Database Slug |
+|----------------|---------------|
+| Spiel des Jahres | `spiel-des-jahres` |
+| Kennerspiel des Jahres | `kennerspiel-des-jahres` |
+| Kinderspiel des Jahres | `kinderspiel-des-jahres` |
+| Deutscher Spiele Preis | `deutscher-spiele-preis` |
+| Golden Geek | `golden-geek` |
+| Dice Tower | `dice-tower` |
+| Origins Awards | `origins-awards` |
+| Mensa Select | `mensa-select` |
+| As d'Or | `as-dor` |
+| International Gamers Award | `international-gamers-award` |
+| American Tabletop Awards | `american-tabletop` |
+
+**Data Flow:**
+```
+Wikipedia extraction → wikipedia_awards JSON → syncGameAwardsFromWikipedia() → game_awards table → /awards pages
+```
+
+### Amazon ASIN Enrichment (2026-01-09)
+
+Added automatic ASIN enrichment from Wikidata and manual entry in Vecna panel.
+
+**Wikidata Integration:**
+- SPARQL queries for P5749 (Amazon ASIN) in `wikidata/queries.ts`
+- `getGameASINByWikidataId()` and `getGameASINByBggId()` functions
+- Integrated into Wikipedia resync flow (fetches ASIN if game has BGG ID)
+
+**SPARQL Query:**
+```sparql
+SELECT ?asin WHERE {
+  ?game wdt:P31/wdt:P279* wd:Q131436 .
+  ?game wdt:P2339 "$BGG_ID" .
+  ?game wdt:P5749 ?asin .
+}
+LIMIT 1
+```
+
+**Manual Entry in Vecna:**
+- Input field in Details tab → External References accordion
+- ASIN validation (10 alphanumeric characters, e.g., `B09L6FCP9S`)
+- Save via `PATCH /api/admin/games/[id]` endpoint
+- "View on Amazon" link when ASIN is present
+
+**API Endpoint:**
+```
+PATCH /api/admin/games/[id]
+Body: { amazon_asin: "B09L6FCP9S" }
+```
+
+**Allowed Fields (whitelist):**
+- `amazon_asin`
+- `tagline`
+- `meta_description`
+
+**Display:**
+- "Buy on Amazon" button appears in GameHero when `amazon_asin` is present
+- Uses `BuyButtons` component with Amazon Associate tag
+- Orange Amazon-branded button with shopping cart icon
+
+**Completeness Report:**
+- Added `amazon_asin` check with "recommended" importance
+- Shows in External Sources category

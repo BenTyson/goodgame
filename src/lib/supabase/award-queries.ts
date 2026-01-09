@@ -1,6 +1,8 @@
 import { createClient } from './server'
 import { createStaticClient } from './game-queries'
+import { createAdminClient } from './admin'
 import type { Award, AwardCategory, GameAward, Game } from '@/types/database'
+import type { WikipediaAward } from '@/lib/wikipedia/types'
 
 // ===========================================
 // AWARDS
@@ -180,4 +182,147 @@ export async function getAllAwardSlugs(): Promise<string[]> {
   }
 
   return data?.map(a => a.slug) || []
+}
+
+// ===========================================
+// AWARD SYNC FROM WIKIPEDIA
+// ===========================================
+
+/**
+ * Mapping from Wikipedia award names to our database slugs
+ * Wikipedia names are case-insensitive matched
+ */
+const WIKIPEDIA_TO_SLUG_MAP: Record<string, string> = {
+  // German awards
+  'spiel des jahres': 'spiel-des-jahres',
+  'kennerspiel des jahres': 'kennerspiel-des-jahres',
+  'kinderspiel des jahres': 'kinderspiel-des-jahres',
+  'deutscher spiele preis': 'deutscher-spiele-preis',
+
+  // American awards
+  'golden geek': 'golden-geek',
+  'golden geek award': 'golden-geek',
+  'golden geek awards': 'golden-geek',
+  'dice tower': 'dice-tower',
+  'dice tower award': 'dice-tower',
+  'dice tower awards': 'dice-tower',
+  'american tabletop award': 'american-tabletop',
+  'american tabletop awards': 'american-tabletop',
+  'origins award': 'origins-awards',
+  'origins awards': 'origins-awards',
+  'mensa select': 'mensa-select',
+
+  // French awards
+  "as d'or": 'as-dor',
+  'as dor': 'as-dor',
+
+  // International
+  'international gamers award': 'international-gamers-award',
+}
+
+/**
+ * Match a Wikipedia award name to our database slug
+ */
+function matchAwardSlug(wikipediaName: string): string | null {
+  const normalizedName = wikipediaName.toLowerCase().trim()
+
+  // Direct match
+  if (WIKIPEDIA_TO_SLUG_MAP[normalizedName]) {
+    return WIKIPEDIA_TO_SLUG_MAP[normalizedName]
+  }
+
+  // Partial match - check if any key is contained in the name
+  for (const [key, slug] of Object.entries(WIKIPEDIA_TO_SLUG_MAP)) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return slug
+    }
+  }
+
+  return null
+}
+
+/**
+ * Sync Wikipedia awards to the game_awards table
+ *
+ * @param gameId - The game's UUID
+ * @param wikipediaAwards - Awards extracted from Wikipedia
+ * @returns Number of awards synced
+ */
+export async function syncGameAwardsFromWikipedia(
+  gameId: string,
+  wikipediaAwards: WikipediaAward[]
+): Promise<{ synced: number; skipped: number; errors: string[] }> {
+  // Use admin client since this is only called from admin routes
+  const supabase = createAdminClient()
+  const errors: string[] = []
+  let synced = 0
+  let skipped = 0
+
+  if (!wikipediaAwards || wikipediaAwards.length === 0) {
+    return { synced: 0, skipped: 0, errors: [] }
+  }
+
+  // Fetch all awards from database for matching
+  const { data: allAwards } = await supabase
+    .from('awards')
+    .select('id, slug, name, short_name')
+    .eq('is_active', true)
+
+  if (!allAwards || allAwards.length === 0) {
+    return { synced: 0, skipped: 0, errors: ['No awards found in database'] }
+  }
+
+  // Create a map for quick lookup
+  const awardsBySlug = new Map(allAwards.map(a => [a.slug, a]))
+
+  for (const wikiAward of wikipediaAwards) {
+    // Skip awards without a year
+    if (!wikiAward.year) {
+      skipped++
+      continue
+    }
+
+    // Match to our database
+    const slug = matchAwardSlug(wikiAward.name)
+    if (!slug) {
+      skipped++
+      continue
+    }
+
+    const dbAward = awardsBySlug.get(slug)
+    if (!dbAward) {
+      skipped++
+      continue
+    }
+
+    // Map Wikipedia result to our result format
+    const result = wikiAward.result === 'winner' ? 'winner'
+      : wikiAward.result === 'nominated' ? 'nominated'
+      : wikiAward.result === 'finalist' ? 'finalist'
+      : wikiAward.result === 'recommended' ? 'recommended'
+      : 'nominated' // Default to nominated for unknown
+
+    // Upsert the game_award record (without category_id for now)
+    const { error } = await supabase
+      .from('game_awards')
+      .upsert({
+        game_id: gameId,
+        award_id: dbAward.id,
+        category_id: null, // Wikipedia doesn't give us specific category
+        year: wikiAward.year,
+        result,
+      }, {
+        onConflict: 'game_id,award_id,category_id,year',
+        ignoreDuplicates: false, // Update if exists
+      })
+
+    if (error) {
+      errors.push(`Failed to sync ${wikiAward.name} ${wikiAward.year}: ${error.message}`)
+    } else {
+      synced++
+    }
+  }
+
+  console.log(`  [Awards] Synced ${synced} awards, skipped ${skipped}`)
+  return { synced, skipped, errors }
 }

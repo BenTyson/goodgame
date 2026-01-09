@@ -24,9 +24,12 @@ import {
   Cpu,
   Zap,
   Brain,
+  ShoppingCart,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Accordion,
@@ -76,12 +79,15 @@ export function VecnaGamePanel({
   const [showRulebookDiscovery, setShowRulebookDiscovery] = useState(false)
   const [showAutoProcess, setShowAutoProcess] = useState(false)
   const [selectedModel, setSelectedModel] = useState<'sonnet' | 'haiku' | 'opus'>('sonnet')
+  const [asinInput, setAsinInput] = useState(game.amazon_asin || '')
+  const [asinSaving, setAsinSaving] = useState(false)
 
   // Sync local state when game prop changes (e.g., after router.refresh())
   useEffect(() => {
     setCurrentState(game.vecna_state)
     setHasRulebook(game.has_rulebook)
-  }, [game.id, game.vecna_state, game.has_rulebook])
+    setAsinInput(game.amazon_asin || '')
+  }, [game.id, game.vecna_state, game.has_rulebook, game.amazon_asin])
 
   const stateConfig = VECNA_STATE_CONFIG[currentState]
   const isBlocked = currentState === 'rulebook_missing' || currentState === 'review_pending'
@@ -263,6 +269,38 @@ export function VecnaGamePanel({
     } finally {
       setIsProcessing(false)
       setProcessingMessage(null)
+    }
+  }
+
+  // Save Amazon ASIN
+  const saveAsin = async () => {
+    const trimmedAsin = asinInput.trim()
+    // Basic ASIN validation: 10 alphanumeric characters
+    if (trimmedAsin && !/^[A-Z0-9]{10}$/i.test(trimmedAsin)) {
+      setError('Invalid ASIN format. Should be 10 alphanumeric characters (e.g., B09777HSJX)')
+      return
+    }
+
+    setAsinSaving(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/games/${game.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amazon_asin: trimmedAsin || null }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save ASIN')
+      }
+
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save ASIN')
+    } finally {
+      setAsinSaving(false)
     }
   }
 
@@ -891,6 +929,46 @@ export function VecnaGamePanel({
                       {game.rulebook_source && <DataSourceBadge source={game.rulebook_source} showTooltip={false} />}
                     </a>
                   )}
+
+                  {/* Amazon ASIN */}
+                  <div className="mt-3 pt-3 border-t">
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                      Amazon ASIN
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1 p-2 rounded border">
+                        <ShoppingCart className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                        <Input
+                          value={asinInput}
+                          onChange={(e) => setAsinInput(e.target.value.toUpperCase())}
+                          placeholder="e.g., B09777HSJX"
+                          className="border-0 p-0 h-auto text-sm focus-visible:ring-0"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={saveAsin}
+                        disabled={asinSaving || asinInput === (game.amazon_asin || '')}
+                      >
+                        {asinSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {game.amazon_asin && (
+                      <a
+                        href={`https://www.amazon.com/dp/${game.amazon_asin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-foreground mt-1 block"
+                      >
+                        View on Amazon
+                      </a>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

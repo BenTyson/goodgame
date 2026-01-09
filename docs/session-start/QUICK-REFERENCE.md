@@ -139,9 +139,10 @@ src/app/
 │   │   ├── route.ts           # GET, PATCH games
 │   │   ├── taxonomy/route.ts  # GET/POST/PATCH taxonomy assignments
 │   │   └── [id]/
+│   │       ├── route.ts                  # PATCH update game fields (amazon_asin, tagline, etc.)
 │   │       ├── reset-content/route.ts    # POST reset parsed content
 │   │       ├── sync-bgg/route.ts         # POST re-sync BGG data
-│   │       ├── resync-wikipedia/route.ts # POST re-sync Wikipedia data
+│   │       ├── resync-wikipedia/route.ts # POST re-sync Wikipedia + award sync + ASIN fetch
 │   │       └── wikipedia/route.ts        # GET status, POST fetch Wikipedia summary
 │   ├── families/
 │   │   └── [id]/
@@ -273,7 +274,7 @@ src/components/
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
-├── monetization/              # AdUnit, AffiliateButton (planned)
+├── monetization/              # AdUnit, AffiliateButton, AmazonButton, BuyButtons
 └── marketplace/               # Marketplace components
     ├── ListingCard.tsx        # Listing grid card
     ├── ListingGrid.tsx        # Responsive listing grid
@@ -351,6 +352,10 @@ src/lib/wikipedia/             # Wikipedia integration utilities
   ├── client.ts                # Rate-limited MediaWiki API client (follows redirects)
   ├── sections.ts              # Section extraction with cleanSectionWikitext()
   └── types.ts                 # MediaWiki API response types
+src/lib/wikidata/              # Wikidata SPARQL integration
+  ├── client.ts                # executeSparqlQuery(), getGameASINByBggId(), getGameASINByWikidataId()
+  ├── queries.ts               # SPARQL queries (board game lookup, ASIN P5749, awards P166)
+  └── index.ts                 # Barrel exports
 src/lib/vecna/                 # Vecna pipeline utilities
   ├── types.ts                 # VecnaState, Phase, ProcessingMode, ProcessingResult, etc.
   ├── pipeline.ts              # Pipeline orchestration (isBlockedState, calculatePipelineProgress)
@@ -500,6 +505,9 @@ ADMIN_EMAILS=your-email@gmail.com
 
 # YouTube (for video search in admin)
 YOUTUBE_API_KEY=...
+
+# Amazon Associates (for affiliate links)
+NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG=goodgame-20
 
 # Stripe (for marketplace payments)
 STRIPE_SECRET_KEY=sk_test_...

@@ -6,17 +6,25 @@ import { Package, ImageOff } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { QuickStatsBar } from './QuickStatsBar'
+import { AwardBadgeList } from './AwardBadge'
 import { AggregateRating } from '@/components/reviews'
 import { BuyButtons } from '@/components/monetization'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
 import { cn } from '@/lib/utils'
-import type { GameImage, Json, ComplexityTier, Category } from '@/types/database'
+import type { GameImage, Json, ComplexityTier, Category, Award, AwardCategory } from '@/types/database'
 
 interface BaseGame {
   id: string
   name: string
   slug: string
   box_image_url?: string | null
+}
+
+interface GameAward {
+  award: Award
+  category: AwardCategory | null
+  year: number
+  result: string | null
 }
 
 interface GameHeroProps {
@@ -46,9 +54,10 @@ interface GameHeroProps {
     count: number
   }
   baseGame?: BaseGame | null
+  awards?: GameAward[]
 }
 
-export function GameHero({ game, aggregateRating, baseGame }: GameHeroProps) {
+export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameHeroProps) {
   // Get primary image - try multiple sources
   const heroImage = game.images?.find(img => img.image_type === 'cover' || img.is_primary)
     || game.images?.[0]
@@ -165,6 +174,14 @@ export function GameHero({ game, aggregateRating, baseGame }: GameHeroProps) {
             complexityTier={game.complexity_tier}
             minAge={game.min_age}
           />
+
+          {/* Awards */}
+          {awards.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Awards</p>
+              <AwardBadgeList awards={awards} variant="compact" limit={5} />
+            </div>
+          )}
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-3 pt-2">

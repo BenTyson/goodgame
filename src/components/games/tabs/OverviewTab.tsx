@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ExternalLink, BookOpen, Brain } from 'lucide-react'
+import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { CreditsSection } from '@/components/games/CreditsSection'
@@ -28,6 +29,63 @@ import type {
 import type { GameAwardWithDetails } from '@/lib/supabase/award-queries'
 import type { ReviewWithUser } from '@/lib/supabase/review-queries'
 import type { GroupedGameRelations } from '@/lib/supabase/family-queries'
+
+// Individual taxonomy section with expand/collapse
+function TaxonomySidebarSection({
+  label,
+  items,
+  prefix,
+  badgeClass,
+  initialLimit = 6,
+}: {
+  label: string
+  items: { slug: string; name: string }[]
+  prefix: string
+  badgeClass: string
+  initialLimit?: number
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const hasMore = items.length > initialLimit
+  const displayItems = expanded ? items : items.slice(0, initialLimit)
+
+  return (
+    <div className="space-y-2.5">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {displayItems.map((item) => (
+          <Link
+            key={item.slug}
+            href={`${prefix}${item.slug}`}
+            className={cn(
+              'text-xs px-2.5 py-1 rounded-full border bg-transparent transition-all duration-200',
+              badgeClass
+            )}
+          >
+            {item.name}
+          </Link>
+        ))}
+        {hasMore && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs px-2.5 py-1 text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 cursor-pointer"
+          >
+            {expanded ? (
+              <>
+                Show less
+                <ChevronUp className="h-3 w-3" />
+              </>
+            ) : (
+              <>
+                +{items.length - initialLimit}
+                <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // Sidebar taxonomy component with colorful badges
 function SidebarTaxonomy({
@@ -74,28 +132,13 @@ function SidebarTaxonomy({
     <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur p-6 space-y-5">
       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Classification</h3>
       {sections.map((section) => (
-        <div key={section.label} className="space-y-2.5">
-          <p className="text-xs font-medium text-muted-foreground">{section.label}</p>
-          <div className="flex flex-wrap gap-2">
-            {section.items!.slice(0, 6).map((item) => (
-              <Link
-                key={item.slug}
-                href={`${section.prefix}${item.slug}`}
-                className={cn(
-                  'text-xs px-2.5 py-1 rounded-full border bg-transparent transition-all duration-200',
-                  section.badgeClass
-                )}
-              >
-                {item.name}
-              </Link>
-            ))}
-            {section.items!.length > 6 && (
-              <span className="text-xs px-2.5 py-1 text-muted-foreground">
-                +{section.items!.length - 6}
-              </span>
-            )}
-          </div>
-        </div>
+        <TaxonomySidebarSection
+          key={section.label}
+          label={section.label}
+          items={section.items!}
+          prefix={section.prefix}
+          badgeClass={section.badgeClass}
+        />
       ))}
     </div>
   )

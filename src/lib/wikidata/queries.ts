@@ -304,6 +304,30 @@ LIMIT 500
 `;
 
 /**
+ * Get Amazon ASIN for a game by its Wikidata ID
+ * P5749: Amazon Standard Identification Number
+ */
+export const GAME_ASIN_QUERY = `
+SELECT ?asin WHERE {
+  wd:$WIKIDATA_ID wdt:P5749 ?asin .
+}
+LIMIT 1
+`;
+
+/**
+ * Get Amazon ASIN for a game by its BGG ID
+ * Combines BGG ID lookup with ASIN query
+ */
+export const GAME_ASIN_BY_BGG_ID_QUERY = `
+SELECT ?asin WHERE {
+  ?game wdt:P31/wdt:P279* wd:Q131436 .
+  ?game wdt:P2339 "$BGG_ID" .
+  ?game wdt:P5749 ?asin .
+}
+LIMIT 1
+`;
+
+/**
  * Helper to build query with variable substitution
  */
 export function buildQuery(

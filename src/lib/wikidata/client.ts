@@ -15,6 +15,8 @@ import {
   AWARD_WINNING_GAMES_QUERY,
   BOARD_GAME_COUNT_QUERY,
   GAMES_IN_SERIES_QUERY,
+  GAME_ASIN_QUERY,
+  GAME_ASIN_BY_BGG_ID_QUERY,
   buildQuery,
 } from './queries';
 
@@ -634,4 +636,51 @@ export async function getGamesByBggIds(
   }
 
   return results;
+}
+
+// ============================================================================
+// Amazon ASIN Enrichment
+// ============================================================================
+
+/**
+ * Get Amazon ASIN for a game by its Wikidata ID
+ * @param wikidataId - Wikidata Q-number (e.g., "Q123456")
+ * @returns ASIN string or null if not found
+ */
+export async function getGameASINByWikidataId(
+  wikidataId: string
+): Promise<string | null> {
+  const query = buildQuery(GAME_ASIN_QUERY, { WIKIDATA_ID: wikidataId });
+
+  try {
+    const result = await executeQuery(query);
+    const asin = result.results.bindings[0]?.asin?.value;
+    return asin || null;
+  } catch (error) {
+    console.warn(`[Wikidata] Error fetching ASIN for ${wikidataId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get Amazon ASIN for a game by its BGG ID
+ * @param bggId - BoardGameGeek game ID
+ * @returns ASIN string or null if not found
+ */
+export async function getGameASINByBggId(
+  bggId: string
+): Promise<string | null> {
+  const query = buildQuery(GAME_ASIN_BY_BGG_ID_QUERY, { BGG_ID: bggId });
+
+  try {
+    const result = await executeQuery(query);
+    const asin = result.results.bindings[0]?.asin?.value;
+    if (asin) {
+      console.log(`  [Wikidata] Found ASIN ${asin} for BGG ID ${bggId}`);
+    }
+    return asin || null;
+  } catch (error) {
+    console.warn(`[Wikidata] Error fetching ASIN for BGG ${bggId}:`, error);
+    return null;
+  }
 }

@@ -232,6 +232,15 @@ function checkExternalSources(game: VecnaGame): FieldStatus[] {
       source: 'enrichment',
       note: game.wikipedia_awards ? `${game.wikipedia_awards.length} awards` : undefined,
     },
+    // Amazon
+    {
+      field: 'amazon_asin',
+      label: 'Amazon ASIN',
+      present: !!game.amazon_asin,
+      importance: 'recommended',
+      source: 'enrichment',
+      note: game.amazon_asin ? `ASIN: ${game.amazon_asin}` : 'For Buy on Amazon button',
+    },
   ]
 }
 

@@ -1,5 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { Pencil, Palette, Building2 } from 'lucide-react'
+import { Pencil, Palette, Building2, ChevronDown, ChevronUp } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { Designer, Artist, Publisher } from '@/types/database'
@@ -27,9 +30,12 @@ interface CreditRowProps {
 }
 
 function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowProps) {
+  const [expanded, setExpanded] = useState(false)
+
   if (!items || items.length === 0) return null
 
-  const displayItems = items.slice(0, limit)
+  const hasMore = items.length > limit
+  const displayItems = expanded ? items : items.slice(0, limit)
   const remaining = items.length - limit
 
   if (variant === 'inline') {
@@ -49,8 +55,23 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
               {idx < displayItems.length - 1 && <span className="text-muted-foreground">,</span>}
             </span>
           ))}
-          {remaining > 0 && (
-            <span className="text-muted-foreground">+{remaining} more</span>
+          {hasMore && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+            >
+              {expanded ? (
+                <>
+                  Show less
+                  <ChevronUp className="h-3 w-3" />
+                </>
+              ) : (
+                <>
+                  +{remaining} more
+                  <ChevronDown className="h-3 w-3" />
+                </>
+              )}
+            </button>
           )}
         </span>
       </div>
@@ -73,8 +94,23 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
               {idx < displayItems.length - 1 && <span className="text-muted-foreground">,</span>}
             </span>
           ))}
-          {remaining > 0 && (
-            <span className="text-xs text-muted-foreground">+{remaining} more</span>
+          {hasMore && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+            >
+              {expanded ? (
+                <>
+                  Show less
+                  <ChevronUp className="h-3 w-3" />
+                </>
+              ) : (
+                <>
+                  +{remaining} more
+                  <ChevronDown className="h-3 w-3" />
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>
@@ -98,10 +134,23 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
             <span className="font-medium">{item.name}</span>
           </Link>
         ))}
-        {remaining > 0 && (
-          <span className="flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-            +{remaining} more
-          </span>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            {expanded ? (
+              <>
+                Show less
+                <ChevronUp className="h-3.5 w-3.5" />
+              </>
+            ) : (
+              <>
+                +{remaining} more
+                <ChevronDown className="h-3.5 w-3.5" />
+              </>
+            )}
+          </button>
         )}
       </div>
     </div>

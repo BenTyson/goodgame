@@ -1,8 +1,72 @@
 # Current Status
 
-> Last Updated: 2026-01-09 (YouTube Search & Public Video Carousels)
+> Last Updated: 2026-01-09 (Awards & ASIN Enrichment)
 
-## Current Phase: 62 - YouTube Search & Public Video Carousels
+## Current Phase: 63 - Awards & ASIN Enrichment
+
+Award sync from Wikipedia to normalized tables + Amazon ASIN enrichment from Wikidata + manual entry UI.
+
+### Session Summary (2026-01-09) - Awards & ASIN Enrichment
+
+**Game Page UX Improvements:**
+- Expandable mechanics in sidebar (`TaxonomySidebarSection` with expand/collapse)
+- Expandable credits section (all credit rows now support "+X more" / "Show less")
+- Awards display restored in GameHero (between QuickStatsBar and CTAs)
+- Amazon "Buy on Amazon" button in hero section via `BuyButtons` component
+
+**Award Sync from Wikipedia:**
+- New `syncGameAwardsFromWikipedia()` function in `award-queries.ts`
+- Maps Wikipedia award names to database slugs via `WIKIPEDIA_TO_SLUG_MAP`
+- Supports: Spiel des Jahres, Kennerspiel, Kinderspiel, Deutscher Spiele Preis, Golden Geek, Dice Tower, Origins, Mensa Select, As d'Or, International Gamers Award
+- Automatically syncs awards during Wikipedia resync
+- Creates `game_awards` records with proper foreign keys
+
+**ASIN Enrichment from Wikidata:**
+- New SPARQL queries for P5749 (Amazon ASIN) in `wikidata/queries.ts`
+- `getGameASINByWikidataId()` and `getGameASINByBggId()` functions
+- Integrated into Wikipedia resync flow
+- ASIN fetched automatically if game has BGG ID
+
+**Manual ASIN Entry in Vecna:**
+- New input field in Details tab → External References accordion
+- ASIN validation (10 alphanumeric characters)
+- Save button with loading state
+- "View on Amazon" link when ASIN is present
+
+**New API Endpoint:**
+- `PATCH /api/admin/games/[id]` - Update game fields (amazon_asin, tagline, meta_description)
+- Whitelist-based field filtering for security
+- Cache revalidation for game page
+
+**Completeness Report Update:**
+- Added `amazon_asin` check with "recommended" importance
+- Shows in External Sources category
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/games/[id]/route.ts` | PATCH endpoint for game updates |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/games/tabs/OverviewTab.tsx` | Added TaxonomySidebarSection with expand/collapse |
+| `src/components/games/CreditsSection.tsx` | Added expand/collapse to all credit row variants |
+| `src/components/games/GameHero.tsx` | Added awards prop and display, restored buy buttons |
+| `src/lib/supabase/award-queries.ts` | Added syncGameAwardsFromWikipedia() |
+| `src/lib/wikidata/queries.ts` | Added ASIN queries (P5749) |
+| `src/lib/wikidata/client.ts` | Added getGameASINByWikidataId(), getGameASINByBggId() |
+| `src/app/api/admin/games/[id]/resync-wikipedia/route.ts` | Integrated award sync and ASIN fetch |
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Added ASIN input in Details tab |
+| `src/lib/vecna/types.ts` | Added amazon_asin to VecnaGame interface |
+| `src/app/admin/(dashboard)/vecna/page.tsx` | Added amazon_asin to queries |
+| `src/lib/vecna/completeness.ts` | Added ASIN check |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 62 - YouTube Search & Public Video Carousels
 
 YouTube video search for admin + public video carousels + Rules Tab UI overhaul.
 
@@ -290,6 +354,9 @@ src/components/games/GameRelationsSection.tsx
 - **35+ games** in database with full content
 - **Game Directory** with filter sidebar, search, pagination
 - **Game Pages** with comprehensive data display (categories, mechanics, themes, experiences, complexity, relations)
+- **Awards display** in hero section with expandable list
+- **"Buy on Amazon" button** in hero section (when ASIN available)
+- **Expandable sections** for mechanics, credits, and other overflow content
 - **Rules Summaries**, **Score Sheets** (PDF), **Quick Reference**
 - **Your Shelf** - Track owned/wanted games with ratings
 - **User Profiles** at `/u/[username]` with Top 10 games, insights, badges
@@ -310,6 +377,8 @@ src/components/games/GameRelationsSection.tsx
 - Publisher/Family/Taxonomy management
 - Parallel enrichment with Wikidata + Wikipedia + Wikimedia Commons
 - YouTube video management with type categorization (overview/gameplay/review)
+- **Awards sync** from Wikipedia to normalized `game_awards` table
+- **ASIN enrichment** from Wikidata + manual entry in Vecna panel
 
 ### Environments
 

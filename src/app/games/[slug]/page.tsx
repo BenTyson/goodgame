@@ -179,6 +179,7 @@ export default async function GamePage({ params }: GamePageProps) {
           game={game}
           aggregateRating={aggregateRating}
           baseGame={gameRelations.baseGame}
+          awards={gameAwards}
         />
 
         {/* Tabbed Content */}

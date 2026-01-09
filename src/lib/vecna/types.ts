@@ -325,6 +325,9 @@ export interface VecnaGame {
   box_image_url: string | null
   hero_image_url: string | null
 
+  // Amazon
+  amazon_asin: string | null
+
   // Taxonomy (with source tracking)
   categories: Array<{ id: string; name: string; slug: string; is_primary: boolean; source: string | null }>
   mechanics: Array<{ id: string; name: string; slug: string; source: string | null }>

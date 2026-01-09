@@ -69,6 +69,9 @@ interface GameRow {
   reference_content: unknown | null
   crunch_score: number | null
   content_generated_at: string | null
+
+  // Amazon
+  amazon_asin: string | null
 }
 
 interface CategoryRow {
@@ -174,7 +177,8 @@ async function getFamilies(): Promise<VecnaFamily[]> {
       setup_content,
       reference_content,
       crunch_score,
-      content_generated_at
+      content_generated_at,
+      amazon_asin
     `)
     .not('family_id', 'is', null)
     .order('year_published', { ascending: true, nullsFirst: false })
@@ -386,6 +390,9 @@ async function getFamilies(): Promise<VecnaFamily[]> {
         reference_content: game.reference_content as VecnaGame['reference_content'],
         content_generated_at: game.content_generated_at,
 
+        // Amazon
+        amazon_asin: game.amazon_asin,
+
         // Taxonomy
         categories: categoriesMap.get(game.id) || [],
         mechanics: mechanicsMap.get(game.id) || [],
@@ -464,7 +471,8 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
       setup_content,
       reference_content,
       crunch_score,
-      content_generated_at
+      content_generated_at,
+      amazon_asin
     `)
     .is('family_id', null)
     .order('name')
@@ -623,6 +631,9 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     setup_content: game.setup_content as VecnaGame['setup_content'],
     reference_content: game.reference_content as VecnaGame['reference_content'],
     content_generated_at: game.content_generated_at,
+
+    // Amazon
+    amazon_asin: game.amazon_asin,
 
     // Taxonomy
     categories: categoriesMap.get(game.id) || [],
