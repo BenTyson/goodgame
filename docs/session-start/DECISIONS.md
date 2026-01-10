@@ -2,11 +2,21 @@
 
 > These decisions are final. Do not re-debate or change without explicit user approval.
 
+## Gotchas (Common Mistakes)
+
+- **Supabase FK ambiguity**: Use explicit syntax `games!games_family_id_fkey` to avoid PGRST201 errors
+- **Barrel exports**: New components must be added to the folder's `index.ts`
+- **Build check**: Always run `npm run build` after changes - catches errors lint misses
+- **File creation**: Prefer editing existing files over creating new ones
+- **Migrations**: Check highest migration number first (`ls supabase/migrations | tail -1`) to avoid collisions
+- **No emojis**: Use Lucide icons, never emojis in UI
+- **Type regeneration**: After schema changes run `npx supabase gen types typescript --linked > src/types/supabase.ts`
+
 ## Tech Stack
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Framework | Next.js 14+ App Router | Dynamic features, Railway deployment |
+| Framework | Next.js 16 (App Router) | Dynamic features, Railway deployment |
 | Database | Supabase (PostgreSQL) | Managed, auth-ready, good DX |
 | Hosting | Railway | User preference |
 | UI Library | shadcn/ui + Tailwind CSS 4 | Modern, customizable, accessible |
@@ -18,19 +28,19 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Game metadata | Supabase database | Queryable, filterable |
-| Game content | TypeScript objects (inline) | Simpler than MDX, works with mock data |
+| Game content | Supabase database + AI generation | Vecna pipeline generates from rulebooks |
 | Score sheet config | Supabase database | Dynamic, per-game customization |
 | User accounts | Google OAuth + shelf feature | Track owned/wanted games with ratings |
 | Local dev port | 3399 | User preference |
-| Image storage | Supabase Storage (planned) | Currently using BGG URLs for development |
-| Remote images | BoardGameGeek CDN | `cf.geekdo-images.com` configured in next.config.ts |
+| Image storage | Supabase Storage | Primary storage for uploaded/cropped images |
+| Remote images | Wikimedia Commons + BGG CDN | `upload.wikimedia.org` + `cf.geekdo-images.com` in next.config.ts |
 | AI Model | `claude-3-5-haiku-20241022` | Fast, cost-effective for content generation |
 
 ## Content
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Content source | Original, hand-written | Quality control, no legal issues |
+| Content source | AI-generated from rulebooks | Vecna pipeline parses PDFs, Claude generates content |
 | Rules length | 500-1000 words max | Scannable, not overwhelming |
 | Score sheets | Print on single page | Practical for game night |
 | Reference cards | One page max | Quick reference at table |
@@ -192,20 +202,13 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Image gallery | Custom ImageGallery component | Lightbox, thumbnails, navigation |
-| Development images | BoardGameGeek URLs | Real images without hosting cost during dev |
-| Production images | Supabase Storage | Self-hosted, no external dependencies |
+| Primary images | Wikimedia Commons | CC-licensed, legally safe |
+| Uploaded images | Supabase Storage | Self-hosted, cropped versions |
 | Image types | cover, hero, gallery, setup, gameplay, components | Categorized for different uses |
 | Profile images | Supabase Storage (`user-profiles` bucket) | Custom avatars |
 
-## What NOT to Build (MVP)
+## Not Building (Out of Scope)
 
-- ~~User accounts / authentication~~ ✅ Built
 - Community features (comments, forums)
-- ~~Game ratings / reviews~~ ✅ Built (personal ratings on shelf)
-- ~~User profiles~~ ✅ Built (card-based layout, avatars, stats, badges)
-- ~~Top 10 rankings~~ ✅ Built (drag & drop editor)
 - Mobile app
-- ~~BGG data scraping~~ ✅ Built (import pipeline)
-- ~~Game recommendations~~ ✅ Built (wizard + AI at `/recommend`)
 - Premium/paid tier
-- ~~Dark mode theme~~ ✅ Built (theme toggle)

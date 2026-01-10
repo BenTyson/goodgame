@@ -1,5 +1,11 @@
 # Quick Reference
 
+## Verify Changes
+
+```bash
+npm run build    # MUST pass before committing - catches type errors
+```
+
 ## Environments
 
 | Environment | URL | Database |
@@ -269,6 +275,11 @@ src/components/
 │       └── AutoProcessModal.tsx     # SSE streaming progress modal
 ├── auth/                      # UserMenu
 ├── shelf/                     # AddToShelfButton, RatingInput
+├── ratings/                   # D10 Sphere Rating System
+│   ├── D10Dice.tsx           # 3D sphere SVG component
+│   ├── D10RatingInput.tsx    # Interactive 1-10 rating input
+│   ├── HeroRating.tsx        # Auth-aware rating wrapper
+│   └── index.ts              # Barrel exports
 ├── settings/                  # UsernameInput, ProfileImageUpload
 ├── profile/                   # ProfileIdentityCard, ProfileHeroStats, ProfileShelfGrid, ProfileInsights, ProfileReviews, MutualGamesSection, TopGamesDisplay, TopGamesEditor, FollowButton
 ├── feed/                      # ActivityFeed, ActivityItem
@@ -326,11 +337,15 @@ src/hooks/
 ### Scripts
 ```
 scripts/
-├── process-import-queue.ts     # Process pending BGG imports (--limit, --all)
-├── import-missing-relations.ts # Find/queue missing related games (--dry-run, --skip-fan, --skip-promos)
-├── sync-game-relations.ts      # Sync relations from bgg_raw_data (--family, --type, --dry-run)
-├── backfill-bgg-images.ts      # Backfill missing reference_images (--limit, --name)
-└── detect-family-base-games.ts # Auto-detect base games for families (--dry-run)
+├── process-import-queue.ts        # Process pending BGG imports (--limit, --all)
+├── import-missing-relations.ts    # Find/queue missing related games (--dry-run, --skip-fan, --skip-promos)
+├── sync-game-relations.ts         # Sync relations from bgg_raw_data (--family, --type, --dry-run)
+├── backfill-bgg-images.ts         # Backfill missing reference_images (--limit, --name)
+├── detect-family-base-games.ts    # Auto-detect base games for families (--dry-run)
+├── update-unimported-relations-flag.ts  # Update has_unimported_relations flag
+├── enrich-wikidata.ts             # Enrich games with Wikidata data
+├── clear-games.ts                 # Emergency: truncate all game tables
+└── archive/                       # Legacy scripts (one-time migrations, test utilities)
 ```
 
 ### Data & Types
@@ -400,7 +415,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (68 files)
+supabase/migrations/           # Database schema (69 files)
 ```
 
 ### Type Definitions
