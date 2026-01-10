@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { getCrunchTier } from '@/lib/utils/complexity'
 import type { CrunchBreakdown, ComplexityTier } from '@/types/database'
 
 interface ComplexityDisplayProps {
@@ -33,17 +34,6 @@ interface ComplexityDisplayProps {
   /** Show detailed breakdown on click/hover */
   showBreakdown?: boolean
   className?: string
-}
-
-// Complexity tier labels for Crunch Score
-function getCrunchTier(score: number): { label: string; color: string } {
-  if (score <= 2) return { label: 'Gateway', color: 'text-emerald-600 dark:text-emerald-400' }
-  if (score <= 4) return { label: 'Light', color: 'text-green-600 dark:text-green-400' }
-  if (score <= 5.5) return { label: 'Medium-Light', color: 'text-lime-600 dark:text-lime-400' }
-  if (score <= 6.5) return { label: 'Medium', color: 'text-yellow-600 dark:text-yellow-400' }
-  if (score <= 7.5) return { label: 'Medium-Heavy', color: 'text-orange-600 dark:text-orange-400' }
-  if (score <= 8.5) return { label: 'Heavy', color: 'text-red-600 dark:text-red-400' }
-  return { label: 'Expert', color: 'text-rose-600 dark:text-rose-400' }
 }
 
 // Visual progress bar for scores

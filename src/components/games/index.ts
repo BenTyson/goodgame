@@ -1,7 +1,6 @@
 export { GameCard } from './GameCard'
 export { GameGrid } from './GameGrid'
 export { GameCardSkeleton, GameGridSkeleton } from './GameCardSkeleton'
-export { GameFilters } from './GameFilters'
 export { GamesSidebar } from './GamesSidebar'
 export { ImageGallery } from './ImageGallery'
 export { VideoCarousel } from './VideoCarousel'

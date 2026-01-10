@@ -465,7 +465,7 @@ export async function getAllGameSlugs(): Promise<string[]> {
 export async function getGameWithDetails(slug: string) {
   const supabase = await createClient()
 
-  // Get game
+  // Get game first (need game.id for other queries)
   const { data: game, error: gameError } = await supabase
     .from('games')
     .select('*')
@@ -477,20 +477,105 @@ export async function getGameWithDetails(slug: string) {
     return null
   }
 
-  // Get images (primary first, then by display order)
-  const { data: images } = await supabase
-    .from('game_images')
-    .select('*')
-    .eq('game_id', game.id)
-    .order('is_primary', { ascending: false })
-    .order('display_order')
+  // Run all junction table queries in parallel
+  const [
+    { data: images },
+    { data: categoryLinks },
+    { data: affiliateLinks },
+    { data: designerLinks },
+    { data: publisherLinks },
+    { data: mechanicLinks },
+    { data: themeLinks },
+    { data: experienceLinks },
+    { data: artistLinks },
+    { data: featuredVideo },
+    { data: gameplayVideos },
+    { data: reviewVideos },
+    complexityTierResult,
+  ] = await Promise.all([
+    // Images
+    supabase
+      .from('game_images')
+      .select('*')
+      .eq('game_id', game.id)
+      .order('is_primary', { ascending: false })
+      .order('display_order'),
+    // Categories
+    supabase
+      .from('game_categories')
+      .select('category_id, is_primary, categories(*)')
+      .eq('game_id', game.id),
+    // Affiliate links
+    supabase
+      .from('affiliate_links')
+      .select('*, retailer:retailers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    // Designers
+    supabase
+      .from('game_designers')
+      .select('designer_id, is_primary, display_order, designers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    // Publishers
+    supabase
+      .from('game_publishers')
+      .select('publisher_id, is_primary, display_order, publishers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    // Mechanics
+    supabase
+      .from('game_mechanics')
+      .select('mechanic_id, mechanics(*)')
+      .eq('game_id', game.id),
+    // Themes
+    supabase
+      .from('game_themes')
+      .select('theme_id, is_primary, themes(*)')
+      .eq('game_id', game.id),
+    // Player experiences
+    supabase
+      .from('game_player_experiences')
+      .select('player_experience_id, is_primary, player_experiences(*)')
+      .eq('game_id', game.id),
+    // Artists
+    supabase
+      .from('game_artists')
+      .select('artist_id, display_order, artists(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    // Featured video
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('is_featured', true)
+      .single(),
+    // Gameplay videos
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('video_type', 'gameplay')
+      .order('display_order'),
+    // Review videos
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('video_type', 'review')
+      .order('display_order'),
+    // Complexity tier (conditional)
+    game.complexity_tier_id
+      ? supabase
+          .from('complexity_tiers')
+          .select('*')
+          .eq('id', game.complexity_tier_id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ])
 
-  // Get categories via junction table
-  const { data: categoryLinks } = await supabase
-    .from('game_categories')
-    .select('category_id, is_primary, categories(*)')
-    .eq('game_id', game.id)
-
+  // Process categories
   const categories = categoryLinks
     ?.map(link => ({
       ...(link.categories as Category),
@@ -498,55 +583,23 @@ export async function getGameWithDetails(slug: string) {
     }))
     .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
-  // Get affiliate links with retailer data
-  const { data: affiliateLinks } = await supabase
-    .from('affiliate_links')
-    .select(`
-      *,
-      retailer:retailers(*)
-    `)
-    .eq('game_id', game.id)
-    .order('display_order')
-
-  // Get designers via junction table
-  const { data: designerLinks } = await supabase
-    .from('game_designers')
-    .select('designer_id, is_primary, display_order, designers(*)')
-    .eq('game_id', game.id)
-    .order('display_order')
-
+  // Process designers
   const designers_list = (designerLinks || [])
     .map(link => link.designers as Designer)
     .filter(d => d !== null)
 
-  // Get publishers via junction table
-  const { data: publisherLinks } = await supabase
-    .from('game_publishers')
-    .select('publisher_id, is_primary, display_order, publishers(*)')
-    .eq('game_id', game.id)
-    .order('display_order')
-
+  // Process publishers
   const publishers_list = (publisherLinks || [])
     .map(link => link.publishers as Publisher)
     .filter(p => p !== null)
 
-  // Get mechanics via junction table
-  const { data: mechanicLinks } = await supabase
-    .from('game_mechanics')
-    .select('mechanic_id, mechanics(*)')
-    .eq('game_id', game.id)
-
+  // Process mechanics
   const mechanics = (mechanicLinks || [])
     .map(link => link.mechanics as Mechanic)
     .filter(m => m !== null)
     .sort((a, b) => a.name.localeCompare(b.name))
 
-  // Get themes via junction table
-  const { data: themeLinks } = await supabase
-    .from('game_themes')
-    .select('theme_id, is_primary, themes(*)')
-    .eq('game_id', game.id)
-
+  // Process themes
   const themes = (themeLinks || [])
     .map(link => ({
       ...(link.themes as Theme),
@@ -555,12 +608,7 @@ export async function getGameWithDetails(slug: string) {
     .filter(t => t.id !== undefined)
     .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
-  // Get player experiences via junction table
-  const { data: experienceLinks } = await supabase
-    .from('game_player_experiences')
-    .select('player_experience_id, is_primary, player_experiences(*)')
-    .eq('game_id', game.id)
-
+  // Process player experiences
   const player_experiences = (experienceLinks || [])
     .map(link => ({
       ...(link.player_experiences as PlayerExperience),
@@ -569,51 +617,10 @@ export async function getGameWithDetails(slug: string) {
     .filter(e => e.id !== undefined)
     .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
-  // Get artists via junction table
-  const { data: artistLinks } = await supabase
-    .from('game_artists')
-    .select('artist_id, display_order, artists(*)')
-    .eq('game_id', game.id)
-    .order('display_order')
-
+  // Process artists
   const artists_list = (artistLinks || [])
     .map(link => link.artists as Artist)
     .filter(a => a !== null)
-
-  // Get complexity tier if game has one
-  let complexity_tier: ComplexityTier | null = null
-  if (game.complexity_tier_id) {
-    const { data: tierData } = await supabase
-      .from('complexity_tiers')
-      .select('*')
-      .eq('id', game.complexity_tier_id)
-      .single()
-    complexity_tier = tierData
-  }
-
-  // Get featured video (for the Watch section)
-  const { data: featuredVideo } = await supabase
-    .from('game_videos')
-    .select('*')
-    .eq('game_id', game.id)
-    .eq('is_featured', true)
-    .single()
-
-  // Get gameplay videos (for How to Play tab)
-  const { data: gameplayVideos } = await supabase
-    .from('game_videos')
-    .select('*')
-    .eq('game_id', game.id)
-    .eq('video_type', 'gameplay')
-    .order('display_order')
-
-  // Get review videos (for Reviews section)
-  const { data: reviewVideos } = await supabase
-    .from('game_videos')
-    .select('*')
-    .eq('game_id', game.id)
-    .eq('video_type', 'review')
-    .order('display_order')
 
   return {
     ...game,
@@ -626,7 +633,7 @@ export async function getGameWithDetails(slug: string) {
     mechanics,
     themes,
     player_experiences,
-    complexity_tier,
+    complexity_tier: complexityTierResult?.data ?? null,
     featured_video: featuredVideo || null,
     gameplay_videos: gameplayVideos || [],
     review_videos: reviewVideos || []

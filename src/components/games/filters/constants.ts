@@ -6,13 +6,13 @@ import {
   Users2,
   Clock,
   Brain,
-  PanelLeftOpen,
-  PanelLeftClose,
   ChevronDown,
   ChevronRight,
   X,
   type LucideIcon,
 } from 'lucide-react'
+
+import { DEFAULT_RANGES, isRangeDefault } from './types'
 
 export interface TaxonomySectionConfig {
   icon: LucideIcon
@@ -44,11 +44,11 @@ export const RANGE_FILTERS: RangeFilterConfig[] = [
     icon: Users2,
     label: 'Players',
     key: 'players',
-    min: 1,
-    max: 8,
+    min: DEFAULT_RANGES.players.min,
+    max: DEFAULT_RANGES.players.max,
     step: 1,
     formatValue: (min, max) => {
-      if (min === 1 && max === 8) return 'Any'
+      if (isRangeDefault('players', min, max)) return 'Any'
       if (min === max) return `${min}`
       return `${min}-${max}`
     },
@@ -57,13 +57,13 @@ export const RANGE_FILTERS: RangeFilterConfig[] = [
     icon: Clock,
     label: 'Time',
     key: 'time',
-    min: 0,
-    max: 180,
+    min: DEFAULT_RANGES.time.min,
+    max: DEFAULT_RANGES.time.max,
     step: 15,
     suffix: 'min',
     formatValue: (min, max) => {
-      if (min === 0 && max === 180) return 'Any'
-      if (max >= 180) return `${min}+ min`
+      if (isRangeDefault('time', min, max)) return 'Any'
+      if (max >= DEFAULT_RANGES.time.max) return `${min}+ min`
       return `${min}-${max} min`
     },
   },
@@ -71,35 +71,25 @@ export const RANGE_FILTERS: RangeFilterConfig[] = [
     icon: Brain,
     label: 'Complexity',
     key: 'weight',
-    min: 1,
-    max: 5,
+    min: DEFAULT_RANGES.weight.min,
+    max: DEFAULT_RANGES.weight.max,
     step: 0.5,
     formatValue: (min, max) => {
-      if (min === 1 && max === 5) return 'Any'
+      if (isRangeDefault('weight', min, max)) return 'Any'
       return `${min.toFixed(1)}-${max.toFixed(1)}`
     },
   },
 ]
 
-// Icon exports for convenience
+// Icon exports for convenience (used by FilterSection and ActiveFilters)
 export const Icons = {
-  expand: PanelLeftOpen,
-  collapse: PanelLeftClose,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,
   remove: X,
-  categories: Grid3X3,
-  mechanics: Puzzle,
-  themes: Palette,
-  experiences: Users,
-  players: Users2,
-  time: Clock,
-  weight: Brain,
 }
 
 // LocalStorage keys
 export const STORAGE_KEYS = {
-  sidebarCollapsed: 'games-sidebar-collapsed',
   openSections: 'games-filter-sections',
 } as const
 

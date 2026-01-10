@@ -7,6 +7,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import type { FilterOption } from './types'
 
+/** Number of options before wrapping in ScrollArea */
+const SCROLL_THRESHOLD = 15
+
 interface TaxonomyBadgesProps {
   options: FilterOption[]
   selected: string[]
@@ -59,7 +62,7 @@ export function TaxonomyBadges({
   )
 
   // Use ScrollArea only if we have many options
-  if (options.length > 15) {
+  if (options.length > SCROLL_THRESHOLD) {
     return (
       <ScrollArea className="pr-2" style={{ maxHeight }}>
         {content}

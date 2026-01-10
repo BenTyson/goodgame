@@ -192,8 +192,9 @@ src/components/
 │   ├── GamePageTabs.tsx       # Hash-based tab container with URL sync
 │   ├── GameHero.tsx           # Simplified hero with single image, key stats
 │   ├── QuickStatsBar.tsx      # Players/time/complexity/age badges
-│   ├── ImageGallery.tsx       # Game image gallery with lightbox
-│   ├── VideoCarousel.tsx      # Video carousel with modal player (gameplay/review)
+│   ├── ImageGallery.tsx       # Game image gallery with lightbox (uses MediaModal)
+│   ├── VideoCarousel.tsx      # Video carousel with modal player (uses MediaModal)
+│   ├── MediaModal.tsx         # Shared modal shell for media galleries (backdrop, nav, close)
 │   ├── RelatedGames.tsx       # Related games section
 │   ├── TaxonomySection.tsx    # Categories, mechanics, themes, experiences badges
 │   ├── ComplexityDisplay.tsx  # Crunch Score with breakdown tooltip (falls back to weight)
@@ -313,6 +314,8 @@ src/components/
 
 src/hooks/
 ├── use-local-storage.ts       # SSR-safe localStorage hook
+├── use-media-modal.ts         # Modal state, keyboard nav (Escape/arrows), body overflow
+├── use-expandable-list.ts     # Expand/collapse pattern for lists
 └── admin/                     # Admin-specific hooks
     ├── useAsyncAction.ts      # Saving/saved/error state for async operations
     ├── useAutoSlug.ts         # Auto-generate slug from name
@@ -378,7 +381,10 @@ src/lib/ai/
   └── prompts.ts               # AI prompts for content generation
 src/lib/utils/
   ├── format.ts                # formatFileSize utility
-  └── image-crop.ts            # Canvas-based crop utility, aspect ratio presets
+  ├── image-crop.ts            # Canvas-based crop utility, aspect ratio presets
+  ├── complexity.ts            # Complexity tier utilities (getCrunchTier, getComplexityLabel)
+  ├── wikipedia.ts             # Wikipedia cleaning (cleanWikipediaContent, truncateAtWordBoundary)
+  └── youtube.ts               # YouTube utilities (getYouTubeThumbnailUrl, extractYouTubeVideoId)
 src/lib/seo/                   # JSON-LD structured data components
 src/lib/auth/                  # AuthContext provider
 src/lib/config/                # App configuration

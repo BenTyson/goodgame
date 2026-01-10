@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { ChevronDown, Layers, Cog, Palette, Sparkles } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useExpandableList } from '@/hooks/use-expandable-list'
 import type { Category, Mechanic, Theme, PlayerExperience } from '@/types/database'
 
 // Extended types with is_primary flag - accepts null from database
@@ -47,12 +47,9 @@ function TaxonomyRow({
   collapseAfter,
   compact
 }: TaxonomyRowProps) {
-  const [expanded, setExpanded] = useState(false)
+  const { displayItems, hasMore, remaining, expanded, toggle } = useExpandableList(items, collapseAfter)
 
   if (!items || items.length === 0) return null
-
-  const displayItems = expanded ? items : items.slice(0, collapseAfter)
-  const hasMore = items.length > collapseAfter
 
   return (
     <div className={cn('flex items-start gap-2', compact ? 'gap-1.5' : 'gap-2')}>
@@ -89,28 +86,18 @@ function TaxonomyRow({
             </Badge>
           </Link>
         ))}
-        {hasMore && !expanded && (
+        {hasMore && (
           <Button
             variant="ghost"
             size="sm"
             className={cn(
               'h-auto py-0.5 px-2 text-xs text-muted-foreground hover:text-foreground',
-              compact && 'text-[11px]'
+              compact && !expanded && 'text-[11px]'
             )}
-            onClick={() => setExpanded(true)}
+            onClick={toggle}
           >
-            +{items.length - collapseAfter} more
-            <ChevronDown className="h-3 w-3 ml-0.5" />
-          </Button>
-        )}
-        {hasMore && expanded && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-auto py-0.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setExpanded(false)}
-          >
-            Show less
+            {expanded ? 'Show less' : `+${remaining} more`}
+            {!expanded && <ChevronDown className="h-3 w-3 ml-0.5" />}
           </Button>
         )}
       </div>

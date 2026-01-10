@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { Pencil, Palette, Building2, ChevronDown, ChevronUp } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useExpandableList } from '@/hooks/use-expandable-list'
 import type { Designer, Artist, Publisher } from '@/types/database'
 
 interface CreditsSectionProps {
@@ -30,13 +30,9 @@ interface CreditRowProps {
 }
 
 function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowProps) {
-  const [expanded, setExpanded] = useState(false)
+  const { displayItems, hasMore, remaining, expanded, toggle } = useExpandableList(items, limit)
 
   if (!items || items.length === 0) return null
-
-  const hasMore = items.length > limit
-  const displayItems = expanded ? items : items.slice(0, limit)
-  const remaining = items.length - limit
 
   if (variant === 'inline') {
     return (
@@ -57,7 +53,7 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
           ))}
           {hasMore && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={toggle}
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-0.5 cursor-pointer"
             >
               {expanded ? (
@@ -96,7 +92,7 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
           ))}
           {hasMore && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={toggle}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-0.5 cursor-pointer"
             >
               {expanded ? (
@@ -136,7 +132,7 @@ function CreditRow({ icon, label, items, urlPrefix, limit, variant }: CreditRowP
         ))}
         {hasMore && (
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={toggle}
             className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             {expanded ? (

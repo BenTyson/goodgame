@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 import { FilterSection } from './FilterSection'
 import { TaxonomyBadges } from './TaxonomyBadges'
 import { TAXONOMY_SECTIONS, RANGE_FILTERS, DEFAULT_OPEN_SECTIONS } from './constants'
-import type { FilterOption, TaxonomyType } from './types'
+import { isRangeDefault, type FilterOption, type TaxonomyType } from './types'
 
 interface MobileFilterSheetProps {
   options: {
@@ -84,9 +84,9 @@ export function MobileFilterSheet({
     selected.mechanics.length +
     selected.themes.length +
     selected.experiences.length +
-    (playerCount[0] !== 1 || playerCount[1] !== 8 ? 1 : 0) +
-    (playTime[0] !== 0 || playTime[1] !== 180 ? 1 : 0) +
-    (weight[0] !== 1 || weight[1] !== 5 ? 1 : 0)
+    (isRangeDefault('players', playerCount[0], playerCount[1]) ? 0 : 1) +
+    (isRangeDefault('time', playTime[0], playTime[1]) ? 0 : 1) +
+    (isRangeDefault('weight', weight[0], weight[1]) ? 0 : 1)
 
   const playersConfig = RANGE_FILTERS.find((f) => f.key === 'players')!
   const timeConfig = RANGE_FILTERS.find((f) => f.key === 'time')!

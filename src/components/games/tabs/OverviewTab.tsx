@@ -1,20 +1,21 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { CreditsSection } from '@/components/games/CreditsSection'
-import { WikipediaGameplay, WikipediaReception } from '@/components/games/WikipediaContent'
+import { WikipediaReception } from '@/components/games/WikipediaContent'
 import { GameRelationsSection } from '@/components/games/GameRelationsSection'
 import { AwardBadgeList } from '@/components/games/AwardBadge'
 import { ImageGallery } from '@/components/games/ImageGallery'
 import { VideoCarousel } from '@/components/games/VideoCarousel'
 import { ReviewSection } from '@/components/reviews'
 import { cn } from '@/lib/utils'
+import { getCrunchTier } from '@/lib/utils/complexity'
+import { cleanAndTruncateWikipedia } from '@/lib/utils/wikipedia'
+import { useExpandableList } from '@/hooks/use-expandable-list'
 import type {
-  ComponentList as ComponentListType,
   GameImage,
   Json,
   Category,
@@ -44,9 +45,7 @@ function TaxonomySidebarSection({
   badgeClass: string
   initialLimit?: number
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const hasMore = items.length > initialLimit
-  const displayItems = expanded ? items : items.slice(0, initialLimit)
+  const { displayItems, hasMore, remaining, expanded, toggle } = useExpandableList(items, initialLimit)
 
   return (
     <div className="space-y-2.5">
@@ -66,7 +65,7 @@ function TaxonomySidebarSection({
         ))}
         {hasMore && (
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={toggle}
             className="text-xs px-2.5 py-1 text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 cursor-pointer"
           >
             {expanded ? (
@@ -76,7 +75,7 @@ function TaxonomySidebarSection({
               </>
             ) : (
               <>
-                +{items.length - initialLimit}
+                +{remaining}
                 <ChevronDown className="h-3 w-3" />
               </>
             )}
@@ -152,18 +151,7 @@ function GameplayTeaser({
   content: string
   onNavigate: () => void
 }) {
-  // Clean and truncate content - remove citations, wiki markup, and normalize whitespace
-  const cleaned = content
-    .replace(/\[\d+\]/g, '')                    // Remove citation markers [1], [2], etc.
-    .replace(/thumb\|/gi, '')                   // Remove thumb| prefix
-    .replace(/\[\[File:[^\]]*\]\]/gi, '')       // Remove [[File:...]] patterns
-    .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1') // Convert [[Link|Text]] to Text
-    .replace(/\[\[([^\]]*)\]\]/g, '$1')         // Convert [[Link]] to Link
-    .replace(/\s+/g, ' ')
-    .trim()
-  const truncated = cleaned.length > 450
-    ? cleaned.slice(0, cleaned.lastIndexOf(' ', 450)) + '...'
-    : cleaned
+  const truncated = cleanAndTruncateWikipedia(content, 450)
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/30 p-6 space-y-4">
@@ -195,20 +183,9 @@ function YouTubeEmbed({ videoId, title }: { videoId: string; title: string }) {
   )
 }
 
-// Get complexity tier from crunch score
-function getComplexityTier(score: number): { label: string; color: string } {
-  if (score <= 2) return { label: 'Gateway', color: 'text-emerald-500' }
-  if (score <= 4) return { label: 'Light', color: 'text-green-500' }
-  if (score <= 5.5) return { label: 'Medium-Light', color: 'text-lime-500' }
-  if (score <= 6.5) return { label: 'Medium', color: 'text-yellow-500' }
-  if (score <= 7.5) return { label: 'Medium-Heavy', color: 'text-orange-500' }
-  if (score <= 8.5) return { label: 'Heavy', color: 'text-red-500' }
-  return { label: 'Expert', color: 'text-rose-500' }
-}
-
 // Crunch Score breakdown card component
 function CrunchScoreCard({ score, breakdown }: { score: number; breakdown: CrunchBreakdown }) {
-  const tier = getComplexityTier(score)
+  const tier = getCrunchTier(score)
 
   const metrics = [
     { label: 'Rules Density', value: breakdown.rulesDensity, description: 'Rulebook complexity' },
@@ -263,27 +240,6 @@ function CrunchScoreCard({ score, breakdown }: { score: number; breakdown: Crunc
       )}
     </div>
   )
-}
-
-interface BaseGame {
-  id: string
-  name: string
-  slug: string
-  box_image_url?: string | null
-}
-
-interface Expansion {
-  id: string
-  name: string
-  slug: string
-  box_image_url?: string | null
-  year_published?: number | null
-}
-
-interface Family {
-  id: string
-  name: string
-  slug: string
 }
 
 export interface FeaturedVideo {

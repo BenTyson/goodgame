@@ -10,6 +10,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { GameRow, Category } from '@/types/database'
 
+/** Maximum number of category badges to show on game cards */
+const MAX_CARD_CATEGORIES = 3
+
 interface GameCardProps {
   game: GameRow & {
     categories?: Pick<Category, 'slug' | 'name'>[]
@@ -132,7 +135,7 @@ export function GameCard({
         {/* Categories */}
         {game.categories && game.categories.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {game.categories.slice(0, 3).map((category) => (
+            {game.categories.slice(0, MAX_CARD_CATEGORIES).map((category) => (
               <Badge
                 key={category.slug}
                 variant="secondary"

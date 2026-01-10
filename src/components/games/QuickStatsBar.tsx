@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { getComplexityLabel } from '@/lib/utils/complexity'
 import type { CrunchBreakdown, Json, ComplexityTier } from '@/types/database'
 
 interface QuickStatsBarProps {
@@ -22,17 +23,6 @@ interface QuickStatsBarProps {
   complexityTier?: ComplexityTier | null
   minAge?: number | null
   className?: string
-}
-
-// Get complexity label from crunch score
-function getComplexityLabel(score: number): string {
-  if (score <= 2) return 'Gateway'
-  if (score <= 4) return 'Light'
-  if (score <= 5.5) return 'Medium-Light'
-  if (score <= 6.5) return 'Medium'
-  if (score <= 7.5) return 'Medium-Heavy'
-  if (score <= 8.5) return 'Heavy'
-  return 'Expert'
 }
 
 export function QuickStatsBar({

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { cleanWikipediaContentParagraphs } from '@/lib/utils/wikipedia'
 import { VideoCarousel } from '../VideoCarousel'
 
 // Placeholder content for when thumbnail is unavailable
@@ -131,16 +132,7 @@ function WikipediaIntro({
   wikipediaUrl?: string | null
   title?: string
 }) {
-  // Clean content: remove citations, wiki markup, preserve paragraph breaks
-  const cleaned = content
-    .replace(/\[\d+\]/g, '')                    // Remove citation markers [1], [2], etc.
-    .replace(/thumb\|/gi, '')                   // Remove thumb| prefix
-    .replace(/\[\[File:[^\]]*\]\]/gi, '')       // Remove [[File:...]] patterns
-    .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1') // Convert [[Link|Text]] to Text
-    .replace(/\[\[([^\]]*)\]\]/g, '$1')         // Convert [[Link]] to Link
-    .trim()
-  // Split into paragraphs by double newlines
-  const paragraphs = cleaned.split(/\n\n+/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
+  const paragraphs = cleanWikipediaContentParagraphs(content)
 
   return (
     <div>

@@ -1,8 +1,62 @@
 # Current Status
 
-> Last Updated: 2026-01-10 (D10 Sphere Rating System)
+> Last Updated: 2026-01-10 (Game Detail Page Code Cleanup)
 
-## Current Phase: 65 - D10 Sphere Rating System
+## Current Phase: 66 - Game Detail Page Code Cleanup
+
+Code cleanup and refactoring of `/games/[slug]` page for better organization and reduced duplication.
+
+### Session Summary (2026-01-10) - Code Cleanup
+
+**New Utility Files:**
+- `src/lib/utils/complexity.ts` - Consolidated complexity tier logic (previously duplicated in 3 components)
+- `src/lib/utils/wikipedia.ts` - Wikipedia content cleaning utilities (citation removal, markup cleaning)
+- `src/lib/utils/youtube.ts` - YouTube URL utilities (thumbnails, embeds, ID extraction)
+
+**New Custom Hooks:**
+- `src/hooks/use-media-modal.ts` - Shared modal navigation with keyboard nav (Escape, arrows), body overflow management
+- `src/hooks/use-expandable-list.ts` - Expand/collapse pattern for lists (used by TaxonomySection, CreditsSection)
+
+**New Shared Component:**
+- `src/components/games/MediaModal.tsx` - Shared modal shell for media galleries (backdrop, navigation, close button)
+
+**Code Deduplication:**
+- Extracted ~300+ lines of duplicate code across components
+- ImageGallery reduced from ~236 to ~135 lines
+- VideoCarousel reduced from ~214 to ~108 lines
+- Removed duplicate Wikipedia cleaning regex from RulesTab/OverviewTab
+- Removed duplicate `getThumbnailUrl` from VideoCarousel
+
+**Data Layer Optimization:**
+- Parallelized `getGameWithDetails()` queries using `Promise.all()`
+- Changed from 12+ sequential queries to 1 initial + 12 parallel queries
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/lib/utils/complexity.ts` | Complexity tier utilities (getCrunchTier, getComplexityLabel) |
+| `src/lib/utils/wikipedia.ts` | Wikipedia content cleaning (cleanWikipediaContent, truncateAtWordBoundary) |
+| `src/lib/utils/youtube.ts` | YouTube utilities (getYouTubeThumbnailUrl, getYouTubeEmbedUrl) |
+| `src/hooks/use-media-modal.ts` | Modal state/navigation hook |
+| `src/hooks/use-expandable-list.ts` | Expand/collapse list hook |
+| `src/components/games/MediaModal.tsx` | Shared media modal shell |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/games/ImageGallery.tsx` | Use useMediaModal hook, MediaModal component |
+| `src/components/games/VideoCarousel.tsx` | Use useMediaModal hook, MediaModal component, youtube utils |
+| `src/components/games/TaxonomySection.tsx` | Use useExpandableList hook |
+| `src/components/games/CreditsSection.tsx` | Use useExpandableList hook |
+| `src/components/games/tabs/RulesTab.tsx` | Use wikipedia utilities |
+| `src/components/games/tabs/OverviewTab.tsx` | Use wikipedia utilities, useExpandableList hook |
+| `src/lib/supabase/game-queries.ts` | Parallelized getGameWithDetails queries |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 65 - D10 Sphere Rating System
 
 Interactive 10-point rating system with 3D sphere visuals in the game hero section.
 

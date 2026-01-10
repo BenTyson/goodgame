@@ -1,6 +1,5 @@
 export { FilterBar } from './FilterBar'
-export { FilterSidebar, useSidebarCollapsed } from './FilterSidebar'
-export { FilterRail } from './FilterRail'
+export { FilterSidebar } from './FilterSidebar'
 export { FilterSection } from './FilterSection'
 export { TaxonomyBadges } from './TaxonomyBadges'
 export { RangeFilterPopover } from './RangeFilterPopover'
