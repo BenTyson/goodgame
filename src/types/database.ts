@@ -162,6 +162,16 @@ export type AffiliateLink = Database['public']['Tables']['affiliate_links']['Row
 export type AffiliateLinkInsert = Database['public']['Tables']['affiliate_links']['Insert']
 export type AffiliateLinkUpdate = Database['public']['Tables']['affiliate_links']['Update']
 
+export type Retailer = Database['public']['Tables']['retailers']['Row']
+export type RetailerInsert = Database['public']['Tables']['retailers']['Insert']
+export type RetailerUpdate = Database['public']['Tables']['retailers']['Update']
+export type RetailerType = 'online' | 'local' | 'marketplace'
+
+// Affiliate link with joined retailer data
+export type AffiliateLinkWithRetailer = AffiliateLink & {
+  retailer?: Retailer | null
+}
+
 export type GameImage = Database['public']['Tables']['game_images']['Row']
 export type GameImageInsert = Database['public']['Tables']['game_images']['Insert']
 export type GameImageUpdate = Database['public']['Tables']['game_images']['Update']

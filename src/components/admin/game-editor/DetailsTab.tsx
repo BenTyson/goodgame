@@ -22,6 +22,7 @@ import {
   Loader2,
   Play,
   ArrowRight,
+  ShoppingCart,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CrunchScoreDisplay } from '@/components/admin/rulebook'
@@ -352,6 +353,50 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
               onCheckedChange={(checked) => updateField('is_new_release', checked)}
               compact
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* External References */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg uppercase">External References</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">Amazon and other external links</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="amazon_asin" className="uppercase tracking-wider text-xs text-primary">Amazon ASIN</Label>
+            <div className="flex gap-2">
+              <Input
+                id="amazon_asin"
+                value={game.amazon_asin || ''}
+                onChange={(e) => updateField('amazon_asin', e.target.value.toUpperCase() || null)}
+                placeholder="e.g., B09777HSJX"
+                maxLength={10}
+                className="font-mono"
+              />
+              {game.amazon_asin && (
+                <a
+                  href={`https://www.amazon.com/dp/${game.amazon_asin}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              10-character product identifier for "Buy on Amazon" button
+            </p>
           </div>
         </CardContent>
       </Card>

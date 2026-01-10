@@ -158,6 +158,8 @@ src/app/
 │   │   └── generate-content/route.ts  # POST generate rules/setup/reference
 │   ├── game-videos/route.ts   # POST/PATCH/DELETE video management
 │   ├── youtube/search/route.ts # YouTube video search (Data API v3)
+│   ├── retailers/route.ts      # GET/POST/PATCH/DELETE retailer management
+│   ├── purchase-links/route.ts # GET/POST/PATCH/DELETE per-game purchase links
 │   └── upload/route.ts        # POST image upload
 ├── marketplace/
 │   ├── page.tsx               # Browse marketplace listings
@@ -226,13 +228,14 @@ src/components/
 │   ├── CardHeaderWithIcon.tsx # Shared card header with icon (used across tabs)
 │   ├── SwitchField.tsx        # Shared switch toggle with label/description
 │   ├── SourceStatusCard.tsx   # Shared data source status card
-│   ├── game-editor/           # GameEditor tab components (6 tabs)
-│   │   ├── DetailsTab.tsx         # Core info, metadata, Crunch Score, publishing
+│   ├── game-editor/           # GameEditor tab components (7 tabs)
+│   │   ├── DetailsTab.tsx         # Core info, metadata, Crunch Score, publishing, External References
 │   │   ├── TaxonomyTab.tsx        # Categories, mechanics, themes, player experiences
 │   │   ├── RulebookTab.tsx        # Rulebook URL, parsing, parsed text viewer
 │   │   ├── ContentTab.tsx         # Rules, setup, reference content
 │   │   ├── SourcesTab.tsx         # BGG/Wikidata/Wikipedia data display
 │   │   ├── MediaTab.tsx           # Images + Videos management (orchestrates sub-components)
+│   │   ├── PurchaseLinksTab.tsx   # Retailer purchase links management
 │   │   ├── WikimediaCommonsSearch.tsx  # Commons image search with results grid
 │   │   ├── AvailableImageSources.tsx   # Wikipedia/Wikidata/BGG source images
 │   │   ├── YouTubeVideoSearch.tsx      # YouTube video search (Data API v3)
@@ -274,7 +277,7 @@ src/components/
 ├── score-sheet/               # ScoreSheetGenerator (jsPDF)
 ├── setup/                     # SetupChecklist (interactive)
 ├── search/                    # SearchDialog (Cmd+K)
-├── monetization/              # AdUnit, AffiliateButton, AmazonButton, BuyButtons
+├── monetization/              # AdUnit, AffiliateButton (retailer support), AmazonButton, BuyButtons
 └── marketplace/               # Marketplace components
     ├── ListingCard.tsx        # Listing grid card
     ├── ListingGrid.tsx        # Responsive listing grid
@@ -353,9 +356,11 @@ src/lib/wikipedia/             # Wikipedia integration utilities
   ├── sections.ts              # Section extraction with cleanSectionWikitext()
   └── types.ts                 # MediaWiki API response types
 src/lib/wikidata/              # Wikidata SPARQL integration
-  ├── client.ts                # executeSparqlQuery(), getGameASINByBggId(), getGameASINByWikidataId()
+  ├── client.ts                # executeSparqlQuery(), getGameASINByBggId(), getGameASINByWikidataId(), getGameASINWithFallback()
   ├── queries.ts               # SPARQL queries (board game lookup, ASIN P5749, awards P166)
   └── index.ts                 # Barrel exports
+src/lib/enrichment/            # Data enrichment utilities
+  └── parallel.ts              # enrichGameParallel() - parallel Wikidata/Wikipedia/Commons/ASIN fetching
 src/lib/vecna/                 # Vecna pipeline utilities
   ├── types.ts                 # VecnaState, Phase, ProcessingMode, ProcessingResult, etc.
   ├── pipeline.ts              # Pipeline orchestration (isBlockedState, calculatePipelineProgress)
@@ -389,7 +394,7 @@ src/lib/supabase/
   ├── offer-queries.ts         # Offer queries
   ├── transaction-queries.ts   # Transaction queries
   └── feedback-queries.ts      # Feedback/reputation queries
-supabase/migrations/           # Database schema (67 files)
+supabase/migrations/           # Database schema (68 files)
 ```
 
 ### Type Definitions
@@ -408,6 +413,9 @@ GameAward        // Game-award link type
 Designer         // Designer type
 Publisher        // Publisher type
 Artist           // Artist type
+Retailer         // Retailer type (slug, name, brand_color, url_pattern, affiliate_tag)
+RetailerType     // 'online' | 'local' | 'marketplace'
+AffiliateLinkWithRetailer // AffiliateLink with joined retailer data
 UserProfile      // User profile type (with custom_avatar_url, last_active_at)
 UserGame         // User shelf item type
 UserTopGame      // User's top 10 ranked games

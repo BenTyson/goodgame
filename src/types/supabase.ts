@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affiliate_links: {
@@ -47,7 +22,9 @@ export type Database = {
           id: string
           is_primary: boolean | null
           label: string | null
+          product_id: string | null
           provider: string
+          retailer_id: string | null
           updated_at: string | null
           url: string
         }
@@ -58,7 +35,9 @@ export type Database = {
           id?: string
           is_primary?: boolean | null
           label?: string | null
+          product_id?: string | null
           provider: string
+          retailer_id?: string | null
           updated_at?: string | null
           url: string
         }
@@ -69,7 +48,9 @@ export type Database = {
           id?: string
           is_primary?: boolean | null
           label?: string | null
+          product_id?: string | null
           provider?: string
+          retailer_id?: string | null
           updated_at?: string | null
           url?: string
         }
@@ -79,6 +60,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_links_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
         ]
@@ -2305,6 +2293,51 @@ export type Database = {
         }
         Relationships: []
       }
+      retailers: {
+        Row: {
+          affiliate_tag: string | null
+          brand_color: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          retailer_type: string | null
+          slug: string
+          updated_at: string | null
+          url_pattern: string | null
+        }
+        Insert: {
+          affiliate_tag?: string | null
+          brand_color?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          retailer_type?: string | null
+          slug: string
+          updated_at?: string | null
+          url_pattern?: string | null
+        }
+        Update: {
+          affiliate_tag?: string | null
+          brand_color?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          retailer_type?: string | null
+          slug?: string
+          updated_at?: string | null
+          url_pattern?: string | null
+        }
+        Relationships: []
+      }
       rulebook_parse_log: {
         Row: {
           created_at: string | null
@@ -4160,9 +4193,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_type: [

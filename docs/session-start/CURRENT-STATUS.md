@@ -1,8 +1,72 @@
 # Current Status
 
-> Last Updated: 2026-01-09 (Awards & ASIN Enrichment)
+> Last Updated: 2026-01-09 (Flexible Purchase Links)
 
-## Current Phase: 63 - Awards & ASIN Enrichment
+## Current Phase: 64 - Flexible Purchase Links System
+
+Configurable purchase links with global retailer management, dynamic URL patterns, and new GameEditor "Purchase" tab.
+
+### Session Summary (2026-01-09) - Flexible Purchase Links
+
+**ASIN Enhancement (Completed First):**
+- New `getGameASINWithFallback()` function with Wikidata name-search fallback
+- Integrated ASIN fetching into parallel enrichment flow
+- External References card added to DetailsTab with ASIN input
+
+**Retailers Database Schema:**
+- New `retailers` table for global retailer configuration
+- Fields: `slug`, `name`, `brand_color`, `url_pattern`, `affiliate_tag`, `retailer_type`, `display_order`
+- URL patterns support placeholders: `{product_id}`, `{asin}`, `{affiliate_tag}`
+- Seeded 9 retailers: Amazon, Target, Walmart, Miniature Market, CoolStuffInc, GameNerdz, Noble Knight, Boardlandia, Cardhaus
+- Added `retailer_id` and `product_id` columns to `affiliate_links` table
+
+**Admin API Endpoints:**
+- `GET/POST/PATCH/DELETE /api/admin/retailers` - Full CRUD with soft delete
+- `GET/POST/PATCH/DELETE /api/admin/purchase-links` - Per-game link management with URL generation
+
+**GameEditor Enhancement:**
+- New 7th "Purchase" tab with `PurchaseLinksTab` component
+- Lists existing purchase links with retailer branding
+- "Add Purchase Link" modal with retailer dropdown and product ID input
+- Auto-generates URLs from retailer patterns
+- Shows "Amazon (from ASIN)" indicator when game has ASIN but no explicit Amazon link
+
+**AffiliateButton Refactor:**
+- Supports new `retailer` object prop alongside legacy `provider` string
+- Dynamic brand colors from `retailer.brand_color`
+- URL generation from `retailer.url_pattern` with placeholder substitution
+- Luminance-based text color contrast (dark/light)
+- Full backward compatibility with existing `provider` prop
+
+**Game Queries Update:**
+- `getAffiliateLinks()` now returns `AffiliateLinkWithRetailer[]` with joined retailer data
+- `getGameWithDetails()` joins retailer data for affiliate links
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00068_retailers.sql` | Retailers table with seed data |
+| `src/app/api/admin/retailers/route.ts` | Retailers CRUD API |
+| `src/app/api/admin/purchase-links/route.ts` | Purchase links CRUD API |
+| `src/components/admin/game-editor/PurchaseLinksTab.tsx` | Purchase tab component |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added Retailer, AffiliateLinkWithRetailer types |
+| `src/components/admin/GameEditor.tsx` | Added 7th "Purchase" tab |
+| `src/components/admin/game-editor/index.ts` | Export PurchaseLinksTab |
+| `src/components/monetization/AffiliateButton.tsx` | Retailer object support, dynamic colors |
+| `src/lib/supabase/game-queries.ts` | Join retailer data in queries |
+| `src/lib/wikidata/client.ts` | Added getGameASINWithFallback() |
+| `src/lib/enrichment/parallel.ts` | Integrated ASIN fetch |
+| `src/components/admin/game-editor/DetailsTab.tsx` | External References card |
+
+**Build Status:** ✓ Compiled successfully
+
+---
+
+## Previous Phase: 63 - Awards & ASIN Enrichment
 
 Award sync from Wikipedia to normalized tables + Amazon ASIN enrichment from Wikidata + manual entry UI.
 
@@ -370,7 +434,7 @@ src/components/games/GameRelationsSection.tsx
 
 ### Admin
 - **Vecna Pipeline** (`/admin/vecna`) - 4-phase content pipeline, 2-tab game panel (Pipeline + Details)
-- **Game Editor** (`/admin/games/[id]`) - 6 tabs: Details, Taxonomy, Rulebook, Content, Sources, Media
+- **Game Editor** (`/admin/games/[id]`) - 7 tabs: Details, Taxonomy, Rulebook, Content, Sources, Media, Purchase
 - **Import Wizard** (`/admin/import`) - BGG game import with relation management and real-time progress
 - Rulebook parsing + Crunch Score generation
 - AI content generation (rules, setup, reference)
@@ -378,7 +442,8 @@ src/components/games/GameRelationsSection.tsx
 - Parallel enrichment with Wikidata + Wikipedia + Wikimedia Commons
 - YouTube video management with type categorization (overview/gameplay/review)
 - **Awards sync** from Wikipedia to normalized `game_awards` table
-- **ASIN enrichment** from Wikidata + manual entry in Vecna panel
+- **ASIN enrichment** from Wikidata with name-search fallback + manual entry
+- **Purchase links management** - Global retailers table with URL patterns, per-game links in Purchase tab
 
 ### Environments
 
@@ -393,7 +458,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-67 migrations in `supabase/migrations/` covering:
+68 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities
 - Content: game content, images, families, relations

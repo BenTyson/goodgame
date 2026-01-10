@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DetailsTab, RulebookTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab } from './game-editor'
+import { DetailsTab, RulebookTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import {
   Tags,
   Database,
   Film,
+  ShoppingCart,
 } from 'lucide-react'
 import type { GameVideo } from '@/components/admin/VideoManager'
 import type { Game, GameImage } from '@/types/database'
@@ -96,6 +97,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             rules_content: game.rules_content,
             setup_content: game.setup_content,
             reference_content: game.reference_content,
+            amazon_asin: game.amazon_asin,
           }
         })
       })
@@ -163,9 +165,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - 6 tabs */}
+      {/* Editor Tabs - 7 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid">
           <TabsTrigger value="details" className="gap-2">
             <Info className="h-4 w-4 hidden sm:block" />
             Details
@@ -189,6 +191,10 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TabsTrigger value="media" className="gap-2">
             <Film className="h-4 w-4 hidden sm:block" />
             Media
+          </TabsTrigger>
+          <TabsTrigger value="purchase" className="gap-2">
+            <ShoppingCart className="h-4 w-4 hidden sm:block" />
+            Purchase
           </TabsTrigger>
         </TabsList>
 
@@ -230,6 +236,11 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             onVideosChange={setVideos}
             markUnsaved={markUnsaved}
           />
+        </TabsContent>
+
+        {/* Purchase Tab */}
+        <TabsContent value="purchase">
+          <PurchaseLinksTab game={game} />
         </TabsContent>
       </Tabs>
     </div>

@@ -5,6 +5,7 @@ export { RulebookTab } from './RulebookTab'
 export { TaxonomyTab } from './TaxonomyTab'
 export { SourcesTab } from './SourcesTab'
 export { MediaTab } from './MediaTab'
+export { PurchaseLinksTab } from './PurchaseLinksTab'
 
 // Sub-components
 export { TaxonomySelector } from './TaxonomySelector'

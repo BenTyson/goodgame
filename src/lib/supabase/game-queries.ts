@@ -5,6 +5,8 @@ import type {
   Category,
   GameImage,
   AffiliateLink,
+  AffiliateLinkWithRetailer,
+  Retailer,
   Designer,
   Publisher,
   Artist,
@@ -354,12 +356,15 @@ export async function getGameImages(gameId: string): Promise<GameImage[]> {
   return data || []
 }
 
-export async function getAffiliateLinks(gameId: string): Promise<AffiliateLink[]> {
+export async function getAffiliateLinks(gameId: string): Promise<AffiliateLinkWithRetailer[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('affiliate_links')
-    .select('*')
+    .select(`
+      *,
+      retailer:retailers(*)
+    `)
     .eq('game_id', gameId)
     .order('display_order')
 
@@ -367,7 +372,7 @@ export async function getAffiliateLinks(gameId: string): Promise<AffiliateLink[]
     return []
   }
 
-  return data || []
+  return (data || []) as AffiliateLinkWithRetailer[]
 }
 
 // ===========================================
@@ -493,10 +498,13 @@ export async function getGameWithDetails(slug: string) {
     }))
     .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
-  // Get affiliate links
+  // Get affiliate links with retailer data
   const { data: affiliateLinks } = await supabase
     .from('affiliate_links')
-    .select('*')
+    .select(`
+      *,
+      retailer:retailers(*)
+    `)
     .eq('game_id', game.id)
     .order('display_order')
 
@@ -611,7 +619,7 @@ export async function getGameWithDetails(slug: string) {
     ...game,
     images: images || [],
     categories: categories || [],
-    affiliate_links: affiliateLinks || [],
+    affiliate_links: (affiliateLinks || []) as AffiliateLinkWithRetailer[],
     designers_list,
     publishers_list,
     artists_list,

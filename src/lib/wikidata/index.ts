@@ -33,6 +33,10 @@ export {
   enrichPublisher,
   enrichPublishers,
   getPublisherWebsitesForGame,
+  // ASIN enrichment
+  getGameASINByBggId,
+  getGameASINByWikidataId,
+  getGameASINWithFallback,
   type WikidataBoardGame,
   type WikidataSeriesMember,
   type WikidataSparqlResult,

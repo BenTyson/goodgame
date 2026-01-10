@@ -20,10 +20,10 @@ export async function PATCH(
     const body = await request.json()
 
     // Filter to only allowed fields
-    const updates: Partial<Record<AllowedField, unknown>> = {}
+    const updates: Partial<Record<AllowedField, string | null>> = {}
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
-        updates[field] = body[field]
+        updates[field] = body[field] as string | null
       }
     }
 

@@ -684,3 +684,57 @@ export async function getGameASINByBggId(
     return null;
   }
 }
+
+/**
+ * Get Amazon ASIN with fallback chain:
+ * 1. Try by BGG ID (direct P2339 -> P5749 lookup)
+ * 2. If not found, search by game name, find board game entity, fetch ASIN
+ *
+ * @param bggId - BoardGameGeek game ID
+ * @param gameName - Game name for fallback search
+ * @returns Object with ASIN and source, or null values if not found
+ */
+export async function getGameASINWithFallback(
+  bggId: string,
+  gameName: string
+): Promise<{ asin: string | null; source: 'bgg_id' | 'name_search' | null }> {
+  // Step 1: Try by BGG ID (existing function)
+  const asinByBggId = await getGameASINByBggId(bggId);
+  if (asinByBggId) {
+    return { asin: asinByBggId, source: 'bgg_id' };
+  }
+
+  console.log(`  [Wikidata ASIN] No ASIN by BGG ID, trying name search: "${gameName}"`);
+
+  // Step 2: Search by name and find board game entity
+  try {
+    const searchResults = await searchEntityByName(gameName, 5);
+
+    for (const result of searchResults) {
+      const desc = result.description.toLowerCase();
+      // Check if this looks like a board game
+      if (
+        desc.includes('board game') ||
+        desc.includes('card game') ||
+        desc.includes('tabletop game') ||
+        desc.includes('party game') ||
+        desc.includes('strategy game') ||
+        desc.includes('dice game')
+      ) {
+        console.log(`  [Wikidata ASIN] Found game by name: ${result.label} (${result.id})`);
+
+        // Step 3: Fetch ASIN for this entity
+        const asin = await getGameASINByWikidataId(result.id);
+        if (asin) {
+          console.log(`  [Wikidata ASIN] Found ASIN ${asin} via name search`);
+          return { asin, source: 'name_search' };
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`[Wikidata ASIN] Name search failed for "${gameName}":`, error);
+  }
+
+  console.log(`  [Wikidata ASIN] No ASIN found for "${gameName}"`);
+  return { asin: null, source: null };
+}

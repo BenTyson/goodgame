@@ -12,7 +12,7 @@
  * 4. Return unified enrichment result for database update
  */
 
-import { getGameByBggId, type WikidataBoardGame } from '@/lib/wikidata'
+import { getGameByBggId, getGameASINWithFallback, type WikidataBoardGame } from '@/lib/wikidata'
 import {
   enrichGameFromWikipedia,
   prepareWikipediaStorageData,
@@ -43,6 +43,12 @@ export interface ParallelEnrichmentResult {
 
   /** Commons images found */
   commonsImages: CommonsImage[]
+
+  /** Amazon ASIN (fetched via Wikidata with name fallback) */
+  asin: {
+    value: string | null
+    source: 'bgg_id' | 'name_search' | null
+  } | null
 
   /** Timing information for performance tracking */
   timing: EnrichmentTiming
@@ -101,6 +107,7 @@ export interface EnrichmentTiming {
   wikidataMs?: number
   wikipediaMs?: number
   commonsMs?: number
+  asinMs?: number
 }
 
 // =====================================================
@@ -141,6 +148,7 @@ export async function enrichGameParallel(
   const wikidataStart = Date.now()
   const wikipediaStart = Date.now()
   const commonsStart = Date.now()
+  const asinStart = Date.now()
 
   // Create promises for each source
   const wikidataPromise = fetchWikidataData(bggId).then((result) => {
@@ -167,8 +175,19 @@ export async function enrichGameParallel(
         return { result, duration }
       })
 
+  // ASIN fetch with BGG ID + name fallback
+  const asinPromise = getGameASINWithFallback(String(bggId), gameName).then((result) => {
+    const duration = Date.now() - asinStart
+    if (result.asin) {
+      console.log(`  [ASIN] Completed in ${duration}ms - found via ${result.source}`)
+    } else {
+      console.log(`  [ASIN] Completed in ${duration}ms - not found`)
+    }
+    return { result, duration }
+  })
+
   // Wait for all to complete (with error handling per source)
-  const [wikidataResult, wikipediaResult, commonsResult] = await Promise.all([
+  const [wikidataResult, wikipediaResult, commonsResult, asinResult] = await Promise.all([
     wikidataPromise.catch((err) => {
       errors.push(`Wikidata: ${err.message}`)
       return { result: null, duration: Date.now() - wikidataStart }
@@ -180,6 +199,10 @@ export async function enrichGameParallel(
     commonsPromise.catch((err) => {
       errors.push(`Commons: ${err.message}`)
       return { result: [] as CommonsImage[], duration: Date.now() - commonsStart }
+    }),
+    asinPromise.catch((err) => {
+      errors.push(`ASIN: ${err.message}`)
+      return { result: { asin: null, source: null }, duration: Date.now() - asinStart }
     }),
   ])
 
@@ -231,6 +254,7 @@ export async function enrichGameParallel(
     wikidata: wikidataResult.result,
     wikipedia: finalWikipediaResult,
     commonsImages: commonsResult.result,
+    asin: asinResult.result.asin ? { value: asinResult.result.asin, source: asinResult.result.source } : null,
     timing: {
       startTime,
       endTime,
@@ -238,6 +262,7 @@ export async function enrichGameParallel(
       wikidataMs: wikidataResult.duration,
       wikipediaMs: wikipediaResult.duration + wikipediaRetryDuration,
       commonsMs: commonsResult.duration,
+      asinMs: asinResult.duration,
     },
     errors,
   }
@@ -246,7 +271,8 @@ export async function enrichGameParallel(
     `[Enrichment] Completed in ${result.timing.durationMs}ms ` +
     `(Wikidata: ${wikidataResult.result ? 'found' : 'none'}, ` +
     `Wikipedia: ${finalWikipediaResult?.raw.found ? 'found' : 'none'}, ` +
-    `Commons: ${commonsResult.result.length} images)`
+    `Commons: ${commonsResult.result.length} images, ` +
+    `ASIN: ${asinResult.result.asin || 'none'})`
   )
 
   return result
@@ -454,6 +480,13 @@ export function prepareGameUpdateFromEnrichment(
   // =====================================================
   // Note: Commons images are returned separately for the caller to handle
   // They can be stored in game_images table or added to wikipedia_images
+
+  // =====================================================
+  // Amazon ASIN
+  // =====================================================
+  if (enrichment.asin?.value) {
+    update.amazon_asin = enrichment.asin.value
+  }
 
   return update
 }
