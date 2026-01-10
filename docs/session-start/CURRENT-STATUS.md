@@ -1,8 +1,62 @@
 # Current Status
 
-> Last Updated: 2026-01-09 (Flexible Purchase Links)
+> Last Updated: 2026-01-10 (D10 Sphere Rating System)
 
-## Current Phase: 64 - Flexible Purchase Links System
+## Current Phase: 65 - D10 Sphere Rating System
+
+Interactive 10-point rating system with 3D sphere visuals in the game hero section.
+
+### Session Summary (2026-01-10) - D10 Sphere Rating
+
+**New Rating UI in GameHero:**
+- 10-point rating using 3D sphere SVG components (like marbles/ball bearings)
+- Radial gradients for depth with specular highlights
+- Teal fill when selected, gray when empty
+- Hover preview shows potential rating
+- White glowing numbers on filled spheres for contrast
+- Pop animation on fill, wobble animation on hover
+
+**New "Played" Shelf Status:**
+- Added `played` to `shelf_status` enum via migration 00069
+- For games you've experienced but don't own
+- Rating a game auto-adds to shelf with "played" status if not already on shelf
+- Gamepad2 icon in shelf dropdown
+
+**Auth-Gated Rating Flow:**
+- Unauthenticated users see "Rate This Game" label
+- Clicking triggers OAuth login flow
+- After login, clicking saves rating immediately
+- Authenticated users see "Your Rating" label
+- Optimistic updates with rollback on error
+
+**Hero Image Aspect Ratio:**
+- Changed from 1:1 (square) to 4:3 ratio
+- Matches the crop ratio used for primary images
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00069_add_played_status.sql` | Add 'played' to shelf_status enum |
+| `src/components/ratings/D10Dice.tsx` | 3D sphere SVG component |
+| `src/components/ratings/D10RatingInput.tsx` | Interactive row of 10 spheres |
+| `src/components/ratings/HeroRating.tsx` | Auth-aware rating wrapper |
+| `src/components/ratings/index.ts` | Barrel exports |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added 'played' to ShelfStatus type |
+| `src/components/games/GameHero.tsx` | Integrated HeroRating, changed image to 4:3 |
+| `src/components/shelf/AddToShelfButton.tsx` | Added 'Played' status with Gamepad2 icon |
+| `src/app/shelf/ShelfContent.tsx` | Added 'played' to STATUS_CONFIG |
+| `src/components/feed/ActivityItem.tsx` | Added 'played' to SHELF_STATUS_LABELS |
+| `src/app/globals.css` | Added dice-pop and dice-wobble animations |
+
+**Build Status:** Compiled successfully
+
+---
+
+## Previous Phase: 64 - Flexible Purchase Links System
 
 Configurable purchase links with global retailer management, dynamic URL patterns, and new GameEditor "Purchase" tab.
 
@@ -418,11 +472,12 @@ src/components/games/GameRelationsSection.tsx
 - **35+ games** in database with full content
 - **Game Directory** with filter sidebar, search, pagination
 - **Game Pages** with comprehensive data display (categories, mechanics, themes, experiences, complexity, relations)
+- **D10 Sphere Rating** in hero section - 3D marble-style 1-10 rating with auth gating
 - **Awards display** in hero section with expandable list
 - **"Buy on Amazon" button** in hero section (when ASIN available)
 - **Expandable sections** for mechanics, credits, and other overflow content
 - **Rules Summaries**, **Score Sheets** (PDF), **Quick Reference**
-- **Your Shelf** - Track owned/wanted games with ratings
+- **Your Shelf** - Track owned/wanted/played games with ratings
 - **User Profiles** at `/u/[username]` with Top 10 games, insights, badges
 - **Following System** + Activity Feed at `/feed`
 - **Recommendation Engine** at `/recommend`
@@ -458,7 +513,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-68 migrations in `supabase/migrations/` covering:
+69 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities
 - Content: game content, images, families, relations

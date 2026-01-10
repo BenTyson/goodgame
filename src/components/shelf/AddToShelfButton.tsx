@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Check, ChevronDown, Package, ShoppingCart, Dices, Star, ArchiveX, LucideIcon } from 'lucide-react'
+import { Plus, Check, ChevronDown, Package, ShoppingCart, Dices, Star, ArchiveX, Gamepad2, LucideIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +16,7 @@ import type { ShelfStatus, UserGame } from '@/types/database'
 
 const SHELF_STATUSES: { value: ShelfStatus; label: string; icon: LucideIcon }[] = [
   { value: 'owned', label: 'Owned', icon: Package },
+  { value: 'played', label: 'Played', icon: Gamepad2 },
   { value: 'want_to_buy', label: 'Want to Buy', icon: ShoppingCart },
   { value: 'want_to_play', label: 'Want to Play', icon: Dices },
   { value: 'wishlist', label: 'Wishlist', icon: Star },

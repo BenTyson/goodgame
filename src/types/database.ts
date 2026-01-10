@@ -341,7 +341,7 @@ export type CollectionWithGames = Collection & {
 }
 
 // Shelf status enum
-export type ShelfStatus = 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist'
+export type ShelfStatus = 'owned' | 'want_to_buy' | 'want_to_play' | 'previously_owned' | 'wishlist' | 'played'
 
 // Profile visibility enum
 export type ProfileVisibility = 'public' | 'private'

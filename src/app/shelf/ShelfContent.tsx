@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Dices,
   ArchiveX,
+  Gamepad2,
   LucideIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ import type { UserGameWithGame, UserProfile, ShelfStatus } from '@/types/databas
 
 const STATUS_CONFIG: Record<ShelfStatus, { label: string; icon: LucideIcon; color: string }> = {
   owned: { label: 'Owned', icon: Package, color: 'bg-green-100 text-green-800' },
+  played: { label: 'Played', icon: Gamepad2, color: 'bg-teal-100 text-teal-800' },
   want_to_buy: { label: 'Want to Buy', icon: ShoppingCart, color: 'bg-blue-100 text-blue-800' },
   want_to_play: { label: 'Want to Play', icon: Dices, color: 'bg-purple-100 text-purple-800' },
   wishlist: { label: 'Wishlist', icon: Star, color: 'bg-yellow-100 text-yellow-800' },

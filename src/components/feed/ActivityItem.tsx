@@ -14,6 +14,7 @@ interface ActivityItemProps {
 
 const SHELF_STATUS_LABELS: Record<ShelfStatus, string> = {
   owned: 'Owned',
+  played: 'Played',
   want_to_buy: 'Want to Buy',
   want_to_play: 'Want to Play',
   wishlist: 'Wishlist',

@@ -4042,6 +4042,7 @@ export type Database = {
         | "want_to_play"
         | "previously_owned"
         | "wishlist"
+        | "played"
       shipping_carrier: "usps" | "ups" | "fedex" | "dhl" | "other"
       shipping_preference: "local_only" | "will_ship" | "ship_only"
       transaction_status:
@@ -4282,6 +4283,7 @@ export const Constants = {
         "want_to_play",
         "previously_owned",
         "wishlist",
+        "played",
       ],
       shipping_carrier: ["usps", "ups", "fedex", "dhl", "other"],
       shipping_preference: ["local_only", "will_ship", "ship_only"],

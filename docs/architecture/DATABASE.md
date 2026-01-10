@@ -177,8 +177,13 @@ The database uses Supabase (PostgreSQL) with the following main entities:
 60. `00060_vecna_state.sql` - Vecna processing state enum and columns
 61. `00061_taxonomy_source.sql` - Taxonomy source tracking on junction tables
 62. `00062_fix_taxonomy_source_default.sql` - Backfill BGG as default source
-63. `00065_rulebook_thumbnail.sql` - Rulebook thumbnail URL column on games
-64. `00066_rulebooks_storage.sql` - Rulebooks storage bucket for PDF uploads
+63. `00063_structured_parsed_text.sql` - Structured JSONB for categorized rulebook text
+64. `00064_image_attribution.sql` - Image source enum and licensing columns
+65. `00065_rulebook_thumbnail.sql` - Rulebook thumbnail URL column on games
+66. `00066_rulebooks_storage.sql` - Rulebooks storage bucket for PDF uploads
+67. `00067_game_videos.sql` - YouTube video embeds table (game_videos)
+68. `00068_retailers.sql` - Retailers table and game purchase links
+69. `00069_add_played_status.sql` - Add 'played' to shelf_status enum
 
 ## Core Enums
 
@@ -211,6 +216,30 @@ Data provenance tracking for legal compliance.
 | `community` | User-submitted data (moderated) |
 | `manual` | Admin-entered data |
 | `seed` | Bulk-imported factual seed data |
+
+### shelf_status
+User game shelf status.
+
+| Value | Description |
+|-------|-------------|
+| `owned` | User owns this game |
+| `want_to_buy` | User wants to buy this game |
+| `want_to_play` | User wants to play this game |
+| `previously_owned` | User previously owned this game |
+| `wishlist` | On user's wishlist |
+| `played` | User has played (rated) but doesn't own |
+
+### image_source
+Image provenance for game_images.
+
+| Value | Description |
+|-------|-------------|
+| `publisher` | Official publisher images (with permission or fair use) |
+| `wikimedia` | Wikimedia Commons (CC licensed) |
+| `bgg` | BoardGameGeek (development only) |
+| `user_upload` | User-submitted images |
+| `press_kit` | Official press kit / media kit |
+| `promotional` | Promotional materials |
 
 ---
 
@@ -562,7 +591,7 @@ Curated game lists.
 | is_published | BOOLEAN | Published status |
 
 ### game_images
-Multiple images per game with type categorization.
+Multiple images per game with type categorization and attribution.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -578,6 +607,46 @@ Multiple images per game with type categorization.
 | height | INTEGER | Image height |
 | file_size | INTEGER | File size in bytes |
 | is_primary | BOOLEAN | Primary image for type |
+| source | image_source | Image source (publisher, wikimedia, bgg, user_upload, press_kit, promotional) |
+| source_url | TEXT | Original source URL |
+| attribution | TEXT | Attribution text for image |
+| license | TEXT | License (e.g., 'CC BY-SA 4.0', 'Used with permission', 'Fair use') |
+
+### game_videos
+YouTube video embeds per game.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| game_id | UUID | Foreign key to games |
+| youtube_url | TEXT | Full YouTube URL |
+| youtube_video_id | TEXT | Extracted video ID for embedding |
+| title | TEXT | Optional custom title (falls back to YouTube title) |
+| video_type | TEXT | 'overview', 'gameplay', 'review' |
+| display_order | INTEGER | Sort order |
+| is_featured | BOOLEAN | Featured video shows prominently |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
+
+**Unique constraint:** (game_id, youtube_video_id) - Prevent duplicate videos per game
+
+### retailers
+Global retailer definitions for purchase links.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| slug | VARCHAR(50) | URL identifier (unique) |
+| name | VARCHAR(100) | Display name |
+| logo_url | TEXT | Retailer logo |
+| brand_color | VARCHAR(7) | Hex color (e.g., #FF9900) |
+| url_pattern | TEXT | URL template with placeholders ({product_id}, {asin}, {affiliate_tag}) |
+| affiliate_tag | VARCHAR(100) | Affiliate tag for this retailer |
+| retailer_type | VARCHAR(20) | 'online', 'local', 'marketplace' |
+| display_order | SMALLINT | Sort order |
+| is_active | BOOLEAN | Active status |
+| created_at | TIMESTAMPTZ | Creation timestamp |
+| updated_at | TIMESTAMPTZ | Last update timestamp |
 
 ### score_sheet_configs
 Per-game PDF configuration.
@@ -789,6 +858,7 @@ Tracks rulebook parsing attempts for debugging and auditing.
 | page_count | SMALLINT | Number of pages parsed |
 | word_count | INTEGER | Total words extracted |
 | parsed_text | TEXT | Full extracted text (for reuse in content generation) |
+| parsed_text_structured | JSONB | Structured/categorized rulebook text (sections, cleaned text) |
 | error_message | TEXT | Error details if failed |
 | parse_duration_ms | INTEGER | How long parsing took |
 | created_at | TIMESTAMPTZ | When parsing occurred |
@@ -822,7 +892,7 @@ User's game shelf/collection tracking with optional reviews.
 | id | UUID | Primary key |
 | user_id | UUID | FK to user_profiles |
 | game_id | UUID | FK to games |
-| status | shelf_status | owned, want_to_buy, want_to_play, previously_owned, wishlist |
+| status | shelf_status | owned, want_to_buy, want_to_play, previously_owned, wishlist, played |
 | rating | SMALLINT | User rating (1-10) |
 | notes | TEXT | Personal notes |
 | review | TEXT | Review content (plain text) |

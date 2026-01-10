@@ -7,8 +7,8 @@ import { Package, ImageOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { QuickStatsBar } from './QuickStatsBar'
 import { AwardBadgeList } from './AwardBadge'
-import { AggregateRating } from '@/components/reviews'
 import { BuyButtons } from '@/components/monetization'
+import { HeroRating } from '@/components/ratings'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
 import { cn } from '@/lib/utils'
 import type { GameImage, Json, ComplexityTier, Category, Award, AwardCategory } from '@/types/database'
@@ -102,7 +102,7 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
       <div className="grid gap-8 lg:gap-12 lg:grid-cols-12 items-center">
         {/* Hero Image */}
         <div className="lg:col-span-4">
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-muted shadow-xl">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted shadow-xl">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -152,15 +152,11 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
             )}
           </div>
 
-          {/* Community Rating */}
-          {aggregateRating && aggregateRating.count > 0 ? (
-            <AggregateRating
-              average={aggregateRating.average}
-              count={aggregateRating.count}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">No community ratings yet</p>
-          )}
+          {/* Rating Section */}
+          <HeroRating
+            gameId={game.id}
+            aggregateRating={aggregateRating}
+          />
 
           {/* Quick Stats - Clean inline display */}
           <QuickStatsBar

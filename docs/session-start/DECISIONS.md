@@ -134,6 +134,19 @@
 | Filter embedding | `embedded` prop on FilterSidebar | Reusable in sidebar wrapper |
 | Mobile pattern | Hamburger drawer overlay | Consistent with marketplace |
 | No page header | Removed "All Games" header/description | Redundant with sidebar header |
+| Hero image ratio | 4:3 aspect ratio | Matches primary image crop ratio |
+
+## Rating System
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Rating scale | 1-10 points | Standard board game rating scale |
+| Visual style | 3D spheres (marbles) | Board-game themed, not traditional stars |
+| Sphere rendering | SVG with radial gradients | Crisp at any size, 3D depth effect |
+| Rating storage | `user_games.rating` column | Existing table, no new schema needed |
+| Auto-shelf behavior | Add as "played" status | Rating implies you've played the game |
+| Auth flow | Click triggers login, then rate | Seamless UX, no modal interruption |
+| Aggregate display | Below personal rating | Shows community consensus |
 
 ## Legal Data Sourcing Strategy
 
