@@ -1,58 +1,62 @@
 # Current Status
 
-> Last Updated: 2026-01-10 (Game Detail Page Code Cleanup)
+> Last Updated: 2026-01-11 (Auth System Rebuild)
 
-## Current Phase: 66 - Game Detail Page Code Cleanup
+## Current Phase: 68 - Auth System Fix
 
-Code cleanup and refactoring of `/games/[slug]` page for better organization and reduced duplication.
+Fixed critical authentication bug by rebuilding the auth system with clean `@supabase/ssr` implementation.
 
-### Session Summary (2026-01-10) - Code Cleanup
+### Session Summary (2026-01-11) - Auth System Rebuild
 
-**New Utility Files:**
-- `src/lib/utils/complexity.ts` - Consolidated complexity tier logic (previously duplicated in 3 components)
-- `src/lib/utils/wikipedia.ts` - Wikipedia content cleaning utilities (citation removal, markup cleaning)
-- `src/lib/utils/youtube.ts` - YouTube URL utilities (thumbnails, embeds, ID extraction)
+**Problem Solved:**
+Client-side authentication was broken - "Continue with Google" button clicks weren't triggering OAuth flow. After extensive debugging revealed unexplainable behavior (button clicks not registering, phantom requests to callback), a clean rebuild was the solution.
 
-**New Custom Hooks:**
-- `src/hooks/use-media-modal.ts` - Shared modal navigation with keyboard nav (Escape, arrows), body overflow management
-- `src/hooks/use-expandable-list.ts` - Expand/collapse pattern for lists (used by TaxonomySection, CreditsSection)
+**Root Cause:**
+The AuthContext was creating its own Supabase client using `@supabase/supabase-js` directly instead of using the shared `@supabase/ssr` browser client from `src/lib/supabase/client.ts`. This caused conflicts in how auth state was managed.
 
-**New Shared Component:**
-- `src/components/games/MediaModal.tsx` - Shared modal shell for media galleries (backdrop, navigation, close button)
-
-**Code Deduplication:**
-- Extracted ~300+ lines of duplicate code across components
-- ImageGallery reduced from ~236 to ~135 lines
-- VideoCarousel reduced from ~214 to ~108 lines
-- Removed duplicate Wikipedia cleaning regex from RulesTab/OverviewTab
-- Removed duplicate `getThumbnailUrl` from VideoCarousel
-
-**Data Layer Optimization:**
-- Parallelized `getGameWithDetails()` queries using `Promise.all()`
-- Changed from 12+ sequential queries to 1 initial + 12 parallel queries
-
-**Files Created:**
-| File | Purpose |
-|------|---------|
-| `src/lib/utils/complexity.ts` | Complexity tier utilities (getCrunchTier, getComplexityLabel) |
-| `src/lib/utils/wikipedia.ts` | Wikipedia content cleaning (cleanWikipediaContent, truncateAtWordBoundary) |
-| `src/lib/utils/youtube.ts` | YouTube utilities (getYouTubeThumbnailUrl, getYouTubeEmbedUrl) |
-| `src/hooks/use-media-modal.ts` | Modal state/navigation hook |
-| `src/hooks/use-expandable-list.ts` | Expand/collapse list hook |
-| `src/components/games/MediaModal.tsx` | Shared media modal shell |
+**Solution:**
+Rebuilt AuthContext.tsx to use the shared browser client, removing:
+- Manual cookie parsing workarounds
+- Timeout fallbacks
+- Duplicate client creation
+- Extensive debug logging
 
 **Files Modified:**
 | File | Changes |
 |------|---------|
-| `src/components/games/ImageGallery.tsx` | Use useMediaModal hook, MediaModal component |
-| `src/components/games/VideoCarousel.tsx` | Use useMediaModal hook, MediaModal component, youtube utils |
-| `src/components/games/TaxonomySection.tsx` | Use useExpandableList hook |
-| `src/components/games/CreditsSection.tsx` | Use useExpandableList hook |
-| `src/components/games/tabs/RulesTab.tsx` | Use wikipedia utilities |
-| `src/components/games/tabs/OverviewTab.tsx` | Use wikipedia utilities, useExpandableList hook |
-| `src/lib/supabase/game-queries.ts` | Parallelized getGameWithDetails queries |
+| `src/lib/auth/AuthContext.tsx` | Complete rewrite - now uses shared `createClient()` from `client.ts`, simplified auth flow |
+| `src/app/login/LoginContent.tsx` | Removed all debug logging, cleaned up |
 
-**Build Status:** Compiled successfully
+**Build Status:** Passing, auth working correctly
+
+---
+
+## Previous Phase: 67 - Vibes Rating System
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00070_game_vibe_stats.sql` | Materialized view for pre-computed rating stats |
+| `supabase/migrations/00071_vibe_functions.sql` | Database functions for vibe queries |
+| `src/lib/supabase/vibe-queries.ts` | Query functions for vibes (stats, pagination, friends) |
+| `src/components/vibes/VibeDistribution.tsx` | 10-dice row with proportional sizing based on votes |
+| `src/components/vibes/VibeCard.tsx` | Individual vibe card with D10 badge and thoughts |
+| `src/components/vibes/VibeStatsCard.tsx` | Large 3D sphere showing "The Vibe" average |
+| `src/components/vibes/VibeFilters.tsx` | Sort/filter controls for vibes feed |
+| `src/components/vibes/FriendsVibes.tsx` | Friends' vibes callout with stacked avatars |
+| `src/components/vibes/VibesTab.tsx` | Main tab component with 2-column layout |
+| `src/components/vibes/index.ts` | Barrel exports for vibes components |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added vibe types (GameVibeStats, VibeWithUser, VIBE_COLORS, etc.) |
+| `src/components/games/GamePageTabs.tsx` | Added Sparkles icon to icon map |
+| `src/app/games/[slug]/page.tsx` | Integrated Vibes tab with data fetching |
+| `src/lib/auth/AuthContext.tsx` | Major rewrite for auth debugging (see above) |
+| `src/app/login/LoginContent.tsx` | Debug logging added |
+
+**Build Status:** Compiled successfully (auth broken at runtime)
 
 ---
 
@@ -63,6 +67,7 @@ Code cleanup and refactoring of `/games/[slug]` page for better organization and
 - **Game Directory** with filter sidebar, search, pagination
 - **Game Pages** with comprehensive data display (categories, mechanics, themes, experiences, complexity, relations)
 - **D10 Sphere Rating** in hero section - 3D marble-style 1-10 rating with auth gating
+- **Vibes Tab** - Social ratings with distribution visualization, friends' vibes, thoughts
 - **Awards display** in hero section with expandable list
 - **"Buy on Amazon" button** in hero section (when ASIN available)
 - **Expandable sections** for mechanics, credits, and other overflow content
@@ -103,7 +108,7 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 
 ## Database Migrations
 
-69 migrations in `supabase/migrations/` covering:
+71 migrations in `supabase/migrations/` covering:
 - Core tables: games, categories, mechanics, awards
 - User system: profiles, shelf, follows, activities
 - Content: game content, images, families, relations

@@ -483,3 +483,107 @@ export const INVERSE_RELATIONS: Record<RelationType, RelationType> = {
   'spin_off_of': 'spin_off_of', // no clear inverse
   'standalone_in_series': 'standalone_in_series' // symmetric
 }
+
+// ===========================================
+// VIBES (Ratings System)
+// ===========================================
+
+// Distribution of vibes across rating values 1-10
+export interface VibeDistribution {
+  '1': number
+  '2': number
+  '3': number
+  '4': number
+  '5': number
+  '6': number
+  '7': number
+  '8': number
+  '9': number
+  '10': number
+}
+
+// Pre-computed game vibe statistics
+export interface GameVibeStats {
+  gameId: string
+  vibeCount: number
+  averageVibe: number | null
+  vibeStddev: number | null
+  medianVibe: number | null
+  modeVibe: number | null
+  distribution: VibeDistribution
+  vibesWithThoughts: number
+}
+
+// Individual vibe with user details
+export interface VibeWithUser {
+  id: string
+  userId: string
+  gameId: string
+  value: number
+  thoughts: string | null
+  createdAt: string
+  updatedAt: string | null
+  user: {
+    id: string
+    username: string | null
+    displayName: string | null
+    avatarUrl: string | null
+    customAvatarUrl: string | null
+  }
+}
+
+// Friend's vibe (simplified for friends section)
+export interface FriendVibe {
+  id: string
+  userId: string
+  value: number
+  thoughts: string | null
+  createdAt: string
+  user: {
+    id: string
+    username: string | null
+    displayName: string | null
+    avatarUrl: string | null
+    customAvatarUrl: string | null
+  }
+}
+
+// Paginated vibes response
+export interface VibesResponse {
+  vibes: VibeWithUser[]
+  hasMore: boolean
+  nextCursor?: string
+}
+
+// Vibe filter/sort options
+export type VibeSortOption = 'newest' | 'oldest' | 'highest' | 'lowest'
+export type VibeFilterOption = 'all' | 'with_thoughts' | number // number = specific rating value
+
+// Color configuration for vibe values
+export interface VibeColorConfig {
+  bg: string
+  bar: string
+  text: string
+}
+
+// Semantic colors for each vibe value (1-10)
+export const VIBE_COLORS: Record<number, VibeColorConfig> = {
+  10: { bg: 'bg-emerald-500/20', bar: 'bg-emerald-500', text: 'text-emerald-600' },
+  9:  { bg: 'bg-teal-500/20',    bar: 'bg-teal-500',    text: 'text-teal-600' },
+  8:  { bg: 'bg-primary/20',     bar: 'bg-primary',     text: 'text-primary' },
+  7:  { bg: 'bg-sky-500/20',     bar: 'bg-sky-500',     text: 'text-sky-600' },
+  6:  { bg: 'bg-slate-400/20',   bar: 'bg-slate-400',   text: 'text-slate-500' },
+  5:  { bg: 'bg-slate-300/20',   bar: 'bg-slate-300',   text: 'text-slate-400' },
+  4:  { bg: 'bg-amber-400/20',   bar: 'bg-amber-400',   text: 'text-amber-600' },
+  3:  { bg: 'bg-orange-400/20',  bar: 'bg-orange-400',  text: 'text-orange-600' },
+  2:  { bg: 'bg-red-400/20',     bar: 'bg-red-400',     text: 'text-red-500' },
+  1:  { bg: 'bg-red-500/20',     bar: 'bg-red-500',     text: 'text-red-600' },
+}
+
+// Get vibe descriptor text based on average
+export function getVibeDescriptor(average: number): string {
+  if (average >= 9) return 'Beloved'
+  if (average >= 7) return 'Well-liked'
+  if (average >= 5) return 'Mixed'
+  return 'Rough'
+}

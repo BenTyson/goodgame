@@ -4,11 +4,20 @@ import type { Database } from '@/types/database'
 let client: ReturnType<typeof createBrowserClient<Database>> | null = null
 
 export function createClient() {
-  if (client) return client
+  // Only use singleton on client side
+  if (typeof window !== 'undefined' && client) {
+    return client
+  }
 
-  client = createBrowserClient<Database>(
+  const newClient = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
-  return client
+
+  // Only cache on client side
+  if (typeof window !== 'undefined') {
+    client = newClient
+  }
+
+  return newClient
 }

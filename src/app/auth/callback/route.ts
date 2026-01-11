@@ -82,7 +82,6 @@ export async function GET(request: NextRequest) {
                 cookieStore.set(name, value, options)
               })
             } catch (error) {
-              // Handle cookie errors in edge cases
               console.error('Cookie error:', error)
             }
           },

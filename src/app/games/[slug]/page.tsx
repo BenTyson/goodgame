@@ -10,9 +10,11 @@ import {
   SetupTab,
   ScoreSheetTab,
 } from '@/components/games'
+import { VibesTab } from '@/components/vibes'
 import { getGameWithDetails, getAllGameSlugs, getGameAwards, getScoreSheetConfig } from '@/lib/supabase/queries'
 import { getGameRelationsGrouped } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
+import { getGameVibeStats, getGameVibes } from '@/lib/supabase/vibe-queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
 import type { ReferenceContent, GameRow } from '@/types/database'
 
@@ -89,12 +91,16 @@ export default async function GamePage({ params }: GamePageProps) {
     reviewsData,
     aggregateRating,
     rawScoreSheetConfig,
+    vibeStats,
+    vibesData,
   ] = await Promise.all([
     getGameAwards(game.id),
     getGameRelationsGrouped(game.id),
     getGameReviews(game.id),
     getGameAggregateRating(game.id),
     game.has_score_sheet ? getScoreSheetConfig(game.id) : Promise.resolve(null),
+    getGameVibeStats(game.id),
+    getGameVibes(game.id),
   ])
 
   const scoreSheetConfig = transformScoreSheetConfig(rawScoreSheetConfig)
@@ -115,6 +121,21 @@ export default async function GamePage({ params }: GamePageProps) {
           initialReviews={reviewsData.reviews}
           initialHasMore={reviewsData.hasMore}
           reviewVideos={game.review_videos}
+        />
+      ),
+    },
+    {
+      id: 'vibes',
+      label: 'Vibes',
+      icon: 'sparkles',
+      available: true,
+      content: (
+        <VibesTab
+          gameId={game.id}
+          gameName={game.name}
+          initialStats={vibeStats}
+          initialVibes={vibesData.vibes}
+          initialHasMore={vibesData.hasMore}
         />
       ),
     },

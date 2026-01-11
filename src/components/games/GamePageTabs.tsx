@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, ReactNode } from 'react'
-import { Info, BookOpen, Boxes, Zap, FileText, type LucideIcon } from 'lucide-react'
+import { Info, BookOpen, Boxes, Zap, FileText, Sparkles, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Map icon names to actual components (resolved client-side)
@@ -11,6 +11,7 @@ const iconMap: Record<string, LucideIcon> = {
   boxes: Boxes,
   zap: Zap,
   'file-text': FileText,
+  sparkles: Sparkles,
 }
 
 export interface TabConfig {

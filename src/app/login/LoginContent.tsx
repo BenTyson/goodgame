@@ -49,6 +49,7 @@ export function LoginContent() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
+            type="button"
             variant="outline"
             className="w-full"
             onClick={() => signInWithGoogle(next)}

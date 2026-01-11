@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { D10Dice } from './D10Dice'
+import { D10DiceSoft } from './D10DiceFlat'
 import { cn } from '@/lib/utils'
 
 interface D10RatingInputProps {
@@ -79,7 +79,7 @@ export function D10RatingInput({
             )}
             aria-label={`Rate ${rating} out of 10`}
           >
-            <D10Dice
+            <D10DiceSoft
               value={rating}
               filled={isFilled(rating)}
               hovered={isHovered(rating)}
@@ -117,7 +117,7 @@ export function D10RatingDisplay({
 
   return (
     <div className="flex items-center gap-1">
-      <D10Dice value={value} filled size={size} />
+      <D10DiceSoft value={value} filled size={size} />
       <span className="text-sm font-medium tabular-nums">
         {value}/10
       </span>

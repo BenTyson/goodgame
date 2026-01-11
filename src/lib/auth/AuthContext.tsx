@@ -10,23 +10,21 @@ interface AuthContextType {
   profile: UserProfile | null
   isLoading: boolean
   isAdmin: boolean
-  signInWithGoogle: (redirectTo?: string) => Promise<void>
+  signInWithGoogle: (redirectTo?: string) => void
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const supabase = createClient()
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  // Check admin status from profile role
   const isAdmin = profile?.role === 'admin'
 
+  // Fetch profile helper
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from('user_profiles')
@@ -34,25 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
     setProfile(data)
-  }, [])
+  }, [supabase])
 
-  // Update last_active_at timestamp
-  const updateLastActive = useCallback(async (userId: string) => {
-    await supabase
-      .from('user_profiles')
-      .update({ last_active_at: new Date().toISOString() })
-      .eq('id', userId)
-  }, [])
-
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      await fetchProfile(user.id)
-    }
-  }, [user, fetchProfile])
-
-  // Helper to fetch or create user profile
+  // Create profile if it doesn't exist
   const fetchOrCreateProfile = useCallback(async (authUser: User) => {
-    // Try to get existing profile
     const { data: existingProfile, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -64,8 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Profile doesn't exist - create it
-    // (This is a fallback; the database trigger should create it on signup)
+    // Profile doesn't exist, create it
     if (error?.code === 'PGRST116') {
       const { data: newProfile } = await supabase
         .from('user_profiles')
@@ -80,75 +62,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
       setProfile(newProfile)
     }
-  }, [])
+  }, [supabase])
 
+  // Update last active timestamp
+  const updateLastActive = useCallback(async (userId: string) => {
+    await supabase
+      .from('user_profiles')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('id', userId)
+  }, [supabase])
+
+  // Initialize session
   useEffect(() => {
-    // Failsafe timeout - never stay loading for more than 3 seconds
-    const timeout = setTimeout(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchOrCreateProfile(session.user)
+        updateLastActive(session.user.id)
+      }
       setIsLoading(false)
-    }, 3000)
+    })
 
-    // Use onAuthStateChange as the single source of truth for auth state
-    // This handles INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, and SIGNED_OUT
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // For any event with a valid session, update user state
+        setUser(session?.user ?? null)
         if (session?.user) {
-          setUser(session.user)
           await fetchOrCreateProfile(session.user)
-          // Update last active timestamp on sign in
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             updateLastActive(session.user.id)
           }
         } else {
-          setUser(null)
           setProfile(null)
         }
-
-        // Always clear loading state after processing
         setIsLoading(false)
       }
     )
 
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
-    }
-  }, [fetchOrCreateProfile, updateLastActive])
+    return () => subscription.unsubscribe()
+  }, [supabase, fetchOrCreateProfile, updateLastActive])
 
-  // Update last active periodically while user is logged in
+  // Periodic last active update
   useEffect(() => {
     if (!user) return
 
-    // Update every 5 minutes while active
     const interval = setInterval(() => {
       updateLastActive(user.id)
-    }, 5 * 60 * 1000)
+    }, 5 * 60 * 1000) // Every 5 minutes
 
     return () => clearInterval(interval)
   }, [user, updateLastActive])
 
-  async function signInWithGoogle(redirectTo?: string) {
-    const callbackUrl = new URL('/auth/callback', window.location.origin)
-    if (redirectTo) {
-      callbackUrl.searchParams.set('next', redirectTo)
-    } else {
-      callbackUrl.searchParams.set('next', window.location.pathname)
-    }
-
-    await supabase.auth.signInWithOAuth({
+  // Sign in with Google OAuth
+  function signInWithGoogle(redirectTo?: string) {
+    const next = redirectTo || window.location.pathname
+    supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: callbackUrl.toString(),
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     })
   }
 
+  // Sign out
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
   }
+
+  // Refresh profile data
+  const refreshProfile = useCallback(async () => {
+    if (user) await fetchProfile(user.id)
+  }, [user, fetchProfile])
 
   return (
     <AuthContext.Provider value={{
