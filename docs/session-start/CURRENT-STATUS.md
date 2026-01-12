@@ -1,33 +1,54 @@
 # Current Status
 
-> Last Updated: 2026-01-11 (Auth System Rebuild)
+> Last Updated: 2026-01-11
 
-## Current Phase: 68 - Auth System Fix
+## Current Phase: 68 - Auth System Fix (COMPLETE)
 
-Fixed critical authentication bug by rebuilding the auth system with clean `@supabase/ssr` implementation.
+### Session 3 (2026-01-11) - Root Cause Found and Fixed
 
-### Session Summary (2026-01-11) - Auth System Rebuild
+**Status: FIXED** - Auth system rebuilt with proper library alignment.
 
-**Problem Solved:**
-Client-side authentication was broken - "Continue with Google" button clicks weren't triggering OAuth flow. After extensive debugging revealed unexplainable behavior (button clicks not registering, phantom requests to callback), a clean rebuild was the solution.
+**Root Cause Identified:**
+Library mismatch between browser and server clients:
+- Browser client (`client.ts`) was using `@supabase/supabase-js` which stores sessions in **localStorage**
+- Server/middleware was using `@supabase/ssr` which stores sessions in **cookies**
+- When middleware refreshed tokens and wrote to cookies, the browser client never saw them (it was looking in localStorage)
+- Session state diverged after refreshes, breaking auth
 
-**Root Cause:**
-The AuthContext was creating its own Supabase client using `@supabase/supabase-js` directly instead of using the shared `@supabase/ssr` browser client from `src/lib/supabase/client.ts`. This caused conflicts in how auth state was managed.
+**Why Previous Fixes Failed:**
+Session 2 tried switching to `@supabase/ssr` but didn't clear stale localStorage data from the old client. The conflicting auth state caused `getSession()` to hang.
 
-**Solution:**
-Rebuilt AuthContext.tsx to use the shared browser client, removing:
-- Manual cookie parsing workarounds
-- Timeout fallbacks
-- Duplicate client creation
-- Extensive debug logging
+**The Fix:**
+1. **`client.ts`** - Switched from `@supabase/supabase-js` to `@supabase/ssr`'s `createBrowserClient`
+   - Sessions now use cookies, matching server/middleware
+   - Removed problematic singleton pattern
+
+2. **`AuthContext.tsx`** - Added robustness improvements:
+   - Added `cleanupLegacyStorage()` to clear stale localStorage auth data on mount
+   - Fixed initialization order: `onAuthStateChange` now set up BEFORE `getSession()`
+   - Added 3-second timeout safety net to prevent infinite loading states
+   - Added try-catch to all async operations to prevent silent failures
+   - Added React Strict Mode double-initialization guard
 
 **Files Modified:**
 | File | Changes |
 |------|---------|
-| `src/lib/auth/AuthContext.tsx` | Complete rewrite - now uses shared `createClient()` from `client.ts`, simplified auth flow |
-| `src/app/login/LoginContent.tsx` | Removed all debug logging, cleaned up |
+| `src/lib/supabase/client.ts` | Switched to `@supabase/ssr`, removed singleton |
+| `src/lib/auth/AuthContext.tsx` | Added localStorage cleanup, fixed init order, added error handling |
 
-**Build Status:** Passing, auth working correctly
+**Build Status:** Passing
+
+**Testing Completed:**
+- Fresh login via Google OAuth - works
+- Persistence across 10+ page refreshes - works
+- Persistence across dev server restart - works
+- Multi-tab sync - works
+- `sb-*` cookies present, localStorage empty - confirmed
+
+**Other work from earlier sessions:**
+- Created `RatingFollowUpDialog.tsx` for post-rating flow (shelf status + thoughts)
+- Updated `RatingPopover.tsx` with `onRatingSaved` callback
+- Removed "Your Thoughts" section from VibesTab (now in dialog)
 
 ---
 

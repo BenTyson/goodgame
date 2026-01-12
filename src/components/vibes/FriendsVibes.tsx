@@ -53,10 +53,10 @@ export function FriendsVibes({
       <div className={cn('rounded-xl border border-border/50 bg-card/30 p-4', className)}>
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Friends&apos; Vibes</span>
+          <span className="text-sm font-medium">Friends</span>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          Be the first among your friends to drop a vibe!
+          Be the first among your friends to rate this!
         </p>
         <Button variant="outline" size="sm" asChild>
           <Link href="/discover">Find Friends</Link>
@@ -74,7 +74,7 @@ export function FriendsVibes({
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">
-          {friendsVibes.length} {friendsVibes.length === 1 ? 'friend' : 'friends'} dropped vibes
+          {friendsVibes.length} {friendsVibes.length === 1 ? 'friend' : 'friends'} rated this
         </span>
       </div>
 

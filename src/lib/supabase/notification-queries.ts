@@ -13,6 +13,7 @@ const NOTIFICATIONS_PAGE_SIZE = 20
 
 /**
  * Get unread notification count for current user
+ * Returns 0 on error (non-critical feature)
  */
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
   const supabase = createClient()
@@ -23,12 +24,16 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
     .eq('user_id', userId)
     .eq('is_read', false)
 
-  if (error) throw error
+  if (error) {
+    // Silently fail - notifications are non-critical
+    return 0
+  }
   return count || 0
 }
 
 /**
  * Get notifications for current user with cursor-based pagination
+ * Returns empty list on error (non-critical feature)
  */
 export async function getNotifications(
   userId: string,
@@ -54,7 +59,10 @@ export async function getNotifications(
 
   const { data, error } = await query
 
-  if (error) throw error
+  if (error) {
+    // Silently fail - notifications are non-critical
+    return { notifications: [], hasMore: false, nextCursor: undefined }
+  }
 
   const hasMore = data && data.length > limit
   const notifications = (data?.slice(0, limit) || []) as NotificationWithDetails[]

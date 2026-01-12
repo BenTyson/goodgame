@@ -1,23 +1,17 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/database'
 
-let client: ReturnType<typeof createBrowserClient<Database>> | null = null
-
+/**
+ * Creates a Supabase client for browser-side use.
+ *
+ * Uses @supabase/ssr's createBrowserClient which:
+ * - Stores session in cookies (matching server/middleware)
+ * - Manages its own internal state (no singleton needed)
+ * - Automatically syncs with server-side session refreshes
+ */
 export function createClient() {
-  // Only use singleton on client side
-  if (typeof window !== 'undefined' && client) {
-    return client
-  }
-
-  const newClient = createBrowserClient<Database>(
+  return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
-
-  // Only cache on client side
-  if (typeof window !== 'undefined') {
-    client = newClient
-  }
-
-  return newClient
 }

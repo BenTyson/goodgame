@@ -3,24 +3,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
-import { D10RatingInput } from '@/components/ratings/D10RatingInput'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { VibeDistribution } from './VibeDistribution'
 import { VibeCard, VibeCardSkeleton } from './VibeCard'
 import { VibeStatsCard, VibeStatsCardSkeleton } from './VibeStatsCard'
 import { VibeFilters } from './VibeFilters'
 import { FriendsVibes } from './FriendsVibes'
-import { getGameVibes, getUserVibe } from '@/lib/supabase/vibe-queries'
+import { RatingFollowUpDialog } from '@/components/ratings/RatingFollowUpDialog'
+import { getGameVibes } from '@/lib/supabase/vibe-queries'
 import { getUserGameStatus, addToShelf, updateShelfItem } from '@/lib/supabase/user-queries'
 import { updateReview } from '@/lib/supabase/review-queries'
-import { cn } from '@/lib/utils'
 import type {
   GameVibeStats,
   VibeWithUser,
   VibeSortOption,
   VibeFilterOption,
   UserGame,
+  ShelfStatus,
 } from '@/types/database'
 
 interface VibesTabProps {
@@ -56,10 +55,12 @@ export function VibesTab({
   // User's own vibe state
   const [shelfEntry, setShelfEntry] = useState<UserGame | null>(null)
   const [localRating, setLocalRating] = useState<number | null>(null)
-  const [localThoughts, setLocalThoughts] = useState('')
-  const [showThoughtsInput, setShowThoughtsInput] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [hasFetched, setHasFetched] = useState(false)
+
+  // Follow-up dialog state
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false)
+  const [pendingRating, setPendingRating] = useState<number | null>(null)
 
   // Fetch user's shelf entry when auth resolves
   useEffect(() => {
@@ -70,17 +71,11 @@ export function VibesTab({
         .then((entry) => {
           setShelfEntry(entry)
           setLocalRating(entry?.rating ?? null)
-          setLocalThoughts(entry?.review ?? '')
-          if (entry?.review) {
-            setShowThoughtsInput(true)
-          }
         })
         .finally(() => setHasFetched(true))
     } else if (!user) {
       setShelfEntry(null)
       setLocalRating(null)
-      setLocalThoughts('')
-      setShowThoughtsInput(false)
       setHasFetched(false)
     }
   }, [user, gameId, isAuthLoading, hasFetched])
@@ -119,18 +114,43 @@ export function VibesTab({
     }
   }
 
-  // Handle thoughts save
-  const handleSaveThoughts = async () => {
+  // Called when a rating is saved - opens the follow-up dialog
+  const handleRatingSaved = (rating: number) => {
+    setPendingRating(rating)
+    setShowFollowUpDialog(true)
+  }
+
+  // Handle follow-up dialog save
+  const handleFollowUpSave = async (data: { shelfStatus: ShelfStatus; thoughts: string | null }) => {
     if (!shelfEntry || !user) return
 
     setIsSaving(true)
     try {
-      await updateReview(shelfEntry.id, localThoughts || null)
-      setShelfEntry((prev) => (prev ? { ...prev, review: localThoughts || null } : null))
+      // Update shelf status and thoughts together
+      await updateShelfItem(shelfEntry.id, { status: data.shelfStatus })
+      await updateReview(shelfEntry.id, data.thoughts)
+      setShelfEntry((prev) =>
+        prev ? { ...prev, status: data.shelfStatus, review: data.thoughts } : null
+      )
     } catch (error) {
-      console.error('Failed to save thoughts:', error)
+      console.error('Failed to save follow-up data:', error)
+      throw error // Let the dialog handle the error
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Handle follow-up dialog skip
+  const handleFollowUpSkip = () => {
+    // Rating is already saved, just close the dialog
+    setPendingRating(null)
+  }
+
+  // Handle edit from VibeCard - opens the follow-up dialog with existing data
+  const handleEditVibe = () => {
+    if (localRating) {
+      setPendingRating(localRating)
+      setShowFollowUpDialog(true)
     }
   }
 
@@ -184,56 +204,6 @@ export function VibesTab({
     <div className="grid gap-8 lg:grid-cols-3">
       {/* Left Column - Reviews/Vibes Feed */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Your Review - shown after rating */}
-        {user && (localRating !== null || shelfEntry?.rating) && (
-          <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                Your Review
-              </h2>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Your vibe:</span>
-                <span className="font-bold text-foreground">{localRating ?? shelfEntry?.rating}/10</span>
-              </div>
-            </div>
-
-            {!showThoughtsInput ? (
-              <button
-                onClick={() => setShowThoughtsInput(true)}
-                className="w-full text-left p-4 rounded-xl border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
-              >
-                <p className="text-muted-foreground">Share your thoughts about {gameName}...</p>
-              </button>
-            ) : (
-              <div className="space-y-3 animate-in fade-in duration-200">
-                <Textarea
-                  value={localThoughts}
-                  onChange={(e) => setLocalThoughts(e.target.value)}
-                  placeholder={`What did you think about ${gameName}?`}
-                  className="resize-none min-h-[120px]"
-                  disabled={isSaving}
-                  autoFocus
-                />
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleSaveThoughts}
-                    disabled={isSaving || localThoughts === (shelfEntry?.review || '')}
-                  >
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                  </Button>
-                  {localThoughts !== (shelfEntry?.review || '') && (
-                    <span className="text-xs text-muted-foreground">Unsaved changes</span>
-                  )}
-                  {shelfEntry?.review && localThoughts === shelfEntry.review && (
-                    <span className="text-xs text-green-600">Saved</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Filter bar */}
         <VibeFilters
           totalCount={initialStats.vibeCount}
@@ -255,8 +225,8 @@ export function VibesTab({
             <div className="text-center py-12 rounded-2xl border border-border/50 bg-card/30">
               <p className="text-muted-foreground">
                 {filter !== 'all'
-                  ? 'No vibes match this filter.'
-                  : 'No vibes yet. Be the first!'}
+                  ? 'No ratings match this filter.'
+                  : 'No ratings yet. Be the first!'}
               </p>
             </div>
           ) : (
@@ -266,7 +236,7 @@ export function VibesTab({
                 key={vibe.id}
                 vibe={vibe}
                 isOwnVibe={user?.id === vibe.userId}
-                onEdit={() => setShowThoughtsInput(true)}
+                onEdit={handleEditVibe}
               />
             ))
           )}
@@ -286,7 +256,7 @@ export function VibesTab({
                   Loading...
                 </>
               ) : (
-                'Load more vibes'
+                'Load more'
               )}
             </Button>
           </div>
@@ -295,7 +265,7 @@ export function VibesTab({
 
       {/* Right Column - Vibe Ratings Sidebar */}
       <div className="space-y-6">
-        {/* The Vibe - Stats */}
+        {/* The Vibe - Stats + Your Rating */}
         <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur p-6">
           <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-4">The Vibe</h2>
           <VibeStatsCard
@@ -305,35 +275,13 @@ export function VibesTab({
             stdDeviation={initialStats.vibeStddev}
             vibesWithThoughts={initialStats.vibesWithThoughts}
             modeVibe={initialStats.modeVibe}
+            userRating={localRating}
+            onRatingChange={handleRatingChange}
+            onRatingSaved={handleRatingSaved}
+            onSignIn={signInWithGoogle}
+            isAuthenticated={!!user}
+            isSaving={isSaving}
           />
-        </div>
-
-        {/* Your Vibe - Rating input */}
-        <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur p-6 space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-            {user ? 'Your Vibe' : 'Drop Your Vibe'}
-          </h2>
-
-          {/* Rating input */}
-          <div className="flex items-center gap-3">
-            <D10RatingInput
-              value={localRating}
-              onChange={handleRatingChange}
-              disabled={isLoading || isSaving}
-              size="md"
-              showValue={true}
-            />
-            {isSaving && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </div>
-
-          {/* Prompt to add review */}
-          {localRating !== null && !shelfEntry?.review && (
-            <p className="text-xs text-muted-foreground">
-              Add your review in the panel to the left
-            </p>
-          )}
         </div>
 
         {/* Distribution */}
@@ -355,6 +303,20 @@ export function VibesTab({
         {/* Friends' Vibes */}
         <FriendsVibes gameId={gameId} />
       </div>
+
+      {/* Rating Follow-Up Dialog */}
+      {pendingRating !== null && (
+        <RatingFollowUpDialog
+          open={showFollowUpDialog}
+          onOpenChange={setShowFollowUpDialog}
+          rating={pendingRating}
+          gameName={gameName}
+          currentShelfStatus={shelfEntry?.status}
+          currentThoughts={shelfEntry?.review}
+          onSave={handleFollowUpSave}
+          onSkip={handleFollowUpSkip}
+        />
+      )}
     </div>
   )
 }
@@ -388,12 +350,6 @@ export function VibesTabSkeleton() {
         <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
           <div className="h-4 w-20 bg-muted rounded mb-4" />
           <VibeStatsCardSkeleton />
-        </div>
-
-        {/* Your vibe skeleton */}
-        <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
-          <div className="h-4 w-24 bg-muted rounded mb-4" />
-          <div className="h-10 w-full bg-muted rounded" />
         </div>
 
         {/* Distribution skeleton */}

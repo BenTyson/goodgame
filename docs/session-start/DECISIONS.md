@@ -4,6 +4,22 @@
 
 ## Gotchas (Common Mistakes)
 
+- **Auth Architecture** (CRITICAL - read before touching auth):
+  - All auth MUST use `@supabase/ssr` for cookie-based sessions
+  - Browser client (`client.ts`): `createBrowserClient` from `@supabase/ssr`
+  - Server client (`server.ts`): `createServerClient` from `@supabase/ssr`
+  - **NEVER use `@supabase/supabase-js` for browser auth** - it stores in localStorage which conflicts with server cookies
+  - Key files:
+    - `src/lib/supabase/client.ts` - Browser client (cookies)
+    - `src/lib/supabase/server.ts` - Server client (cookies)
+    - `src/lib/auth/AuthContext.tsx` - Client-side auth state
+    - `src/middleware.ts` - Session refresh on requests
+    - `src/app/auth/callback/route.ts` - OAuth callback handler
+  - AuthContext rules:
+    - Don't `await` profile fetch in `onAuthStateChange` - it blocks `isLoading`
+    - Set `isLoading = false` immediately when user is detected
+    - Profile fetch should be non-blocking (fire and forget)
+  - If auth breaks again, check: Are browser and server both using cookies? Is anything using localStorage?
 - **Supabase FK ambiguity**: Use explicit syntax `games!games_family_id_fkey` to avoid PGRST201 errors
 - **Barrel exports**: New components must be added to the folder's `index.ts`
 - **Build check**: Always run `npm run build` after changes - catches errors lint misses

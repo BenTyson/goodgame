@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getVibeDescriptor } from '@/types/database'
+import { getVibeDescriptor, VIBE_COLORS } from '@/types/database'
+import { RatingPopover } from '@/components/ratings/RatingPopover'
 
 interface VibeStatsCardProps {
   average: number | null
@@ -13,6 +14,13 @@ interface VibeStatsCardProps {
   vibesWithThoughts?: number
   modeVibe?: number | null
   className?: string
+  // User rating integration
+  userRating?: number | null
+  onRatingChange?: (rating: number | null) => void
+  onRatingSaved?: (rating: number) => void
+  onSignIn?: () => void
+  isAuthenticated?: boolean
+  isSaving?: boolean
 }
 
 export function VibeStatsCard({
@@ -23,6 +31,12 @@ export function VibeStatsCard({
   vibesWithThoughts,
   modeVibe,
   className,
+  userRating,
+  onRatingChange,
+  onRatingSaved,
+  onSignIn,
+  isAuthenticated = false,
+  isSaving = false,
 }: VibeStatsCardProps) {
   const [showStats, setShowStats] = useState(false)
 
@@ -35,9 +49,9 @@ export function VibeStatsCard({
         <div className="flex flex-col items-center gap-4">
           <EmptySphere />
           <div>
-            <p className="text-lg font-semibold">No vibes yet</p>
+            <p className="text-lg font-semibold">No ratings yet</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Be the first to drop a vibe!
+              Be the first to rate!
             </p>
           </div>
         </div>
@@ -51,10 +65,10 @@ export function VibeStatsCard({
         {/* Large 3D Sphere with average inside */}
         <LargeVibeSphere value={average} />
 
-        {/* Vibe count */}
+        {/* Rating count */}
         <div className="text-center">
           <p className="text-2xl font-bold tabular-nums">
-            <AnimatedCounter value={count} /> {count === 1 ? 'vibe' : 'vibes'}
+            <AnimatedCounter value={count} /> {count === 1 ? 'rating' : 'ratings'}
           </p>
           <p className={cn(
             'text-sm font-medium mt-1',
@@ -106,6 +120,30 @@ export function VibeStatsCard({
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Your Rating Section */}
+        {onRatingChange && (
+          <div className="w-full pt-4 mt-4 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Your rating:</span>
+              {isAuthenticated ? (
+                <RatingPopover
+                  value={userRating ?? null}
+                  onChange={onRatingChange}
+                  onRatingSaved={onRatingSaved}
+                  isSaving={isSaving}
+                />
+              ) : (
+                <button
+                  onClick={onSignIn}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  Sign in to rate
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

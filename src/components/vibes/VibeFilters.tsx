@@ -29,7 +29,7 @@ const SORT_OPTIONS: { value: VibeSortOption; label: string }[] = [
 ]
 
 const FILTER_OPTIONS: { value: VibeFilterOption; label: string }[] = [
-  { value: 'all', label: 'All vibes' },
+  { value: 'all', label: 'All' },
   { value: 'with_thoughts', label: 'With thoughts' },
 ]
 
@@ -49,7 +49,7 @@ export function VibeFilters({
     <div className={cn('flex items-center justify-between gap-4 flex-wrap', className)}>
       {/* Count */}
       <p className="text-lg font-semibold">
-        {totalCount.toLocaleString()} {totalCount === 1 ? 'Vibe' : 'Vibes'}
+        {totalCount.toLocaleString()} {totalCount === 1 ? 'Rating' : 'Ratings'}
       </p>
 
       {/* Controls */}

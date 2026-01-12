@@ -4,11 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronUp, Pencil } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { D10DiceSoft } from '@/components/ratings/D10DiceFlat'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { VIBE_COLORS } from '@/types/database'
 import type { VibeWithUser } from '@/types/database'
 
 interface VibeCardProps {
@@ -78,9 +78,15 @@ export function VibeCard({
         </div>
 
         {/* Vibe badge */}
-        <div className="shrink-0">
-          <D10DiceSoft value={vibe.value} filled size="sm" />
-        </div>
+        <span
+          className={cn(
+            'shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold',
+            VIBE_COLORS[vibe.value]?.bg || 'bg-muted',
+            VIBE_COLORS[vibe.value]?.text || 'text-foreground'
+          )}
+        >
+          {vibe.value}
+        </span>
       </div>
     )
   }
@@ -126,18 +132,23 @@ export function VibeCard({
                 )}
                 {isOwnVibe && (
                   <Badge variant="secondary" className="text-xs shrink-0">
-                    Your Vibe
+                    You
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">{timeAgo}</p>
             </div>
 
-            {/* Vibe value with D10 */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <D10DiceSoft value={vibe.value} filled size="md" />
-              <span className="text-lg font-bold tabular-nums">{vibe.value}</span>
-            </div>
+            {/* Vibe value pill */}
+            <span
+              className={cn(
+                'shrink-0 inline-flex items-center justify-center min-w-[2rem] px-2.5 py-1 rounded-full text-sm font-bold',
+                VIBE_COLORS[vibe.value]?.bg || 'bg-muted',
+                VIBE_COLORS[vibe.value]?.text || 'text-foreground'
+              )}
+            >
+              {vibe.value}
+            </span>
           </div>
 
           {/* Thoughts */}
