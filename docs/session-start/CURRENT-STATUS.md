@@ -2,7 +2,54 @@
 
 > Last Updated: 2026-01-12
 
-## Current Phase: 70 - Vecna Pipeline UI Cleanup (COMPLETE)
+## Current Phase: 71 - Visual Family Tree + Refactoring (COMPLETE)
+
+### Session Summary (2026-01-12) - Visual Family Tree
+
+**What was done:**
+- Fixed Wikipedia enrichment matching (family prefix + "&" vs "and" normalization)
+- Created visual family tree diagram with SVG connectors and tier-based layout
+- Tree hierarchy: Tier 0 (sequels/prequels), Tier 1 (base + standalones), Tier 2+ (expansions)
+- Relation type styling: solid/dashed/dotted borders, colored badges
+- Mobile fallback to list view
+- Redesigned "Manage Relations" from cluttered arrows to clean table layout
+- Added edit/delete functionality for existing relations
+- Refactored 670-line FamilyTreeView.tsx into 8 modular files
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/family-tree/types.ts` | Tree layout types and relation styling constants |
+| `src/components/family-tree/use-tree-layout.ts` | Layout calculation hook (tier/column positioning) |
+| `src/components/family-tree/TreeNode.tsx` | Game card with image, name, relation badge |
+| `src/components/family-tree/TreeConnector.tsx` | SVG curved path connectors |
+| `src/components/family-tree/TreeLegend.tsx` | Relation type legend |
+| `src/components/family-tree/FamilyTreeList.tsx` | Mobile fallback (collapsible list) |
+| `src/components/family-tree/FamilyTreeDiagram.tsx` | Main visual tree component |
+| `src/components/admin/family-relations/types.ts` | Types and constants for relation manager |
+| `src/components/admin/family-relations/use-orphan-games.ts` | Hook for finding unlinked games |
+| `src/components/admin/family-relations/use-relation-actions.ts` | CRUD operations hook |
+| `src/components/admin/family-relations/UnlinkedGamesCard.tsx` | Orphan games UI |
+| `src/components/admin/family-relations/ManageRelationsTable.tsx` | Relations table UI |
+| `src/components/admin/family-relations/RelationDialog.tsx` | Shared create/edit dialog |
+| `src/components/admin/family-relations/FamilyRelationsManager.tsx` | Main orchestrator |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/api/admin/families/[id]/wikipedia/route.ts` | Fixed game matching with family prefix and "&" normalization |
+| `src/components/admin/FamilyEditor.tsx` | Integrated FamilyTreeDiagram, updated imports |
+
+**Files Deleted:**
+| File | Reason |
+|------|--------|
+| `src/components/admin/FamilyTreeView.tsx` | Replaced by modular family-relations/ components |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 70 - Vecna Pipeline UI Cleanup (COMPLETE)
 
 ### Session Summary (2026-01-12) - Vecna Pipeline UI Cleanup
 

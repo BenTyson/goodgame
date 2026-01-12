@@ -106,6 +106,7 @@ function normalizeGameName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[:\-–—]/g, ' ')
+    .replace(/\s*&\s*/g, ' and ')  // Normalize & to "and"
     .replace(/\s+/g, ' ')
     .replace(/[^a-z0-9 ]/g, '')
     .trim()
@@ -116,7 +117,8 @@ function normalizeGameName(name: string): string {
  */
 async function matchGamesToDatabase(
   extracted: ExtractedGame[],
-  familyId: string
+  familyId: string,
+  familyName: string
 ): Promise<MatchedGame[]> {
   const supabase = createAdminClient()
 
@@ -137,6 +139,9 @@ async function matchGamesToDatabase(
       gamesByBggId.set(game.bgg_id, game)
     }
   }
+
+  // Normalize family name for prefix matching
+  const normalizedFamilyName = normalizeGameName(familyName)
 
   const results: MatchedGame[] = []
 
@@ -159,7 +164,36 @@ async function matchGamesToDatabase(
       }
     }
 
-    // Try fuzzy match (contains)
+    // Try family prefix match (e.g., "Branch & Claw" → "Spirit Island: Branch & Claw")
+    if (!matchedGame) {
+      const normalized = normalizeGameName(ext.name)
+      // Try "Family Name: Extracted Name" and "Family Name Extracted Name"
+      const prefixedVariants = [
+        `${normalizedFamilyName} ${normalized}`,
+      ]
+      for (const variant of prefixedVariants) {
+        if (gamesByNormalizedName.has(variant)) {
+          matchedGame = gamesByNormalizedName.get(variant)!
+          matchType = 'fuzzy'
+          break
+        }
+      }
+    }
+
+    // Try suffix match (check if any game name ends with the extracted name after the family prefix)
+    if (!matchedGame) {
+      const normalized = normalizeGameName(ext.name)
+      for (const [gameName, game] of gamesByNormalizedName) {
+        // Check if the game name starts with family name and ends with extracted name
+        if (gameName.startsWith(normalizedFamilyName) && gameName.endsWith(normalized)) {
+          matchedGame = game
+          matchType = 'fuzzy'
+          break
+        }
+      }
+    }
+
+    // Try fuzzy match (contains) with reasonable overlap
     if (!matchedGame) {
       const normalized = normalizeGameName(ext.name)
       for (const [gameName, game] of gamesByNormalizedName) {
@@ -278,7 +312,7 @@ export async function POST(
     ]
 
     // Match to our database
-    const matchedGames = await matchGamesToDatabase(allExtracted, familyId)
+    const matchedGames = await matchGamesToDatabase(allExtracted, familyId, family.name)
 
     // Categorize results
     const inFamily = matchedGames.filter(m => m.alreadyInFamily)

@@ -31,8 +31,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { GamePicker } from './GamePicker'
-import { FamilyTreeView } from './FamilyTreeView'
+import { FamilyTreeView } from './family-relations'
 import { WikipediaEnrichment } from './WikipediaEnrichment'
+import { FamilyTreeDiagram } from '@/components/family-tree'
 import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
 import type { Game, GameFamily, GameRelation } from '@/types/database'
@@ -437,7 +438,35 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
             />
           </div>
 
-          {/* Family Tree Visualization */}
+          {/* Visual Family Tree Diagram */}
+          {games.length > 0 && (
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                    <Gamepad2 className="h-4 w-4 text-teal-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Visual Family Tree</CardTitle>
+                    <CardDescription>
+                      Visual representation of game relationships
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <FamilyTreeDiagram
+                  games={games}
+                  relations={relations}
+                  baseGameId={family.base_game_id}
+                  familyId={family.id}
+                  variant="admin"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Family Tree Management (for creating relations) */}
           <FamilyTreeView
             games={games}
             relations={relations}
