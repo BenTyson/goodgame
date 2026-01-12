@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,8 @@ interface RatingFollowUpDialogProps {
   currentThoughts?: string | null
   onSave: (data: { shelfStatus: ShelfStatus; thoughts: string | null }) => Promise<void>
   onSkip: () => void
+  onDelete?: () => Promise<void>
+  isEditing?: boolean
 }
 
 export function RatingFollowUpDialog({
@@ -43,10 +45,13 @@ export function RatingFollowUpDialog({
   currentThoughts,
   onSave,
   onSkip,
+  onDelete,
+  isEditing = false,
 }: RatingFollowUpDialogProps) {
   const [shelfStatus, setShelfStatus] = useState<ShelfStatus>(currentShelfStatus || 'played')
   const [thoughts, setThoughts] = useState(currentThoughts || '')
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Sync state when dialog opens with new values
   useEffect(() => {
@@ -76,7 +81,21 @@ export function RatingFollowUpDialog({
     onOpenChange(false)
   }
 
+  const handleDelete = async () => {
+    if (!onDelete) return
+    setIsDeleting(true)
+    try {
+      await onDelete()
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Failed to delete:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const colorConfig = VIBE_COLORS[rating] || VIBE_COLORS[7]
+  const isProcessing = isSaving || isDeleting
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,14 +132,14 @@ export function RatingFollowUpDialog({
                 <button
                   key={option.value}
                   onClick={() => setShelfStatus(option.value)}
-                  disabled={isSaving}
+                  disabled={isProcessing}
                   className={cn(
                     'px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer',
                     'border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                     shelfStatus === option.value
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted/50 text-foreground border-border hover:bg-muted',
-                    isSaving && 'opacity-50 cursor-not-allowed'
+                    isProcessing && 'opacity-50 cursor-not-allowed'
                   )}
                 >
                   {option.label}
@@ -139,23 +158,37 @@ export function RatingFollowUpDialog({
               onChange={(e) => setThoughts(e.target.value)}
               placeholder={`What did you think about ${gameName}?`}
               className="resize-none min-h-[100px]"
-              disabled={isSaving}
+              disabled={isProcessing}
             />
           </div>
         </div>
 
         <DialogFooter className="flex-row gap-2 sm:gap-2">
+          {isEditing && onDelete ? (
+            <Button
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={isProcessing}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             onClick={handleSkip}
-            disabled={isSaving}
+            disabled={isProcessing}
             className="flex-1"
           >
-            Skip
+            {isEditing ? 'Cancel' : 'Skip'}
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isProcessing}
             className="flex-1"
           >
             {isSaving ? (

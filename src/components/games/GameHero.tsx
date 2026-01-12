@@ -155,6 +155,7 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
           {/* Rating Section */}
           <HeroRating
             gameId={game.id}
+            gameName={game.name}
             aggregateRating={aggregateRating}
           />
 

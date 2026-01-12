@@ -125,21 +125,6 @@ export default async function GamePage({ params }: GamePageProps) {
       ),
     },
     {
-      id: 'vibes',
-      label: 'Vibes',
-      icon: 'sparkles',
-      available: true,
-      content: (
-        <VibesTab
-          gameId={game.id}
-          gameName={game.name}
-          initialStats={vibeStats}
-          initialVibes={vibesData.vibes}
-          initialHasMore={vibesData.hasMore}
-        />
-      ),
-    },
-    {
       id: 'rules',
       label: 'How to Play',
       icon: 'book-open',
@@ -164,6 +149,21 @@ export default async function GamePage({ params }: GamePageProps) {
         <SetupTab
           game={game}
           content={game.setup_content as Parameters<typeof SetupTab>[0]['content']}
+        />
+      ),
+    },
+    {
+      id: 'vibes',
+      label: 'Vibes',
+      icon: 'sparkles',
+      available: true,
+      content: (
+        <VibesTab
+          gameId={game.id}
+          gameName={game.name}
+          initialStats={vibeStats}
+          initialVibes={vibesData.vibes}
+          initialHasMore={vibesData.hasMore}
         />
       ),
     },

@@ -63,22 +63,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchOrCreateProfile = async (authUser: User) => {
       console.log('[Auth] Fetching profile for user:', authUser.id)
 
-      // Create an AbortController for timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        console.error('[Auth] Profile fetch timeout after 10 seconds')
-        controller.abort()
-      }, 10000)
+      // Timeout promise
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      })
 
       try {
-        const { data: existingProfile, error } = await supabase
+        const fetchPromise = supabase
           .from('user_profiles')
           .select('*')
           .eq('id', authUser.id)
           .single()
-          .abortSignal(controller.signal)
 
-        clearTimeout(timeoutId)
+        const { data: existingProfile, error } = await Promise.race([
+          fetchPromise,
+          timeout,
+        ])
 
         if (existingProfile) {
           console.log('[Auth] Found existing profile:', existingProfile.display_name)
@@ -106,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('[Auth] Profile fetch error:', error)
         }
       } catch (error) {
-        clearTimeout(timeoutId)
         console.error('[Auth] Exception fetching/creating profile:', error)
       }
     }

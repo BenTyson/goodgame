@@ -61,6 +61,7 @@ export function VibesTab({
   // Follow-up dialog state
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false)
   const [pendingRating, setPendingRating] = useState<number | null>(null)
+  const [isEditingVibe, setIsEditingVibe] = useState(false)
 
   // Fetch user's shelf entry when auth resolves
   useEffect(() => {
@@ -117,6 +118,7 @@ export function VibesTab({
   // Called when a rating is saved - opens the follow-up dialog
   const handleRatingSaved = (rating: number) => {
     setPendingRating(rating)
+    setIsEditingVibe(false) // New rating, not editing
     setShowFollowUpDialog(true)
   }
 
@@ -150,7 +152,28 @@ export function VibesTab({
   const handleEditVibe = () => {
     if (localRating) {
       setPendingRating(localRating)
+      setIsEditingVibe(true) // Editing existing rating
       setShowFollowUpDialog(true)
+    }
+  }
+
+  // Handle delete rating
+  const handleDeleteRating = async () => {
+    if (!shelfEntry || !user) return
+
+    setIsSaving(true)
+    try {
+      // Clear rating and review but keep shelf entry
+      await updateShelfItem(shelfEntry.id, { rating: null })
+      await updateReview(shelfEntry.id, null)
+      setShelfEntry((prev) => (prev ? { ...prev, rating: null, review: null } : null))
+      setLocalRating(null)
+      setPendingRating(null)
+    } catch (error) {
+      console.error('Failed to delete rating:', error)
+      throw error
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -315,6 +338,8 @@ export function VibesTab({
           currentThoughts={shelfEntry?.review}
           onSave={handleFollowUpSave}
           onSkip={handleFollowUpSkip}
+          onDelete={handleDeleteRating}
+          isEditing={isEditingVibe}
         />
       )}
     </div>

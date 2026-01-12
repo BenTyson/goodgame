@@ -2,7 +2,29 @@
 
 > Last Updated: 2026-01-11
 
-## Current Phase: 68 - Auth System Fix (COMPLETE)
+## Current Phase: 68 - Auth System Fix + Vibes UI (COMPLETE)
+
+### Session 4 (2026-01-11) - Vibes Rating Flow Fixes
+
+**What was done:**
+- Added delete rating functionality to `RatingFollowUpDialog` (trash icon button)
+- Fixed bug where rating from hero section didn't show follow-up dialog
+- HeroRating now triggers the same dialog flow as VibesTab
+- Moved Vibes tab to appear after Setup tab in game page order
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/ratings/RatingFollowUpDialog.tsx` | Added `onDelete` prop, `isEditing` prop, delete button with destructive styling |
+| `src/components/ratings/HeroRating.tsx` | Added dialog state, handlers for save/skip/delete, renders RatingFollowUpDialog |
+| `src/components/games/GameHero.tsx` | Added `gameName` prop to HeroRating |
+| `src/components/vibes/VibesTab.tsx` | Added `handleDeleteRating`, passes `onDelete` and `isEditing` to dialog |
+| `src/lib/auth/AuthContext.tsx` | Fixed build error (replaced invalid `.abortSignal()` with `Promise.race`) |
+| `src/app/games/[slug]/page.tsx` | Reordered tabs: Overview → How to Play → Setup → Vibes → Score Sheet |
+
+**Build Status:** Passing
+
+---
 
 ### Session 3 (2026-01-11) - Root Cause Found and Fixed
 
