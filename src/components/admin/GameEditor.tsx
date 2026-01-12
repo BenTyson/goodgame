@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DetailsTab, RulebookTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab } from './game-editor'
+import { DetailsTab, DocumentsTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab } from './game-editor'
 import { useAsyncAction } from '@/hooks/admin'
 import {
   ArrowLeft,
@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   Info,
   ImageIcon,
-  BookOpen,
+  Files,
   FileText,
   Tags,
   Database,
@@ -176,9 +176,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
             <Tags className="h-4 w-4 hidden sm:block" />
             Taxonomy
           </TabsTrigger>
-          <TabsTrigger value="rulebook" className="gap-2">
-            <BookOpen className="h-4 w-4 hidden sm:block" />
-            Rulebook
+          <TabsTrigger value="documents" className="gap-2">
+            <Files className="h-4 w-4 hidden sm:block" />
+            Documents
           </TabsTrigger>
           <TabsTrigger value="content" className="gap-2">
             <FileText className="h-4 w-4 hidden sm:block" />
@@ -208,9 +208,9 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <TaxonomyTab game={game} />
         </TabsContent>
 
-        {/* Rulebook Tab */}
-        <TabsContent value="rulebook">
-          <RulebookTab
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <DocumentsTab
             game={game}
             onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
           />

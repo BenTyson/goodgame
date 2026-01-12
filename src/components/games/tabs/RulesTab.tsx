@@ -12,6 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { cleanWikipediaContentParagraphs } from '@/lib/utils/wikipedia'
 import { VideoCarousel } from '../VideoCarousel'
+import { GameDocumentsCard } from '../GameDocumentsCard'
+import type { GameDocument } from '@/types/database'
 
 // Placeholder content for when thumbnail is unavailable
 function RulebookPlaceholder() {
@@ -216,9 +218,10 @@ export interface RulesTabProps {
   wikipediaUrl?: string | null
   keyReminders?: string[] | null
   gameplayVideos?: GameVideo[]
+  gameDocuments?: GameDocument[]
 }
 
-export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyReminders, gameplayVideos }: RulesTabProps) {
+export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyReminders, gameplayVideos, gameDocuments = [] }: RulesTabProps) {
   if (!content) {
     return (
       <div className="text-center py-12">
@@ -420,6 +423,12 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
             </a>
           </Button>
         )}
+
+        {/* Resources */}
+        <GameDocumentsCard
+          documents={gameDocuments}
+          rulebookUrl={game.rulebook_url}
+        />
       </div>
     </div>
   )

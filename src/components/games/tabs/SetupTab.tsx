@@ -5,6 +5,8 @@ import { CheckCircle2, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SetupChecklist } from '@/components/setup/SetupChecklist'
+import { GameDocumentsCard } from '../GameDocumentsCard'
+import type { GameDocument } from '@/types/database'
 
 // Type for AI-generated content
 interface AISetupContent {
@@ -42,11 +44,13 @@ export interface SetupTabProps {
     slug: string
     bgg_id?: number | null
     amazon_asin?: string | null
+    rulebook_url?: string | null
   }
   content: SetupContent | null
+  gameDocuments?: GameDocument[]
 }
 
-export function SetupTab({ game, content }: SetupTabProps) {
+export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
   if (!content) {
     return (
       <div className="text-center py-12">
@@ -233,6 +237,12 @@ export function SetupTab({ game, content }: SetupTabProps) {
             </CardContent>
           </Card>
         )}
+
+        {/* Resources */}
+        <GameDocumentsCard
+          documents={gameDocuments}
+          rulebookUrl={game.rulebook_url}
+        />
       </div>
     </div>
   )

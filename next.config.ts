@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Mark native Node.js modules as external for server builds
   serverExternalPackages: ['@napi-rs/canvas'],
+  // Increase body size limit for file uploads (default is 1MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   images: {
     remotePatterns: [
       {

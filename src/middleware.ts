@@ -53,7 +53,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except static files and api routes that don't need auth
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Match all routes except:
+    // - Static files (_next/static, _next/image, favicon, images)
+    // - API upload routes (they handle auth internally and need raw body)
+    '/((?!_next/static|_next/image|favicon.ico|api/admin/game-documents|api/admin/upload|api/admin/rulebook/upload|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

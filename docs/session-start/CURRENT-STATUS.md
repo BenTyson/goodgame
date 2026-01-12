@@ -1,8 +1,78 @@
 # Current Status
 
-> Last Updated: 2026-01-11
+> Last Updated: 2026-01-12
 
-## Current Phase: 68 - Auth System Fix + Vibes UI (COMPLETE)
+## Current Phase: 70 - Vecna Pipeline UI Cleanup (COMPLETE)
+
+### Session Summary (2026-01-12) - Vecna Pipeline UI Cleanup
+
+**What was done:**
+- Removed Details tab entirely from VecnaGamePanel (all editing happens in Game Editor)
+- Removed tab navigation UI (single Pipeline view now)
+- Removed "Approve & Publish" button (publishing happens in Game Editor, not Vecna)
+- Removed data status badges (Wikipedia/Wikidata/Rulebook/Content/Crunch)
+- Simplified error display to critical errors only (removed percentage/recommendations)
+- Reorganized reset actions into two clear groups: Data Refresh + Pipeline Resets
+- Added "Reset to Start" nuclear option (returns game to `imported` state)
+- Fixed `is_published` bug - was checking `vecna_state === 'published'` instead of `is_published` flag
+- Fixed rulebook discovery for `imported` state games
+- Added `maxDuration = 120` to upload routes for large PDFs
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Major cleanup: removed Details tab, tab navigation, Approve & Publish, data badges; simplified to single Pipeline view; reorganized reset actions |
+| `src/app/admin/(dashboard)/vecna/components/VecnaFamilyHeader.tsx` | Fixed published count to use `is_published` flag instead of `vecna_state` |
+| `src/app/admin/(dashboard)/vecna/components/FamilyBatchActions.tsx` | Same `is_published` fix |
+| `src/app/api/admin/rulebook/upload/route.ts` | Added `maxDuration = 120` for large file uploads |
+| `src/app/api/admin/game-documents/route.ts` | Increased `maxDuration` from 60 to 120 |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 69 - Supplementary Game Documents (COMPLETE)
+
+### Session Summary (2026-01-12) - Supplementary Documents
+
+**What was done:**
+- Added supplementary PDF document uploads to admin game editor (Documents tab)
+- Document types: Gameplay Guide, Glossary, Icon Overview, Setup Guide, FAQ, Misc
+- Official Rulebook remains special (keeps parsing, Crunch Score) in separate section
+- Created `GameDocumentsCard` for public game page sidebar
+- Added Resources block to Overview, How to Play, and Setup tabs
+- Styling: teal icons, uppercase titles with letter spacing, type labels (not filenames)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00072_game_documents.sql` | Database schema with `document_type` enum and `game_documents` table |
+| `src/app/api/admin/game-documents/route.ts` | API endpoint for upload/list/delete documents |
+| `src/components/admin/game-editor/DocumentRow.tsx` | Display row for uploaded document with delete |
+| `src/components/admin/game-editor/SupplementaryDocumentsSection.tsx` | Upload UI with type selector |
+| `src/components/admin/game-editor/DocumentsTab.tsx` | Renamed from RulebookTab, adds supplementary docs section |
+| `src/components/games/GameDocumentsCard.tsx` | Public sidebar component showing resources |
+| `src/lib/upload/validation.ts` | PDF validation utilities (magic bytes, secure filenames) |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added `DocumentType`, `DOCUMENT_TYPE_LABELS`, `GameDocument` types |
+| `src/components/admin/GameEditor.tsx` | Renamed Rulebook tab to Documents, updated icon |
+| `src/components/admin/game-editor/index.ts` | Updated exports for DocumentsTab |
+| `src/lib/supabase/queries.ts` | Added `getGameDocuments()` query |
+| `src/app/games/[slug]/page.tsx` | Pass `gameDocuments` to Overview, Rules, Setup tabs |
+| `src/components/games/tabs/OverviewTab.tsx` | Added GameDocumentsCard to sidebar |
+| `src/components/games/tabs/RulesTab.tsx` | Added `gameDocuments` prop, GameDocumentsCard to sidebar |
+| `src/components/games/tabs/SetupTab.tsx` | Added `gameDocuments` prop, GameDocumentsCard to sidebar |
+| `src/middleware.ts` | Excluded upload routes from middleware matcher |
+| `next.config.ts` | Added `serverActions.bodySizeLimit: '50mb'` for large PDFs |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 68 - Auth System Fix + Vibes UI (COMPLETE)
 
 ### Session 4 (2026-01-11) - Vibes Rating Flow Fixes
 

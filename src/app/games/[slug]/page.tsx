@@ -11,7 +11,7 @@ import {
   ScoreSheetTab,
 } from '@/components/games'
 import { VibesTab } from '@/components/vibes'
-import { getGameWithDetails, getAllGameSlugs, getGameAwards, getScoreSheetConfig } from '@/lib/supabase/queries'
+import { getGameWithDetails, getAllGameSlugs, getGameAwards, getScoreSheetConfig, getGameDocuments } from '@/lib/supabase/queries'
 import { getGameRelationsGrouped } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { getGameVibeStats, getGameVibes } from '@/lib/supabase/vibe-queries'
@@ -88,6 +88,7 @@ export default async function GamePage({ params }: GamePageProps) {
   const [
     gameAwards,
     gameRelations,
+    gameDocuments,
     reviewsData,
     aggregateRating,
     rawScoreSheetConfig,
@@ -96,6 +97,7 @@ export default async function GamePage({ params }: GamePageProps) {
   ] = await Promise.all([
     getGameAwards(game.id),
     getGameRelationsGrouped(game.id),
+    getGameDocuments(game.id),
     getGameReviews(game.id),
     getGameAggregateRating(game.id),
     game.has_score_sheet ? getScoreSheetConfig(game.id) : Promise.resolve(null),
@@ -118,6 +120,7 @@ export default async function GamePage({ params }: GamePageProps) {
           game={game}
           gameAwards={gameAwards}
           gameRelations={gameRelations}
+          gameDocuments={gameDocuments}
           initialReviews={reviewsData.reviews}
           initialHasMore={reviewsData.hasMore}
           reviewVideos={game.review_videos}
@@ -137,6 +140,7 @@ export default async function GamePage({ params }: GamePageProps) {
           wikipediaUrl={game.wikipedia_url}
           keyReminders={(game.reference_content as ReferenceContent | null)?.reminders || (game.reference_content as ReferenceContent | null)?.quickReminders}
           gameplayVideos={game.gameplay_videos}
+          gameDocuments={gameDocuments}
         />
       ),
     },
@@ -149,6 +153,7 @@ export default async function GamePage({ params }: GamePageProps) {
         <SetupTab
           game={game}
           content={game.setup_content as Parameters<typeof SetupTab>[0]['content']}
+          gameDocuments={gameDocuments}
         />
       ),
     },

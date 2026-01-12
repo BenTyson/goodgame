@@ -3,6 +3,9 @@ import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { ApiErrors } from '@/lib/api/errors'
 import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 
+// Allow up to 120 seconds for large file uploads
+export const maxDuration = 120
+
 // PDF magic bytes
 const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46] // %PDF
 

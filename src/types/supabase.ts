@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -55,6 +80,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "affiliate_links_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "affiliate_links_game_id_fkey"
             columns: ["game_id"]
@@ -359,6 +391,13 @@ export type Database = {
             foreignKeyName: "collection_games_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "collection_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -502,6 +541,13 @@ export type Database = {
             foreignKeyName: "content_generation_log_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "content_generation_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -601,6 +647,13 @@ export type Database = {
             foreignKeyName: "game_artists_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_artists_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -656,6 +709,13 @@ export type Database = {
             foreignKeyName: "game_awards_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_awards_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -687,6 +747,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_categories_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
           },
           {
             foreignKeyName: "game_categories_game_id_fkey"
@@ -726,6 +793,73 @@ export type Database = {
           },
           {
             foreignKeyName: "game_designers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_designers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_documents: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_size: number | null
+          game_id: string
+          id: string
+          page_count: number | null
+          storage_path: string | null
+          title: string
+          updated_at: string | null
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_size?: number | null
+          game_id: string
+          id?: string
+          page_count?: number | null
+          storage_path?: string | null
+          title: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_size?: number | null
+          game_id?: string
+          id?: string
+          page_count?: number | null
+          storage_path?: string | null
+          title?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_documents_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_documents_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
@@ -774,6 +908,13 @@ export type Database = {
           wikidata_series_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "game_families_base_game_id_fkey"
+            columns: ["base_game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "game_families_base_game_id_fkey"
             columns: ["base_game_id"]
@@ -849,6 +990,13 @@ export type Database = {
             foreignKeyName: "game_images_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_images_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -871,6 +1019,13 @@ export type Database = {
           source?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "game_mechanics_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "game_mechanics_game_id_fkey"
             columns: ["game_id"]
@@ -908,6 +1063,13 @@ export type Database = {
             foreignKeyName: "game_player_experiences_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_player_experiences_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -940,6 +1102,13 @@ export type Database = {
           publisher_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_publishers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "game_publishers_game_id_fkey"
             columns: ["game_id"]
@@ -989,8 +1158,22 @@ export type Database = {
             foreignKeyName: "game_relations_source_game_id_fkey"
             columns: ["source_game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "game_relations_source_game_id_fkey"
+            columns: ["source_game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_relations_target_game_id_fkey"
+            columns: ["target_game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
           },
           {
             foreignKeyName: "game_relations_target_game_id_fkey"
@@ -1021,6 +1204,13 @@ export type Database = {
           theme_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_themes_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "game_themes_game_id_fkey"
             columns: ["game_id"]
@@ -1075,6 +1265,13 @@ export type Database = {
           youtube_video_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_videos_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "game_videos_game_id_fkey"
             columns: ["game_id"]
@@ -1417,6 +1614,13 @@ export type Database = {
           year_published?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "import_queue_imported_game_id_fkey"
+            columns: ["imported_game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "import_queue_imported_game_id_fkey"
             columns: ["imported_game_id"]
@@ -1794,6 +1998,13 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "marketplace_listings_game_id_fkey"
             columns: ["game_id"]
@@ -2386,6 +2597,13 @@ export type Database = {
             foreignKeyName: "rulebook_parse_log_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "rulebook_parse_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -2501,6 +2719,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "score_sheet_configs_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "score_sheet_configs_game_id_fkey"
             columns: ["game_id"]
@@ -2629,6 +2854,13 @@ export type Database = {
             foreignKeyName: "taxonomy_suggestions_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "taxonomy_suggestions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -2702,6 +2934,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_activities_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "user_activities_game_id_fkey"
             columns: ["game_id"]
@@ -2830,6 +3069,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
           {
             foreignKeyName: "user_games_game_id_fkey"
             columns: ["game_id"]
@@ -3008,6 +3254,13 @@ export type Database = {
             foreignKeyName: "user_notifications_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "user_notifications_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -3111,6 +3364,13 @@ export type Database = {
             foreignKeyName: "user_top_games_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "user_top_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -3190,6 +3450,13 @@ export type Database = {
             foreignKeyName: "wishlist_alerts_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "wishlist_alerts_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
@@ -3211,6 +3478,28 @@ export type Database = {
       }
     }
     Views: {
+      game_vibe_stats: {
+        Row: {
+          average_vibe: number | null
+          count_1: number | null
+          count_10: number | null
+          count_2: number | null
+          count_3: number | null
+          count_4: number | null
+          count_5: number | null
+          count_6: number | null
+          count_7: number | null
+          count_8: number | null
+          count_9: number | null
+          game_id: string | null
+          median_vibe: number | null
+          mode_vibe: number | null
+          vibe_count: number | null
+          vibe_stddev: number | null
+          vibes_with_thoughts: number | null
+        }
+        Relationships: []
+      }
       seller_reputation_stats: {
         Row: {
           buyer_feedback_count: number | null
@@ -3445,6 +3734,30 @@ export type Database = {
         }[]
       }
       get_complexity_tier_id: { Args: { game_weight: number }; Returns: string }
+      get_friends_vibes: {
+        Args: { p_game_id: string; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          custom_avatar_url: string
+          display_name: string
+          id: string
+          rating: number
+          review: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_game_vibe_stats: {
+        Args: { p_game_id: string }
+        Returns: Database["public"]["CompositeTypes"]["vibe_stats"]
+        SetofOptions: {
+          from: "*"
+          to: "vibe_stats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_listing_offer_counts: {
         Args: { p_listing_id: string }
         Returns: {
@@ -3653,6 +3966,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      refresh_game_vibe_stats: { Args: never; Returns: undefined }
       refresh_seller_reputation: { Args: never; Returns: undefined }
       release_transaction_funds: {
         Args: { p_transaction_id: string; p_transfer_id?: string }
@@ -3983,6 +4297,13 @@ export type Database = {
         | "community"
         | "manual"
         | "seed"
+      document_type:
+        | "gameplay_guide"
+        | "glossary"
+        | "icon_overview"
+        | "setup_guide"
+        | "faq"
+        | "misc"
       feedback_role: "buyer" | "seller"
       game_condition:
         | "new_sealed"
@@ -4071,7 +4392,16 @@ export type Database = {
         | "published"
     }
     CompositeTypes: {
-      [_ in never]: never
+      vibe_stats: {
+        game_id: string | null
+        vibe_count: number | null
+        average_vibe: number | null
+        vibe_stddev: number | null
+        median_vibe: number | null
+        mode_vibe: number | null
+        distribution: Json | null
+        vibes_with_thoughts: number | null
+      }
     }
   }
 }
@@ -4194,6 +4524,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: [
@@ -4217,6 +4550,14 @@ export const Constants = {
         "community",
         "manual",
         "seed",
+      ],
+      document_type: [
+        "gameplay_guide",
+        "glossary",
+        "icon_overview",
+        "setup_guide",
+        "faq",
+        "misc",
       ],
       feedback_role: ["buyer", "seller"],
       game_condition: [

@@ -10,6 +10,7 @@ import { GameRelationsSection } from '@/components/games/GameRelationsSection'
 import { AwardBadgeList } from '@/components/games/AwardBadge'
 import { ImageGallery } from '@/components/games/ImageGallery'
 import { VideoCarousel } from '@/components/games/VideoCarousel'
+import { GameDocumentsCard } from '@/components/games/GameDocumentsCard'
 import { ReviewSection } from '@/components/reviews'
 import { cn } from '@/lib/utils'
 import { getCrunchTier } from '@/lib/utils/complexity'
@@ -17,6 +18,7 @@ import { cleanAndTruncateWikipedia } from '@/lib/utils/wikipedia'
 import { useExpandableList } from '@/hooks/use-expandable-list'
 import type {
   GameImage,
+  GameDocument,
   Json,
   Category,
   Mechanic,
@@ -285,6 +287,7 @@ export interface OverviewTabProps {
   }
   gameAwards: GameAwardWithDetails[]
   gameRelations: GroupedGameRelations
+  gameDocuments?: GameDocument[]
   initialReviews: ReviewWithUser[]
   initialHasMore: boolean
   reviewVideos?: GameVideo[]
@@ -294,6 +297,7 @@ export function OverviewTab({
   game,
   gameAwards,
   gameRelations,
+  gameDocuments = [],
   initialReviews,
   initialHasMore,
   reviewVideos,
@@ -305,9 +309,10 @@ export function OverviewTab({
                       (game.player_experiences && game.player_experiences.length > 0)
   const hasImages = game.images && game.images.length > 0
   const hasCrunchBreakdown = game.crunch_score && game.crunch_breakdown
+  const hasDocuments = gameDocuments.length > 0 || game.rulebook_url
 
   const hasCredits = game.designers_list?.length || game.artists_list?.length || game.publishers_list?.length
-  const hasSidebar = hasCrunchBreakdown || hasTaxonomy || hasCredits
+  const hasSidebar = hasCrunchBreakdown || hasTaxonomy || hasCredits || hasDocuments
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
@@ -491,6 +496,14 @@ export function OverviewTab({
                 limit={4}
               />
             </div>
+          )}
+
+          {/* Resources / Documents */}
+          {hasDocuments && (
+            <GameDocumentsCard
+              documents={gameDocuments}
+              rulebookUrl={game.rulebook_url}
+            />
           )}
         </div>
       )}

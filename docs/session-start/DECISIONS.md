@@ -27,6 +27,9 @@
 - **Migrations**: Check highest migration number first (`ls supabase/migrations | tail -1`) to avoid collisions
 - **No emojis**: Use Lucide icons, never emojis in UI
 - **Type regeneration**: After schema changes run `npx supabase gen types typescript --linked > src/types/supabase.ts`
+- **File uploads need middleware exclusion**: Upload API routes must be excluded from middleware matcher or FormData parsing fails. See `src/middleware.ts` matcher regex.
+- **Large uploads need body size config**: Add `experimental.serverActions.bodySizeLimit: '50mb'` to `next.config.ts` for PDFs >1MB.
+- **Published status check**: Use `is_published` flag, NOT `vecna_state === 'published'`. Games can be published via Game Editor without going through Vecna pipeline, causing these values to diverge.
 
 ## Tech Stack
 
@@ -50,6 +53,7 @@
 | Local dev port | 3399 | User preference |
 | Image storage | Supabase Storage | Primary storage for uploaded/cropped images |
 | Remote images | Wikimedia Commons + BGG CDN | `upload.wikimedia.org` + `cf.geekdo-images.com` in next.config.ts |
+| Game PDFs | `rulebooks` bucket, `game_documents` table | Official Rulebook in `games` table (special parsing); supplementary docs in `game_documents` |
 | AI Model | `claude-3-5-haiku-20241022` | Fast, cost-effective for content generation |
 
 ## Content
@@ -123,17 +127,18 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | State visualization | 4 phases (Import/Parse/Generate/Publish) | Simpler than 11 raw states |
-| Game detail tabs | 2 tabs (Pipeline + Details) | Review tab removed, editing in Game Editor |
+| Game panel | Single Pipeline view (no tabs) | Details tab removed - editing in Game Editor |
 | Sources data | Hidden in drawer | Rarely used, clutters main UI |
 | Blocked states | Prominent amber/red banners | Errors must be unmissable |
 | Family header | Only for multi-game families | Single-game families don't need it |
 | Auto-selection | First family + first game on load | No empty welcome screen |
 | Batch actions | Dropdown in family header | Prominent but not cluttering sidebar |
-| Publishing | Updates `is_published` flag | Game actually goes live on main site |
-| Button hierarchy | Ghost default, solid for Publish only | Reduces visual noise |
+| Publishing | Happens in Game Editor only | Vecna ends at "generated" state |
+| Button hierarchy | Ghost default | Solid buttons removed (no Publish) |
 | Model selector | Only at `taxonomy_assigned` | Choose before generation, not after |
 | Status colors | Orange for "recommended" | Blue reserved for processing/active states |
-| Status display | CompactStatusCard (collapsible) | Single-line summary, expandable details |
+| Error display | Critical errors only | Removed percentage/recommendations |
+| Reset actions | Two groups: Data Refresh + Pipeline Resets | Clear separation of concerns |
 | Phase filters | Ghost buttons with subtle selected state | Segmented control pattern |
 | Color system | Centralized in `ui-theme.ts` | STATUS_COLORS with full dark mode |
 

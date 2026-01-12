@@ -179,3 +179,92 @@ export function generateSecureFilename(
 export function getExtensionForMimeType(mimeType: string): string {
   return MIME_TO_EXTENSION[mimeType] || 'bin'
 }
+
+// PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
+const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46]
+
+export interface PdfValidationOptions {
+  maxSizeBytes?: number
+  minSizeBytes?: number
+}
+
+const DEFAULT_PDF_OPTIONS: Required<PdfValidationOptions> = {
+  maxSizeBytes: 50 * 1024 * 1024, // 50MB
+  minSizeBytes: 100, // Minimum 100 bytes
+}
+
+/**
+ * Validate an uploaded PDF file for security
+ *
+ * Checks:
+ * - File size limits (min and max)
+ * - File starts with %PDF magic bytes
+ */
+export function validatePdfFile(
+  buffer: Buffer,
+  options: PdfValidationOptions = {}
+): FileValidationResult {
+  const opts = { ...DEFAULT_PDF_OPTIONS, ...options }
+
+  // Check minimum size
+  if (buffer.length < opts.minSizeBytes) {
+    return {
+      valid: false,
+      error: `File too small (minimum ${opts.minSizeBytes} bytes)`,
+    }
+  }
+
+  // Check maximum size
+  if (buffer.length > opts.maxSizeBytes) {
+    return {
+      valid: false,
+      error: `File too large (maximum ${Math.round(opts.maxSizeBytes / 1024 / 1024)}MB)`,
+    }
+  }
+
+  // Check PDF magic bytes
+  const isPdf = PDF_SIGNATURE.every((byte, index) => buffer[index] === byte)
+  if (!isPdf) {
+    return {
+      valid: false,
+      error: 'File does not appear to be a valid PDF',
+    }
+  }
+
+  return {
+    valid: true,
+    detectedType: 'application/pdf',
+  }
+}
+
+/**
+ * Generate a secure filename for PDF documents
+ *
+ * Format: {gameSlug}/{documentType}/{timestamp}-{random}.pdf
+ */
+export function generateSecurePdfFilename(
+  gameSlug: string,
+  documentType: string
+): string {
+  // Sanitize game slug
+  const safeSlug = gameSlug
+    .replace(/[^a-z0-9-_]/gi, '-')
+    .replace(/--+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+    .slice(0, 50)
+
+  // Sanitize document type
+  const safeType = documentType
+    .replace(/[^a-z0-9-_]/gi, '-')
+    .replace(/--+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+    .slice(0, 30)
+
+  // Generate cryptographically random string
+  const randomPart = randomBytes(8).toString('hex')
+  const timestamp = Date.now()
+
+  return `${safeSlug}/${safeType}/${timestamp}-${randomPart}.pdf`
+}

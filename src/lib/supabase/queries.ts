@@ -14,7 +14,7 @@
  * - family-queries.ts: Game families, game relations
  */
 
-// Game queries (games, search, filters, images, affiliates, score sheets, stats)
+// Game queries (games, search, filters, images, affiliates, score sheets, stats, documents)
 export {
   createStaticClient,
   getGames,
@@ -30,6 +30,7 @@ export {
   getAllGameSlugs,
   getGameWithDetails,
   getRelatedGames,
+  getGameDocuments,
   type GameFilters,
 } from './game-queries'
 

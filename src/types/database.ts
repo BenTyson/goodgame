@@ -587,3 +587,31 @@ export function getVibeDescriptor(average: number): string {
   if (average >= 5) return 'Mixed'
   return 'Rough'
 }
+
+// ===========================================
+// GAME DOCUMENTS (Supplementary PDFs)
+// ===========================================
+
+// Document type enum (matches database)
+export type DocumentType =
+  | 'gameplay_guide'
+  | 'glossary'
+  | 'icon_overview'
+  | 'setup_guide'
+  | 'faq'
+  | 'misc'
+
+// Document type display labels
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  gameplay_guide: 'Gameplay Guide',
+  glossary: 'Glossary',
+  icon_overview: 'Icon Overview',
+  setup_guide: 'Setup Guide',
+  faq: 'FAQ',
+  misc: 'Miscellaneous',
+}
+
+// Game document types
+export type GameDocument = Database['public']['Tables']['game_documents']['Row']
+export type GameDocumentInsert = Database['public']['Tables']['game_documents']['Insert']
+export type GameDocumentUpdate = Database['public']['Tables']['game_documents']['Update']

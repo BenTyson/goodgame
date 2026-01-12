@@ -18,6 +18,7 @@ export { CreditsSection, InlineCredits } from './CreditsSection'
 export { ComponentsList } from './ComponentsList'
 export { WikipediaContent, WikipediaGameplay, WikipediaReception } from './WikipediaContent'
 export { GameRelationsSection } from './GameRelationsSection'
+export { GameDocumentsCard } from './GameDocumentsCard'
 
 // New tabbed game page components
 export { GameHero } from './GameHero'

@@ -100,14 +100,15 @@ export function VecnaFamilyHeader({
   // Calculate family stats
   const stats = useMemo(() => {
     const total = family.games.length
-    const published = family.games.filter(g => g.vecna_state === 'published').length
+    // Use is_published flag (not vecna_state) since games can be published from Game Editor
+    const published = family.games.filter(g => g.is_published).length
     const generated = family.games.filter(g =>
       g.vecna_state === 'generated' || g.vecna_state === 'review_pending'
     ).length
 
     // Games blocked by missing rulebook
     const blocked = family.games.filter(g => {
-      if (['published', 'review_pending', 'generated'].includes(g.vecna_state)) return false
+      if (g.is_published || ['review_pending', 'generated'].includes(g.vecna_state)) return false
       if (!g.has_rulebook && ['enriched', 'rulebook_missing', 'rulebook_ready', 'parsing', 'parsed', 'taxonomy_assigned', 'generating'].includes(g.vecna_state)) {
         return true
       }
@@ -116,7 +117,7 @@ export function VecnaFamilyHeader({
 
     // Games ready to process
     const ready = family.games.filter(g => {
-      if (['published', 'review_pending', 'generated'].includes(g.vecna_state)) return false
+      if (g.is_published || ['review_pending', 'generated'].includes(g.vecna_state)) return false
       if (g.has_rulebook) return true
       if (g.vecna_state === 'imported' && (g.has_wikidata || g.has_wikipedia)) return true
       return false

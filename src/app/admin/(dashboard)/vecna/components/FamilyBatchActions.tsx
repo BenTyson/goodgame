@@ -81,12 +81,13 @@ export function FamilyBatchActions({ family, onProcessingComplete }: FamilyBatch
 
   // Calculate family stats
   const totalGames = family.games.length
-  const publishedCount = family.games.filter(g => g.vecna_state === 'published').length
+  // Use is_published flag since games can be published from Game Editor
+  const publishedCount = family.games.filter(g => g.is_published).length
   const generatedCount = family.games.filter(g => g.vecna_state === 'generated' || g.vecna_state === 'review_pending').length
 
   // Games without rulebook URLs that aren't in early states are blocked
   const blockedCount = family.games.filter(g => {
-    if (g.vecna_state === 'published' || g.vecna_state === 'review_pending' || g.vecna_state === 'generated') return false
+    if (g.is_published || g.vecna_state === 'review_pending' || g.vecna_state === 'generated') return false
     // Games without rulebooks in enriched+ states are blocked
     if (!g.has_rulebook && ['enriched', 'rulebook_missing', 'rulebook_ready', 'parsing', 'parsed', 'taxonomy_assigned', 'generating'].includes(g.vecna_state)) {
       return true
@@ -97,7 +98,7 @@ export function FamilyBatchActions({ family, onProcessingComplete }: FamilyBatch
   // Ready games: have rulebook OR are in imported state with enrichment data to progress
   const readyCount = family.games.filter(g => {
     // Skip already complete games
-    if (['published', 'review_pending', 'generated'].includes(g.vecna_state)) return false
+    if (g.is_published || ['review_pending', 'generated'].includes(g.vecna_state)) return false
     // Games with rulebooks can be processed
     if (g.has_rulebook) return true
     // Games in imported state with enrichment data can at least progress to enriched

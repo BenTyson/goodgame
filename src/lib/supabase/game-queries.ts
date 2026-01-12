@@ -4,6 +4,7 @@ import type {
   Game,
   Category,
   GameImage,
+  GameDocument,
   AffiliateLink,
   AffiliateLinkWithRetailer,
   Retailer,
@@ -700,4 +701,26 @@ export async function getRelatedGames(gameSlug: string, limit = 4): Promise<Game
   }
 
   return relatedGames
+}
+
+// ===========================================
+// GAME DOCUMENTS
+// ===========================================
+
+export async function getGameDocuments(gameId: string): Promise<GameDocument[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('game_documents')
+    .select('*')
+    .eq('game_id', gameId)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching game documents:', error)
+    return []
+  }
+
+  return data || []
 }

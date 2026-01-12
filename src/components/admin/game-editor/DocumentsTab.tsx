@@ -21,6 +21,7 @@ import {
 import type { Game } from '@/types/database'
 import type { ParsedTextStructured, RulebookSectionType } from '@/lib/rulebook/types'
 import { RulebookUrlSection } from '@/components/admin/rulebook'
+import { SupplementaryDocumentsSection } from './SupplementaryDocumentsSection'
 
 interface Publisher {
   id: string
@@ -29,7 +30,7 @@ interface Publisher {
   website: string | null
 }
 
-interface RulebookTabProps {
+interface DocumentsTabProps {
   game: Game & { publishers_list?: Publisher[] }
   onRulebookUrlChange: (url: string | null) => void
 }
@@ -49,7 +50,7 @@ const SECTION_TYPE_INFO: Record<RulebookSectionType, { label: string; color: str
   other: { label: 'Other', color: 'text-gray-500' },
 }
 
-export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
+export function DocumentsTab({ game, onRulebookUrlChange }: DocumentsTabProps) {
   // Rulebook URL state
   const [rulebookUrl, setRulebookUrl] = useState(game.rulebook_url || '')
 
@@ -424,6 +425,12 @@ export function RulebookTab({ game, onRulebookUrlChange }: RulebookTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Supplementary Documents Section */}
+      <SupplementaryDocumentsSection
+        gameId={game.id}
+        gameSlug={game.slug}
+      />
     </div>
   )
 }
