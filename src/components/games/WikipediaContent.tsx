@@ -1,5 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { ExternalLink, BookOpen, Quote } from 'lucide-react'
+import { ExternalLink, BookOpen } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -60,44 +63,39 @@ function WikipediaAttribution({
   fetchedAt?: string | null
   compact?: boolean
 }) {
-  const domain = 'Wikipedia'
-
   return (
     <div className={cn(
-      'flex items-center justify-between gap-2 text-xs text-muted-foreground',
-      compact ? 'mt-2' : 'mt-4 pt-3 border-t'
+      'flex items-center justify-between gap-2 text-[10px] text-muted-foreground/60',
+      compact ? 'mt-2' : 'mt-4'
     )}>
-      <div className="flex items-center gap-1.5">
-        <BookOpen className="h-3 w-3" />
-        <span>
-          Content from{' '}
-          <Link
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            {domain}
-          </Link>
-          {' '}under{' '}
-          <Link
-            href="https://creativecommons.org/licenses/by-sa/4.0/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
-            CC BY-SA
-          </Link>
-        </span>
-      </div>
+      <span>
+        via{' '}
+        <Link
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+        >
+          Wikipedia
+        </Link>
+        {' '}&middot;{' '}
+        <Link
+          href="https://creativecommons.org/licenses/by-sa/4.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+        >
+          CC BY-SA
+        </Link>
+      </span>
       <Link
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1 hover:text-foreground transition-colors"
+        className="flex items-center gap-1 hover:text-muted-foreground transition-colors"
       >
         Read more
-        <ExternalLink className="h-3 w-3" />
+        <ExternalLink className="h-2.5 w-2.5" />
       </Link>
     </div>
   )
@@ -112,6 +110,8 @@ export function WikipediaContent({
   maxLength = 0,
   className
 }: WikipediaContentProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
   if (!content) return null
 
   const formatted = formatContent(content)
@@ -171,7 +171,9 @@ export function WikipediaContent({
     )
   }
 
-  // Default variant
+  // Default variant with expandable content
+  const textToShow = isExpanded ? formatted : displayText
+
   return (
     <div className={cn('space-y-3', className)}>
       {title && (
@@ -179,25 +181,17 @@ export function WikipediaContent({
           {title}
         </h3>
       )}
-      <div className="relative">
-        <Quote className="absolute -left-1 -top-1 h-6 w-6 text-muted-foreground/20" />
-        <blockquote className="pl-6 border-l-2 border-muted">
-          <p className="text-muted-foreground leading-relaxed">
-            {displayText}
-          </p>
-        </blockquote>
-      </div>
-      {truncated && wikipediaUrl && (
+      <p className="text-muted-foreground leading-relaxed">
+        {textToShow}
+      </p>
+      {truncated && !isExpanded && (
         <Button
           variant="link"
           size="sm"
           className="h-auto p-0 text-xs"
-          asChild
+          onClick={() => setIsExpanded(true)}
         >
-          <Link href={wikipediaUrl} target="_blank" rel="noopener noreferrer">
-            Continue reading on Wikipedia
-            <ExternalLink className="h-3 w-3 ml-1" />
-          </Link>
+          Continue
         </Button>
       )}
       {wikipediaUrl && (
@@ -240,7 +234,7 @@ export function WikipediaReception({
 }) {
   return (
     <WikipediaContent
-      title="Critical Reception"
+      title="Reception"
       content={reception}
       wikipediaUrl={wikipediaUrl}
       maxLength={500}

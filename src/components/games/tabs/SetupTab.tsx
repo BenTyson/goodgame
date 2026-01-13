@@ -1,11 +1,12 @@
 'use client'
 
-import { CheckCircle2, ExternalLink } from 'lucide-react'
+import { CheckCircle2, ExternalLink, Boxes } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SetupChecklist } from '@/components/setup/SetupChecklist'
 import { GameDocumentsCard } from '../GameDocumentsCard'
+import { DocumentPreview } from '../DocumentPreview'
 import type { GameDocument } from '@/types/database'
 
 // Type for AI-generated content
@@ -41,6 +42,7 @@ function isAIContent(content: SetupContent): content is AISetupContent {
 
 export interface SetupTabProps {
   game: {
+    name: string
     slug: string
     bgg_id?: number | null
     amazon_asin?: string | null
@@ -87,17 +89,17 @@ export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
       <div className="lg:col-span-2 space-y-8">
         {/* AI Content - Before You Start */}
         {isAI && (content as AISetupContent).beforeYouStart && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <section>
             <h3 className="text-[22px] font-light uppercase tracking-widest mb-4">Before You Start</h3>
             <ul className="space-y-1.5">
               {(content as AISetupContent).beforeYouStart!.map((item, i) => (
-                <li key={i} className="flex gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <li key={i} className="flex gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-primary/60 mt-0.5 shrink-0" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
         )}
 
         {/* Setup Steps */}
@@ -107,15 +109,17 @@ export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
               <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Setup Steps</h2>
               <div className="space-y-3">
                 {(content as AISetupContent).steps.map((step) => (
-                  <div key={step.step} className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                  <div key={step.step} className="group flex gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary/50 text-primary text-xs font-medium">
                       {step.step}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{step.title}</p>
                       <p className="text-sm text-muted-foreground">{step.instruction}</p>
                       {step.tip && (
-                        <p className="text-xs text-primary mt-1">Tip: {step.tip}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Tip: {step.tip}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -127,13 +131,13 @@ export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
             {(content as AISetupContent).playerSetup && (
               <div>
                 <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Player Setup</h2>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-muted-foreground mb-3">
                   {(content as AISetupContent).playerSetup.description}
                 </p>
-                <ul className="space-y-1">
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
                   {(content as AISetupContent).playerSetup.items.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary/50 shrink-0">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -161,12 +165,28 @@ export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
 
       {/* Sidebar */}
       <div className="space-y-6">
+        {/* Setup Guide Preview */}
+        {(() => {
+          const setupGuide = gameDocuments.find(d => d.document_type === 'setup_guide')
+          if (!setupGuide) return null
+          return (
+            <DocumentPreview
+              documentUrl={setupGuide.url}
+              thumbnailUrl={setupGuide.thumbnail_url}
+              label="Setup Guide"
+              hoverText="View Guide"
+              buttonText="View Setup Guide"
+              gameName={game.name}
+              icon={Boxes}
+            />
+          )
+        })()}
+
         {/* Component Checklist */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              Component Checklist
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Components
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -181,45 +201,48 @@ export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
           </CardContent>
         </Card>
 
-        {/* Setup Tips - AI content only */}
-        {setupTips && setupTips.length > 0 && (
+        {/* Tips & Mistakes - Combined */}
+        {((setupTips && setupTips.length > 0) || tips.length > 0) && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Setup Tips</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {setupTips.map((tip, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-primary shrink-0">•</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
+            <CardContent className="pt-6 space-y-5">
+              {/* Setup Tips */}
+              {setupTips && setupTips.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Tips</p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {setupTips.map((tip, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-primary/50 shrink-0">•</span>
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Common Mistakes */}
+              {tips.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    {isAI ? 'Common Mistakes' : 'Quick Tips'}
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {tips.map((tip, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-primary/50 shrink-0">•</span>
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Quick Tips / Common Mistakes */}
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-lg">{isAI ? 'Common Mistakes' : 'Quick Tips'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {tips.map((tip, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
         {/* Buy card */}
         {game.amazon_asin && (
-          <Card className="bg-primary/5 border-primary/20">
+          <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground mb-3">
                 Ready to play?

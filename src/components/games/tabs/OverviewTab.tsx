@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp } from 'lucide-react'
+import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { CreditsSection } from '@/components/games/CreditsSection'
@@ -156,16 +156,19 @@ function GameplayTeaser({
   const truncated = cleanAndTruncateWikipedia(content, 450)
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/30 p-6 space-y-4">
+    <div className="space-y-4">
       <p className="text-muted-foreground leading-relaxed">
         {truncated}
       </p>
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onNavigate}
-        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline cursor-pointer"
+        className="border-primary text-primary hover:bg-primary/10"
       >
-        Learn how to play →
-      </button>
+        Continue Learning
+        <ArrowRight className="h-4 w-4 ml-1" />
+      </Button>
     </div>
   )
 }

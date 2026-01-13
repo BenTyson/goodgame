@@ -2,7 +2,42 @@
 
 > Last Updated: 2026-01-13
 
-## Current Phase: 75 - Game Editor Data Preloading & Unified Save (COMPLETE)
+## Current Phase: 76 - Game Page UX Polish & Setup Guide Preview (COMPLETE)
+
+### Session Summary (2026-01-13) - Game Page Polish
+
+**What was done:**
+- Cleaned up Critical Reception styling: removed quote icon and blockquote, expandable inline content, subtle attribution (10px, 60% opacity)
+- Renamed "Critical Reception" to "Reception"
+- Adjusted How It Plays section: removed bordered card wrapper, "Continue Learning" button with teal outline and right arrow
+- Redesigned Setup Tab for cleaner presentation: smaller outline step circles, hover-reveal tips, removed bordered Before You Start section, simple bullets for Player Setup, consolidated sidebar cards
+- Added Setup Guide document preview to Setup tab sidebar (matches Rulebook preview in How to Play)
+- Created shared `DocumentPreview` component for rulebook/setup guide previews
+- Added thumbnail generation for game documents on PDF upload
+- Fixed washed-out thumbnail colors by adding white background compositing (PDF renders with transparent background)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00073_game_document_thumbnails.sql` | Add thumbnail_url column to game_documents |
+| `src/components/games/DocumentPreview.tsx` | Shared preview component for PDF documents |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/games/WikipediaContent.tsx` | Added 'use client', useState for expandable content, removed Quote/blockquote styling, subtle attribution |
+| `src/components/games/tabs/OverviewTab.tsx` | GameplayTeaser: removed bordered card, teal outline "Continue Learning" button with ArrowRight |
+| `src/components/games/tabs/SetupTab.tsx` | Major cleanup: smaller outline step circles, hover tips, removed card wrappers, simple bullets, added Setup Guide preview |
+| `src/components/games/tabs/RulesTab.tsx` | Uses shared DocumentPreview for rulebook preview |
+| `src/lib/rulebook/thumbnail.ts` | Added `generateDocumentThumbnail()`, `deleteDocumentThumbnail()`, `addWhiteBackground()` for proper color rendering |
+| `src/app/api/admin/game-documents/route.ts` | Generate thumbnail on PDF upload, delete thumbnail on document delete |
+| `src/components/games/index.ts` | Added DocumentPreview export |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 75 - Game Editor Data Preloading & Unified Save (COMPLETE)
 
 ### Session Summary (2026-01-13) - Game Editor Preloading
 

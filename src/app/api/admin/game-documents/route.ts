@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { validatePdfFile, generateSecurePdfFilename } from '@/lib/upload/validation'
+import { generateDocumentThumbnail, deleteDocumentThumbnail } from '@/lib/rulebook/thumbnail'
 import { ApiErrors } from '@/lib/api/errors'
 import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 import type { DocumentType } from '@/types/database'
@@ -166,7 +167,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ document })
+    // Generate thumbnail (non-blocking - don't fail upload if this fails)
+    let updatedDocument = document
+    try {
+      const thumbnailResult = await generateDocumentThumbnail(publicUrl, document.id)
+      if (thumbnailResult) {
+        // Update document record with thumbnail URL
+        const { data: docWithThumbnail } = await adminClient
+          .from('game_documents')
+          .update({ thumbnail_url: thumbnailResult.thumbnailUrl })
+          .eq('id', document.id)
+          .select()
+          .single()
+
+        if (docWithThumbnail) {
+          updatedDocument = docWithThumbnail
+        }
+      }
+    } catch (thumbnailError) {
+      console.error('Thumbnail generation failed (non-fatal):', thumbnailError)
+    }
+
+    return NextResponse.json({ document: updatedDocument })
   } catch (error) {
     console.error('Unexpected error in game-documents POST:', error)
     return NextResponse.json(
@@ -205,6 +227,9 @@ export async function DELETE(request: NextRequest) {
         // Continue with database deletion even if storage fails
       }
     }
+
+    // Delete thumbnail (non-fatal if fails)
+    await deleteDocumentThumbnail(documentId)
 
     // Delete from database
     const { error } = await adminClient

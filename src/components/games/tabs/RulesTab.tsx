@@ -1,128 +1,17 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { ExternalLink, BookOpen, FileText, ChevronDown } from 'lucide-react'
+import { ExternalLink, BookOpen, ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { cleanWikipediaContentParagraphs } from '@/lib/utils/wikipedia'
 import { VideoCarousel } from '../VideoCarousel'
 import { GameDocumentsCard } from '../GameDocumentsCard'
+import { DocumentPreview } from '../DocumentPreview'
 import type { GameDocument } from '@/types/database'
-
-// Placeholder content for when thumbnail is unavailable
-function RulebookPlaceholder() {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-muted to-muted/50">
-      {/* Page lines decoration */}
-      <div className="absolute inset-x-6 top-8 space-y-2 opacity-20">
-        <div className="h-2 bg-foreground/30 rounded w-3/4" />
-        <div className="h-2 bg-foreground/30 rounded w-full" />
-        <div className="h-2 bg-foreground/30 rounded w-5/6" />
-        <div className="h-2 bg-foreground/30 rounded w-full" />
-        <div className="h-2 bg-foreground/30 rounded w-2/3" />
-      </div>
-
-      {/* Center icon */}
-      <div className="relative z-10 flex flex-col items-center gap-3">
-        <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
-          <FileText className="h-12 w-12 text-primary" />
-        </div>
-        <span className="text-sm font-medium text-muted-foreground">PDF Document</span>
-      </div>
-    </div>
-  )
-}
-
-// Rulebook card with visual document representation (thumbnail or placeholder)
-function RulebookPreview({
-  rulebookUrl,
-  rulebookThumbnailUrl,
-  gameName
-}: {
-  rulebookUrl: string
-  rulebookThumbnailUrl?: string | null
-  gameName?: string
-}) {
-  const [imageLoaded, setImageLoaded] = useState(false)
-  const [imageError, setImageError] = useState(false)
-
-  const showThumbnail = rulebookThumbnailUrl && !imageError
-
-  return (
-    <Card className="overflow-hidden p-0">
-      {/* Full-bleed thumbnail/placeholder as header */}
-      <a
-        href={rulebookUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block relative overflow-hidden group aspect-[8.5/11]"
-      >
-        {showThumbnail ? (
-          <>
-            {/* Loading skeleton */}
-            {!imageLoaded && (
-              <Skeleton className="absolute inset-0 rounded-none" />
-            )}
-            {/* Actual thumbnail */}
-            <Image
-              src={rulebookThumbnailUrl}
-              alt={`${gameName || 'Game'} rulebook preview`}
-              fill
-              className={cn(
-                "object-cover transition-opacity duration-300",
-                imageLoaded ? "opacity-100" : "opacity-0"
-              )}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-              sizes="(max-width: 768px) 100vw, 300px"
-            />
-          </>
-        ) : (
-          <RulebookPlaceholder />
-        )}
-
-        {/* Top label overlay */}
-        <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/60 to-transparent pt-3 pb-6 px-4">
-          <span className="text-white text-sm font-medium tracking-wide flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Official Rulebook
-          </span>
-        </div>
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <span className="text-white text-sm font-medium flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/20 backdrop-blur">
-            View Rulebook
-            <ExternalLink className="h-3.5 w-3.5" />
-          </span>
-        </div>
-      </a>
-
-      <CardContent className="p-4">
-        <p className="text-sm text-muted-foreground text-center mb-4">
-          The best way to learn {gameName || 'the game'} (other than playing it) is to read the rulebook!
-        </p>
-        <Button className="w-full gap-2" asChild>
-          <a
-            href={rulebookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <BookOpen className="h-4 w-4" />
-            Read the Official Rules
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
 
 // Wikipedia gameplay section with subtle attribution
 function WikipediaIntro({
@@ -338,10 +227,15 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
       <div className="space-y-8">
         {/* Rulebook Preview */}
         {game.rulebook_url && (
-          <RulebookPreview
-            rulebookUrl={game.rulebook_url}
-            rulebookThumbnailUrl={game.rulebook_thumbnail_url}
+          <DocumentPreview
+            documentUrl={game.rulebook_url}
+            thumbnailUrl={game.rulebook_thumbnail_url}
+            label="Official Rulebook"
+            hoverText="View Rulebook"
+            buttonText="Read the Official Rules"
+            description={`The best way to learn ${game.name || 'the game'} (other than playing it) is to read the rulebook!`}
             gameName={game.name}
+            icon={BookOpen}
           />
         )}
 

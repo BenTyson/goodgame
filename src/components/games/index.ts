@@ -20,6 +20,7 @@ export { ComponentsList } from './ComponentsList'
 export { WikipediaContent, WikipediaGameplay, WikipediaReception } from './WikipediaContent'
 export { GameRelationsSection } from './GameRelationsSection'
 export { GameDocumentsCard } from './GameDocumentsCard'
+export { DocumentPreview } from './DocumentPreview'
 
 // New tabbed game page components
 export { GameHero } from './GameHero'
