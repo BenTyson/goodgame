@@ -17,37 +17,25 @@ import { DOCUMENT_TYPE_LABELS, type GameDocument, type DocumentType } from '@/ty
 interface SupplementaryDocumentsSectionProps {
   gameId: string
   gameSlug: string
+  /** Preloaded documents from server */
+  initialDocuments: GameDocument[]
 }
 
 export function SupplementaryDocumentsSection({
   gameId,
   gameSlug,
+  initialDocuments,
 }: SupplementaryDocumentsSectionProps) {
-  const [documents, setDocuments] = useState<GameDocument[]>([])
-  const [loading, setLoading] = useState(true)
+  const [documents, setDocuments] = useState<GameDocument[]>(initialDocuments)
   const [uploading, setUploading] = useState(false)
   const [selectedType, setSelectedType] = useState<DocumentType>('misc')
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch documents on mount
+  // Sync state when initialDocuments changes (e.g., after navigation)
   useEffect(() => {
-    fetchDocuments()
-  }, [gameId])
-
-  const fetchDocuments = async () => {
-    try {
-      const response = await fetch(`/api/admin/game-documents?gameId=${gameId}`)
-      if (!response.ok) throw new Error('Failed to fetch documents')
-      const data = await response.json()
-      setDocuments(data.documents || [])
-    } catch (err) {
-      console.error('Error fetching documents:', err)
-      setError('Failed to load documents')
-    } finally {
-      setLoading(false)
-    }
-  }
+    setDocuments(initialDocuments)
+  }, [initialDocuments])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -176,12 +164,7 @@ export function SupplementaryDocumentsSection({
         )}
 
         {/* Documents List */}
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
-            <p>Loading documents...</p>
-          </div>
-        ) : documents.length === 0 ? (
+        {documents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p>No supplementary documents uploaded.</p>

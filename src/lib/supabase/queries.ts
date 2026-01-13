@@ -32,7 +32,9 @@ export {
   getGameWithDetailsForAdmin,
   getRelatedGames,
   getGameDocuments,
+  getAdjacentGames,
   type GameFilters,
+  type AdjacentGames,
 } from './game-queries'
 
 // Category, mechanic, theme, player experience, complexity tier, and BGG alias queries

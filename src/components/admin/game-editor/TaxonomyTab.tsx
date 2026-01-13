@@ -1,9 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { TaxonomySelector } from './TaxonomySelector'
 import {
   Grid3X3,
@@ -11,43 +9,74 @@ import {
   Palette,
   Users,
   AlertCircle,
-  Save,
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
 } from 'lucide-react'
-import type { Game, Category, Mechanic, Theme, PlayerExperience, TaxonomySuggestion } from '@/types/database'
+import type { Game } from '@/types/database'
+import type { TaxonomyData } from '@/lib/supabase/game-queries'
 import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
 import { filterHighConfidenceSuggestions, selectionsEqual } from '@/lib/admin/utils'
 
+export interface TaxonomyTabRef {
+  /** Save taxonomy data. Returns true on success, false on error. */
+  save: () => Promise<boolean>
+  /** Whether there are unsaved taxonomy changes */
+  hasUnsavedChanges: boolean
+}
+
 interface TaxonomyTabProps {
   game: Game
+  /** Preloaded taxonomy data from server */
+  initialData: TaxonomyData
+  /** Called when taxonomy unsaved state changes (for parent to track) */
+  onUnsavedChange?: (hasUnsaved: boolean) => void
 }
 
-interface TaxonomyData {
-  categories: Category[]
-  mechanics: Mechanic[]
-  themes: Theme[]
-  playerExperiences: PlayerExperience[]
-  currentCategories: { category_id: string; is_primary: boolean | null }[]
-  currentMechanics: { mechanic_id: string }[]
-  currentThemes: { theme_id: string; is_primary: boolean | null }[]
-  currentExperiences: { player_experience_id: string; is_primary: boolean | null }[]
-  suggestions: TaxonomySuggestion[]
-}
-
-export function TaxonomyTab({ game }: TaxonomyTabProps) {
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+export const TaxonomyTab = forwardRef<TaxonomyTabRef, TaxonomyTabProps>(
+  function TaxonomyTab({ game, initialData, onUnsavedChange }, ref) {
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<TaxonomyData | null>(null)
+  // Used to reset hasUnsavedChanges after navigation
+  const [saved, setSaved] = useState(false)
+
+  // Compute initial selections from preloaded data (only on mount/data change)
+  const computeInitialSelections = useCallback(() => {
+    const initialCategories = initialData.currentCategories.map(c => ({
+      id: c.category_id,
+      isPrimary: c.is_primary ?? false,
+    }))
+    const initialMechanics = initialData.currentMechanics.map(m => ({
+      id: m.mechanic_id,
+      isPrimary: false, // Mechanics don't have primary
+    }))
+    const initialThemes = initialData.currentThemes.map(t => ({
+      id: t.theme_id,
+      isPrimary: t.is_primary ?? false,
+    }))
+    const initialExperiences = initialData.currentExperiences.map(e => ({
+      id: e.player_experience_id,
+      isPrimary: e.is_primary ?? false,
+    }))
+
+    // Auto-select AI suggestions with 70%+ confidence that aren't already selected
+    const existingCategoryIds = new Set(initialCategories.map(c => c.id))
+    const existingMechanicIds = new Set(initialMechanics.map(m => m.id))
+    const existingThemeIds = new Set(initialThemes.map(t => t.id))
+    const existingExperienceIds = new Set(initialExperiences.map(e => e.id))
+
+    initialCategories.push(...filterHighConfidenceSuggestions(initialData.suggestions, 'category', existingCategoryIds))
+    initialMechanics.push(...filterHighConfidenceSuggestions(initialData.suggestions, 'mechanic', existingMechanicIds))
+    initialThemes.push(...filterHighConfidenceSuggestions(initialData.suggestions, 'theme', existingThemeIds))
+    initialExperiences.push(...filterHighConfidenceSuggestions(initialData.suggestions, 'player_experience', existingExperienceIds))
+
+    return { initialCategories, initialMechanics, initialThemes, initialExperiences }
+  }, [initialData])
+
+  // Get initial selections
+  const initialSelections = useMemo(() => computeInitialSelections(), [computeInitialSelections])
 
   // Selected state for all 4 taxonomy types
-  const [selectedCategories, setSelectedCategories] = useState<SelectedTaxonomyItem[]>([])
-  const [selectedMechanics, setSelectedMechanics] = useState<SelectedTaxonomyItem[]>([])
-  const [selectedThemes, setSelectedThemes] = useState<SelectedTaxonomyItem[]>([])
-  const [selectedExperiences, setSelectedExperiences] = useState<SelectedTaxonomyItem[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<SelectedTaxonomyItem[]>(initialSelections.initialCategories)
+  const [selectedMechanics, setSelectedMechanics] = useState<SelectedTaxonomyItem[]>(initialSelections.initialMechanics)
+  const [selectedThemes, setSelectedThemes] = useState<SelectedTaxonomyItem[]>(initialSelections.initialThemes)
+  const [selectedExperiences, setSelectedExperiences] = useState<SelectedTaxonomyItem[]>(initialSelections.initialExperiences)
 
   // Track initial state for detecting unsaved changes
   const initialStateRef = useRef<{
@@ -55,73 +84,28 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
     mechanics: SelectedTaxonomyItem[]
     themes: SelectedTaxonomyItem[]
     experiences: SelectedTaxonomyItem[]
-  } | null>(null)
+  }>({
+    categories: initialSelections.initialCategories,
+    mechanics: initialSelections.initialMechanics,
+    themes: initialSelections.initialThemes,
+    experiences: initialSelections.initialExperiences,
+  })
 
-  // Load taxonomy data
+  // Sync state when initialData changes (e.g., after navigation or refresh)
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch(`/api/admin/games/taxonomy?gameId=${game.id}`)
-        if (!response.ok) {
-          throw new Error('Failed to load taxonomy data')
-        }
-
-        const result: TaxonomyData = await response.json()
-        setData(result)
-
-        // Initialize selected items from current assignments
-        const initialCategories = result.currentCategories.map(c => ({
-          id: c.category_id,
-          isPrimary: c.is_primary ?? false,
-        }))
-        const initialMechanics = result.currentMechanics.map(m => ({
-          id: m.mechanic_id,
-          isPrimary: false, // Mechanics don't have primary
-        }))
-        const initialThemes = result.currentThemes.map(t => ({
-          id: t.theme_id,
-          isPrimary: t.is_primary ?? false,
-        }))
-        const initialExperiences = result.currentExperiences.map(e => ({
-          id: e.player_experience_id,
-          isPrimary: e.is_primary ?? false,
-        }))
-
-        // Auto-select AI suggestions with 70%+ confidence that aren't already selected
-        const existingCategoryIds = new Set(initialCategories.map(c => c.id))
-        const existingMechanicIds = new Set(initialMechanics.map(m => m.id))
-        const existingThemeIds = new Set(initialThemes.map(t => t.id))
-        const existingExperienceIds = new Set(initialExperiences.map(e => e.id))
-
-        initialCategories.push(...filterHighConfidenceSuggestions(result.suggestions, 'category', existingCategoryIds))
-        initialMechanics.push(...filterHighConfidenceSuggestions(result.suggestions, 'mechanic', existingMechanicIds))
-        initialThemes.push(...filterHighConfidenceSuggestions(result.suggestions, 'theme', existingThemeIds))
-        initialExperiences.push(...filterHighConfidenceSuggestions(result.suggestions, 'player_experience', existingExperienceIds))
-
-        setSelectedCategories(initialCategories)
-        setSelectedMechanics(initialMechanics)
-        setSelectedThemes(initialThemes)
-        setSelectedExperiences(initialExperiences)
-
-        // Store initial state for change detection
-        initialStateRef.current = {
-          categories: initialCategories,
-          mechanics: initialMechanics,
-          themes: initialThemes,
-          experiences: initialExperiences,
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load taxonomy data')
-      } finally {
-        setLoading(false)
-      }
+    const selections = computeInitialSelections()
+    setSelectedCategories(selections.initialCategories)
+    setSelectedMechanics(selections.initialMechanics)
+    setSelectedThemes(selections.initialThemes)
+    setSelectedExperiences(selections.initialExperiences)
+    initialStateRef.current = {
+      categories: selections.initialCategories,
+      mechanics: selections.initialMechanics,
+      themes: selections.initialThemes,
+      experiences: selections.initialExperiences,
     }
-
-    fetchData()
-  }, [game.id])
+    setSaved(false)
+  }, [initialData, computeInitialSelections])
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -143,28 +127,33 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
     }
   }, [hasUnsavedChanges, saved])
 
-  const handleSave = useCallback(async () => {
+  // Notify parent of unsaved changes state
+  useEffect(() => {
+    onUnsavedChange?.(hasUnsavedChanges)
+  }, [hasUnsavedChanges, onUnsavedChange])
+
+  // Save function that can be called by parent
+  const save = useCallback(async (): Promise<boolean> => {
+    // Skip if no changes
+    if (!hasUnsavedChanges) return true
+
     try {
-      setSaving(true)
-      setSaved(false)
       setError(null)
 
       // Determine which suggestions were accepted vs rejected (for themes/experiences)
       const acceptedSuggestionIds: string[] = []
       const rejectedSuggestionIds: string[] = []
 
-      if (data) {
-        for (const suggestion of data.suggestions) {
-          if (suggestion.target_id) {
-            const isSelected = suggestion.suggestion_type === 'theme'
-              ? selectedThemes.some(t => t.id === suggestion.target_id)
-              : selectedExperiences.some(e => e.id === suggestion.target_id)
+      for (const suggestion of initialData.suggestions) {
+        if (suggestion.target_id) {
+          const isSelected = suggestion.suggestion_type === 'theme'
+            ? selectedThemes.some(t => t.id === suggestion.target_id)
+            : selectedExperiences.some(e => e.id === suggestion.target_id)
 
-            if (isSelected) {
-              acceptedSuggestionIds.push(suggestion.id)
-            } else {
-              rejectedSuggestionIds.push(suggestion.id)
-            }
+          if (isSelected) {
+            acceptedSuggestionIds.push(suggestion.id)
+          } else {
+            rejectedSuggestionIds.push(suggestion.id)
           }
         }
       }
@@ -207,40 +196,18 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         experiences: [...selectedExperiences],
       }
 
-      setSaved(true)
+      return true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save taxonomy')
-    } finally {
-      setSaving(false)
+      return false
     }
-  }, [game.id, selectedCategories, selectedMechanics, selectedThemes, selectedExperiences, data])
+  }, [game.id, selectedCategories, selectedMechanics, selectedThemes, selectedExperiences, initialData, hasUnsavedChanges])
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {[1, 2, 3, 4].map(i => (
-          <Card key={i}>
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-8 w-8 rounded-lg" />
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3, 4, 5, 6].map(j => (
-                  <Skeleton key={j} className="h-10" />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )
-  }
+  // Expose save function and hasUnsavedChanges to parent via ref
+  useImperativeHandle(ref, () => ({
+    save,
+    hasUnsavedChanges,
+  }), [save, hasUnsavedChanges])
 
   return (
     <div className="space-y-6">
@@ -249,14 +216,6 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <p className="text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Unsaved Changes Warning */}
-      {hasUnsavedChanges && (
-        <div className="flex items-center gap-2 p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <p className="text-sm">You have unsaved changes</p>
         </div>
       )}
 
@@ -277,9 +236,9 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={data?.categories ?? []}
+            items={initialData.categories ?? []}
             selected={selectedCategories}
-            suggestions={data?.suggestions}
+            suggestions={initialData.suggestions}
             onChange={setSelectedCategories}
             type="category"
             allowPrimary={true}
@@ -304,9 +263,9 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={data?.mechanics ?? []}
+            items={initialData.mechanics ?? []}
             selected={selectedMechanics}
-            suggestions={data?.suggestions}
+            suggestions={initialData.suggestions}
             onChange={setSelectedMechanics}
             type="mechanic"
             allowPrimary={false}
@@ -331,9 +290,9 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={data?.themes ?? []}
+            items={initialData.themes ?? []}
             selected={selectedThemes}
-            suggestions={data?.suggestions}
+            suggestions={initialData.suggestions}
             onChange={setSelectedThemes}
             type="theme"
             allowPrimary={true}
@@ -358,41 +317,15 @@ export function TaxonomyTab({ game }: TaxonomyTabProps) {
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={data?.playerExperiences ?? []}
+            items={initialData.playerExperiences ?? []}
             selected={selectedExperiences}
-            suggestions={data?.suggestions}
+            suggestions={initialData.suggestions}
             onChange={setSelectedExperiences}
             type="player_experience"
             allowPrimary={false}
           />
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={saving || !hasUnsavedChanges}
-          className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : saved ? (
-            <>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Saved!
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Taxonomy
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   )
-}
+})

@@ -16,8 +16,11 @@ import type {
   Theme,
   PlayerExperience,
   ComplexityTier,
+  TaxonomySuggestion,
   Database
 } from '@/types/database'
+import type { ParsedTextStructured } from '@/lib/rulebook/types'
+import type { GameVideo } from '@/components/admin/VideoManager'
 
 // Simple client for static generation (no cookies needed)
 export function createStaticClient() {
@@ -892,4 +895,296 @@ export async function getGameDocuments(gameId: string): Promise<GameDocument[]> 
   }
 
   return data || []
+}
+
+// ===========================================
+// ADMIN: ADJACENT GAMES FOR NAVIGATION
+// ===========================================
+
+export interface AdjacentGames {
+  previous: { id: string; name: string } | null
+  next: { id: string; name: string } | null
+}
+
+/**
+ * Get previous and next games alphabetically by name (for admin navigation)
+ */
+export async function getAdjacentGames(gameId: string): Promise<AdjacentGames> {
+  const supabase = createAdminClient()
+
+  // Get current game's name
+  const { data: currentGame } = await supabase
+    .from('games')
+    .select('name')
+    .eq('id', gameId)
+    .single()
+
+  if (!currentGame) {
+    return { previous: null, next: null }
+  }
+
+  // Get previous game (name < current, ordered descending to get closest)
+  const { data: prevData } = await supabase
+    .from('games')
+    .select('id, name')
+    .lt('name', currentGame.name)
+    .order('name', { ascending: false })
+    .limit(1)
+
+  // Get next game (name > current, ordered ascending to get closest)
+  const { data: nextData } = await supabase
+    .from('games')
+    .select('id, name')
+    .gt('name', currentGame.name)
+    .order('name', { ascending: true })
+    .limit(1)
+
+  return {
+    previous: prevData?.[0] || null,
+    next: nextData?.[0] || null,
+  }
+}
+
+// ===========================================
+// ADMIN: GAME EDITOR CONSOLIDATED DATA
+// ===========================================
+
+/** Preloaded taxonomy data for GameEditor */
+export interface TaxonomyData {
+  categories: Category[]
+  mechanics: Mechanic[]
+  themes: Theme[]
+  playerExperiences: PlayerExperience[]
+  currentCategories: { category_id: string; is_primary: boolean | null }[]
+  currentMechanics: { mechanic_id: string }[]
+  currentThemes: { theme_id: string; is_primary: boolean | null }[]
+  currentExperiences: { player_experience_id: string; is_primary: boolean | null }[]
+  suggestions: TaxonomySuggestion[]
+}
+
+/** Preloaded documents data for GameEditor */
+export interface DocumentsData {
+  gameDocuments: GameDocument[]
+  parsedText: {
+    text: string | null
+    structured: ParsedTextStructured | null
+    wordCount: number | null
+    pageCount: number | null
+    parsedAt: string | null
+    characterCount: number | null
+  } | null
+}
+
+/** Preloaded purchase data for GameEditor */
+export interface PurchaseData {
+  links: AffiliateLinkWithRetailer[]
+  retailers: Retailer[]
+}
+
+/** Game with media for editor */
+export interface GameWithMedia extends Game {
+  images: GameImage[]
+  videos: GameVideo[]
+  publishers_list?: { id: string; name: string; slug: string; website: string | null; is_primary: boolean }[]
+}
+
+/** Full game editor data bundle */
+export interface GameEditorData {
+  game: GameWithMedia
+  adjacentGames: AdjacentGames
+  taxonomy: TaxonomyData
+  documents: DocumentsData
+  purchase: PurchaseData
+}
+
+/**
+ * Get all data needed for the game editor in a single parallel fetch.
+ * This consolidates what was previously 5+ separate API calls into one server-side query.
+ */
+export async function getGameEditorData(gameId: string): Promise<GameEditorData | null> {
+  const supabase = createAdminClient()
+
+  // First, get the game to verify it exists and get its name for adjacent games
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .select('*')
+    .eq('id', gameId)
+    .single()
+
+  if (gameError || !game) {
+    return null
+  }
+
+  // Cast to include latest_parse_log_id which may not be in generated types
+  const gameData = game as Game & { latest_parse_log_id?: string }
+
+  // Run ALL queries in parallel for maximum performance
+  const [
+    // Game media
+    imagesResult,
+    videosResult,
+    publisherLinksResult,
+    // Adjacent games
+    prevGameResult,
+    nextGameResult,
+    // Taxonomy: reference data
+    categoriesResult,
+    mechanicsResult,
+    themesResult,
+    experiencesResult,
+    // Taxonomy: current assignments
+    currentCategoriesResult,
+    currentMechanicsResult,
+    currentThemesResult,
+    currentExperiencesResult,
+    // Taxonomy: suggestions
+    suggestionsResult,
+    // Documents
+    gameDocumentsResult,
+    parseLogResult,
+    // Purchase
+    purchaseLinksResult,
+    retailersResult,
+  ] = await Promise.all([
+    // Game media
+    supabase
+      .from('game_images')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('display_order'),
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('display_order'),
+    supabase
+      .from('game_publishers')
+      .select('is_primary, publisher:publishers(id, name, slug, website)')
+      .eq('game_id', gameId)
+      .order('is_primary', { ascending: false })
+      .order('display_order', { ascending: true }),
+    // Adjacent games
+    supabase
+      .from('games')
+      .select('id, name')
+      .lt('name', game.name)
+      .order('name', { ascending: false })
+      .limit(1),
+    supabase
+      .from('games')
+      .select('id, name')
+      .gt('name', game.name)
+      .order('name', { ascending: true })
+      .limit(1),
+    // Taxonomy: reference data
+    supabase.from('categories').select('*').order('display_order'),
+    supabase.from('mechanics').select('*').order('name'),
+    supabase.from('themes').select('*').order('display_order'),
+    supabase.from('player_experiences').select('*').order('display_order'),
+    // Taxonomy: current assignments
+    supabase.from('game_categories').select('category_id, is_primary').eq('game_id', gameId),
+    supabase.from('game_mechanics').select('mechanic_id').eq('game_id', gameId),
+    supabase.from('game_themes').select('theme_id, is_primary').eq('game_id', gameId),
+    supabase.from('game_player_experiences').select('player_experience_id, is_primary').eq('game_id', gameId),
+    // Taxonomy: suggestions
+    supabase
+      .from('taxonomy_suggestions')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('status', 'pending')
+      .order('confidence', { ascending: false }),
+    // Documents
+    supabase
+      .from('game_documents')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false }),
+    // Parsed text: try latest_parse_log_id first, then fallback in processing
+    gameData.latest_parse_log_id
+      ? supabase
+          .from('rulebook_parse_log')
+          .select('parsed_text, parsed_text_structured, word_count, page_count, created_at')
+          .eq('id', gameData.latest_parse_log_id)
+          .single()
+      : supabase
+          .from('rulebook_parse_log')
+          .select('parsed_text, parsed_text_structured, word_count, page_count, created_at')
+          .eq('game_id', gameId)
+          .in('status', ['success', 'partial'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+    // Purchase
+    supabase
+      .from('affiliate_links')
+      .select('*, retailer:retailers(*)')
+      .eq('game_id', gameId)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('retailers')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+  ])
+
+  // Process publishers
+  const publishers = publisherLinksResult.data
+    ?.map(p => ({ ...(p.publisher as { id: string; name: string; slug: string; website: string | null }), is_primary: p.is_primary ?? false }))
+    .filter(p => p.id) as { id: string; name: string; slug: string; website: string | null; is_primary: boolean }[] | undefined
+
+  // Process videos with type assertion
+  const typedVideos: GameVideo[] = (videosResult.data || []).map(v => ({
+    ...v,
+    display_order: v.display_order ?? 0,
+    is_featured: v.is_featured ?? false,
+    created_at: v.created_at ?? new Date().toISOString(),
+    updated_at: v.updated_at ?? new Date().toISOString(),
+  })) as GameVideo[]
+
+  // Process parsed text
+  let parsedTextData: DocumentsData['parsedText'] = null
+  const parseLog = parseLogResult.data
+  if (parseLog?.parsed_text) {
+    parsedTextData = {
+      text: parseLog.parsed_text,
+      structured: parseLog.parsed_text_structured as unknown as ParsedTextStructured | null,
+      wordCount: parseLog.word_count || null,
+      pageCount: parseLog.page_count || null,
+      parsedAt: parseLog.created_at || null,
+      characterCount: parseLog.parsed_text.length,
+    }
+  }
+
+  return {
+    game: {
+      ...game,
+      images: imagesResult.data || [],
+      videos: typedVideos,
+      publishers_list: publishers || [],
+    },
+    adjacentGames: {
+      previous: prevGameResult.data?.[0] || null,
+      next: nextGameResult.data?.[0] || null,
+    },
+    taxonomy: {
+      categories: categoriesResult.data || [],
+      mechanics: mechanicsResult.data || [],
+      themes: themesResult.data || [],
+      playerExperiences: experiencesResult.data || [],
+      currentCategories: currentCategoriesResult.data || [],
+      currentMechanics: currentMechanicsResult.data || [],
+      currentThemes: currentThemesResult.data || [],
+      currentExperiences: currentExperiencesResult.data || [],
+      suggestions: suggestionsResult.data || [],
+    },
+    documents: {
+      gameDocuments: gameDocumentsResult.data || [],
+      parsedText: parsedTextData,
+    },
+    purchase: {
+      links: (purchaseLinksResult.data || []) as AffiliateLinkWithRetailer[],
+      retailers: retailersResult.data || [],
+    },
+  }
 }

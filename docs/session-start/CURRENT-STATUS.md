@@ -2,7 +2,39 @@
 
 > Last Updated: 2026-01-13
 
-## Current Phase: 74 - Admin Workflow Fixes: Import & Vecna (COMPLETE)
+## Current Phase: 75 - Game Editor Data Preloading & Unified Save (COMPLETE)
+
+### Session Summary (2026-01-13) - Game Editor Preloading
+
+**What was done:**
+- Consolidated all tab data fetching into single page load (18 parallel queries)
+- Added client-side LRU cache for game editor data (5 games, 5-minute TTL)
+- Unified save button - single button now saves both Details and Taxonomy changes
+- Fixed save button UX - disabled when no unsaved changes
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/hooks/admin/useGameEditorCache.ts` | LRU cache hook for game editor data |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/supabase/game-queries.ts` | Added `getGameEditorData()` consolidated query, new types (TaxonomyData, DocumentsData, PurchaseData, GameEditorData) |
+| `src/app/admin/(dashboard)/games/[id]/page.tsx` | Simplified to use consolidated query |
+| `src/components/admin/GameEditor.tsx` | New `editorData` prop, cache integration, unified save with ref, fixed disabled state |
+| `src/components/admin/game-editor/TaxonomyTab.tsx` | Converted to forwardRef, exposes `save()` via useImperativeHandle, removed Save Taxonomy button |
+| `src/components/admin/game-editor/DocumentsTab.tsx` | Accepts preloaded data via `initialData` prop, removed fetch |
+| `src/components/admin/game-editor/SupplementaryDocumentsSection.tsx` | Accepts `initialDocuments` prop |
+| `src/components/admin/game-editor/PurchaseLinksTab.tsx` | Accepts preloaded data via `initialData` prop, removed fetch |
+| `src/hooks/admin/index.ts` | Export new cache hook |
+| `src/components/admin/game-editor/index.ts` | Export TaxonomyTabRef type |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 74 - Admin Workflow Fixes: Import & Vecna (COMPLETE)
 
 ### Session Summary (2026-01-13) - Admin Workflow Fixes
 

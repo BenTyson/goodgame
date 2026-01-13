@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,15 +44,17 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import type { Game, Retailer, AffiliateLinkWithRetailer } from '@/types/database'
+import type { PurchaseData } from '@/lib/supabase/game-queries'
 
 interface PurchaseLinksTabProps {
   game: Game
+  /** Preloaded purchase data from server */
+  initialData: PurchaseData
 }
 
-export function PurchaseLinksTab({ game }: PurchaseLinksTabProps) {
-  const [links, setLinks] = useState<AffiliateLinkWithRetailer[]>([])
-  const [retailers, setRetailers] = useState<Retailer[]>([])
-  const [loading, setLoading] = useState(true)
+export function PurchaseLinksTab({ game, initialData }: PurchaseLinksTabProps) {
+  const [links, setLinks] = useState<AffiliateLinkWithRetailer[]>(initialData.links)
+  const retailers = initialData.retailers
   const [error, setError] = useState<string | null>(null)
 
   // Modal state
@@ -67,41 +69,13 @@ export function PurchaseLinksTab({ game }: PurchaseLinksTabProps) {
   const [deleteTarget, setDeleteTarget] = useState<AffiliateLinkWithRetailer | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch purchase links and retailers
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const [linksRes, retailersRes] = await Promise.all([
-        fetch(`/api/admin/purchase-links?gameId=${game.id}`),
-        fetch('/api/admin/retailers'),
-      ])
-
-      if (!linksRes.ok || !retailersRes.ok) {
-        throw new Error('Failed to fetch data')
-      }
-
-      const [linksData, retailersData] = await Promise.all([
-        linksRes.json(),
-        retailersRes.json(),
-      ])
-
-      setLinks(linksData.links || [])
-      setRetailers(retailersData.retailers || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load purchase links')
-    } finally {
-      setLoading(false)
-    }
-  }, [game.id])
-
+  // Sync state when initialData changes (e.g., after navigation)
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    setLinks(initialData.links)
+  }, [initialData.links])
 
   // Get preview URL based on selected retailer and product ID
-  const getPreviewUrl = useCallback(() => {
+  const previewUrl = useMemo(() => {
     if (customUrl) return customUrl
 
     if (!selectedRetailerId || !productId) return null
@@ -186,14 +160,6 @@ export function PurchaseLinksTab({ game }: PurchaseLinksTabProps) {
   const amazonUrl = game.amazon_asin
     ? `https://www.amazon.com/dp/${game.amazon_asin}?tag=goodgame-20`
     : null
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -290,10 +256,10 @@ export function PurchaseLinksTab({ game }: PurchaseLinksTabProps) {
                   </div>
 
                   {/* URL Preview */}
-                  {getPreviewUrl() && (
+                  {previewUrl && (
                     <div className="p-3 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground mb-1">Preview URL:</p>
-                      <p className="text-sm break-all font-mono">{getPreviewUrl()}</p>
+                      <p className="text-sm break-all font-mono">{previewUrl}</p>
                     </div>
                   )}
                 </div>

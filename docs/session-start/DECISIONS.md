@@ -31,6 +31,7 @@
 - **Large uploads need body size config**: Add `experimental.serverActions.bodySizeLimit: '50mb'` to `next.config.ts` for PDFs >1MB.
 - **Published status check**: Use `is_published` flag, NOT `vecna_state === 'published'`. Games can be published via Game Editor without going through Vecna pipeline, causing these values to diverge.
 - **Base game regeneration invalidates expansions**: When base game `rules_content` is regenerated, all its expansions automatically reset to `taxonomy_assigned` state. This ensures expansions use fresh base game context. See `generate-content/route.ts`.
+- **Parent-child unified save with forwardRef**: When a parent needs to trigger save on a child component, use `forwardRef` + `useImperativeHandle` to expose a `save()` function. See `TaxonomyTab.tsx` (child) and `GameEditor.tsx` (parent with `taxonomyRef.current.save()`).
 
 ## Tech Stack
 

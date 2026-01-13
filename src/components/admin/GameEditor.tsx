@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DetailsTab, DocumentsTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab } from './game-editor'
-import { useAsyncAction } from '@/hooks/admin'
+import type { TaxonomyTabRef } from './game-editor'
+import { useAsyncAction, useGameEditorShortcuts, useGameEditorCache } from '@/hooks/admin'
 import {
   ArrowLeft,
   Save,
@@ -14,42 +16,74 @@ import {
   Loader2,
   CheckCircle2,
   Info,
-  ImageIcon,
   Files,
   FileText,
   Tags,
   Database,
   Film,
   ShoppingCart,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { GameVideo } from '@/components/admin/VideoManager'
 import type { Game, GameImage } from '@/types/database'
-
-interface Publisher {
-  id: string
-  name: string
-  slug: string
-  website: string | null
-}
-
-type GameWithMedia = Game & { images: GameImage[]; videos: GameVideo[]; publishers_list?: Publisher[] }
+import type { GameEditorData, GameWithMedia } from '@/lib/supabase/game-queries'
 
 interface GameEditorProps {
-  game: GameWithMedia
+  editorData: GameEditorData
 }
 
-export function GameEditor({ game: initialGame }: GameEditorProps) {
+export function GameEditor({ editorData }: GameEditorProps) {
+  const { game: initialGame, adjacentGames, taxonomy, documents, purchase } = editorData
   const router = useRouter()
+  const { setCache, invalidate } = useGameEditorCache()
+  const taxonomyRef = useRef<TaxonomyTabRef>(null)
   const [game, setGame] = useState(initialGame)
   const [images, setImages] = useState(initialGame.images)
   const [videos, setVideos] = useState(initialGame.videos)
-  const { saving, saved, execute, markUnsaved } = useAsyncAction()
+  const [hasDetailsChanges, setHasDetailsChanges] = useState(false)
+  const [hasTaxonomyChanges, setHasTaxonomyChanges] = useState(false)
+  const { saving, saved, execute } = useAsyncAction({
+    onSuccess: () => {
+      setHasDetailsChanges(false)
+      setHasTaxonomyChanges(false)
+    },
+  })
 
-  // Sync state when server data changes (e.g., after router.refresh())
+  // Cache the editor data on mount/navigation
+  useEffect(() => {
+    setCache(initialGame.id, editorData)
+  }, [initialGame.id, editorData, setCache])
+
+  // Combined unsaved state (details OR taxonomy)
+  const hasUnsavedChanges = hasDetailsChanges || hasTaxonomyChanges
+
+  // Track unsaved changes for details/content/media
+  const markUnsaved = useCallback(() => {
+    setHasDetailsChanges(true)
+  }, [])
+
+  // Track taxonomy unsaved changes (called by TaxonomyTab)
+  const handleTaxonomyUnsavedChange = useCallback((hasUnsaved: boolean) => {
+    setHasTaxonomyChanges(hasUnsaved)
+  }, [])
+
+  // Keyboard shortcuts and navigation
+  const { goToPrevious, goToNext } = useGameEditorShortcuts({
+    onSave: () => saveGame(),
+    previousGameUrl: adjacentGames.previous ? `/admin/games/${adjacentGames.previous.id}` : null,
+    nextGameUrl: adjacentGames.next ? `/admin/games/${adjacentGames.next.id}` : null,
+    hasUnsavedChanges,
+    isSaving: saving,
+  })
+
+  // Sync state when server data changes (e.g., after router.refresh() or navigation)
   useEffect(() => {
     setGame(initialGame)
     setImages(initialGame.images)
     setVideos(initialGame.videos)
+    setHasDetailsChanges(false)
+    setHasTaxonomyChanges(false)
   }, [initialGame])
 
   const updateField = useCallback(<K extends keyof Game>(field: K, value: Game[K]) => {
@@ -66,46 +100,59 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     // No need to include them here.
 
     await execute(async () => {
-      const response = await fetch('/api/admin/games', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: game.id,
-          data: {
-            name: game.name,
-            slug: game.slug,
-            description: game.description,
-            tagline: game.tagline,
-            player_count_min: game.player_count_min,
-            player_count_max: game.player_count_max,
-            play_time_min: game.play_time_min,
-            play_time_max: game.play_time_max,
-            weight: game.weight,
-            min_age: game.min_age,
-            year_published: game.year_published,
-            publisher: game.publisher,
-            designers: game.designers,
-            is_published: game.is_published,
-            is_featured: game.is_featured,
-            is_trending: game.is_trending,
-            is_top_rated: game.is_top_rated,
-            is_staff_pick: game.is_staff_pick,
-            is_hidden_gem: game.is_hidden_gem,
-            is_new_release: game.is_new_release,
-            content_status: contentStatus,
-            rules_content: game.rules_content,
-            setup_content: game.setup_content,
-            reference_content: game.reference_content,
-            amazon_asin: game.amazon_asin,
-          }
+      // Save game details if changed
+      if (hasDetailsChanges) {
+        const response = await fetch('/api/admin/games', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: game.id,
+            data: {
+              name: game.name,
+              slug: game.slug,
+              description: game.description,
+              tagline: game.tagline,
+              player_count_min: game.player_count_min,
+              player_count_max: game.player_count_max,
+              play_time_min: game.play_time_min,
+              play_time_max: game.play_time_max,
+              weight: game.weight,
+              min_age: game.min_age,
+              year_published: game.year_published,
+              publisher: game.publisher,
+              designers: game.designers,
+              is_published: game.is_published,
+              is_featured: game.is_featured,
+              is_trending: game.is_trending,
+              is_top_rated: game.is_top_rated,
+              is_staff_pick: game.is_staff_pick,
+              is_hidden_gem: game.is_hidden_gem,
+              is_new_release: game.is_new_release,
+              content_status: contentStatus,
+              rules_content: game.rules_content,
+              setup_content: game.setup_content,
+              reference_content: game.reference_content,
+              amazon_asin: game.amazon_asin,
+            }
+          })
         })
-      })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Save failed')
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Save failed')
+        }
       }
 
+      // Save taxonomy if changed
+      if (hasTaxonomyChanges && taxonomyRef.current) {
+        const taxonomySaved = await taxonomyRef.current.save()
+        if (!taxonomySaved) {
+          throw new Error('Failed to save taxonomy')
+        }
+      }
+
+      // Invalidate cache to ensure fresh data after save
+      invalidate(game.id)
       router.refresh()
     })
   }
@@ -114,12 +161,57 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link href="/admin/games" className="self-start">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Games
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 self-start">
+          <Link href="/admin/games">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Games
+            </Button>
+          </Link>
+          {/* Navigation buttons */}
+          <div className="flex items-center border-l pl-2 ml-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={goToPrevious}
+                  disabled={!adjacentGames.previous}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {adjacentGames.previous ? (
+                  <span>{adjacentGames.previous.name} <kbd className="ml-1 text-xs opacity-60">Cmd+[</kbd></span>
+                ) : (
+                  <span>No previous game</span>
+                )}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={goToNext}
+                  disabled={!adjacentGames.next}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {adjacentGames.next ? (
+                  <span>{adjacentGames.next.name} <kbd className="ml-1 text-xs opacity-60">Cmd+]</kbd></span>
+                ) : (
+                  <span>No next game</span>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{game.name}</h1>
@@ -127,6 +219,14 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-600 text-white">
                 <CheckCircle2 className="h-3 w-3" />
                 Published
+              </span>
+            )}
+            {hasUnsavedChanges && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                Unsaved: {[
+                  hasDetailsChanges && 'Details',
+                  hasTaxonomyChanges && 'Taxonomy',
+                ].filter(Boolean).join(', ')}
               </span>
             )}
           </div>
@@ -146,20 +246,27 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
               <span className="hidden sm:inline">Preview</span>
             </Button>
           )}
-          <Button
-            onClick={saveGame}
-            disabled={saving}
-            className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : saved ? (
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {saved ? 'Saved!' : 'Save Changes'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={saveGame}
+                disabled={saving || !hasUnsavedChanges}
+                className={saved ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : saved ? (
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {saved ? 'Saved!' : 'Save Changes'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <kbd className="text-xs">Cmd+S</kbd>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -203,13 +310,14 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
         {/* Taxonomy Tab */}
         <TabsContent value="taxonomy">
-          <TaxonomyTab game={game} />
+          <TaxonomyTab ref={taxonomyRef} game={game} initialData={taxonomy} onUnsavedChange={handleTaxonomyUnsavedChange} />
         </TabsContent>
 
         {/* Documents Tab */}
         <TabsContent value="documents">
           <DocumentsTab
             game={game}
+            initialData={documents}
             onRulebookUrlChange={(url) => updateField('rulebook_url', url)}
           />
         </TabsContent>
@@ -238,7 +346,7 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
 
         {/* Purchase Tab */}
         <TabsContent value="purchase">
-          <PurchaseLinksTab game={game} />
+          <PurchaseLinksTab game={game} initialData={purchase} />
         </TabsContent>
       </Tabs>
     </div>

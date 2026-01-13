@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,13 +12,12 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Loader2,
   BookOpen,
   Layers,
   Clock,
-  AlertCircle,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
+import type { DocumentsData } from '@/lib/supabase/game-queries'
 import type { ParsedTextStructured, RulebookSectionType } from '@/lib/rulebook/types'
 import { RulebookUrlSection } from '@/components/admin/rulebook'
 import { SupplementaryDocumentsSection } from './SupplementaryDocumentsSection'
@@ -32,6 +31,8 @@ interface Publisher {
 
 interface DocumentsTabProps {
   game: Game & { publishers_list?: Publisher[] }
+  /** Preloaded documents data from server */
+  initialData: DocumentsData
   onRulebookUrlChange: (url: string | null) => void
 }
 
@@ -50,52 +51,16 @@ const SECTION_TYPE_INFO: Record<RulebookSectionType, { label: string; color: str
   other: { label: 'Other', color: 'text-gray-500' },
 }
 
-export function DocumentsTab({ game, onRulebookUrlChange }: DocumentsTabProps) {
+export function DocumentsTab({ game, initialData, onRulebookUrlChange }: DocumentsTabProps) {
   // Rulebook URL state
   const [rulebookUrl, setRulebookUrl] = useState(game.rulebook_url || '')
 
-  // Parsed text state
-  const [loadingParsedText, setLoadingParsedText] = useState(false)
-  const [parsedTextData, setParsedTextData] = useState<{
-    text: string | null
-    structured: ParsedTextStructured | null
-    wordCount: number | null
-    pageCount: number | null
-    parsedAt: string | null
-    characterCount: number | null
-  } | null>(null)
-  const [parsedTextError, setParsedTextError] = useState<string | null>(null)
+  // Use preloaded parsed text data
+  const parsedTextData = initialData.parsedText
 
   // Section collapse state
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
-
-  // Fetch parsed text on mount if rulebook has been parsed
-  useEffect(() => {
-    if (game.rulebook_parsed_at) {
-      fetchParsedText()
-    }
-  }, [game.id, game.rulebook_parsed_at])
-
-  const fetchParsedText = async () => {
-    setLoadingParsedText(true)
-    setParsedTextError(null)
-
-    try {
-      const response = await fetch(`/api/admin/rulebook/parsed-text?gameId=${game.id}`)
-      const data = await response.json()
-
-      if (data.error) {
-        setParsedTextError(data.error)
-      } else {
-        setParsedTextData(data)
-      }
-    } catch (error) {
-      setParsedTextError(error instanceof Error ? error.message : 'Failed to fetch parsed text')
-    } finally {
-      setLoadingParsedText(false)
-    }
-  }
 
   // Copy section content to clipboard
   const copySection = async (content: string, sectionKey: string) => {
@@ -237,17 +202,7 @@ export function DocumentsTab({ game, onRulebookUrlChange }: DocumentsTabProps) {
           )}
 
           {/* Parsed Text */}
-          {loadingParsedText ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              Loading parsed text...
-            </div>
-          ) : parsedTextError ? (
-            <div className="flex items-center gap-2 text-destructive py-4">
-              <AlertCircle className="h-4 w-4" />
-              {parsedTextError}
-            </div>
-          ) : !parsedTextData?.text ? (
+          {!parsedTextData?.text ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p>No parsed text available.</p>
@@ -430,6 +385,7 @@ export function DocumentsTab({ game, onRulebookUrlChange }: DocumentsTabProps) {
       <SupplementaryDocumentsSection
         gameId={game.id}
         gameSlug={game.slug}
+        initialDocuments={initialData.gameDocuments}
       />
     </div>
   )
