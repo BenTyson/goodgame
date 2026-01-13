@@ -484,6 +484,23 @@ export const INVERSE_RELATIONS: Record<RelationType, RelationType> = {
   'standalone_in_series': 'standalone_in_series' // symmetric
 }
 
+// Comprehensive relation type styling config
+export interface RelationTypeConfig {
+  label: string       // Singular (e.g., "Expansion")
+  pluralLabel: string // Plural (e.g., "Expansions")
+  color: string       // Tailwind text color class
+}
+
+export const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
+  expansion_of: { label: 'Expansion', pluralLabel: 'Expansions', color: 'text-blue-600' },
+  base_game_of: { label: 'Base Game', pluralLabel: 'Base Games', color: 'text-amber-600' },
+  sequel_to: { label: 'Sequel', pluralLabel: 'Sequels', color: 'text-green-600' },
+  prequel_to: { label: 'Prequel', pluralLabel: 'Prequels', color: 'text-purple-600' },
+  reimplementation_of: { label: 'Reimplementation', pluralLabel: 'Reimplementations', color: 'text-orange-600' },
+  spin_off_of: { label: 'Spin-off', pluralLabel: 'Spin-offs', color: 'text-pink-600' },
+  standalone_in_series: { label: 'Standalone', pluralLabel: 'Standalones', color: 'text-cyan-600' },
+}
+
 // ===========================================
 // VIBES (Ratings System)
 // ===========================================

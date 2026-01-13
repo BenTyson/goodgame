@@ -6,11 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-  Pencil,
   Search,
   Users2,
   Plus,
-  ExternalLink,
   Layers,
   GitBranch,
   RefreshCw,
@@ -18,16 +16,8 @@ import {
   ImageIcon,
   AlertCircle,
 } from 'lucide-react'
-
-// Relation type display config
-const RELATION_CONFIG: Record<string, { label: string; pluralLabel: string; color: string }> = {
-  expansion_of: { label: 'Expansion', pluralLabel: 'Expansions', color: 'text-blue-600' },
-  sequel_to: { label: 'Sequel', pluralLabel: 'Sequels', color: 'text-green-600' },
-  prequel_to: { label: 'Prequel', pluralLabel: 'Prequels', color: 'text-purple-600' },
-  reimplementation_of: { label: 'Reimplementation', pluralLabel: 'Reimplementations', color: 'text-orange-600' },
-  spin_off_of: { label: 'Spin-off', pluralLabel: 'Spin-offs', color: 'text-pink-600' },
-  standalone_in_series: { label: 'Standalone', pluralLabel: 'Standalones', color: 'text-cyan-600' },
-}
+import { RELATION_TYPE_CONFIG } from '@/types/database'
+import { calculateOrphanCount } from '@/lib/families'
 
 interface RelationCounts {
   expansion_of: number
@@ -79,20 +69,15 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
     ((f.games as unknown as { id: string }[]) || []).map(g => g.id)
   )
 
-  // Get relation counts for games in these families
+  // Get all relations for games in these families (for both counting and orphan calculation)
   const { data: relations } = await supabase
     .from('game_relations')
-    .select('source_game_id, relation_type')
+    .select('source_game_id, target_game_id, relation_type')
     .in('source_game_id', allGameIds)
 
-  // Build a map of game_id -> relation counts
+  // Build a map of game_id -> relation counts (for filter badges)
   const gameRelationCounts = new Map<string, RelationCounts>()
-  // Also track which games are connected (either as source or target in a relation)
-  const connectedGames = new Set<string>()
-
   for (const rel of relations || []) {
-    connectedGames.add(rel.source_game_id)
-    // We need target game IDs too - track them for later
     if (!gameRelationCounts.has(rel.source_game_id)) {
       gameRelationCounts.set(rel.source_game_id, {
         expansion_of: 0,
@@ -110,73 +95,6 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
     }
   }
 
-  // Get all relations (need target_game_id too for orphan calculation)
-  const { data: allRelations } = await supabase
-    .from('game_relations')
-    .select('source_game_id, target_game_id, relation_type')
-    .in('target_game_id', allGameIds)
-
-  // Add targets to connected set
-  for (const rel of allRelations || []) {
-    if (allGameIds.includes(rel.source_game_id)) {
-      connectedGames.add(rel.target_game_id)
-    }
-  }
-
-  // Build a map of family_id -> set of connected game IDs
-  // A game is connected if it appears as source or target in any intra-family relation
-  const familyConnectedGames = new Map<string, Set<string>>()
-
-  // Initialize with empty sets
-  for (const f of families) {
-    familyConnectedGames.set(f.id, new Set())
-  }
-
-  // Build map of game_id -> family_id for quick lookup
-  const gameToFamily = new Map<string, string>()
-  for (const f of families) {
-    const games = (f.games as unknown as { id: string }[]) || []
-    for (const g of games) {
-      gameToFamily.set(g.id, f.id)
-    }
-  }
-
-  // Mark games as connected if they appear in any intra-family relation
-  for (const rel of relations || []) {
-    const sourceFamilyId = gameToFamily.get(rel.source_game_id)
-    const targetFamilyId = allRelations?.find(
-      r => r.source_game_id === rel.source_game_id
-    )
-      ? gameToFamily.get(
-          allRelations.find(r => r.source_game_id === rel.source_game_id)?.target_game_id || ''
-        )
-      : undefined
-
-    // If source has a relation, check if target is in same family
-    if (sourceFamilyId) {
-      // Need to get target from the full relation
-      const fullRel = allRelations?.find(
-        r => r.source_game_id === rel.source_game_id
-      )
-      if (fullRel && gameToFamily.get(fullRel.target_game_id) === sourceFamilyId) {
-        familyConnectedGames.get(sourceFamilyId)?.add(rel.source_game_id)
-        familyConnectedGames.get(sourceFamilyId)?.add(fullRel.target_game_id)
-      }
-    }
-  }
-
-  // Also use allRelations to mark connected games (needed for complete picture)
-  for (const rel of allRelations || []) {
-    const sourceFamilyId = gameToFamily.get(rel.source_game_id)
-    const targetFamilyId = gameToFamily.get(rel.target_game_id)
-
-    // If both source and target are in the same family, both are connected
-    if (sourceFamilyId && sourceFamilyId === targetFamilyId) {
-      familyConnectedGames.get(sourceFamilyId)?.add(rel.source_game_id)
-      familyConnectedGames.get(sourceFamilyId)?.add(rel.target_game_id)
-    }
-  }
-
   // Build family stats
   const familyStats: FamilyWithStats[] = families.map(f => {
     const games = (f.games as unknown as {
@@ -187,6 +105,13 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
       bgg_raw_data: { thumbnail?: string | null } | null
       year_published: number | null
     }[]) || []
+
+    const gameIds = new Set(games.map(g => g.id))
+
+    // Get relations within this family (both source and target in family)
+    const familyRelations = (relations || []).filter(
+      r => gameIds.has(r.source_game_id) && gameIds.has(r.target_game_id)
+    )
 
     // Aggregate relation counts for all games in this family
     const relationCounts: RelationCounts = {
@@ -210,29 +135,8 @@ async function getFamilies(search?: string, relationFilter?: string): Promise<Fa
       }
     }
 
-    // Calculate orphan count
-    // For single-game families, there are no orphans (the one game is the base)
-    // For multi-game families, orphans are games not connected to any other game
-    let orphanCount = 0
-    if (games.length > 1) {
-      const connectedSet = familyConnectedGames.get(f.id) || new Set()
-      // Find the base game (oldest or explicit)
-      const baseGameId = f.base_game_id || [...games].sort((a, b) => {
-        if (a.year_published && b.year_published) {
-          return a.year_published - b.year_published
-        }
-        return a.name.length - b.name.length
-      })[0]?.id
-
-      // An orphan is a game that:
-      // 1. Is not the base game, AND
-      // 2. Is not connected to any other game in the family
-      for (const game of games) {
-        if (game.id !== baseGameId && !connectedSet.has(game.id)) {
-          orphanCount++
-        }
-      }
-    }
+    // Calculate orphan count using shared utility
+    const orphanCount = calculateOrphanCount(games, familyRelations, f.base_game_id)
 
     // Find base game thumbnail - prefer explicit base_game_id, else oldest game by year
     let baseGameThumbnail: string | null = null
@@ -394,7 +298,7 @@ export default async function AdminFamiliesPage({
             .map(([type, count]) => ({
               type,
               count,
-              config: RELATION_CONFIG[type],
+              config: RELATION_TYPE_CONFIG[type as keyof typeof RELATION_TYPE_CONFIG],
             }))
 
           return (

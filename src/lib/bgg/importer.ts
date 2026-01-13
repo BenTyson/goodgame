@@ -14,6 +14,7 @@ import {
   prepareGameUpdateFromEnrichment,
   determineVecnaState,
 } from '@/lib/enrichment'
+import { enrichFamilyFromWikipedia } from '@/lib/wikipedia/family-enrichment'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -1252,6 +1253,56 @@ export async function importGameFromBGG(
 
     // Create sequel relationships from Wikidata P155/P156
     await createWikidataSequelRelations(supabase, newGame.id, wikidataRaw)
+  }
+
+  // =====================================================
+  // FAMILY ENRICHMENT: Auto-create game_relations from Wikipedia
+  // =====================================================
+  // If the game has a family AND a Wikipedia URL, enrich the family
+  // to auto-create game_relations based on Wikipedia data
+  const wikipediaUrl = enrichment.wikipedia?.wikipedia_url || enrichment.wikidata?.wikipedia_url
+  if (wikipediaUrl) {
+    // Check if game now has a family (may have been linked above)
+    const { data: gameWithFamily } = await supabase
+      .from('games')
+      .select('family_id')
+      .eq('id', newGame.id)
+      .single()
+
+    if (gameWithFamily?.family_id) {
+      // Check if family needs Wikipedia enrichment (throttle to avoid repeated calls)
+      const { data: family } = await supabase
+        .from('game_families')
+        .select('family_context')
+        .eq('id', gameWithFamily.family_id)
+        .single()
+
+      const context = family?.family_context as { wikipediaEnrichment?: { lastEnrichedAt: string } } | null
+      const lastEnriched = context?.wikipediaEnrichment?.lastEnrichedAt
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+      const needsEnrichment = !lastEnriched || new Date(lastEnriched).getTime() < thirtyDaysAgo
+
+      if (needsEnrichment) {
+        try {
+          const familyResult = await enrichFamilyFromWikipedia(
+            supabase,
+            gameWithFamily.family_id,
+            newGame.id,
+            wikipediaUrl,
+            { autoLinkHighConfidence: true, createRelations: true }
+          )
+          if (familyResult.relationsCreated > 0) {
+            console.log(`  [Wikipedia] Created ${familyResult.relationsCreated} family relations`)
+          }
+          if (familyResult.gamesLinked > 0) {
+            console.log(`  [Wikipedia] Auto-linked ${familyResult.gamesLinked} games to family`)
+          }
+        } catch (error) {
+          // Don't fail the import if family enrichment fails
+          console.warn(`  [Wikipedia] Family enrichment failed:`, error instanceof Error ? error.message : error)
+        }
+      }
+    }
   }
 
   // Log Commons results (images are available for manual selection in admin)

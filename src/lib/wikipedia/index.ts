@@ -97,6 +97,19 @@ export {
   getMostNotableAward,
 } from './awards'
 
+// Family enrichment (Wikipedia → game_relations)
+export {
+  enrichFamilyFromWikipedia,
+  linkGamesWithRelations,
+  mapWikipediaTypeToRelation,
+  fetchWikipediaArticleContent,
+  matchGamesToDatabase,
+  type WikipediaExtraction,
+  type ExtractedGame,
+  type MatchedGame,
+  type FamilyEnrichmentResult,
+} from './family-enrichment'
+
 // =====================================================
 // Legacy Types (kept for backwards compatibility)
 // =====================================================

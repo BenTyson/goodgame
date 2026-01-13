@@ -1,231 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { generate } from '@/lib/ai/claude'
-
-interface WikipediaExtraction {
-  description: string | null
-  expansions: ExtractedGame[]
-  sequels: ExtractedGame[]
-  spinoffs: ExtractedGame[]
-  relatedGames: ExtractedGame[]
-}
-
-interface ExtractedGame {
-  name: string
-  bggId: number | null
-  year: number | null
-  type: 'expansion' | 'sequel' | 'spinoff' | 'standalone' | 'related'
-  notes: string | null
-}
-
-interface MatchedGame {
-  extracted: ExtractedGame
-  matchedGame: {
-    id: string
-    name: string
-    bgg_id: number | null
-    family_id: string | null
-    slug: string
-  } | null
-  matchType: 'exact' | 'fuzzy' | 'bgg_id' | 'none'
-  alreadyInFamily: boolean
-}
-
-const WIKIPEDIA_EXTRACTION_PROMPT = `You are an expert at extracting structured game data from Wikipedia articles about board games.
-
-Analyze the Wikipedia article content and extract information about related games in this family/series.
-
-Return a JSON object with this structure:
-{
-  "description": "A 2-3 sentence summary of the game series/family",
-  "expansions": [
-    { "name": "Expansion Name", "bggId": null, "year": 2020, "type": "expansion", "notes": "Brief note if relevant" }
-  ],
-  "sequels": [
-    { "name": "Sequel Name", "bggId": null, "year": 2022, "type": "sequel", "notes": null }
-  ],
-  "spinoffs": [
-    { "name": "Spinoff Name", "bggId": null, "year": 2021, "type": "spinoff", "notes": null }
-  ],
-  "relatedGames": [
-    { "name": "Related Game", "bggId": null, "year": null, "type": "related", "notes": "How it's related" }
-  ]
-}
-
-Guidelines:
-- Extract ALL games mentioned that are related to the main game
-- Categorize them as: expansion (adds to base game), sequel (follows chronologically), spinoff (same universe, different game), related (reimplementation, inspired by, etc.)
-- Include year if mentioned
-- If a BGG ID is mentioned or can be inferred from links, include it
-- Include the base game itself in the appropriate category if mentioned
-- Be thorough - don't miss any games mentioned in sections like "Expansions", "Sequels", "Related games", "Reception", etc.
-- Return ONLY valid JSON, no markdown or explanation`
+import {
+  enrichFamilyFromWikipedia,
+  linkGamesWithRelations,
+  type MatchedGame,
+} from '@/lib/wikipedia/family-enrichment'
 
 /**
- * Fetch Wikipedia article content using the MediaWiki API
+ * POST - Extract games from Wikipedia article
+ * Fetches the Wikipedia article for a game in this family and extracts related games.
  */
-async function fetchWikipediaContent(wikipediaUrl: string): Promise<string> {
-  // Extract article title from URL
-  // e.g., https://en.wikipedia.org/wiki/Gloomhaven -> Gloomhaven
-  const urlMatch = wikipediaUrl.match(/\/wiki\/(.+)$/)
-  if (!urlMatch) {
-    throw new Error('Invalid Wikipedia URL format')
-  }
-
-  const articleTitle = decodeURIComponent(urlMatch[1])
-
-  // Use MediaWiki API to get article content as plain text
-  const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(articleTitle)}&prop=extracts&explaintext=true&format=json&origin=*`
-
-  const response = await fetch(apiUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Wikipedia article: ${response.status}`)
-  }
-
-  const data = await response.json()
-  const pages = data.query?.pages
-  if (!pages) {
-    throw new Error('No pages found in Wikipedia response')
-  }
-
-  // Get the first (and should be only) page
-  const pageId = Object.keys(pages)[0]
-  const page = pages[pageId]
-
-  if (page.missing !== undefined) {
-    throw new Error(`Wikipedia article not found: ${articleTitle}`)
-  }
-
-  return page.extract || ''
-}
-
-/**
- * Normalize game name for fuzzy matching
- */
-function normalizeGameName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[:\-–—]/g, ' ')
-    .replace(/\s*&\s*/g, ' and ')  // Normalize & to "and"
-    .replace(/\s+/g, ' ')
-    .replace(/[^a-z0-9 ]/g, '')
-    .trim()
-}
-
-/**
- * Match extracted games to games in our database
- */
-async function matchGamesToDatabase(
-  extracted: ExtractedGame[],
-  familyId: string,
-  familyName: string
-): Promise<MatchedGame[]> {
-  const supabase = createAdminClient()
-
-  // Get all games for potential matching
-  const { data: allGames } = await supabase
-    .from('games')
-    .select('id, name, bgg_id, family_id, slug')
-
-  if (!allGames) return []
-
-  // Create lookup maps
-  const gamesByNormalizedName = new Map<string, typeof allGames[0]>()
-  const gamesByBggId = new Map<number, typeof allGames[0]>()
-
-  for (const game of allGames) {
-    gamesByNormalizedName.set(normalizeGameName(game.name), game)
-    if (game.bgg_id) {
-      gamesByBggId.set(game.bgg_id, game)
-    }
-  }
-
-  // Normalize family name for prefix matching
-  const normalizedFamilyName = normalizeGameName(familyName)
-
-  const results: MatchedGame[] = []
-
-  for (const ext of extracted) {
-    let matchedGame: typeof allGames[0] | null = null
-    let matchType: MatchedGame['matchType'] = 'none'
-
-    // Try BGG ID match first (most reliable)
-    if (ext.bggId && gamesByBggId.has(ext.bggId)) {
-      matchedGame = gamesByBggId.get(ext.bggId)!
-      matchType = 'bgg_id'
-    }
-
-    // Try exact normalized name match
-    if (!matchedGame) {
-      const normalized = normalizeGameName(ext.name)
-      if (gamesByNormalizedName.has(normalized)) {
-        matchedGame = gamesByNormalizedName.get(normalized)!
-        matchType = 'exact'
-      }
-    }
-
-    // Try family prefix match (e.g., "Branch & Claw" → "Spirit Island: Branch & Claw")
-    if (!matchedGame) {
-      const normalized = normalizeGameName(ext.name)
-      // Try "Family Name: Extracted Name" and "Family Name Extracted Name"
-      const prefixedVariants = [
-        `${normalizedFamilyName} ${normalized}`,
-      ]
-      for (const variant of prefixedVariants) {
-        if (gamesByNormalizedName.has(variant)) {
-          matchedGame = gamesByNormalizedName.get(variant)!
-          matchType = 'fuzzy'
-          break
-        }
-      }
-    }
-
-    // Try suffix match (check if any game name ends with the extracted name after the family prefix)
-    if (!matchedGame) {
-      const normalized = normalizeGameName(ext.name)
-      for (const [gameName, game] of gamesByNormalizedName) {
-        // Check if the game name starts with family name and ends with extracted name
-        if (gameName.startsWith(normalizedFamilyName) && gameName.endsWith(normalized)) {
-          matchedGame = game
-          matchType = 'fuzzy'
-          break
-        }
-      }
-    }
-
-    // Try fuzzy match (contains) with reasonable overlap
-    if (!matchedGame) {
-      const normalized = normalizeGameName(ext.name)
-      for (const [gameName, game] of gamesByNormalizedName) {
-        if (gameName.includes(normalized) || normalized.includes(gameName)) {
-          // Only accept if it's a substantial match (>50% overlap)
-          const overlap = Math.min(gameName.length, normalized.length) / Math.max(gameName.length, normalized.length)
-          if (overlap > 0.5) {
-            matchedGame = game
-            matchType = 'fuzzy'
-            break
-          }
-        }
-      }
-    }
-
-    results.push({
-      extracted: ext,
-      matchedGame: matchedGame ? {
-        id: matchedGame.id,
-        name: matchedGame.name,
-        bgg_id: matchedGame.bgg_id,
-        family_id: matchedGame.family_id,
-        slug: matchedGame.slug,
-      } : null,
-      matchType,
-      alreadyInFamily: matchedGame?.family_id === familyId,
-    })
-  }
-
-  return results
-}
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -234,10 +18,10 @@ export async function POST(
     const { id: familyId } = await params
     const supabase = createAdminClient()
 
-    // Get the family and its games
+    // Get the family
     const { data: family, error: familyError } = await supabase
       .from('game_families')
-      .select('id, name, wikidata_series_id')
+      .select('id, name')
       .eq('id', familyId)
       .single()
 
@@ -264,85 +48,26 @@ export async function POST(
     const sourceGame = games[0]
     const wikipediaUrl = sourceGame.wikipedia_url!
 
-    // Fetch Wikipedia content
-    const wikiContent = await fetchWikipediaContent(wikipediaUrl)
-
-    if (!wikiContent || wikiContent.length < 100) {
-      return NextResponse.json(
-        { error: 'Wikipedia article content too short or empty' },
-        { status: 400 }
-      )
-    }
-
-    // Truncate content if too long (keep first ~15000 chars for context)
-    const truncatedContent = wikiContent.length > 15000
-      ? wikiContent.slice(0, 15000) + '\n\n[Content truncated...]'
-      : wikiContent
-
-    // Parse with Haiku
-    const result = await generate(
-      WIKIPEDIA_EXTRACTION_PROMPT,
-      `Wikipedia article for "${sourceGame.name}":\n\n${truncatedContent}`,
-      { temperature: 0.3 }
+    // Use shared enrichment function (but don't auto-link, let UI decide)
+    const result = await enrichFamilyFromWikipedia(
+      supabase,
+      familyId,
+      sourceGame.id,
+      wikipediaUrl,
+      { autoLinkHighConfidence: false, createRelations: false }
     )
 
-    // Parse the AI response
-    let extraction: WikipediaExtraction
-    try {
-      // Clean up the response - remove markdown code blocks if present
-      let jsonStr = result.content.trim()
-      if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-      }
-      extraction = JSON.parse(jsonStr)
-    } catch {
-      console.error('Failed to parse AI response:', result.content)
-      return NextResponse.json(
-        { error: 'Failed to parse Wikipedia extraction' },
-        { status: 500 }
-      )
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
-
-    // Combine all extracted games
-    const allExtracted: ExtractedGame[] = [
-      ...extraction.expansions,
-      ...extraction.sequels,
-      ...extraction.spinoffs,
-      ...extraction.relatedGames,
-    ]
-
-    // Match to our database
-    const matchedGames = await matchGamesToDatabase(allExtracted, familyId, family.name)
-
-    // Categorize results
-    const inFamily = matchedGames.filter(m => m.alreadyInFamily)
-    const canLink = matchedGames.filter(m => m.matchedGame && !m.alreadyInFamily)
-    const notInDb = matchedGames.filter(m => !m.matchedGame)
 
     return NextResponse.json({
       success: true,
-      sourceGame: {
-        id: sourceGame.id,
-        name: sourceGame.name,
-        wikipediaUrl,
-      },
-      extraction: {
-        description: extraction.description,
-        totalFound: allExtracted.length,
-      },
-      matches: {
-        inFamily,
-        canLink,
-        notInDb,
-      },
-      usage: {
-        model: result.model,
-        tokensInput: result.tokensInput,
-        tokensOutput: result.tokensOutput,
-        costUsd: result.costUsd,
-      },
+      sourceGame: result.sourceGame,
+      extraction: result.extraction,
+      matches: result.matches,
+      usage: result.usage,
     })
-
   } catch (error) {
     console.error('Wikipedia enrichment error:', error)
     return NextResponse.json(
@@ -353,7 +78,8 @@ export async function POST(
 }
 
 /**
- * Link games to family
+ * PATCH - Link games to family and create relations
+ * Links selected games to the family and creates game_relations entries.
  */
 export async function PATCH(
   request: NextRequest,
@@ -361,29 +87,81 @@ export async function PATCH(
 ) {
   try {
     const { id: familyId } = await params
-    const { gameIds } = await request.json()
+    const body = await request.json()
 
-    if (!gameIds || !Array.isArray(gameIds) || gameIds.length === 0) {
-      return NextResponse.json({ error: 'No game IDs provided' }, { status: 400 })
+    // Support both old format (gameIds array) and new format (matches array with types)
+    const { gameIds, matches, sourceGameId } = body as {
+      gameIds?: string[]
+      matches?: MatchedGame[]
+      sourceGameId?: string
     }
 
     const supabase = createAdminClient()
 
-    // Update all games to link to this family
-    const { error } = await supabase
+    // If using new format with matches (includes relation types)
+    if (matches && matches.length > 0 && sourceGameId) {
+      const gamesToLink = matches
+        .filter((m: MatchedGame) => m.matchedGame)
+        .map((m: MatchedGame) => ({
+          gameId: m.matchedGame!.id,
+          relationType: m.extracted.type,
+        }))
+
+      const result = await linkGamesWithRelations(supabase, familyId, sourceGameId, gamesToLink)
+
+      return NextResponse.json({
+        success: true,
+        linked: result.linked,
+        relationsCreated: result.relationsCreated,
+      })
+    }
+
+    // Fallback to old format (just gameIds, need to find source game)
+    if (!gameIds || !Array.isArray(gameIds) || gameIds.length === 0) {
+      return NextResponse.json({ error: 'No game IDs provided' }, { status: 400 })
+    }
+
+    // Find source game (first game in family with Wikipedia URL, or just first)
+    const { data: familyGames } = await supabase
       .from('games')
-      .update({ family_id: familyId })
-      .in('id', gameIds)
+      .select('id')
+      .eq('family_id', familyId)
+      .order('year_published', { ascending: true })
+      .limit(1)
+
+    const targetGameId = sourceGameId || familyGames?.[0]?.id
+
+    // Link games to family
+    const { error } = await supabase.from('games').update({ family_id: familyId }).in('id', gameIds)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // If we have a target game, create relations (for backwards compatibility)
+    let relationsCreated = 0
+    if (targetGameId) {
+      for (const gameId of gameIds) {
+        if (gameId === targetGameId) continue
+
+        // Default to expansion_of for backwards compatibility
+        await supabase.from('game_relations').upsert(
+          {
+            source_game_id: gameId,
+            target_game_id: targetGameId,
+            relation_type: 'expansion_of',
+          },
+          { onConflict: 'source_game_id,target_game_id,relation_type' }
+        )
+        relationsCreated++
+      }
+    }
+
     return NextResponse.json({
       success: true,
       linked: gameIds.length,
+      relationsCreated,
     })
-
   } catch (error) {
     console.error('Link games error:', error)
     return NextResponse.json(

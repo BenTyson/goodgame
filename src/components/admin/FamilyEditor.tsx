@@ -12,7 +12,7 @@ import {
   Trash2,
   Plus,
   Users2,
-  Gamepad2,
+  Dices,
   CheckCircle2,
 } from 'lucide-react'
 
@@ -33,7 +33,7 @@ import {
 import { GamePicker } from './GamePicker'
 import { FamilyTreeView } from './family-relations'
 import { WikipediaEnrichment } from './WikipediaEnrichment'
-import { FamilyTreeDiagram } from '@/components/family-tree'
+import { FamilyTreeDiagram, TreeErrorBoundary } from '@/components/family-tree'
 import { useAsyncAction, useAutoSlug } from '@/hooks/admin'
 import type { Database } from '@/types/supabase'
 import type { Game, GameFamily, GameRelation } from '@/types/database'
@@ -74,8 +74,37 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Load games and relations if editing existing family
-  // Note: Initial data comes from server, this is for refreshing after edits
+  // Shared function to refresh games and relations from database
+  const refreshGamesAndRelations = useCallback(async (familyId: string) => {
+    // Load games
+    const { data: gamesData } = await supabase
+      .from('games')
+      .select('*')
+      .eq('family_id', familyId)
+      .order('year_published', { ascending: true, nullsFirst: false })
+
+    const newGames = gamesData || []
+    setGames(newGames)
+
+    // Load relations between games in this family
+    if (newGames.length > 0) {
+      const gameIds = newGames.map(g => g.id)
+      const { data: sourceRelations } = await supabase
+        .from('game_relations')
+        .select('*')
+        .in('source_game_id', gameIds)
+
+      // Filter to only include relations where target is also in family
+      const filteredRelations = (sourceRelations || []).filter(r =>
+        gameIds.includes(r.target_game_id)
+      )
+      setRelations(filteredRelations)
+    } else {
+      setRelations([])
+    }
+  }, [supabase])
+
+  // Load games and relations if editing existing family without server data
   useEffect(() => {
     // Skip if we already have data from server
     if (initialFamily?.games && initialFamily.games.length > 0) {
@@ -83,35 +112,9 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
     }
 
     if (!isNew && initialFamily?.id) {
-      const loadGamesAndRelations = async () => {
-        // Load games
-        const { data: gamesData } = await supabase
-          .from('games')
-          .select('*')
-          .eq('family_id', initialFamily.id)
-          .order('year_published', { ascending: true, nullsFirst: false })
-
-        setGames(gamesData || [])
-
-        // Load relations between games in this family
-        if (gamesData && gamesData.length > 0) {
-          const gameIds = gamesData.map(g => g.id)
-          // First get relations where source is in family
-          const { data: sourceRelations } = await supabase
-            .from('game_relations')
-            .select('*')
-            .in('source_game_id', gameIds)
-
-          // Filter to only include relations where target is also in family
-          const filteredRelations = (sourceRelations || []).filter(r =>
-            gameIds.includes(r.target_game_id)
-          )
-          setRelations(filteredRelations)
-        }
-      }
-      loadGamesAndRelations()
+      refreshGamesAndRelations(initialFamily.id)
     }
-  }, [initialFamily?.id, initialFamily?.games, isNew, supabase])
+  }, [initialFamily?.id, initialFamily?.games, isNew, refreshGamesAndRelations])
 
   const updateField = <K extends keyof typeof family>(
     field: K,
@@ -403,15 +406,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
           familyId={family.id}
           familyName={family.name}
           hasWikipediaUrl={games.some(g => g.wikipedia_url)}
-          onGamesLinked={async () => {
-            // Refresh games list after linking
-            const { data: gamesData } = await supabase
-              .from('games')
-              .select('*')
-              .eq('family_id', family.id)
-              .order('year_published', { ascending: true, nullsFirst: false })
-            setGames(gamesData || [])
-          }}
+          onGamesLinked={() => refreshGamesAndRelations(family.id)}
         />
       )}
 
@@ -421,7 +416,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
           {/* Add Game Button */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Gamepad2 className="h-5 w-5 text-muted-foreground" />
+              <Dices className="h-5 w-5 text-muted-foreground" />
               <span className="font-medium">
                 {games.length} {games.length === 1 ? 'game' : 'games'} in family
               </span>
@@ -444,7 +439,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
-                    <Gamepad2 className="h-4 w-4 text-teal-600" />
+                    <Dices className="h-4 w-4 text-teal-600" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">Visual Family Tree</CardTitle>
@@ -455,13 +450,15 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
                 </div>
               </CardHeader>
               <CardContent>
-                <FamilyTreeDiagram
-                  games={games}
-                  relations={relations}
-                  baseGameId={family.base_game_id}
-                  familyId={family.id}
-                  variant="admin"
-                />
+                <TreeErrorBoundary>
+                  <FamilyTreeDiagram
+                    games={games}
+                    relations={relations}
+                    baseGameId={family.base_game_id}
+                    familyId={family.id}
+                    variant="admin"
+                  />
+                </TreeErrorBoundary>
               </CardContent>
             </Card>
           )}
@@ -472,21 +469,7 @@ export function FamilyEditor({ family: initialFamily, isNew = false }: FamilyEdi
             relations={relations}
             baseGameId={family.base_game_id}
             familyId={family.id}
-            onRelationCreated={async () => {
-              // Refresh relations after a new one is created
-              if (games.length > 0) {
-                const gameIds = games.map(g => g.id)
-                const { data: sourceRelations } = await supabase
-                  .from('game_relations')
-                  .select('*')
-                  .in('source_game_id', gameIds)
-
-                const filteredRelations = (sourceRelations || []).filter(r =>
-                  gameIds.includes(r.target_game_id)
-                )
-                setRelations(filteredRelations)
-              }
-            }}
+            onRelationCreated={() => refreshGamesAndRelations(family.id)}
           />
         </div>
       )}

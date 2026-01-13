@@ -2,7 +2,41 @@
 
 > Last Updated: 2026-01-12
 
-## Current Phase: 71 - Visual Family Tree + Refactoring (COMPLETE)
+## Current Phase: 72 - Wikipedia Family Enrichment Auto-Relations (COMPLETE)
+
+### Session Summary (2026-01-12) - Wikipedia Family Enrichment
+
+**What was done:**
+- Created shared `family-enrichment.ts` module for Wikipedia→game_relations pipeline
+- Auto-creates `game_relations` entries when Wikipedia enrichment runs (expansion_of, sequel_to, spin_off_of)
+- Added auto-trigger in BGG importer: when game has family + Wikipedia URL, enrich family automatically
+- 30-day throttle on auto-enrichment to avoid repeated API calls for same family
+- Refactored `/api/admin/families/[id]/wikipedia` route to use shared module (eliminated code duplication)
+- Code cleanup: consolidated RELATION_TYPE_CONFIG, shared orphan calculation, TreeErrorBoundary, fixed Dices icon
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/wikipedia/family-enrichment.ts` | Shared module for family enrichment (extraction, matching, relation creation) |
+| `src/lib/families/orphan-calculation.ts` | Shared utility for calculating orphan games in families |
+| `src/components/family-tree/TreeErrorBoundary.tsx` | Error boundary for family tree diagram rendering |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/wikipedia/index.ts` | Added exports for family-enrichment module |
+| `src/app/api/admin/families/[id]/wikipedia/route.ts` | Refactored to use shared module, adds relation creation on link |
+| `src/lib/bgg/importer.ts` | Added auto-trigger for family enrichment after game import |
+| `src/types/database.ts` | Added RELATION_TYPE_CONFIG (consolidated from multiple files) |
+| `src/components/admin/family-relations/use-orphan-games.ts` | Uses shared orphan calculation |
+| `src/components/family-tree/use-tree-layout.ts` | Uses shared RELATION_TYPE_CONFIG |
+| `src/components/admin/FamilyEditor.tsx` | Added TreeErrorBoundary, replaced Gamepad2 with Dices icon |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 71 - Visual Family Tree + Refactoring (COMPLETE)
 
 ### Session Summary (2026-01-12) - Visual Family Tree
 
