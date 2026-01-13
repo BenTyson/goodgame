@@ -12,7 +12,6 @@ import {
   Save,
   Eye,
   Loader2,
-  ExternalLink,
   CheckCircle2,
   Info,
   ImageIcon,
@@ -134,19 +133,18 @@ export function GameEditor({ game: initialGame }: GameEditorProps) {
           <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <Link href={`/admin/games/${game.id}/preview`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-2">
+          {game.slug ? (
+            <Link href={`/games/${game.slug}`} target="_blank">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Eye className="h-4 w-4" />
+                <span className="hidden sm:inline">{game.is_published ? 'View Live' : 'Preview'}</span>
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-2" disabled title="Add a slug to preview">
               <Eye className="h-4 w-4" />
               <span className="hidden sm:inline">Preview</span>
             </Button>
-          </Link>
-          {game.is_published && (
-            <Link href={`/games/${game.slug}`} target="_blank">
-              <Button variant="outline" size="sm" className="gap-2">
-                <ExternalLink className="h-4 w-4" />
-                <span className="hidden sm:inline">View Live</span>
-              </Button>
-            </Link>
           )}
           <Button
             onClick={saveGame}

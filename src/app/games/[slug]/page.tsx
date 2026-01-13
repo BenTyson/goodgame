@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import {
+  AdminPreviewBanner,
   GameHero,
   GamePageTabs,
   OverviewTab,
@@ -11,7 +12,8 @@ import {
   ScoreSheetTab,
 } from '@/components/games'
 import { VibesTab } from '@/components/vibes'
-import { getGameWithDetails, getAllGameSlugs, getGameAwards, getScoreSheetConfig, getGameDocuments } from '@/lib/supabase/queries'
+import { getGameWithDetails, getGameWithDetailsForAdmin, getAllGameSlugs, getGameAwards, getScoreSheetConfig, getGameDocuments } from '@/lib/supabase/queries'
+import { isAdmin } from '@/lib/supabase/admin'
 import { getGameRelationsGrouped } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { getGameVibeStats, getGameVibes } from '@/lib/supabase/vibe-queries'
@@ -26,7 +28,14 @@ export async function generateMetadata({
   params,
 }: GamePageProps): Promise<Metadata> {
   const { slug } = await params
-  const game = await getGameWithDetails(slug)
+  const userIsAdmin = await isAdmin()
+
+  let game = await getGameWithDetails(slug)
+
+  // If no published game found and user is admin, try admin query
+  if (!game && userIsAdmin) {
+    game = await getGameWithDetailsForAdmin(slug)
+  }
 
   if (!game) {
     return {
@@ -39,6 +48,10 @@ export async function generateMetadata({
     description:
       game.meta_description ||
       `Learn how to play ${game.name}. Get rules summary, printable score sheets, setup guide, and quick reference cards. ${game.tagline}`,
+    // Prevent indexing of unpublished games
+    ...(game.is_published === false && {
+      robots: 'noindex, nofollow'
+    })
   }
 }
 
@@ -72,7 +85,18 @@ function transformScoreSheetConfig(config: Awaited<ReturnType<typeof getScoreShe
 
 export default async function GamePage({ params }: GamePageProps) {
   const { slug } = await params
-  const game = await getGameWithDetails(slug)
+  const userIsAdmin = await isAdmin()
+
+  let game = await getGameWithDetails(slug)
+  let isAdminPreview = false
+
+  // If no published game found and user is admin, try admin query
+  if (!game && userIsAdmin) {
+    game = await getGameWithDetailsForAdmin(slug)
+    if (game) {
+      isAdminPreview = true
+    }
+  }
 
   if (!game) {
     notFound()
@@ -188,6 +212,11 @@ export default async function GamePage({ params }: GamePageProps) {
 
   return (
     <>
+      {/* Admin Preview Banner - only shown for unpublished games */}
+      {isAdminPreview && (
+        <AdminPreviewBanner gameId={game.id} gameName={game.name} />
+      )}
+
       <GameJsonLd game={game} />
       <BreadcrumbJsonLd items={breadcrumbs} />
       <div className="container py-8 md:py-12">

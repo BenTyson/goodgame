@@ -2,7 +2,38 @@
 
 > Last Updated: 2026-01-12
 
-## Current Phase: 72 - Wikipedia Family Enrichment Auto-Relations (COMPLETE)
+## Current Phase: 73 - Admin Preview on Real Game Pages (COMPLETE)
+
+### Session Summary (2026-01-12) - Admin Preview
+
+**What was done:**
+- Replaced outdated `/admin/games/[id]/preview` page with admin access to real `/games/[slug]` page
+- Admins now see unpublished games on the actual game page with a subtle preview banner
+- Banner shows "Preview" label, game name, "Unpublished" badge, and quick actions (Editor, Publish)
+- Non-admins still get 404 for unpublished games
+- Old preview URL redirects to new location for backward compatibility
+- Unpublished games get `noindex, nofollow` robots directive
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/games/AdminPreviewBanner.tsx` | Frosted glass banner with Editor/Publish actions |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/supabase/game-queries.ts` | Added `getGameWithDetailsForAdmin()` - bypasses `is_published` filter |
+| `src/lib/supabase/queries.ts` | Added export for new function |
+| `src/components/games/index.ts` | Added barrel export for AdminPreviewBanner |
+| `src/app/games/[slug]/page.tsx` | Admin check + fallback to admin query + renders banner |
+| `src/components/admin/GameEditor.tsx` | Preview button now uses `/games/[slug]`, shows "View Live" or "Preview" based on publish state |
+| `src/app/admin/(dashboard)/games/[id]/preview/page.tsx` | Converted to redirect |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 72 - Wikipedia Family Enrichment Auto-Relations (COMPLETE)
 
 ### Session Summary (2026-01-12) - Wikipedia Family Enrichment
 

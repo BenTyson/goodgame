@@ -1,4 +1,5 @@
 import { createClient } from './server'
+import { createAdminClient } from './admin'
 import { createBrowserClient } from '@supabase/ssr'
 import type {
   Game,
@@ -567,6 +568,174 @@ export async function getGameWithDetails(slug: string) {
       .eq('video_type', 'review')
       .order('display_order'),
     // Complexity tier (conditional)
+    game.complexity_tier_id
+      ? supabase
+          .from('complexity_tiers')
+          .select('*')
+          .eq('id', game.complexity_tier_id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ])
+
+  // Process categories
+  const categories = categoryLinks
+    ?.map(link => ({
+      ...(link.categories as Category),
+      is_primary: link.is_primary ?? false
+    }))
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+
+  // Process designers
+  const designers_list = (designerLinks || [])
+    .map(link => link.designers as Designer)
+    .filter(d => d !== null)
+
+  // Process publishers
+  const publishers_list = (publisherLinks || [])
+    .map(link => link.publishers as Publisher)
+    .filter(p => p !== null)
+
+  // Process mechanics
+  const mechanics = (mechanicLinks || [])
+    .map(link => link.mechanics as Mechanic)
+    .filter(m => m !== null)
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  // Process themes
+  const themes = (themeLinks || [])
+    .map(link => ({
+      ...(link.themes as Theme),
+      is_primary: link.is_primary ?? false
+    }))
+    .filter(t => t.id !== undefined)
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+
+  // Process player experiences
+  const player_experiences = (experienceLinks || [])
+    .map(link => ({
+      ...(link.player_experiences as PlayerExperience),
+      is_primary: link.is_primary ?? false
+    }))
+    .filter(e => e.id !== undefined)
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+
+  // Process artists
+  const artists_list = (artistLinks || [])
+    .map(link => link.artists as Artist)
+    .filter(a => a !== null)
+
+  return {
+    ...game,
+    images: images || [],
+    categories: categories || [],
+    affiliate_links: (affiliateLinks || []) as AffiliateLinkWithRetailer[],
+    designers_list,
+    publishers_list,
+    artists_list,
+    mechanics,
+    themes,
+    player_experiences,
+    complexity_tier: complexityTierResult?.data ?? null,
+    featured_video: featuredVideo || null,
+    gameplay_videos: gameplayVideos || [],
+    review_videos: reviewVideos || []
+  }
+}
+
+/**
+ * Get game with full details - admin version (bypasses is_published filter)
+ * Use only for admin preview of unpublished games
+ */
+export async function getGameWithDetailsForAdmin(slug: string) {
+  const supabase = createAdminClient()
+
+  // Get game WITHOUT is_published filter
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (gameError || !game) {
+    return null
+  }
+
+  // Run all junction table queries in parallel (same as getGameWithDetails)
+  const [
+    { data: images },
+    { data: categoryLinks },
+    { data: affiliateLinks },
+    { data: designerLinks },
+    { data: publisherLinks },
+    { data: mechanicLinks },
+    { data: themeLinks },
+    { data: experienceLinks },
+    { data: artistLinks },
+    { data: featuredVideo },
+    { data: gameplayVideos },
+    { data: reviewVideos },
+    complexityTierResult,
+  ] = await Promise.all([
+    supabase
+      .from('game_images')
+      .select('*')
+      .eq('game_id', game.id)
+      .order('is_primary', { ascending: false })
+      .order('display_order'),
+    supabase
+      .from('game_categories')
+      .select('category_id, is_primary, categories(*)')
+      .eq('game_id', game.id),
+    supabase
+      .from('affiliate_links')
+      .select('*, retailer:retailers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    supabase
+      .from('game_designers')
+      .select('designer_id, is_primary, display_order, designers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    supabase
+      .from('game_publishers')
+      .select('publisher_id, is_primary, display_order, publishers(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    supabase
+      .from('game_mechanics')
+      .select('mechanic_id, mechanics(*)')
+      .eq('game_id', game.id),
+    supabase
+      .from('game_themes')
+      .select('theme_id, is_primary, themes(*)')
+      .eq('game_id', game.id),
+    supabase
+      .from('game_player_experiences')
+      .select('player_experience_id, is_primary, player_experiences(*)')
+      .eq('game_id', game.id),
+    supabase
+      .from('game_artists')
+      .select('artist_id, display_order, artists(*)')
+      .eq('game_id', game.id)
+      .order('display_order'),
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('is_featured', true)
+      .single(),
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('video_type', 'gameplay')
+      .order('display_order'),
+    supabase
+      .from('game_videos')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('video_type', 'review')
+      .order('display_order'),
     game.complexity_tier_id
       ? supabase
           .from('complexity_tiers')

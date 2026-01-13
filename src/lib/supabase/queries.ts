@@ -29,6 +29,7 @@ export {
   getGameCount,
   getAllGameSlugs,
   getGameWithDetails,
+  getGameWithDetailsForAdmin,
   getRelatedGames,
   getGameDocuments,
   type GameFilters,
