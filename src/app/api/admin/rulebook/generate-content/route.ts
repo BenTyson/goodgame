@@ -312,6 +312,64 @@ export async function POST(request: NextRequest) {
     const hasErrors = Object.keys(results.errors).length > 0
     const hasContent = results.rules || results.setup || results.reference
 
+    // Check if we need to invalidate expansion content (base game regeneration)
+    let invalidatedExpansionCount = 0
+    let invalidatedExpansionNames: string[] = []
+
+    if (!isExpansion && results.rules) {
+      // Find expansions of this game that have already been generated
+      const { data: expansions } = await supabase
+        .from('game_relations')
+        .select('source_game_id')
+        .eq('target_game_id', gameId)
+        .in('relation_type', ['expansion_of', 'standalone_expansion_of'])
+
+      if (expansions && expansions.length > 0) {
+        const expansionIds = expansions.map(e => e.source_game_id)
+
+        // Reset generated expansions to taxonomy_assigned so they get regenerated
+        const { data: updatedExpansions, error: expansionError } = await supabase
+          .from('games')
+          .update({
+            vecna_state: 'taxonomy_assigned',
+            vecna_error: 'Base game content updated - regeneration recommended',
+          })
+          .in('id', expansionIds)
+          .in('vecna_state', ['generated', 'review_pending', 'published'])
+          .select('id, name')
+
+        if (!expansionError && updatedExpansions && updatedExpansions.length > 0) {
+          invalidatedExpansionCount = updatedExpansions.length
+          invalidatedExpansionNames = updatedExpansions.map(e => e.name)
+          console.log(`Marked ${invalidatedExpansionCount} expansion(s) for regeneration:`,
+            invalidatedExpansionNames.join(', '))
+        }
+      }
+
+      // Also rebuild the cached family context for any family this game belongs to
+      const { data: gameFamily } = await supabase
+        .from('games')
+        .select('family_id')
+        .eq('id', gameId)
+        .single()
+
+      if (gameFamily?.family_id) {
+        // Check if this game is the base game of its family
+        const { data: family } = await supabase
+          .from('game_families')
+          .select('base_game_id')
+          .eq('id', gameFamily.family_id)
+          .single()
+
+        if (family?.base_game_id === gameId) {
+          // Rebuild family context with new content
+          const { rebuildFamilyContext } = await import('@/lib/vecna/processing')
+          await rebuildFamilyContext(supabase, gameFamily.family_id, gameId)
+          console.log('Rebuilt family context after base game content update')
+        }
+      }
+    }
+
     return NextResponse.json({
       success: hasContent,
       generated: {
@@ -322,6 +380,13 @@ export async function POST(request: NextRequest) {
       usedWikipediaContext: hasWikipediaContext,
       usedFamilyContext: hasFamilyContext,
       isExpansion,
+      // Include invalidation info if expansions were affected
+      ...(invalidatedExpansionCount > 0 && {
+        invalidatedExpansions: {
+          count: invalidatedExpansionCount,
+          names: invalidatedExpansionNames,
+        },
+      }),
       // Include content summaries for the modal
       content: {
         rules: results.rules ? {

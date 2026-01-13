@@ -1,8 +1,35 @@
 # Current Status
 
-> Last Updated: 2026-01-12
+> Last Updated: 2026-01-13
 
-## Current Phase: 73 - Admin Preview on Real Game Pages (COMPLETE)
+## Current Phase: 74 - Admin Workflow Fixes: Import & Vecna (COMPLETE)
+
+### Session Summary (2026-01-13) - Admin Workflow Fixes
+
+**What was done:**
+- Reviewed Import wizard and Vecna pipeline for weaknesses from admin perspective (identified 27 issues)
+- Fixed top 5 pre-launch issues to prevent data/content rework:
+
+1. **Duplicate BGG ID detection** - Import input now auto-deduplicates pasted IDs and shows warning
+2. **Clearer relation mode descriptions** - Updated UI to explain "All Relations" includes fan filtering, "Upstream" doesn't import expansions
+3. **Family context invalidation** - When base game content regenerated, expansions auto-reset to `taxonomy_assigned` and family context rebuilds
+4. **Improved error messages** - Technical errors now mapped to user-friendly explanations with suggested actions
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/admin/import/ImportInput.tsx` | Added deduplication, duplicate count warning, clearer relation mode descriptions |
+| `src/app/api/admin/rulebook/generate-content/route.ts` | Added expansion invalidation when base game regenerated, rebuilds family context |
+| `src/app/admin/(dashboard)/vecna/components/BlockedStateAlert.tsx` | Added `parseErrorMessage()` for user-friendly error mapping with suggestions |
+
+**Future Work:**
+- 22 remaining issues documented in `docs/backlog/ADMIN-WORKFLOW-ISSUES.md` organized by priority tier (A-E)
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 73 - Admin Preview on Real Game Pages (COMPLETE)
 
 ### Session Summary (2026-01-12) - Admin Preview
 

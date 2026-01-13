@@ -30,6 +30,7 @@
 - **File uploads need middleware exclusion**: Upload API routes must be excluded from middleware matcher or FormData parsing fails. See `src/middleware.ts` matcher regex.
 - **Large uploads need body size config**: Add `experimental.serverActions.bodySizeLimit: '50mb'` to `next.config.ts` for PDFs >1MB.
 - **Published status check**: Use `is_published` flag, NOT `vecna_state === 'published'`. Games can be published via Game Editor without going through Vecna pipeline, causing these values to diverge.
+- **Base game regeneration invalidates expansions**: When base game `rules_content` is regenerated, all its expansions automatically reset to `taxonomy_assigned` state. This ensures expansions use fresh base game context. See `generate-content/route.ts`.
 
 ## Tech Stack
 

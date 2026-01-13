@@ -54,21 +54,27 @@ export function ImportInput({ initialSettings, onAnalyze }: ImportInputProps) {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Parse IDs from input
-  const parseIds = (): number[] => {
+  // Parse IDs from input (with deduplication)
+  const parseIds = (): { ids: number[]; duplicateCount: number } => {
     if (importType === 'single') {
       const id = parseInt(singleId.trim(), 10)
-      return isNaN(id) || id <= 0 ? [] : [id]
+      return { ids: isNaN(id) || id <= 0 ? [] : [id], duplicateCount: 0 }
     }
 
     // Parse batch: support comma-separated, newline-separated, or mixed
-    return batchIds
+    const allIds = batchIds
       .split(/[\n,]+/)
       .map(s => parseInt(s.trim(), 10))
       .filter(n => !isNaN(n) && n > 0)
+
+    // Deduplicate and count duplicates
+    const uniqueIds = [...new Set(allIds)]
+    const duplicateCount = allIds.length - uniqueIds.length
+
+    return { ids: uniqueIds, duplicateCount }
   }
 
-  const parsedIds = parseIds()
+  const { ids: parsedIds, duplicateCount } = parseIds()
   const hasValidInput = parsedIds.length > 0
 
   const handleAnalyze = async () => {
@@ -232,9 +238,16 @@ export function ImportInput({ initialSettings, onAnalyze }: ImportInputProps) {
           )}
 
           {parsedIds.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              {parsedIds.length} game{parsedIds.length !== 1 ? 's' : ''} to analyze
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                {parsedIds.length} unique game{parsedIds.length !== 1 ? 's' : ''} to analyze
+              </p>
+              {duplicateCount > 0 && (
+                <p className="text-sm text-amber-600 dark:text-amber-500">
+                  {duplicateCount} duplicate ID{duplicateCount !== 1 ? 's' : ''} removed
+                </p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -262,9 +275,10 @@ export function ImportInput({ initialSettings, onAnalyze }: ImportInputProps) {
               >
                 <RadioGroupItem value="all" id="all" className="mt-0.5" />
                 <div>
-                  <p className="font-medium">All Relations</p>
+                  <p className="font-medium">All Relations (Recommended)</p>
                   <p className="text-sm text-muted-foreground">
-                    Import all related games including expansions, base games, and reimplementations.
+                    Pre-collects all related games (expansions, base games, reimplementations) up to the depth limit.
+                    Filters out fan expansions, promos, and accessories automatically.
                   </p>
                 </div>
               </Label>
@@ -278,7 +292,8 @@ export function ImportInput({ initialSettings, onAnalyze }: ImportInputProps) {
                 <div>
                   <p className="font-medium">Upstream Only</p>
                   <p className="text-sm text-muted-foreground">
-                    Import parent/base games only. If importing an expansion, also imports the base game.
+                    Imports base games recursively as each game is processed. Does not import expansions.
+                    Use this when you only want the base game, not its expansions.
                   </p>
                 </div>
               </Label>
