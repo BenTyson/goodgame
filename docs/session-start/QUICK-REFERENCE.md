@@ -18,6 +18,8 @@ npm run build    # MUST pass before committing - catches type errors
 - Staging Supabase: https://supabase.com/dashboard/project/ndskcbuzsmrzgnvdbofd
 - Production Supabase: https://supabase.com/dashboard/project/jnaibnwxpweahpawxycf
 - Railway: https://railway.app/dashboard
+- Puffin API: https://puffin-production.up.railway.app/health
+- Puffin Railway: https://railway.app/project/24c595a7-86c4-4afd-a9fa-b8d9e46b9cca
 
 ## Commands
 
@@ -43,10 +45,18 @@ npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back
 # Regenerate types
 npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types/supabase.ts
 
-# Railway
+# Railway (Board Nomads)
 railway environment staging && railway service goodgame-staging
 railway environment production && railway service goodgame
 railway logs
+
+# Puffin Service (separate repo: ~/puffin)
+cd ~/puffin
+railway up                               # Deploy to Railway
+railway logs                             # View logs
+railway run npm run db:migrate           # Run migrations (won't work locally - use public URL)
+DATABASE_URL="postgresql://postgres:...@interchange.proxy.rlwy.net:51009/railway" npm run db:migrate  # Run migrations locally
+DATABASE_URL="..." npm run db:seed       # Seed initial data
 
 # Game Import & Relations Scripts
 npx tsx scripts/process-import-queue.ts --limit=10     # Process BGG import queue
@@ -353,7 +363,7 @@ scripts/
 src/types/supabase.ts          # Auto-generated from Supabase schema
 src/types/database.ts          # Convenience types (GameRow, GameInsert, etc.)
 src/lib/supabase/              # Database clients (client.ts, server.ts)
-src/lib/bgg/                   # BGG API client and importer
+src/lib/bgg/                   # BGG API client (Puffin-first, BGG fallback) and importer
 src/lib/ai/                    # Claude AI content generator
 src/lib/recommend/             # Recommendation engine (types, scoring, archetypes, prompts)
 src/lib/rulebook/              # Rulebook parsing and Crunch Score
@@ -542,6 +552,14 @@ NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG=goodgame-20
 STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Puffin (BGG data intermediary)
+PUFFIN_ENABLED=true                       # Set to 'true' to use Puffin
+PUFFIN_API_URL=https://puffin-production.up.railway.app/api/v1
+PUFFIN_API_KEY=puffin_sk_...              # API key for Puffin authentication
+
+# BGG API (for direct fallback when Puffin unavailable)
+BGG_API_TOKEN=...                         # Register at boardgamegeek.com/applications
 ```
 
 ## Naming Conventions

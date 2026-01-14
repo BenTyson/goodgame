@@ -33,6 +33,9 @@
 - **Base game regeneration invalidates expansions**: When base game `rules_content` is regenerated, all its expansions automatically reset to `taxonomy_assigned` state. This ensures expansions use fresh base game context. See `generate-content/route.ts`.
 - **Parent-child unified save with forwardRef**: When a parent needs to trigger save on a child component, use `forwardRef` + `useImperativeHandle` to expose a `save()` function. See `TaxonomyTab.tsx` (child) and `GameEditor.tsx` (parent with `taxonomyRef.current.save()`).
 - **PDF thumbnails render washed out**: `unpdf` renders PDFs with transparent backgrounds, causing colors to appear faded. Use `addWhiteBackground()` in `src/lib/rulebook/thumbnail.ts` to composite onto white before saving.
+- **BGG API requires authentication**: BGG XML API v2 now requires Bearer token authentication. Register at `boardgamegeek.com/applications` to get a token. Set `BGG_API_TOKEN` env var. Without it, all API calls return HTTP 401.
+- **Puffin service architecture**: BGG data flows through Puffin intermediary service to reduce risk of BGG blocking Board Nomads. Set `PUFFIN_ENABLED=true` with `PUFFIN_API_URL` and `PUFFIN_API_KEY` to activate. Falls back to direct BGG if Puffin unavailable. See `src/lib/bgg/client.ts`.
+- **Railway migrations need public DB URL**: Railway's internal DB hostname (`*.railway.internal`) only works within Railway's network. For running migrations locally, use the `DATABASE_PUBLIC_URL` (has `proxy.rlwy.net` hostname instead).
 
 ## Tech Stack
 
@@ -109,8 +112,27 @@
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
+| BGG data | **Puffin intermediary service** | Separate service caches BGG data, reduces blocking risk |
+| BGG direct fallback | Bearer token auth required | Register at `boardgamegeek.com/applications` |
 | YouTube API | Data API v3 (search + videos) | Video search in admin Media tab |
 | YouTube thumbnails | `img.youtube.com/vi/{id}/mqdefault.jpg` | Free, no API call needed |
+
+### Puffin Service
+
+| Config | Value |
+|--------|-------|
+| Repository | `github.com/BenTyson/puffin` (separate from Board Nomads) |
+| Production URL | `https://puffin-production.up.railway.app` |
+| Port | 2288 |
+| Tech Stack | Node.js + Express + PostgreSQL |
+| Rate Limiting | 1.1s between BGG requests, max 20 IDs per batch |
+| Auth | API key via `Authorization: Bearer {API_KEY}` header |
+
+**Environment Variables (Board Nomads):**
+- `PUFFIN_ENABLED` - Set to `true` to use Puffin
+- `PUFFIN_API_URL` - Puffin API base URL (e.g., `https://puffin-production.up.railway.app/api/v1`)
+- `PUFFIN_API_KEY` - API key for Puffin authentication
+- `BGG_API_TOKEN` - BGG API token (used for direct fallback)
 
 ## AI-Powered Data Enrichment
 

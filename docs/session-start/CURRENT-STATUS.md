@@ -1,8 +1,81 @@
 # Current Status
 
-> Last Updated: 2026-01-13
+> Last Updated: 2026-01-14
 
-## Current Phase: 77 - Admin Editor Entity Selectors & UX (COMPLETE)
+## Current Phase: 78 - Puffin BGG Intermediary Service (COMPLETE)
+
+### Session Summary (2026-01-14) - Puffin Service Creation & Deployment
+
+**What was done:**
+- Created **Puffin** - a separate BGG data intermediary service to reduce risk of BGG blocking Board Nomads
+- Architecture: `Board Nomads → Puffin API → Puffin DB ← BGG API (background worker)`
+- Full Node.js/Express service with PostgreSQL database deployed on Railway
+- Background worker continuously fetches and caches BGG game data
+- Board Nomads client updated to use Puffin first, with BGG fallback
+
+**Puffin Service (Separate Repo: github.com/BenTyson/puffin):**
+
+| Component | Purpose |
+|-----------|---------|
+| `src/api/` | Express REST API (health, game, games endpoints) |
+| `src/worker/` | Queue processor, BGG fetcher with rate limiting (1.1s), discovery |
+| `src/db/` | PostgreSQL client, games/queue/history tables |
+| `src/shared/` | Config, types (BGGRawGame interface matching Board Nomads) |
+| `Dockerfile` | Multi-stage build for Railway deployment |
+| `railway.toml` | Railway deployment config with health checks |
+
+**Database Schema:**
+- `games` - Cached BGG game data (matches BGGRawGame interface exactly)
+- `fetch_queue` - Priority queue for background fetching
+- `fetch_history` - Audit log of all fetch attempts
+
+**API Endpoints:**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Health check with DB and queue status |
+| `GET /api/v1/game/:bggId` | Single game fetch (queues if missing) |
+| `GET /api/v1/games?ids=...` | Batch fetch up to 100 games |
+| `POST /api/v1/games/request` | Request fetch for specific BGG IDs |
+
+**Railway Deployment:**
+- Service URL: `https://puffin-production.up.railway.app`
+- PostgreSQL database with public connection string
+- Environment variables: `PORT`, `DATABASE_URL`, `API_KEYS`, `BGG_API_TOKEN`, `WORKER_ENABLED`
+
+**Board Nomads Integration:**
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/bgg/client.ts` | Added Puffin integration: `fetchFromPuffin()`, `fetchFromPuffinBatch()`, `requestPuffinFetch()`, health tracking with 60s recovery, Puffin-first fetching with BGG fallback |
+
+**New Environment Variables (Board Nomads):**
+```
+PUFFIN_ENABLED=true
+PUFFIN_API_URL=https://puffin-production.up.railway.app/api/v1
+PUFFIN_API_KEY=puffin_sk_...
+```
+
+**Key Technical Decisions:**
+- BGG now requires Bearer token authentication (`BGG_API_TOKEN`)
+- Puffin uses same `BGGRawGame` interface as Board Nomads for seamless integration
+- Priority queue system: CRITICAL(1) → HIGH(10) → NORMAL(50) → LOW(80)
+- Rate limiting: 1.1s between BGG requests, max 20 IDs per batch
+- Health check gracefully handles missing tables during initial deployment
+- **Board Nomads has NO direct BGG access** - all BGG data flows through Puffin only (security isolation)
+
+**Railway Configuration (DONE):**
+- Production: `PUFFIN_ENABLED=true`, `PUFFIN_API_URL`, `PUFFIN_API_KEY` set
+- Staging: Same configuration applied
+- No `BGG_API_TOKEN` in Board Nomads (intentional - Puffin only)
+
+**Next Session:** Add simple admin interface to Puffin (queue status, recent fetches, manual triggers)
+
+**Build Status:** Passing (both repos)
+
+---
+
+## Previous Phase: 77 - Admin Editor Entity Selectors & UX (COMPLETE)
 
 ### Session Summary (2026-01-13) - Entity Selectors & Editor Polish
 

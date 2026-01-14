@@ -1,16 +1,33 @@
 /**
  * BoardGameGeek API Client
- * Fetches game data from BGG's XML API v2
- * Rate limited to 1 request/second
+ * Fetches game data from BGG's XML API v2 OR Puffin cache service
+ * Rate limited to 1 request/second when hitting BGG directly
  *
- * Requires BGG_API_TOKEN environment variable for authentication.
- * Register at: https://boardgamegeek.com/applications
+ * Puffin Integration:
+ * - Set PUFFIN_ENABLED=true to use Puffin as primary data source
+ * - Set PUFFIN_API_URL to your Puffin instance URL
+ * - Set PUFFIN_API_KEY for authentication
+ * - Falls back to direct BGG if Puffin is unavailable or missing data
+ *
+ * BGG Direct:
+ * - Requires BGG_API_TOKEN environment variable for authentication.
+ * - Register at: https://boardgamegeek.com/applications
  */
 
 import { parseStringPromise } from 'xml2js'
 
 // BGG API base URL
 const BGG_API_BASE = 'https://boardgamegeek.com/xmlapi2'
+
+// Puffin configuration
+const PUFFIN_ENABLED = process.env.PUFFIN_ENABLED === 'true'
+const PUFFIN_API_URL = process.env.PUFFIN_API_URL || ''
+const PUFFIN_API_KEY = process.env.PUFFIN_API_KEY || ''
+
+// Puffin health tracking
+let puffinHealthy = true
+let lastPuffinHealthCheck = 0
+const PUFFIN_HEALTH_CHECK_INTERVAL = 60000 // Re-check health after 60s
 
 /**
  * Get BGG API headers with authorization
@@ -182,10 +199,148 @@ function parseLinkWithInbound(
     }))
 }
 
+// ============================================================================
+// PUFFIN INTEGRATION
+// ============================================================================
+
 /**
- * Fetch a single game from BGG by ID
+ * Check if Puffin should be used (enabled and healthy)
  */
-export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
+function shouldUsePuffin(): boolean {
+  if (!PUFFIN_ENABLED || !PUFFIN_API_URL) return false
+
+  // If marked unhealthy, check if we should re-test
+  if (!puffinHealthy) {
+    const now = Date.now()
+    if (now - lastPuffinHealthCheck >= PUFFIN_HEALTH_CHECK_INTERVAL) {
+      puffinHealthy = true // Optimistically re-enable
+      lastPuffinHealthCheck = now
+    }
+  }
+
+  return puffinHealthy
+}
+
+/**
+ * Mark Puffin as unhealthy after a failure
+ */
+function markPuffinUnhealthy(): void {
+  puffinHealthy = false
+  lastPuffinHealthCheck = Date.now()
+  console.warn('Puffin marked as unhealthy, will retry in 60s')
+}
+
+/**
+ * Fetch a single game from Puffin cache
+ */
+async function fetchFromPuffin(bggId: number): Promise<BGGRawGame | null> {
+  try {
+    const response = await fetch(`${PUFFIN_API_URL}/game/${bggId}`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'board-nomads',
+      },
+      signal: AbortSignal.timeout(5000),
+    })
+
+    if (response.status === 404) {
+      // Game not in cache - request Puffin to fetch it
+      await requestPuffinFetch([bggId])
+      return null
+    }
+
+    if (!response.ok) {
+      markPuffinUnhealthy()
+      return null
+    }
+
+    const data = await response.json()
+    return data.game as BGGRawGame
+  } catch (error) {
+    console.warn(`Puffin fetch failed for ${bggId}:`, error)
+    markPuffinUnhealthy()
+    return null
+  }
+}
+
+/**
+ * Batch fetch games from Puffin cache
+ */
+async function fetchFromPuffinBatch(bggIds: number[]): Promise<Map<number, BGGRawGame>> {
+  const results = new Map<number, BGGRawGame>()
+
+  if (bggIds.length === 0) return results
+
+  try {
+    const response = await fetch(`${PUFFIN_API_URL}/games?ids=${bggIds.join(',')}`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'board-nomads',
+      },
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!response.ok) {
+      markPuffinUnhealthy()
+      return results
+    }
+
+    const data = await response.json()
+
+    // Add found games to results
+    for (const [id, game] of Object.entries(data.games || {})) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gameData = game as any
+      // Remove _meta from game object if present
+      if (gameData._meta) {
+        delete gameData._meta
+      }
+      results.set(parseInt(id), gameData as BGGRawGame)
+    }
+
+    // Queue missing games for Puffin to fetch
+    if (data.missing && data.missing.length > 0) {
+      await requestPuffinFetch(data.missing)
+    }
+
+    return results
+  } catch (error) {
+    console.warn('Puffin batch fetch failed:', error)
+    markPuffinUnhealthy()
+    return results
+  }
+}
+
+/**
+ * Request Puffin to fetch specific games (fire-and-forget)
+ */
+async function requestPuffinFetch(bggIds: number[]): Promise<void> {
+  if (bggIds.length === 0) return
+
+  try {
+    await fetch(`${PUFFIN_API_URL}/games/request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'board-nomads',
+      },
+      body: JSON.stringify({ bggIds, priority: 'high' }),
+      signal: AbortSignal.timeout(2000),
+    })
+  } catch {
+    // Ignore errors - this is fire-and-forget
+  }
+}
+
+// ============================================================================
+// DIRECT BGG FETCHING (fallback when Puffin unavailable)
+// ============================================================================
+
+/**
+ * Fetch a single game directly from BGG by ID
+ */
+async function fetchBGGGameDirect(bggId: number): Promise<BGGRawGame | null> {
   await waitForRateLimit()
 
   const url = `${BGG_API_BASE}/thing?id=${bggId}&stats=1`
@@ -292,11 +447,70 @@ export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
   }
 }
 
+// ============================================================================
+// PUBLIC API - Routes through Puffin if enabled, falls back to BGG
+// ============================================================================
+
+/**
+ * Fetch a single game from BGG by ID
+ * Uses Puffin cache if enabled, falls back to direct BGG
+ */
+export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
+  // Try Puffin first if enabled and healthy
+  if (shouldUsePuffin()) {
+    const puffinResult = await fetchFromPuffin(bggId)
+    if (puffinResult) {
+      return puffinResult
+    }
+    // Puffin miss - fall through to BGG
+  }
+
+  // Fallback to direct BGG fetch
+  return fetchBGGGameDirect(bggId)
+}
+
 /**
  * Fetch multiple games from BGG by IDs
- * BGG allows up to 20 IDs per request
+ * Uses Puffin cache if enabled, falls back to direct BGG
  */
 export async function fetchBGGGames(bggIds: number[]): Promise<Map<number, BGGRawGame>> {
+  const results = new Map<number, BGGRawGame>()
+
+  if (bggIds.length === 0) return results
+
+  // Try Puffin first if enabled and healthy
+  if (shouldUsePuffin()) {
+    const puffinResults = await fetchFromPuffinBatch(bggIds)
+
+    // Add Puffin results
+    for (const [id, game] of puffinResults) {
+      results.set(id, game)
+    }
+
+    // If all found, return early
+    if (results.size === bggIds.length) {
+      return results
+    }
+  }
+
+  // Fetch missing games from BGG directly
+  const missingIds = bggIds.filter(id => !results.has(id))
+
+  if (missingIds.length > 0) {
+    const bggResults = await fetchBGGGamesDirect(missingIds)
+    for (const [id, game] of bggResults) {
+      results.set(id, game)
+    }
+  }
+
+  return results
+}
+
+/**
+ * Fetch multiple games directly from BGG by IDs (internal)
+ * BGG allows up to 20 IDs per request
+ */
+async function fetchBGGGamesDirect(bggIds: number[]): Promise<Map<number, BGGRawGame>> {
   const results = new Map<number, BGGRawGame>()
 
   // BGG allows batching up to 20 IDs
