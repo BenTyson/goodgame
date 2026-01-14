@@ -9,24 +9,19 @@ import { Label } from '@/components/ui/label'
 import { SwitchField } from '@/components/admin'
 import {
   ExternalLink,
-  Users,
-  Clock,
-  Scale,
-  Calendar,
-  Building2,
-  Pencil,
-  Hash,
   CheckCircle2,
   Workflow,
   AlertCircle,
   Loader2,
   Play,
-  ArrowRight,
   ShoppingCart,
+  Pencil,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CrunchScoreDisplay } from '@/components/admin/rulebook'
+import { EntitySelector } from './EntitySelector'
 import type { CrunchBreakdown } from '@/lib/rulebook/types'
+import type { LinkedEntity } from '@/lib/supabase/game-queries'
 import { VECNA_STATE_CONFIG, type VecnaState } from '@/lib/vecna/types'
 import { formatDate } from '@/lib/admin/utils'
 import type { Game } from '@/types/database'
@@ -34,6 +29,13 @@ import type { Game } from '@/types/database'
 interface DetailsTabProps {
   game: Game
   updateField: <K extends keyof Game>(field: K, value: Game[K]) => void
+  // Linked entities
+  designers: LinkedEntity[]
+  publishers: LinkedEntity[]
+  artists: LinkedEntity[]
+  onDesignersChange: (entities: LinkedEntity[]) => void
+  onPublishersChange: (entities: LinkedEntity[]) => void
+  onArtistsChange: (entities: LinkedEntity[]) => void
 }
 
 // Helper to get state badge styling
@@ -66,7 +68,16 @@ function getStateBadgeClass(state: VecnaState): string {
   }
 }
 
-export function DetailsTab({ game, updateField }: DetailsTabProps) {
+export function DetailsTab({
+  game,
+  updateField,
+  designers,
+  publishers,
+  artists,
+  onDesignersChange,
+  onPublishersChange,
+  onArtistsChange,
+}: DetailsTabProps) {
   const vecnaState = (game.vecna_state as VecnaState) || 'imported'
   const stateConfig = VECNA_STATE_CONFIG[vecnaState]
   const isProcessing = vecnaState === 'parsing' || vecnaState === 'generating'
@@ -265,31 +276,35 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="publisher" className="uppercase tracking-wider text-xs text-primary">Publisher</Label>
-                <Input
-                  id="publisher"
-                  value={game.publisher || ''}
-                  onChange={(e) => updateField('publisher', e.target.value)}
-                  placeholder="e.g., Catan Studio"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="designers" className="uppercase tracking-wider text-xs text-primary">Designers</Label>
-                <Input
-                  id="designers"
-                  value={game.designers?.join(', ') || ''}
-                  onChange={(e) => updateField('designers', e.target.value.split(',').map(d => d.trim()).filter(Boolean))}
-                  placeholder="Comma-separated names"
-                />
-              </div>
+            {/* Linked Entities: Publishers, Designers, Artists */}
+            <div className="grid sm:grid-cols-3 gap-4">
+              <EntitySelector
+                type="publishers"
+                label="Publishers"
+                value={publishers}
+                onChange={onPublishersChange}
+                placeholder="Search publishers..."
+              />
+              <EntitySelector
+                type="designers"
+                label="Designers"
+                value={designers}
+                onChange={onDesignersChange}
+                placeholder="Search designers..."
+              />
+              <EntitySelector
+                type="artists"
+                label="Artists"
+                value={artists}
+                onChange={onArtistsChange}
+                placeholder="Search artists..."
+              />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Visibility & Tags */}
+      {/* Collection Tags */}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
@@ -297,20 +312,13 @@ export function DetailsTab({ game, updateField }: DetailsTabProps) {
               <CheckCircle2 className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg uppercase">Visibility & Tags</CardTitle>
-              <CardDescription className="uppercase tracking-wider text-xs">Publishing status and collection tags</CardDescription>
+              <CardTitle className="text-lg uppercase">Collection Tags</CardTitle>
+              <CardDescription className="uppercase tracking-wider text-xs">Feature flags for homepage collections</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <SwitchField
-              label="Published"
-              description="Visible on site"
-              checked={game.is_published || false}
-              onCheckedChange={(checked) => updateField('is_published', checked)}
-              compact
-            />
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             <SwitchField
               label="Featured"
               description="Homepage feature"

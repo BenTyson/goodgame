@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+import sharp from 'sharp'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { validateImageFile, generateSecureFilename } from '@/lib/upload/validation'
 import { ApiErrors } from '@/lib/api/errors'
 import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
+
+/**
+ * Strip all metadata (EXIF, IPTC, XMP) from an image buffer.
+ * Sharp strips metadata by default when re-encoding without withMetadata().
+ * Returns the cleaned buffer and detected format.
+ */
+async function stripImageMetadata(buffer: Buffer): Promise<{ data: Buffer; format: string }> {
+  const image = sharp(buffer)
+  const metadata = await image.metadata()
+
+  // Re-encode to strip metadata (sharp omits metadata by default)
+  const format = metadata.format || 'jpeg'
+  const cleanBuffer = await image
+    .toFormat(format as keyof sharp.FormatEnum, { quality: 95 })
+    .toBuffer()
+
+  return { data: cleanBuffer, format }
+}
 
 export async function POST(request: NextRequest) {
   const rateLimited = applyRateLimit(request, RateLimits.FILE_UPLOAD)
@@ -46,6 +65,9 @@ export async function POST(request: NextRequest) {
       return ApiErrors.validation(validation.error || 'Invalid file')
     }
 
+    // Strip all metadata (EXIF, IPTC, XMP) from the image
+    const { data: cleanBuffer } = await stripImageMetadata(buffer)
+
     const adminClient = createAdminClient()
 
     // Generate secure filename using detected type (not user-provided extension)
@@ -54,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Upload to storage using detected content type
     const { error: uploadError } = await adminClient.storage
       .from('game-images')
-      .upload(fileName, buffer, {
+      .upload(fileName, cleanBuffer, {
         contentType: validation.detectedType!,
         cacheControl: '3600',
         upsert: false
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
         image_type: imageType,
         is_primary: isPrimary,
         display_order: count || 0,
-        file_size: file.size,
+        file_size: cleanBuffer.length,
         // Attribution fields
         source: validatedSource,
         source_url: sourceUrl || null,

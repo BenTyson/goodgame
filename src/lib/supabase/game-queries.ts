@@ -981,11 +981,22 @@ export interface PurchaseData {
   retailers: Retailer[]
 }
 
+/** Linked entity for editor (designer, publisher, artist) */
+export interface LinkedEntity {
+  id: string
+  name: string
+  slug: string
+  is_primary?: boolean
+}
+
 /** Game with media for editor */
 export interface GameWithMedia extends Game {
   images: GameImage[]
   videos: GameVideo[]
-  publishers_list?: { id: string; name: string; slug: string; website: string | null; is_primary: boolean }[]
+  // Linked entities from junction tables (for editing)
+  linked_designers: LinkedEntity[]
+  linked_publishers: LinkedEntity[]
+  linked_artists: LinkedEntity[]
 }
 
 /** Full game editor data bundle */
@@ -1023,7 +1034,10 @@ export async function getGameEditorData(gameId: string): Promise<GameEditorData 
     // Game media
     imagesResult,
     videosResult,
+    // Linked entities (designers, publishers, artists)
+    designerLinksResult,
     publisherLinksResult,
+    artistLinksResult,
     // Adjacent games
     prevGameResult,
     nextGameResult,
@@ -1057,11 +1071,23 @@ export async function getGameEditorData(gameId: string): Promise<GameEditorData 
       .select('*')
       .eq('game_id', gameId)
       .order('display_order'),
+    // Linked entities (designers, publishers, artists)
     supabase
-      .from('game_publishers')
-      .select('is_primary, publisher:publishers(id, name, slug, website)')
+      .from('game_designers')
+      .select('is_primary, designer:designers(id, name, slug)')
       .eq('game_id', gameId)
       .order('is_primary', { ascending: false })
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('game_publishers')
+      .select('is_primary, publisher:publishers(id, name, slug)')
+      .eq('game_id', gameId)
+      .order('is_primary', { ascending: false })
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('game_artists')
+      .select('artist:artists(id, name, slug)')
+      .eq('game_id', gameId)
       .order('display_order', { ascending: true }),
     // Adjacent games
     supabase
@@ -1128,10 +1154,33 @@ export async function getGameEditorData(gameId: string): Promise<GameEditorData 
       .order('display_order', { ascending: true }),
   ])
 
-  // Process publishers
-  const publishers = publisherLinksResult.data
-    ?.map(p => ({ ...(p.publisher as { id: string; name: string; slug: string; website: string | null }), is_primary: p.is_primary ?? false }))
-    .filter(p => p.id) as { id: string; name: string; slug: string; website: string | null; is_primary: boolean }[] | undefined
+  // Process linked entities (designers, publishers, artists)
+  const designers: LinkedEntity[] = (designerLinksResult.data || [])
+    .map(d => {
+      const designer = d.designer as { id: string; name: string; slug: string } | null
+      if (!designer) return null
+      const entity: LinkedEntity = { id: designer.id, name: designer.name, slug: designer.slug, is_primary: d.is_primary ?? false }
+      return entity
+    })
+    .filter((d): d is LinkedEntity => d !== null)
+
+  const publishers: LinkedEntity[] = (publisherLinksResult.data || [])
+    .map(p => {
+      const publisher = p.publisher as { id: string; name: string; slug: string } | null
+      if (!publisher) return null
+      const entity: LinkedEntity = { id: publisher.id, name: publisher.name, slug: publisher.slug, is_primary: p.is_primary ?? false }
+      return entity
+    })
+    .filter((p): p is LinkedEntity => p !== null)
+
+  const artists: LinkedEntity[] = (artistLinksResult.data || [])
+    .map(a => {
+      const artist = a.artist as { id: string; name: string; slug: string } | null
+      if (!artist) return null
+      const entity: LinkedEntity = { id: artist.id, name: artist.name, slug: artist.slug }
+      return entity
+    })
+    .filter((a): a is LinkedEntity => a !== null)
 
   // Process videos with type assertion
   const typedVideos: GameVideo[] = (videosResult.data || []).map(v => ({
@@ -1161,7 +1210,9 @@ export async function getGameEditorData(gameId: string): Promise<GameEditorData 
       ...game,
       images: imagesResult.data || [],
       videos: typedVideos,
-      publishers_list: publishers || [],
+      linked_designers: designers,
+      linked_publishers: publishers,
+      linked_artists: artists,
     },
     adjacentGames: {
       previous: prevGameResult.data?.[0] || null,

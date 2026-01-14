@@ -24,10 +24,13 @@ import {
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
+  Globe,
 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import type { GameVideo } from '@/components/admin/VideoManager'
 import type { Game, GameImage } from '@/types/database'
-import type { GameEditorData, GameWithMedia } from '@/lib/supabase/game-queries'
+import type { GameEditorData, GameWithMedia, LinkedEntity } from '@/lib/supabase/game-queries'
 
 interface GameEditorProps {
   editorData: GameEditorData
@@ -41,11 +44,17 @@ export function GameEditor({ editorData }: GameEditorProps) {
   const [game, setGame] = useState(initialGame)
   const [images, setImages] = useState(initialGame.images)
   const [videos, setVideos] = useState(initialGame.videos)
+  // Entity state (designers, publishers, artists)
+  const [designers, setDesigners] = useState<LinkedEntity[]>(initialGame.linked_designers)
+  const [publishers, setPublishers] = useState<LinkedEntity[]>(initialGame.linked_publishers)
+  const [artists, setArtists] = useState<LinkedEntity[]>(initialGame.linked_artists)
   const [hasDetailsChanges, setHasDetailsChanges] = useState(false)
+  const [hasEntitiesChanges, setHasEntitiesChanges] = useState(false)
   const [hasTaxonomyChanges, setHasTaxonomyChanges] = useState(false)
   const { saving, saved, execute } = useAsyncAction({
     onSuccess: () => {
       setHasDetailsChanges(false)
+      setHasEntitiesChanges(false)
       setHasTaxonomyChanges(false)
     },
   })
@@ -55,8 +64,8 @@ export function GameEditor({ editorData }: GameEditorProps) {
     setCache(initialGame.id, editorData)
   }, [initialGame.id, editorData, setCache])
 
-  // Combined unsaved state (details OR taxonomy)
-  const hasUnsavedChanges = hasDetailsChanges || hasTaxonomyChanges
+  // Combined unsaved state (details OR entities OR taxonomy)
+  const hasUnsavedChanges = hasDetailsChanges || hasEntitiesChanges || hasTaxonomyChanges
 
   // Track unsaved changes for details/content/media
   const markUnsaved = useCallback(() => {
@@ -82,7 +91,11 @@ export function GameEditor({ editorData }: GameEditorProps) {
     setGame(initialGame)
     setImages(initialGame.images)
     setVideos(initialGame.videos)
+    setDesigners(initialGame.linked_designers)
+    setPublishers(initialGame.linked_publishers)
+    setArtists(initialGame.linked_artists)
     setHasDetailsChanges(false)
+    setHasEntitiesChanges(false)
     setHasTaxonomyChanges(false)
   }, [initialGame])
 
@@ -90,6 +103,22 @@ export function GameEditor({ editorData }: GameEditorProps) {
     setGame(prev => ({ ...prev, [field]: value }))
     markUnsaved()
   }, [markUnsaved])
+
+  // Entity change handlers
+  const handleDesignersChange = useCallback((entities: LinkedEntity[]) => {
+    setDesigners(entities)
+    setHasEntitiesChanges(true)
+  }, [])
+
+  const handlePublishersChange = useCallback((entities: LinkedEntity[]) => {
+    setPublishers(entities)
+    setHasEntitiesChanges(true)
+  }, [])
+
+  const handleArtistsChange = useCallback((entities: LinkedEntity[]) => {
+    setArtists(entities)
+    setHasEntitiesChanges(true)
+  }, [])
 
   const saveGame = async () => {
     // Ensure content_status is 'published' when publishing
@@ -119,8 +148,6 @@ export function GameEditor({ editorData }: GameEditorProps) {
               weight: game.weight,
               min_age: game.min_age,
               year_published: game.year_published,
-              publisher: game.publisher,
-              designers: game.designers,
               is_published: game.is_published,
               is_featured: game.is_featured,
               is_trending: game.is_trending,
@@ -140,6 +167,46 @@ export function GameEditor({ editorData }: GameEditorProps) {
         if (!response.ok) {
           const data = await response.json()
           throw new Error(data.error || 'Save failed')
+        }
+      }
+
+      // Save entity links if changed (designers, publishers, artists)
+      if (hasEntitiesChanges) {
+        const entitySavePromises = [
+          fetch('/api/admin/entities/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameId: game.id,
+              type: 'designers',
+              entities: designers.map((d, i) => ({ id: d.id, is_primary: i === 0 })),
+            }),
+          }),
+          fetch('/api/admin/entities/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameId: game.id,
+              type: 'publishers',
+              entities: publishers.map((p, i) => ({ id: p.id, is_primary: i === 0 })),
+            }),
+          }),
+          fetch('/api/admin/entities/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameId: game.id,
+              type: 'artists',
+              entities: artists.map(a => ({ id: a.id })),
+            }),
+          }),
+        ]
+
+        const results = await Promise.all(entitySavePromises)
+        const failedSave = results.find(r => !r.ok)
+        if (failedSave) {
+          const data = await failedSave.json()
+          throw new Error(data.error || 'Failed to save entity links')
         }
       }
 
@@ -215,22 +282,44 @@ export function GameEditor({ editorData }: GameEditorProps) {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{game.name}</h1>
-            {game.is_published && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-600 text-white">
-                <CheckCircle2 className="h-3 w-3" />
-                Published
-              </span>
-            )}
             {hasUnsavedChanges && (
               <span className="text-xs text-amber-600 dark:text-amber-400">
                 Unsaved: {[
                   hasDetailsChanges && 'Details',
+                  hasEntitiesChanges && 'Entities',
                   hasTaxonomyChanges && 'Taxonomy',
                 ].filter(Boolean).join(', ')}
               </span>
             )}
           </div>
           <p className="text-muted-foreground text-sm mt-0.5">/{game.slug}</p>
+        </div>
+        <div className="flex items-center gap-4 self-start sm:self-center">
+          {/* Publish Toggle */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="publish-toggle"
+              checked={game.is_published || false}
+              onCheckedChange={(checked) => updateField('is_published', checked)}
+              className="data-[state=checked]:bg-green-600"
+            />
+            <Label
+              htmlFor="publish-toggle"
+              className={`text-sm font-medium flex items-center gap-1.5 cursor-pointer ${
+                game.is_published ? 'text-green-600' : 'text-muted-foreground'
+              }`}
+            >
+              {game.is_published ? (
+                <>
+                  <Globe className="h-3.5 w-3.5" />
+                  Published
+                </>
+              ) : (
+                'Draft'
+              )}
+            </Label>
+          </div>
+          <div className="h-6 w-px bg-border" />
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
           {game.slug ? (
@@ -272,32 +361,53 @@ export function GameEditor({ editorData }: GameEditorProps) {
 
       {/* Editor Tabs - 7 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="details" className="gap-2">
+        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid bg-muted/50 border border-border/50 p-1 rounded-xl">
+          <TabsTrigger
+            value="details"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <Info className="h-4 w-4 hidden sm:block" />
             Details
           </TabsTrigger>
-          <TabsTrigger value="taxonomy" className="gap-2">
+          <TabsTrigger
+            value="taxonomy"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <Tags className="h-4 w-4 hidden sm:block" />
             Taxonomy
           </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-2">
+          <TabsTrigger
+            value="documents"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <Files className="h-4 w-4 hidden sm:block" />
             Documents
           </TabsTrigger>
-          <TabsTrigger value="content" className="gap-2">
+          <TabsTrigger
+            value="content"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <FileText className="h-4 w-4 hidden sm:block" />
             Content
           </TabsTrigger>
-          <TabsTrigger value="sources" className="gap-2">
+          <TabsTrigger
+            value="sources"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <Database className="h-4 w-4 hidden sm:block" />
             Sources
           </TabsTrigger>
-          <TabsTrigger value="media" className="gap-2">
+          <TabsTrigger
+            value="media"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <Film className="h-4 w-4 hidden sm:block" />
             Media
           </TabsTrigger>
-          <TabsTrigger value="purchase" className="gap-2">
+          <TabsTrigger
+            value="purchase"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
             <ShoppingCart className="h-4 w-4 hidden sm:block" />
             Purchase
           </TabsTrigger>
@@ -305,7 +415,16 @@ export function GameEditor({ editorData }: GameEditorProps) {
 
         {/* Details Tab (includes Publishing) */}
         <TabsContent value="details">
-          <DetailsTab game={game} updateField={updateField} />
+          <DetailsTab
+            game={game}
+            updateField={updateField}
+            designers={designers}
+            publishers={publishers}
+            artists={artists}
+            onDesignersChange={handleDesignersChange}
+            onPublishersChange={handlePublishersChange}
+            onArtistsChange={handleArtistsChange}
+          />
         </TabsContent>
 
         {/* Taxonomy Tab */}

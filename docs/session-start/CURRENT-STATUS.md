@@ -2,7 +2,40 @@
 
 > Last Updated: 2026-01-13
 
-## Current Phase: 76 - Game Page UX Polish & Setup Guide Preview (COMPLETE)
+## Current Phase: 77 - Admin Editor Entity Selectors & UX (COMPLETE)
+
+### Session Summary (2026-01-13) - Entity Selectors & Editor Polish
+
+**What was done:**
+- Added image metadata stripping on upload using `sharp` (removes EXIF, IPTC, XMP data)
+- Replaced text inputs for Publishers/Designers/Artists with searchable EntitySelector dropdowns
+- EntitySelector features: search existing entities, create new on-the-fly, multi-select with badges, first item auto-marked as primary
+- Created API endpoints for entity search (`/api/admin/entities`) and game-entity linking (`/api/admin/entities/link`)
+- Moved Published toggle from Visibility & Tags card to prominent position in page header
+- Renamed "Visibility & Tags" to "Collection Tags" (now 6 flags in 3-column grid)
+- Added teal styling to editor tabs (active state: teal background tint, teal text)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/entities/route.ts` | GET search + POST create entities |
+| `src/app/api/admin/entities/link/route.ts` | POST update game-entity junction table links |
+| `src/components/admin/game-editor/EntitySelector.tsx` | Searchable multi-select combobox for entities |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/api/admin/upload/route.ts` | Added `sharp` import, `stripImageMetadata()` function, strips metadata before storage upload |
+| `src/lib/supabase/game-queries.ts` | Added `LinkedEntity` type, `linked_designers/publishers/artists` to `GameWithMedia`, fetch entities in `getGameEditorData()` |
+| `src/components/admin/GameEditor.tsx` | Added entity state management, entity change handlers, save entities to junction tables, moved Published toggle to header with Switch component, added teal tab styling |
+| `src/components/admin/game-editor/DetailsTab.tsx` | Replaced text inputs with EntitySelector components, renamed card to "Collection Tags", removed Published switch |
+| `src/components/admin/game-editor/index.ts` | Added EntitySelector export |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 76 - Game Page UX Polish & Setup Guide Preview (COMPLETE)
 
 ### Session Summary (2026-01-13) - Game Page Polish
 
