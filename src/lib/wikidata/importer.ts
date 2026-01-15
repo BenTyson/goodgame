@@ -149,7 +149,7 @@ export function transformWikidataToGame(wikidata: WikidataBoardGame): GameInsert
     play_time_min: wikidata.playTimeMinutes,
     play_time_max: wikidata.playTimeMinutes, // Same value if only one provided
     min_age: undefined, // Wikidata rarely has age info
-    weight: undefined, // Will be calculated by BNCS (Board Nomads Complexity Score)
+    weight: undefined, // Will be calculated by BMCS (Boardmello Complexity Score)
     year_published: wikidata.yearPublished,
     designers: wikidata.designers.slice(0, 5),
     publisher: wikidata.publishers[0] || null,

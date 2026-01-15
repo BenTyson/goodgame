@@ -42,7 +42,7 @@ export function LoginContent() {
     <div className="container max-w-md mx-auto py-16">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign in to Board Nomads</CardTitle>
+          <CardTitle className="text-2xl">Sign in to Boardmello</CardTitle>
           <CardDescription>
             Track your game collection, rate games, and more
           </CardDescription>

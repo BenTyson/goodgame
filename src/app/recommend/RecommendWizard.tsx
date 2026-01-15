@@ -314,7 +314,7 @@ export function RecommendWizard() {
           </div>
 
           <h2 className="text-xl font-bold tracking-tight md:text-2xl animate-pulse">
-            The Board Nomads are Wandering...
+            The Boardmello wizards are conjuring...
           </h2>
           <p className="mt-3 text-muted-foreground max-w-sm">
             Exploring the gaming universes to find your perfect matches

@@ -12,7 +12,7 @@ const RESERVED_USERNAMES = [
   'shelf', 'profile', 'user', 'users', 'api', 'auth', 'callback', 'games',
   'game', 'categories', 'collections', 'designers', 'publishers', 'artists',
   'about', 'help', 'support', 'contact', 'privacy', 'terms', 'search',
-  'boardnomads', 'goodgame', 'null', 'undefined', 'u'
+  'boardmello', 'goodgame', 'null', 'undefined', 'u'
 ]
 
 interface UsernameInputProps {
@@ -161,12 +161,12 @@ export function UsernameInput({ value, currentUsername, onChange, onValidChange 
       )}
       {!value && (
         <p className="text-xs text-muted-foreground">
-          Your profile URL will be boardnomads.com/u/{'{username}'}
+          Your profile URL will be boardmello.com/u/{'{username}'}
         </p>
       )}
       {value && !error && (
         <p className="text-xs text-muted-foreground">
-          boardnomads.com/u/{value}
+          boardmello.com/u/{value}
         </p>
       )}
     </div>

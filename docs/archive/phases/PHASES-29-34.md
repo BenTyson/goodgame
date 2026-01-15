@@ -193,7 +193,7 @@ Building a legally defensible data pipeline to compete with BGG without scraping
 | `types.ts` | TypeScript types for PDF parsing, BNCS, discovery |
 | `parser.ts` | PDF text extraction using pdf-parse |
 | `prompts.ts` | AI prompts for extracting game data from rulebooks |
-| `complexity.ts` | Board Nomads Complexity Score (BNCS) generation |
+| `complexity.ts` | Boardmello Complexity Score (BNCS) generation |
 | `discovery.ts` | Publisher URL pattern matching for rulebook discovery |
 | `index.ts` | Barrel exports |
 
@@ -245,7 +245,7 @@ Building a legally defensible data pipeline to compete with BGG without scraping
 - **Wikidata** (CC0 licensed) as foundation layer
 - **Publisher rulebook PDFs** for original content
 - **Publisher partnerships** for official data
-- **Board Nomads Complexity Score (BNCS)** - AI-generated from rulebooks (differentiator)
+- **Boardmello Complexity Score (BNCS)** - AI-generated from rulebooks (differentiator)
 - **BGG Collection Import** - User data portability feature
 
 **What's Safe to Use (Facts):**

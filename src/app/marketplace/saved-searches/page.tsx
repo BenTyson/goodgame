@@ -5,7 +5,7 @@ import { getUserSavedSearches } from '@/lib/supabase/discovery-queries'
 import { SavedSearchesClient } from './SavedSearchesClient'
 
 export const metadata: Metadata = {
-  title: 'Saved Searches | Board Nomads Marketplace',
+  title: 'Saved Searches | Boardmello Marketplace',
   description: 'Manage your saved marketplace searches and alerts.',
 }
 

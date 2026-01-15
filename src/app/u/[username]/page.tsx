@@ -29,13 +29,13 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const displayName = profile.display_name || profile.username
   const description = profile.bio
     ? `${profile.bio.slice(0, 150)}${profile.bio.length > 150 ? '...' : ''}`
-    : `Check out ${displayName}'s board game collection on Board Nomads.`
+    : `Check out ${displayName}'s board game collection on Boardmello.`
 
   return {
     title: `${displayName} (@${profile.username})`,
     description,
     openGraph: {
-      title: `${displayName} (@${profile.username}) | Board Nomads`,
+      title: `${displayName} (@${profile.username}) | Boardmello`,
       description,
     },
   }

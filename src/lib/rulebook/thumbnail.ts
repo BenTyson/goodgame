@@ -55,7 +55,7 @@ export async function generateRulebookThumbnail(
     // Fetch the PDF
     const response = await fetch(pdfUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; BoardNomads/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Boardmello/1.0)',
       },
     })
 
@@ -132,7 +132,7 @@ export async function generateDocumentThumbnail(
     // Fetch the PDF
     const response = await fetch(pdfUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; BoardNomads/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Boardmello/1.0)',
       },
     })
 

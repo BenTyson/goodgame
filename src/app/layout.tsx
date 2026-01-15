@@ -24,8 +24,8 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
-    template: '%s | Board Nomads',
+    default: 'Boardmello - Board Game Rules, Score Sheets & Reference',
+    template: '%s | Boardmello',
   },
   description:
     'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards for your favorite board games.',
@@ -36,22 +36,22 @@ export const metadata: Metadata = {
     'board game reference',
     'printable score sheets',
   ],
-  authors: [{ name: 'Board Nomads' }],
-  creator: 'Board Nomads',
+  authors: [{ name: 'Boardmello' }],
+  creator: 'Boardmello',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3399'
   ),
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'Board Nomads',
-    title: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
+    siteName: 'Boardmello',
+    title: 'Boardmello - Board Game Rules, Score Sheets & Reference',
     description:
       'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Board Nomads - Board Game Rules, Score Sheets & Reference',
+    title: 'Boardmello - Board Game Rules, Score Sheets & Reference',
     description:
       'Beautiful board game reference tools. Find rules summaries, printable score sheets, setup guides, and quick reference cards.',
   },

@@ -1,6 +1,6 @@
 # Documentation Index
 
-> Quick navigation for all Board Nomads documentation.
+> Quick navigation for all Boardmello documentation.
 
 ## Start Here (AI Agents)
 

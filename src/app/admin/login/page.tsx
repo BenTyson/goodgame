@@ -91,7 +91,7 @@ export default function AdminLoginPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Board Nomads
+          Back to Boardmello
         </Link>
       </div>
 
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
             </div>
             <CardTitle className="text-2xl font-bold">Admin Portal</CardTitle>
             <CardDescription className="text-base">
-              Sign in to manage Board Nomads content
+              Sign in to manage Boardmello content
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -220,7 +220,7 @@ export default function AdminLoginPage() {
 
       {/* Footer */}
       <div className="p-4 text-center text-xs text-muted-foreground">
-        Board Nomads Admin Portal
+        Boardmello Admin Portal
       </div>
     </div>
   )

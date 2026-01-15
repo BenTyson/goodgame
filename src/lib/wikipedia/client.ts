@@ -20,7 +20,7 @@ import type {
 
 const WIKIPEDIA_API_BASE = 'https://en.wikipedia.org/w/api.php'
 const USER_AGENT =
-  'BoardNomads/1.0 (https://boardnomads.com; contact@boardnomads.com)'
+  'Boardmello/1.0 (https://boardmello.com; contact@boardmello.com)'
 
 // Rate limiting: Be respectful to Wikipedia's servers
 const REQUEST_DELAY_MS = 1000 // 1 second between requests

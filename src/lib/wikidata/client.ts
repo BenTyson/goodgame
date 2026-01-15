@@ -105,7 +105,7 @@ async function rateLimitedFetch(url: string): Promise<Response> {
   return fetch(url, {
     headers: {
       Accept: 'application/sparql-results+json',
-      'User-Agent': 'BoardNomads/1.0 (https://boardnomads.com; contact@boardnomads.com)',
+      'User-Agent': 'Boardmello/1.0 (https://boardmello.com; contact@boardmello.com)',
     },
   });
 }
@@ -317,7 +317,7 @@ async function searchEntityByName(
 
   const response = await fetch(url, {
     headers: {
-      'User-Agent': 'BoardNomads/1.0 (https://boardnomads.com)',
+      'User-Agent': 'Boardmello/1.0 (https://boardmello.com)',
     },
   })
 

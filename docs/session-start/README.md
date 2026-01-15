@@ -1,4 +1,4 @@
-# Board Nomads - Quick Start
+# Boardmello - Quick Start
 
 > Read this first. Get productive in 2 minutes.
 

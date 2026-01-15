@@ -238,7 +238,7 @@ async function fetchFromPuffin(bggId: number): Promise<BGGRawGame | null> {
     const response = await fetch(`${PUFFIN_API_URL}/game/${bggId}`, {
       headers: {
         'Authorization': `Bearer ${PUFFIN_API_KEY}`,
-        'X-Client': 'board-nomads',
+        'X-Client': 'boardmello',
       },
       signal: AbortSignal.timeout(5000),
     })
@@ -275,7 +275,7 @@ async function fetchFromPuffinBatch(bggIds: number[]): Promise<Map<number, BGGRa
     const response = await fetch(`${PUFFIN_API_URL}/games?ids=${bggIds.join(',')}`, {
       headers: {
         'Authorization': `Bearer ${PUFFIN_API_KEY}`,
-        'X-Client': 'board-nomads',
+        'X-Client': 'boardmello',
       },
       signal: AbortSignal.timeout(10000),
     })
@@ -323,7 +323,7 @@ async function requestPuffinFetch(bggIds: number[]): Promise<void> {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${PUFFIN_API_KEY}`,
-        'X-Client': 'board-nomads',
+        'X-Client': 'boardmello',
       },
       body: JSON.stringify({ bggIds, priority: 'high' }),
       signal: AbortSignal.timeout(2000),

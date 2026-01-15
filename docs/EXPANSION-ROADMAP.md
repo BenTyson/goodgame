@@ -87,7 +87,7 @@
 ### Considerations
 - Very different audience than tabletop
 - Heavily saturated market (IGN, GameSpot, etc.)
-- May not fit "Board Nomads" brand
+- May not fit "Boardmello" brand
 - Consider separate brand if pursuing
 
 ### If Pursuing, Focus On
@@ -155,11 +155,11 @@ Full marketplace competing with BGG GeekMarket - **All 5 phases complete.**
 
 ## Brand Considerations
 
-Current: **Board Nomads** (boardnomads.com)
+Current: **Boardmello** (boardmello.com)
 
 If expanding beyond board games, consider:
 - Rebranding to broader name
-- Keeping Board Nomads for tabletop, new brand for digital
+- Keeping Boardmello for tabletop, new brand for digital
 - "Nomads" umbrella with sub-brands
 
 ---

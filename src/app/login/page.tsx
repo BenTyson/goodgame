@@ -5,7 +5,7 @@ import { LoginContent } from './LoginContent'
 
 export const metadata: Metadata = {
   title: 'Sign In',
-  description: 'Sign in to Board Nomads to track your game collection',
+  description: 'Sign in to Boardmello to track your game collection',
 }
 
 function LoginLoading() {

@@ -250,7 +250,7 @@ export function TransactionDetailClient({
               <p className="text-sm text-muted-foreground">
                 {isBuyer
                   ? 'Thank you for your purchase! The transaction is complete.'
-                  : 'Payment has been released to your account. Thank you for selling on Board Nomads!'}
+                  : 'Payment has been released to your account. Thank you for selling on Boardmello!'}
               </p>
             </CardContent>
           </Card>

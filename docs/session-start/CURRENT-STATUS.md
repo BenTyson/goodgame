@@ -4,13 +4,51 @@
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
 
+### Session 4 (2026-01-15) - Platform Rebrand: Board Nomads → Boardmello
+
+**What was done:**
+- Renamed platform from "Board Nomads" to "Boardmello" across entire codebase
+- Updated all user-facing text, metadata, and SEO references
+- Updated User-Agent strings in all external API clients
+- Updated all documentation files
+
+**Files Modified (30+ source files):**
+| Area | Files | Changes |
+|------|-------|---------|
+| Layout/SEO | `layout.tsx`, `Header.tsx`, `Footer.tsx`, `json-ld.tsx` | Site name, copyright, SITE_NAME constant |
+| Auth | `login/page.tsx`, `LoginContent.tsx`, `admin/login/page.tsx` | Login page titles and branding |
+| Pages | Profile, Feed, Marketplace, Recommend pages | Metadata titles |
+| Components | `UsernameInput.tsx` | Reserved username, profile URL display |
+| SEO | `robots.ts`, `sitemap.ts` | Fallback URLs to boardmello.com |
+| AI Prompts | `rulebook/prompts.ts`, `recommend/prompts.ts` | Voice and branding in AI system prompts |
+| API Clients | `wikipedia/client.ts`, `wikidata/client.ts`, `wikimedia-commons/client.ts`, `bgg/client.ts`, `rulebook/discovery.ts`, `rulebook/thumbnail.ts` | User-Agent strings |
+| Types | `database.ts`, `wikidata/importer.ts` | Comments referencing platform name |
+
+**Documentation Updated:**
+- `docs/session-start/` - README, CURRENT-STATUS, DECISIONS, QUICK-REFERENCE
+- `docs/INDEX.md`, `docs/DEPLOYMENT.md`, `docs/STRIPE-SETUP.md`
+- `docs/EXPANSION-ROADMAP.md`, `docs/archive/phases/PHASES-29-34.md`
+
+**Pending Infrastructure Changes:**
+| Service | Changes Needed |
+|---------|----------------|
+| Railway | Add custom domain `boardmello.com`, update `NEXT_PUBLIC_SITE_URL` env var |
+| DNS | Configure CNAME/A records pointing to Railway |
+| Supabase (Production) | Update Site URL and Redirect URLs |
+| Google Cloud Console | Add `boardmello.com` to OAuth authorized origins |
+| Stripe | Update webhook endpoint URL |
+
+**Build Status:** Passing
+
+---
+
 ### Session 3 (2026-01-15) - Data Consistency & Auto-Discovery
 
 **What was done:**
-- Fixed critical BGG parsing discrepancies between Puffin and Board Nomads:
-  - Expansion relationships: Puffin now uses item `type` attribute (matching Board Nomads logic)
+- Fixed critical BGG parsing discrepancies between Puffin and Boardmello:
+  - Expansion relationships: Puffin now uses item `type` attribute (matching Boardmello logic)
   - Implementation relationships: Fixed `inbound` attribute interpretation (was inverted)
-- Removed direct BGG access from Board Nomads - all BGG data now flows through Puffin only
+- Removed direct BGG access from Boardmello - all BGG data now flows through Puffin only
 - Added automatic retry mechanism when games are pending in Puffin (6 retries × 5s = 30s total)
 - Added auto-discovery of related games when fetching in Puffin:
   - Base games (if expansion)
@@ -37,7 +75,7 @@
 | `src/worker/discovery.ts` | Added `SEED_TIERS`, `refreshNextStaleGame()`, `getStaleGameCount()`, `discoverFromTier()`, `getDiscoveryStatus()` |
 | `src/api/server.ts` | Added cron router |
 
-**Files Modified (Board Nomads repo):**
+**Files Modified (Boardmello repo):**
 | File | Changes |
 |------|---------|
 | `src/lib/bgg/client.ts` | Removed BGG direct fallback, added `BGGFetchResult` type, `fetchBGGGameWithStatus()`, `fetchBGGGamesWithStatus()` |
@@ -102,11 +140,11 @@
 ### Session 1 (2026-01-14) - Puffin Service Creation & Deployment
 
 **What was done:**
-- Created **Puffin** - a separate BGG data intermediary service to reduce risk of BGG blocking Board Nomads
-- Architecture: `Board Nomads → Puffin API → Puffin DB ← BGG API (background worker)`
+- Created **Puffin** - a separate BGG data intermediary service to reduce risk of BGG blocking Boardmello
+- Architecture: `Boardmello → Puffin API → Puffin DB ← BGG API (background worker)`
 - Full Node.js/Express service with PostgreSQL database deployed on Railway
 - Background worker continuously fetches and caches BGG game data
-- Board Nomads client updated to use Puffin first, with BGG fallback
+- Boardmello client updated to use Puffin first, with BGG fallback
 
 **Puffin Service (Separate Repo: github.com/BenTyson/puffin):**
 
@@ -115,7 +153,7 @@
 | `src/api/` | Express REST API (health, game, games endpoints) |
 | `src/worker/` | Queue processor, BGG fetcher with rate limiting (1.1s), discovery |
 | `src/db/` | PostgreSQL client, games/queue/history tables |
-| `src/shared/` | Config, types (BGGRawGame interface matching Board Nomads) |
+| `src/shared/` | Config, types (BGGRawGame interface matching Boardmello) |
 | `Dockerfile` | Multi-stage build for Railway deployment |
 | `railway.toml` | Railway deployment config with health checks |
 
@@ -137,14 +175,14 @@
 - PostgreSQL database with public connection string
 - Environment variables: `PORT`, `DATABASE_URL`, `API_KEYS`, `BGG_API_TOKEN`, `WORKER_ENABLED`
 
-**Board Nomads Integration:**
+**Boardmello Integration:**
 
 **Files Modified:**
 | File | Changes |
 |------|---------|
 | `src/lib/bgg/client.ts` | Added Puffin integration: `fetchFromPuffin()`, `fetchFromPuffinBatch()`, `requestPuffinFetch()`, health tracking with 60s recovery, Puffin-first fetching with BGG fallback |
 
-**New Environment Variables (Board Nomads):**
+**New Environment Variables (Boardmello):**
 ```
 PUFFIN_ENABLED=true
 PUFFIN_API_URL=https://puffin-production.up.railway.app/api/v1
@@ -153,16 +191,16 @@ PUFFIN_API_KEY=puffin_sk_...
 
 **Key Technical Decisions:**
 - BGG now requires Bearer token authentication (`BGG_API_TOKEN`)
-- Puffin uses same `BGGRawGame` interface as Board Nomads for seamless integration
+- Puffin uses same `BGGRawGame` interface as Boardmello for seamless integration
 - Priority queue system: CRITICAL(1) → HIGH(10) → NORMAL(50) → LOW(80)
 - Rate limiting: 1.1s between BGG requests, max 20 IDs per batch
 - Health check gracefully handles missing tables during initial deployment
-- **Board Nomads has NO direct BGG access** - all BGG data flows through Puffin only (security isolation)
+- **Boardmello has NO direct BGG access** - all BGG data flows through Puffin only (security isolation)
 
 **Railway Configuration (DONE):**
 - Production: `PUFFIN_ENABLED=true`, `PUFFIN_API_URL`, `PUFFIN_API_KEY` set
 - Staging: Same configuration applied
-- No `BGG_API_TOKEN` in Board Nomads (intentional - Puffin only)
+- No `BGG_API_TOKEN` in Boardmello (intentional - Puffin only)
 
 **Build Status:** Passing (both repos)
 

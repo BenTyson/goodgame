@@ -150,7 +150,7 @@ async function checkPdfExists(url: string): Promise<boolean> {
     const response = await fetch(url, {
       method: 'HEAD',
       headers: {
-        'User-Agent': 'Board Nomads Rulebook Discovery (https://boardnomads.com)',
+        'User-Agent': 'Boardmello Rulebook Discovery (https://boardmello.com)',
       },
     })
 
@@ -383,7 +383,7 @@ export async function validateRulebookUrl(url: string): Promise<{
     const response = await fetch(url, {
       method: 'HEAD',
       headers: {
-        'User-Agent': 'Board Nomads Rulebook Validator (https://boardnomads.com)',
+        'User-Agent': 'Boardmello Rulebook Validator (https://boardmello.com)',
       },
     })
 

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     'Answer a few quick questions and discover your ideal board game. Our smart recommendation engine matches you with games you will love.',
   openGraph: {
-    title: 'Find Your Perfect Game | Board Nomads',
+    title: 'Find Your Perfect Game | Boardmello',
     description:
       'Answer a few quick questions and discover your ideal board game match.',
   },

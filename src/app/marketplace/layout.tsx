@@ -2,10 +2,10 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Marketplace | Board Nomads',
+    template: '%s | Marketplace | Boardmello',
     default: 'Marketplace',
   },
-  description: 'Buy, sell, and trade board games with the Board Nomads community.',
+  description: 'Buy, sell, and trade board games with the Boardmello community.',
 }
 
 interface MarketplaceLayoutProps {

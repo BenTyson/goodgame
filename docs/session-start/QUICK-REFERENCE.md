@@ -12,7 +12,7 @@ npm run build    # MUST pass before committing - catches type errors
 |-------------|-----|----------|
 | Local | http://localhost:3399 | Staging |
 | Staging | https://goodgame-staging-staging.up.railway.app | Staging |
-| Production | https://boardnomads.com | Production |
+| Production | https://boardmello.com | Production |
 
 **Dashboards:**
 - Staging Supabase: https://supabase.com/dashboard/project/ndskcbuzsmrzgnvdbofd
@@ -45,7 +45,7 @@ npx supabase link --project-ref ndskcbuzsmrzgnvdbofd  # Switch back
 # Regenerate types
 npx supabase gen types typescript --project-ref ndskcbuzsmrzgnvdbofd > src/types/supabase.ts
 
-# Railway (Board Nomads)
+# Railway (Boardmello)
 railway environment staging && railway service goodgame-staging
 railway environment production && railway service goodgame
 railway logs
@@ -536,7 +536,7 @@ SUPABASE_SERVICE_ROLE_KEY=...
 
 # Site
 NEXT_PUBLIC_SITE_URL=http://localhost:3399
-NEXT_PUBLIC_SITE_NAME=Board Nomads
+NEXT_PUBLIC_SITE_NAME=Boardmello
 NEXT_PUBLIC_APP_URL=http://localhost:3399  # For Stripe redirects
 
 # Admin

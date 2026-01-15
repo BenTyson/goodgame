@@ -24,7 +24,7 @@ import type {
 
 const COMMONS_API_BASE = 'https://commons.wikimedia.org/w/api.php'
 const USER_AGENT =
-  'BoardNomads/1.0 (https://boardnomads.com; contact@boardnomads.com)'
+  'Boardmello/1.0 (https://boardmello.com; contact@boardmello.com)'
 
 // Rate limiting: Be respectful to Wikimedia servers
 const REQUEST_DELAY_MS = 1000 // 1 second between requests

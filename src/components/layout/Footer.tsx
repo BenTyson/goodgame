@@ -49,7 +49,7 @@ export function Footer() {
                 <Dices className="h-5 w-5" />
               </div>
               <span className="text-xl font-bold tracking-tight">
-                Board Nomads
+                Boardmello
               </span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
@@ -138,7 +138,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-border/50">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} Board Nomads. All rights reserved.
+              &copy; {new Date().getFullYear()} Boardmello. All rights reserved.
             </p>
             <p className="text-xs text-muted-foreground/70">
               Board game names and images are property of their respective publishers.

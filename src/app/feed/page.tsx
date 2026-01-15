@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ActivityFeed } from '@/components/feed/ActivityFeed'
 
 export const metadata: Metadata = {
-  title: 'Activity Feed | Board Nomads',
+  title: 'Activity Feed | Boardmello',
   description: 'See what the people you follow are up to.',
 }
 

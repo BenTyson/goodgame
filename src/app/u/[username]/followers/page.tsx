@@ -14,7 +14,7 @@ interface FollowersPageProps {
 export async function generateMetadata({ params }: FollowersPageProps): Promise<Metadata> {
   const { username } = await params
   return {
-    title: `People following @${username} | Board Nomads`,
+    title: `People following @${username} | Boardmello`,
   }
 }
 

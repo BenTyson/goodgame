@@ -53,7 +53,7 @@ export async function generateMetadata({
 
   return {
     title: `${listing.game.name} - ${typeLabel}`,
-    description: listing.description || `${listing.game.name} ${typeLabel.toLowerCase()} on Board Nomads Marketplace`,
+    description: listing.description || `${listing.game.name} ${typeLabel.toLowerCase()} on Boardmello Marketplace`,
   }
 }
 

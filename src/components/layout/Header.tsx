@@ -60,7 +60,7 @@ export function Header() {
             <Dices className="h-5 w-5" />
           </div>
           <span className="text-xl font-bold tracking-tight">
-            Board Nomads
+            Boardmello
           </span>
         </Link>
 

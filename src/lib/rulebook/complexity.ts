@@ -1,5 +1,5 @@
 /**
- * Crunch Score - Board Nomads Complexity Rating
+ * Crunch Score - Boardmello Complexity Rating
  * AI-generated complexity scoring from rulebook analysis
  *
  * Scale: 1-10 (distinct from BGG's 1-5)

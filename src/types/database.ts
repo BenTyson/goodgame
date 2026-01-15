@@ -140,7 +140,7 @@ export interface FieldSources {
   play_time_min?: DataSource
   play_time_max?: DataSource
   description?: DataSource
-  weight?: DataSource | 'crunch' // Crunch Score (Board Nomads complexity rating)
+  weight?: DataSource | 'crunch' // Crunch Score (Boardmello complexity rating)
   designers?: DataSource
   publisher?: DataSource
   [key: string]: DataSource | 'crunch' | undefined

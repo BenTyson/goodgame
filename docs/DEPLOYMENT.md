@@ -6,7 +6,7 @@
 |-------------|--------|-----|----------|
 | **Local** | `develop` | http://localhost:3399 | Staging Supabase |
 | **Staging** | `develop` | https://goodgame-staging-staging.up.railway.app | Staging Supabase |
-| **Production** | `main` | https://boardnomads.com | Production Supabase |
+| **Production** | `main` | https://boardmello.com | Production Supabase |
 
 ## Database Separation
 
@@ -98,7 +98,7 @@ git checkout develop
 
 **Production Environment:**
 - Service: `goodgame`
-- Domain: boardnomads.com
+- Domain: boardmello.com
 - Branch trigger: `main`
 - Database: Production Supabase
 
@@ -146,7 +146,7 @@ SUPABASE_SERVICE_ROLE_KEY=<staging-service-role-key>
 
 # Site
 NEXT_PUBLIC_SITE_URL=http://localhost:3399
-NEXT_PUBLIC_SITE_NAME=Board Nomads
+NEXT_PUBLIC_SITE_NAME=Boardmello
 
 # Admin
 ADMIN_EMAILS=your-email@gmail.com
@@ -165,7 +165,7 @@ ADMIN_EMAILS=your-email@gmail.com
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | https://jnaibnwxpweahpawxycf.supabase.co |
-| `NEXT_PUBLIC_SITE_URL` | https://boardnomads.com |
+| `NEXT_PUBLIC_SITE_URL` | https://boardmello.com |
 | `NEXT_PUBLIC_SITE_NAME` | Good Game |
 
 ---
@@ -188,9 +188,9 @@ https://ndskcbuzsmrzgnvdbofd.supabase.co/auth/v1/callback
 ### Production Supabase (`jnaibnwxpweahpawxycf`)
 
 **Authentication → URL Configuration:**
-- Site URL: `https://boardnomads.com`
+- Site URL: `https://boardmello.com`
 - Redirect URLs:
-  - `https://boardnomads.com/**`
+  - `https://boardmello.com/**`
 
 **Google OAuth Callback:**
 ```

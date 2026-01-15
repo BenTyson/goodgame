@@ -34,8 +34,8 @@
 - **Parent-child unified save with forwardRef**: When a parent needs to trigger save on a child component, use `forwardRef` + `useImperativeHandle` to expose a `save()` function. See `TaxonomyTab.tsx` (child) and `GameEditor.tsx` (parent with `taxonomyRef.current.save()`).
 - **PDF thumbnails render washed out**: `unpdf` renders PDFs with transparent backgrounds, causing colors to appear faded. Use `addWhiteBackground()` in `src/lib/rulebook/thumbnail.ts` to composite onto white before saving.
 - **BGG API requires authentication**: BGG XML API v2 now requires Bearer token authentication. Register at `boardgamegeek.com/applications` to get a token. Set `BGG_API_TOKEN` env var. Without it, all API calls return HTTP 401.
-- **Puffin service architecture**: BGG data flows through Puffin intermediary service to reduce risk of BGG blocking Board Nomads. Set `PUFFIN_ENABLED=true` with `PUFFIN_API_URL` and `PUFFIN_API_KEY` to activate. **No BGG fallback** - if Puffin doesn't have a game, it queues it for fetch and returns pending status. Board Nomads retries with 30s window. See `src/lib/bgg/client.ts`.
-- **BGG expansion/implementation parsing**: Expansion detection uses item `type` attribute (not link `inbound`). If `type='boardgameexpansion'`, expansion links point to base game. Implementation `inbound=true` means OTHER games reimplement THIS one (we're the original). Key files: Puffin `src/worker/bgg-fetcher.ts`, Board Nomads `src/lib/bgg/client.ts`.
+- **Puffin service architecture**: BGG data flows through Puffin intermediary service to reduce risk of BGG blocking Boardmello. Set `PUFFIN_ENABLED=true` with `PUFFIN_API_URL` and `PUFFIN_API_KEY` to activate. **No BGG fallback** - if Puffin doesn't have a game, it queues it for fetch and returns pending status. Boardmello retries with 30s window. See `src/lib/bgg/client.ts`.
+- **BGG expansion/implementation parsing**: Expansion detection uses item `type` attribute (not link `inbound`). If `type='boardgameexpansion'`, expansion links point to base game. Implementation `inbound=true` means OTHER games reimplement THIS one (we're the original). Key files: Puffin `src/worker/bgg-fetcher.ts`, Boardmello `src/lib/bgg/client.ts`.
 - **Railway migrations need public DB URL**: Railway's internal DB hostname (`*.railway.internal`) only works within Railway's network. For running migrations locally, use the `DATABASE_PUBLIC_URL` (has `proxy.rlwy.net` hostname instead).
 
 ## Tech Stack
@@ -122,14 +122,14 @@
 
 | Config | Value |
 |--------|-------|
-| Repository | `github.com/BenTyson/puffin` (separate from Board Nomads) |
+| Repository | `github.com/BenTyson/puffin` (separate from Boardmello) |
 | Production URL | `https://puffin-production.up.railway.app` |
 | Port | 2288 |
 | Tech Stack | Node.js + Express + PostgreSQL |
 | Rate Limiting | 1.1s between BGG requests, max 20 IDs per batch |
 | Auth | API key via `Authorization: Bearer {API_KEY}` header |
 
-**Environment Variables (Board Nomads):**
+**Environment Variables (Boardmello):**
 - `PUFFIN_ENABLED` - Set to `true` to use Puffin
 - `PUFFIN_API_URL` - Puffin API base URL (e.g., `https://puffin-production.up.railway.app/api/v1`)
 - `PUFFIN_API_KEY` - API key for Puffin authentication

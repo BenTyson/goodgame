@@ -2,7 +2,7 @@
  * Rulebook AI Extraction Prompts
  * Prompts for extracting structured data from rulebook text
  *
- * Voice: Board Nomads "Enthusiastic Expert"
+ * Voice: Boardmello "Enthusiastic Expert"
  * - Friendly, passionate game lover who makes complex rules feel approachable
  * - Uses "you" directly, occasional light humor
  * - Expert knowledge delivered with warmth
@@ -12,9 +12,9 @@
 import type { ParsedPDF } from './types'
 
 /**
- * System prompt for rulebook analysis - establishes the Board Nomads voice
+ * System prompt for rulebook analysis - establishes the Boardmello voice
  */
-export const RULEBOOK_SYSTEM_PROMPT = `You are a Board Nomads content writer - an enthusiastic board game expert who genuinely loves helping people discover and learn games.
+export const RULEBOOK_SYSTEM_PROMPT = `You are a Boardmello content writer - an enthusiastic board game expert who genuinely loves helping people discover and learn games.
 
 YOUR VOICE:
 - Warm and approachable, like explaining a game to a friend at game night
@@ -115,7 +115,7 @@ export function getCrunchScorePrompt(
     ? rulebookText.substring(0, 25000) + '\n\n[...rulebook truncated...]'
     : rulebookText
 
-  return `Analyze the complexity of "${gameName}" and generate a Crunch Score (Board Nomads' complexity rating).
+  return `Analyze the complexity of "${gameName}" and generate a Crunch Score (Boardmello' complexity rating).
 
 RULEBOOK METRICS:
 - Pages: ${metrics.pageCount}
@@ -229,7 +229,7 @@ ${wikipediaContext}
 `
     : ''
 
-  return `You're writing the rules guide for "${gameName}" on Board Nomads. This will be the first thing new players read - make it count!
+  return `You're writing the rules guide for "${gameName}" on Boardmello. This will be the first thing new players read - make it count!
 ${wikiSection}
 RULEBOOK TEXT (primary source for all rules):
 ---
@@ -334,7 +334,7 @@ ${wikipediaContext}
 `
     : ''
 
-  return `You're writing the setup guide for "${gameName}" on Board Nomads. Someone's about to crack open this box - help them get playing smoothly!
+  return `You're writing the setup guide for "${gameName}" on Boardmello. Someone's about to crack open this box - help them get playing smoothly!
 ${wikiSection}
 RULEBOOK TEXT (primary source for setup instructions):
 ---
@@ -435,7 +435,7 @@ ${wikipediaContext}
 `
     : ''
 
-  return `You're creating the quick reference for "${gameName}" on Board Nomads. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
+  return `You're creating the quick reference for "${gameName}" on Boardmello. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
 ${wikiSection}
 RULEBOOK TEXT (primary source for all reference content):
 ---
@@ -563,7 +563,7 @@ export function getEnhancedRulesSummaryPrompt(
     ? contextSections.join('\n')
     : ''
 
-  return `You're writing the rules guide for "${gameName}" on Board Nomads. This will be the first thing new players read - make it count!
+  return `You're writing the rules guide for "${gameName}" on Boardmello. This will be the first thing new players read - make it count!
 ${contextBlock}
 RULEBOOK TEXT (primary source for all rules):
 ---
@@ -677,7 +677,7 @@ export function getEnhancedSetupGuidePrompt(
     ? contextSections.join('\n')
     : ''
 
-  return `You're writing the setup guide for "${gameName}" on Board Nomads. Someone's about to crack open this box - help them get playing smoothly!
+  return `You're writing the setup guide for "${gameName}" on Boardmello. Someone's about to crack open this box - help them get playing smoothly!
 ${contextBlock}
 RULEBOOK TEXT (primary source for setup instructions):
 ---
@@ -772,7 +772,7 @@ export function getEnhancedReferenceCardPrompt(
     ? `IMPORTANT: ${context.expansionNote}\n\n`
     : ''
 
-  return `You're creating the quick reference for "${gameName}" on Board Nomads. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
+  return `You're creating the quick reference for "${gameName}" on Boardmello. This is what players glance at MID-GAME when they need a quick answer - make it scannable!
 ${contextBlock}
 RULEBOOK TEXT (primary source for all reference content):
 ---

@@ -5,7 +5,7 @@ import { getOffersByUser, getPendingOfferCount } from '@/lib/supabase/offer-quer
 import { OffersPageClient } from './OffersPageClient'
 
 export const metadata: Metadata = {
-  title: 'My Offers | Board Nomads Marketplace',
+  title: 'My Offers | Boardmello Marketplace',
   description: 'View and manage your marketplace offers',
 }
 

@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/supabase'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://boardnomads.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://boardmello.com'
 
 // Static client for sitemap generation (no cookies needed)
 function createStaticClient() {

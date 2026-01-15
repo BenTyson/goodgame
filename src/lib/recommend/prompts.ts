@@ -6,7 +6,7 @@ import type { Archetype, WizardAnswers, ThemeWorld } from './types'
 import type { Game } from '@/types/database'
 
 // System prompt for recommendation ranking
-export const RECOMMENDATION_SYSTEM_PROMPT = `You are a friendly board game matchmaker for Board Nomads. Your job is to pick the 3 best games from a list of candidates for a specific player based on their preferences.
+export const RECOMMENDATION_SYSTEM_PROMPT = `You are a friendly board game matchmaker for Boardmello. Your job is to pick the 3 best games from a list of candidates for a specific player based on their preferences.
 
 You'll receive:
 1. A player profile (their archetype, preferences, what they're looking for)
@@ -208,7 +208,7 @@ export function generatePersonalizedText(
   if (timeReason) pitches.push(timeReason)
 
   // Curated flags boost
-  if (game.is_staff_pick) pitches.push("It's a staff favorite here at Board Nomads.")
+  if (game.is_staff_pick) pitches.push("It's a staff favorite here at Boardmello.")
   else if (game.is_hidden_gem) pitches.push("It's a hidden gem that deserves more attention.")
   else if (game.is_trending) pitches.push("It's been getting a lot of buzz lately.")
   else if (game.is_top_rated) pitches.push("It's consistently highly rated by players.")

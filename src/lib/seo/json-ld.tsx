@@ -1,7 +1,7 @@
 import type { GameRow } from '@/types/database'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodgame.guide'
-const SITE_NAME = 'Board Nomads'
+const SITE_NAME = 'Boardmello'
 
 // Base JSON-LD component
 export function JsonLd({ data }: { data: object }) {

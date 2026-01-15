@@ -1,13 +1,13 @@
 # Stripe Setup Guide
 
-Platform configuration guide for Stripe Connect payments on Board Nomads marketplace.
+Platform configuration guide for Stripe Connect payments on Boardmello marketplace.
 
 ## Overview
 
-Board Nomads uses Stripe Connect with Express accounts to facilitate marketplace payments:
+Boardmello uses Stripe Connect with Express accounts to facilitate marketplace payments:
 
 ```
-Buyer pays → Board Nomads Stripe account → Auto-transfer to Seller's Connected Account
+Buyer pays → Boardmello Stripe account → Auto-transfer to Seller's Connected Account
                                          → 3% platform fee retained
                                          → 2.9% + $0.30 Stripe fee deducted
 ```
@@ -52,7 +52,7 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 
 | Environment | URL |
 |-------------|-----|
-| Production | `https://boardnomads.com/api/stripe/webhooks` |
+| Production | `https://boardmello.com/api/stripe/webhooks` |
 | Staging | `https://goodgame-staging-staging.up.railway.app/api/stripe/webhooks` |
 
 ### Required Events
@@ -88,7 +88,7 @@ Enable these webhook events in Dashboard → Developers → Webhooks:
 Customize the seller onboarding experience:
 
 1. Go to Dashboard → Connect → Settings → Branding
-2. Upload Board Nomads logo
+2. Upload Boardmello logo
 3. Set brand color to match site (teal: `#14B8A6`)
 4. Add support email and URL
 
