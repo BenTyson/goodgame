@@ -4,6 +4,46 @@
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
 
+### Session 5 (2026-01-15) - Awards Pre-Population from Wikidata
+
+**What was done:**
+- Built awards pre-population system from Wikidata, independent of game imports
+- Awards can now exist in database before their games are imported (identified by BGG ID)
+- When games are later imported, they auto-link to pending awards
+- Award pages show placeholder cards for games not yet in database (with BGG link)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00075_awards_bgg_id_support.sql` | Schema: nullable game_id, new bgg_id/game_name/wikidata_game_id columns |
+| `src/lib/wikidata/award-queries.ts` | SPARQL queries for Wikidata P166 (award received) |
+| `src/lib/wikidata/award-importer.ts` | Import logic + `linkPendingAwards()` function |
+| `src/app/api/admin/awards/import-wikidata/route.ts` | Admin API: GET stats, POST import (with ?award= filter) |
+| `src/app/admin/(dashboard)/awards/page.tsx` | Admin UI for per-award imports with stats |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/wikidata/index.ts` | Added exports for award functions |
+| `src/lib/supabase/award-queries.ts` | Updated `AwardWinner` type and `getAwardWinners()` to include pending games |
+| `src/lib/bgg/importer.ts` | Auto-links pending awards when game is imported |
+| `src/app/awards/[slug]/page.tsx` | Placeholder cards for pending games with BGG links |
+| `src/components/admin/AdminSidebar.tsx` | Added Awards tab with Trophy icon |
+
+**Wikidata Awards Supported:**
+- Spiel des Jahres, Kennerspiel des Jahres, Kinderspiel des Jahres
+- Deutscher Spiele Preis, As d'Or, Origins Award
+- Golden Geek Award, International Gamers Award
+
+**Admin Features:**
+- `/admin/awards` - Per-award import buttons with linked/pending counts
+- Import individual awards or all at once
+- Stats show coverage percentage per award
+
+**Build Status:** Passing
+
+---
+
 ### Session 4 (2026-01-15) - Platform Rebrand & Coming Soon Page
 
 **What was done:**

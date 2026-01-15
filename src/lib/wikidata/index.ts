@@ -66,3 +66,19 @@ export {
   GAMES_IN_SERIES_QUERY,
   buildQuery,
 } from './queries';
+
+// Award imports from Wikidata
+export {
+  getWikidataAwardWinners,
+  getWikidataAwardWinnersByAward,
+  WIKIDATA_AWARD_TO_SLUG,
+  SLUG_TO_WIKIDATA_AWARD,
+  type WikidataAwardWinner,
+} from './award-queries';
+
+export {
+  importAwardsFromWikidata,
+  linkPendingAwards,
+  getAwardImportStats,
+  type AwardImportResult,
+} from './award-importer';

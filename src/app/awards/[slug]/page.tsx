@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Trophy, Award, Star, Globe, ExternalLink, Calendar } from 'lucide-react'
+import { ArrowLeft, Trophy, Award, Star, Globe, ExternalLink, Calendar, Dices } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -188,41 +188,87 @@ export default async function AwardPage({ params }: AwardPageProps) {
                   {year}
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {winnersByYear[year].map((winner) => (
-                    <Link key={`${winner.game.slug}-${winner.category?.slug || 'main'}`} href={`/games/${winner.game.slug}`}>
-                      <Card className="h-full transition-all hover:shadow-md hover:border-primary/30">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            {winner.game.thumbnail_url && (
-                              <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-muted">
-                                <Image
-                                  src={winner.game.thumbnail_url}
-                                  alt={winner.game.name}
-                                  fill
-                                  className="object-cover"
-                                  sizes="64px"
-                                />
+                  {winnersByYear[year].map((winner) => {
+                    // Pending game - not yet in database
+                    if (winner.isPending) {
+                      return (
+                        <Card
+                          key={`pending-${winner.bggId}-${winner.category?.slug || 'main'}`}
+                          className="h-full border-dashed opacity-75"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="w-16 h-16 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                                <Dices className="h-6 w-6 text-muted-foreground" />
                               </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold truncate">{winner.game.name}</h4>
-                              {winner.category && (
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {winner.category.name}
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold truncate">{winner.gameName}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Not yet in database
                                 </p>
-                              )}
-                              <Badge
-                                variant={winner.result === 'winner' ? 'default' : 'secondary'}
-                                className="mt-2 text-xs"
-                              >
-                                {winner.result === 'winner' ? 'Winner' : winner.result}
-                              </Badge>
+                                {winner.bggId && (
+                                  <a
+                                    href={`https://boardgamegeek.com/boardgame/${winner.bggId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    View on BGG
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                                <Badge
+                                  variant={winner.result === 'winner' ? 'default' : 'secondary'}
+                                  className="mt-2 text-xs block w-fit"
+                                >
+                                  {winner.result === 'winner' ? 'Winner' : winner.result}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
+                          </CardContent>
+                        </Card>
+                      )
+                    }
+
+                    // Imported game - link to game page
+                    const game = winner.game!
+                    return (
+                      <Link key={`${game.slug}-${winner.category?.slug || 'main'}`} href={`/games/${game.slug}`}>
+                        <Card className="h-full transition-all hover:shadow-md hover:border-primary/30">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              {game.thumbnail_url && (
+                                <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-muted">
+                                  <Image
+                                    src={game.thumbnail_url}
+                                    alt={game.name}
+                                    fill
+                                    className="object-cover"
+                                    sizes="64px"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold truncate">{game.name}</h4>
+                                {winner.category && (
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {winner.category.name}
+                                  </p>
+                                )}
+                                <Badge
+                                  variant={winner.result === 'winner' ? 'default' : 'secondary'}
+                                  className="mt-2 text-xs"
+                                >
+                                  {winner.result === 'winner' ? 'Winner' : winner.result}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             ))}

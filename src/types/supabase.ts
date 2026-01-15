@@ -426,6 +426,24 @@ export type Database = {
         }
         Relationships: []
       }
+      coming_soon_signups: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       complexity_tiers: {
         Row: {
           created_at: string | null
@@ -637,32 +655,41 @@ export type Database = {
       game_awards: {
         Row: {
           award_id: string | null
+          bgg_id: number | null
           category_id: string | null
           created_at: string | null
           game_id: string | null
+          game_name: string | null
           id: string
           notes: string | null
           result: string | null
+          wikidata_game_id: string | null
           year: number
         }
         Insert: {
           award_id?: string | null
+          bgg_id?: number | null
           category_id?: string | null
           created_at?: string | null
           game_id?: string | null
+          game_name?: string | null
           id?: string
           notes?: string | null
           result?: string | null
+          wikidata_game_id?: string | null
           year: number
         }
         Update: {
           award_id?: string | null
+          bgg_id?: number | null
           category_id?: string | null
           created_at?: string | null
           game_id?: string | null
+          game_name?: string | null
           id?: string
           notes?: string | null
           result?: string | null
+          wikidata_game_id?: string | null
           year?: number
         }
         Relationships: [

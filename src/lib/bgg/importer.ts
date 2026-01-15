@@ -46,6 +46,7 @@ import {
   determineVecnaState,
 } from '@/lib/enrichment'
 import { enrichFamilyFromWikipedia } from '@/lib/wikipedia/family-enrichment'
+import { linkPendingAwards } from '@/lib/wikidata/award-importer'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RelationType } from '@/types/database'
@@ -1183,6 +1184,12 @@ export async function importGameFromBGG(
       name: bggData.name,
       error: insertError?.message || 'Insert failed'
     }
+  }
+
+  // Link any pending awards that were pre-imported from Wikidata
+  const linkedAwards = await linkPendingAwards(newGame.id, bggId)
+  if (linkedAwards > 0) {
+    console.log(`  [Awards] Linked ${linkedAwards} pending awards`)
   }
 
   // Link to categories based on BGG categories (alias system + name fallback)

@@ -99,30 +99,35 @@ export async function getGameAwards(gameId: string): Promise<GameAwardWithDetail
 }
 
 export type AwardWinner = {
-  game: Game
+  game: Game | null          // null if pending (not yet imported)
+  bggId: number | null       // present if pending
+  gameName: string | null    // from Wikidata if pending
   category: AwardCategory | null
   year: number
   result: string | null
   notes: string | null
+  isPending: boolean         // true if game not yet in database
 }
 
 export async function getAwardWinners(awardSlug: string, options?: {
   year?: number
   categorySlug?: string
   limit?: number
+  includePending?: boolean   // default true - include games not yet imported
 }): Promise<AwardWinner[]> {
   const supabase = await createClient()
+  const includePending = options?.includePending ?? true
 
   // First get the award
   const award = await getAwardBySlug(awardSlug)
   if (!award) return []
 
+  // Note: bgg_id and game_name columns are added by migration 00075
+  // The query will work with or without them - we handle missing columns gracefully
   let query = supabase
     .from('game_awards')
     .select(`
-      year,
-      result,
-      notes,
+      *,
       game:games(*),
       category:award_categories(*)
     `)
@@ -157,16 +162,36 @@ export async function getAwardWinners(awardSlug: string, options?: {
     return []
   }
 
-  // Filter published games and transform
-  return (data || [])
-    .filter(item => item.game && (item.game as Game).is_published)
-    .map(item => ({
-      game: item.game as Game,
+  // Transform results, including pending games
+  const results: AwardWinner[] = []
+
+  for (const item of data || []) {
+    const game = item.game as Game | null
+    const isPending = !game && !!item.bgg_id
+
+    // Skip pending games if not requested
+    if (isPending && !includePending) {
+      continue
+    }
+
+    // Skip imported but unpublished games (unless pending)
+    if (game && !game.is_published) {
+      continue
+    }
+
+    results.push({
+      game: game || null,
+      bggId: item.bgg_id || null,
+      gameName: item.game_name || null,
       category: item.category as AwardCategory | null,
       year: item.year,
       result: item.result,
-      notes: item.notes
-    }))
+      notes: item.notes,
+      isPending,
+    })
+  }
+
+  return results
 }
 
 export async function getAllAwardSlugs(): Promise<string[]> {
