@@ -38,17 +38,24 @@ COMING_SOON_MODE=true
 COMING_SOON_BYPASS_CODE=your_secret_code
 ```
 
-**Admin Access Flow:**
+**Local Development:**
+- Navigate directly to `http://localhost:3399/coming-soon` to view/edit the page
+- No redirect occurs locally (env var not set) - normal site works as usual
+- Optional: Add `COMING_SOON_MODE=true` to `.env.local` to test full redirect flow
+
+**Admin Access Flow (Production):**
 1. Visit `boardmello.com?access=CODE` → bypass cookie set
 2. Navigate to `/admin` → admin login page
 3. Login with Google (email in `ADMIN_EMAILS`) → full admin access
 
 **Infrastructure Changes Completed:**
-- Railway: Custom domain `boardmello.com` configured
+- Railway: Custom domain `boardmello.com` configured, env vars set
 - DNS: Records configured
-- Supabase: Site URL and redirects updated
+- Supabase: Site URL and redirects updated, migrations pushed to both staging and production
 - Google Cloud: OAuth origins updated
 - Stripe: Webhook endpoint updated
+
+**Deployment:** Merged to `main` and deployed to production
 
 **Build Status:** Passing
 
