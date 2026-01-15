@@ -19,6 +19,13 @@
 - Added middleware intercept for production-only coming soon mode
 - URL-based admin bypass: `?access=CODE` sets 30-day cookie
 - Email signups stored in `coming_soon_signups` table
+- Design: Text-only logo (all caps, wide letter-spacing), subtle teal radial gradient
+- Copy: "Probably the best thing ever." / "Make a Good Decision" button
+
+**Part 3: Production Database Reset**
+- Cleared all test games and related data from production database
+- Preserved: taxonomy tables, user accounts, coming soon signups
+- Production is clean and ready for fresh game imports at launch
 
 **New Files:**
 | File | Purpose |
