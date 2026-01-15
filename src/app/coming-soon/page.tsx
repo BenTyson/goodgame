@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Dices, Mail, Loader2, CheckCircle, Sparkles } from 'lucide-react'
+import { Mail, Loader2, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -43,26 +43,14 @@ export default function ComingSoonPage() {
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20">
-                <Dices className="h-10 w-10" />
-              </div>
-              <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-background border-2 border-primary shadow-sm">
-                <Sparkles className="h-3 w-3 text-primary" />
-              </div>
-            </div>
-          </div>
-
           {/* Brand */}
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
+          <h1 className="text-4xl font-bold tracking-[0.3em] uppercase mb-3">
             Boardmello
           </h1>
 
           {/* Tagline */}
-          <p className="text-xl text-muted-foreground mb-8">
-            Something great is brewing
+          <p className="text-xl text-muted-foreground mb-10">
+            Probably the best thing ever.
           </p>
 
           {/* Signup card */}
@@ -81,7 +69,7 @@ export default function ComingSoonPage() {
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Be the first to know when we launch. No spam, just one email.
+                    Interested in joining our Beta Group? Let us know. It will be worth it.
                   </p>
 
                   <form onSubmit={handleSubmit} className="space-y-3">
