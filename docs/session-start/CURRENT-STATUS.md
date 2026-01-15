@@ -2,9 +2,52 @@
 
 > Last Updated: 2026-01-14
 
-## Current Phase: 78 - Puffin BGG Intermediary Service (COMPLETE)
+## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
 
-### Session Summary (2026-01-14) - Puffin Service Creation & Deployment
+### Session 2 (2026-01-14) - Admin Interface
+
+**What was done:**
+- Built full admin interface for Puffin with dark theme UI
+- Technology: Static HTML + Alpine.js + Tailwind CSS (via CDN) - zero build step
+- Four pages: Dashboard, Queue Management, Games Cache, Fetch History
+- Real-time dashboard with auto-refresh (5s interval)
+- Worker pause/resume control from UI
+- Queue actions: retry failed, remove, bump priority, manual fetch
+- Games browser with search, staleness filtering, detail modal
+- Fixed auth middleware to skip `/admin` routes (both UI and API)
+- Fixed Dockerfile to copy static files for production deployment
+- Resolved Railway deployment issues (duplicate projects causing confusion)
+
+**New Files (Puffin repo):**
+| File | Purpose |
+|------|---------|
+| `src/api/routes/admin.ts` | All admin API endpoints (stats, queue, games, history, worker) |
+| `src/db/admin.ts` | Admin database queries |
+| `src/public/admin/index.html` | Dashboard with stats cards, worker control, activity feed |
+| `src/public/admin/queue.html` | Queue management with filtering and actions |
+| `src/public/admin/games.html` | Games cache browser with search and staleness filter |
+| `src/public/admin/history.html` | Fetch history with stats |
+| `src/public/admin/js/admin.js` | Shared Alpine.js utilities |
+
+**Files Modified (Puffin repo):**
+| File | Changes |
+|------|---------|
+| `src/api/server.ts` | Added static file serving for `/admin`, mounted admin router |
+| `src/api/middleware/auth.ts` | Skip auth for all `/admin` routes |
+| `src/worker/queue-processor.ts` | Added pause/resume with exposed worker state |
+| `Dockerfile` | Copy `src/public` for admin static files |
+
+**Admin URLs:**
+- Dashboard: `https://puffin-production.up.railway.app/admin/`
+- Queue: `https://puffin-production.up.railway.app/admin/queue.html`
+- Games: `https://puffin-production.up.railway.app/admin/games.html`
+- History: `https://puffin-production.up.railway.app/admin/history.html`
+
+**Build Status:** Passing
+
+---
+
+### Session 1 (2026-01-14) - Puffin Service Creation & Deployment
 
 **What was done:**
 - Created **Puffin** - a separate BGG data intermediary service to reduce risk of BGG blocking Board Nomads
@@ -68,8 +111,6 @@ PUFFIN_API_KEY=puffin_sk_...
 - Production: `PUFFIN_ENABLED=true`, `PUFFIN_API_URL`, `PUFFIN_API_KEY` set
 - Staging: Same configuration applied
 - No `BGG_API_TOKEN` in Board Nomads (intentional - Puffin only)
-
-**Next Session:** Add simple admin interface to Puffin (queue status, recent fetches, manual triggers)
 
 **Build Status:** Passing (both repos)
 
