@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Loader2, CheckCircle } from 'lucide-react'
+import { Mail, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,15 +65,9 @@ export default function ComingSoonPage() {
           <Card className="shadow-lg border-muted/50">
             <CardContent className="pt-6 pb-6">
               {submitted ? (
-                <div className="py-4">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                    <CheckCircle className="h-7 w-7 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">You're on the list!</h3>
-                  <p className="text-sm text-muted-foreground">
-                    We'll let you know when Boardmello launches.
-                  </p>
-                </div>
+                <p className="py-4 text-muted-foreground">
+                  Thank you, friend. We will be in touch.
+                </p>
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground mb-4">
