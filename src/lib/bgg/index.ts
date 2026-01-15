@@ -10,9 +10,13 @@
 // BGG API Client
 export {
   fetchBGGGame,
+  fetchBGGGameWithStatus,
   fetchBGGGames,
+  fetchBGGGamesWithStatus,
   searchBGGGames,
   type BGGRawGame,
+  type BGGFetchResult,
+  type BGGBatchFetchResult,
 } from './client'
 
 // Game Importer

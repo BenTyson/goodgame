@@ -1,8 +1,60 @@
 # Current Status
 
-> Last Updated: 2026-01-14
+> Last Updated: 2026-01-15
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
+
+### Session 3 (2026-01-15) - Data Consistency & Auto-Discovery
+
+**What was done:**
+- Fixed critical BGG parsing discrepancies between Puffin and Board Nomads:
+  - Expansion relationships: Puffin now uses item `type` attribute (matching Board Nomads logic)
+  - Implementation relationships: Fixed `inbound` attribute interpretation (was inverted)
+- Removed direct BGG access from Board Nomads - all BGG data now flows through Puffin only
+- Added automatic retry mechanism when games are pending in Puffin (6 retries × 5s = 30s total)
+- Added auto-discovery of related games when fetching in Puffin:
+  - Base games (if expansion)
+  - All expansions
+  - Original games (if reimplementation)
+  - Reimplementations
+  - BGG family members (game series only, excludes publishers/awards/etc.)
+- Built scheduler system for continuous content discovery:
+  - 6 seed tiers with ~300 curated games (classics, modern hits, gateway, Kickstarter, etc.)
+  - Stale data refresh for games older than 7 days
+  - Worker idle-time processing (auto-progresses through tiers when queue is empty)
+- Added cron API endpoints for external scheduling via cron-job.org
+
+**New Files (Puffin repo):**
+| File | Purpose |
+|------|---------|
+| `src/api/routes/cron.ts` | Cron endpoints: discover-hot, discover-next, discover-tier, refresh-stale, status |
+
+**Files Modified (Puffin repo):**
+| File | Changes |
+|------|---------|
+| `src/worker/bgg-fetcher.ts` | Fixed expansion/implementation parsing, added `fetchBGGFamilyMembers()` |
+| `src/worker/queue-processor.ts` | Added `queueRelatedGames()`, `doIdleWork()`, worker pause/resume exports |
+| `src/worker/discovery.ts` | Added `SEED_TIERS`, `refreshNextStaleGame()`, `getStaleGameCount()`, `discoverFromTier()`, `getDiscoveryStatus()` |
+| `src/api/server.ts` | Added cron router |
+
+**Files Modified (Board Nomads repo):**
+| File | Changes |
+|------|---------|
+| `src/lib/bgg/client.ts` | Removed BGG direct fallback, added `BGGFetchResult` type, `fetchBGGGameWithStatus()`, `fetchBGGGamesWithStatus()` |
+| `src/lib/bgg/importer.ts` | Added `fetchWithRetry()` with 30s retry window |
+| `src/lib/bgg/index.ts` | Updated exports for new status functions |
+
+**Cron Endpoints:**
+| Endpoint | Schedule | Purpose |
+|----------|----------|---------|
+| `POST /cron/discover-hot` | Every 6 hours | BGG Hot 50 trending games |
+| `POST /cron/discover-next` | Daily | Auto-picks next incomplete tier |
+| `POST /cron/refresh-stale?count=50` | Every 4 hours | Refresh stale game data |
+| `GET /cron/status` | On-demand | Discovery progress + queue stats |
+
+**Build Status:** Passing (both repos)
+
+---
 
 ### Session 2 (2026-01-14) - Admin Interface
 

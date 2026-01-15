@@ -4,7 +4,38 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { fetchBGGGame, type BGGRawGame, type BGGLink } from './client'
+import { fetchBGGGameWithStatus, type BGGRawGame, type BGGLink, type BGGFetchResult } from './client'
+
+/**
+ * Fetch a game from Puffin with automatic retry for pending games
+ * Retries up to 6 times with 5-second delays (30 seconds total wait)
+ */
+async function fetchWithRetry(bggId: number, maxRetries = 6, delayMs = 5000): Promise<BGGFetchResult> {
+  let lastResult = await fetchBGGGameWithStatus(bggId)
+
+  if (lastResult.status !== 'pending') {
+    return lastResult
+  }
+
+  // Game is pending in Puffin - retry with delays
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`Game ${bggId} pending in Puffin, waiting ${delayMs}ms (attempt ${attempt}/${maxRetries})...`)
+    await new Promise(resolve => setTimeout(resolve, delayMs))
+
+    lastResult = await fetchBGGGameWithStatus(bggId)
+
+    if (lastResult.status !== 'pending') {
+      return lastResult
+    }
+  }
+
+  // Still pending after all retries
+  return {
+    game: null,
+    status: 'pending',
+    message: `Game ${bggId} is still being fetched after ${maxRetries * delayMs / 1000}s. Please try again later.`
+  }
+}
 import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
@@ -1094,16 +1125,18 @@ export async function importGameFromBGG(
     }
   }
 
-  // Fetch from BGG
-  const bggData = await fetchBGGGame(bggId)
+  // Fetch from Puffin cache (with automatic retry for pending games)
+  const fetchResult = await fetchWithRetry(bggId)
 
-  if (!bggData) {
+  if (!fetchResult.game) {
     return {
       success: false,
       bggId,
-      error: 'Failed to fetch from BGG'
+      error: fetchResult.message || 'Failed to fetch game data. Please try again later.'
     }
   }
+
+  const bggData = fetchResult.game
 
   // Import parent games first if enabled (base game for expansions, original for reimplementations)
   if (importParents && maxDepth > 0) {
@@ -1566,16 +1599,18 @@ export async function syncGameWithBGG(gameId: string): Promise<ImportResult> {
     }
   }
 
-  // Fetch fresh data from BGG
-  const bggData = await fetchBGGGame(game.bgg_id)
+  // Fetch fresh data from Puffin cache (with automatic retry for pending games)
+  const fetchResult = await fetchWithRetry(game.bgg_id)
 
-  if (!bggData) {
+  if (!fetchResult.game) {
     return {
       success: false,
       bggId: game.bgg_id,
-      error: 'Failed to fetch from BGG'
+      error: fetchResult.message || 'Failed to fetch game data. Please try again later.'
     }
   }
+
+  const bggData = fetchResult.game
 
   // Update only BGG-sourced fields (not our content, settings, or images)
   // NOTE: Not syncing BGG images - they don't work reliably with Next.js image optimization

@@ -448,62 +448,121 @@ async function fetchBGGGameDirect(bggId: number): Promise<BGGRawGame | null> {
 }
 
 // ============================================================================
-// PUBLIC API - Routes through Puffin if enabled, falls back to BGG
+// PUBLIC API - Routes through Puffin only (no BGG fallback)
 // ============================================================================
 
 /**
- * Fetch a single game from BGG by ID
- * Uses Puffin cache if enabled, falls back to direct BGG
+ * Result type for BGG fetch operations
  */
-export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
-  // Try Puffin first if enabled and healthy
-  if (shouldUsePuffin()) {
-    const puffinResult = await fetchFromPuffin(bggId)
-    if (puffinResult) {
-      return puffinResult
-    }
-    // Puffin miss - fall through to BGG
-  }
-
-  // Fallback to direct BGG fetch
-  return fetchBGGGameDirect(bggId)
+export interface BGGFetchResult {
+  game: BGGRawGame | null
+  status: 'found' | 'pending' | 'error'
+  message?: string
 }
 
 /**
- * Fetch multiple games from BGG by IDs
- * Uses Puffin cache if enabled, falls back to direct BGG
+ * Fetch a single game by BGG ID
+ * Uses Puffin cache exclusively - no direct BGG access
+ * If game not in Puffin, it's queued for fetching and status='pending' is returned
+ */
+export async function fetchBGGGame(bggId: number): Promise<BGGRawGame | null> {
+  if (!shouldUsePuffin()) {
+    console.warn('Puffin is not enabled or unhealthy - cannot fetch BGG data')
+    return null
+  }
+
+  return fetchFromPuffin(bggId)
+}
+
+/**
+ * Fetch a single game with detailed status information
+ * Returns status indicating whether game was found, is pending, or errored
+ */
+export async function fetchBGGGameWithStatus(bggId: number): Promise<BGGFetchResult> {
+  if (!shouldUsePuffin()) {
+    return {
+      game: null,
+      status: 'error',
+      message: 'Puffin service is not available. Please try again later.'
+    }
+  }
+
+  const game = await fetchFromPuffin(bggId)
+
+  if (game) {
+    return { game, status: 'found' }
+  }
+
+  // Game was not in Puffin - it has been queued automatically by fetchFromPuffin
+  return {
+    game: null,
+    status: 'pending',
+    message: `Game ${bggId} is not yet cached. It has been queued and should be available within 30 seconds.`
+  }
+}
+
+/**
+ * Fetch multiple games by BGG IDs
+ * Uses Puffin cache exclusively - no direct BGG access
+ * Missing games are automatically queued in Puffin for future requests
  */
 export async function fetchBGGGames(bggIds: number[]): Promise<Map<number, BGGRawGame>> {
   const results = new Map<number, BGGRawGame>()
 
   if (bggIds.length === 0) return results
 
-  // Try Puffin first if enabled and healthy
-  if (shouldUsePuffin()) {
-    const puffinResults = await fetchFromPuffinBatch(bggIds)
-
-    // Add Puffin results
-    for (const [id, game] of puffinResults) {
-      results.set(id, game)
-    }
-
-    // If all found, return early
-    if (results.size === bggIds.length) {
-      return results
-    }
+  if (!shouldUsePuffin()) {
+    console.warn('Puffin is not enabled or unhealthy - cannot fetch BGG data')
+    return results
   }
 
-  // Fetch missing games from BGG directly
-  const missingIds = bggIds.filter(id => !results.has(id))
+  const puffinResults = await fetchFromPuffinBatch(bggIds)
 
-  if (missingIds.length > 0) {
-    const bggResults = await fetchBGGGamesDirect(missingIds)
-    for (const [id, game] of bggResults) {
-      results.set(id, game)
-    }
+  for (const [id, game] of puffinResults) {
+    results.set(id, game)
   }
 
+  // Missing IDs have been automatically queued by fetchFromPuffinBatch
   return results
+}
+
+/**
+ * Batch fetch with detailed status for each game
+ */
+export interface BGGBatchFetchResult {
+  found: Map<number, BGGRawGame>
+  pending: number[]
+  errors: number[]
+}
+
+export async function fetchBGGGamesWithStatus(bggIds: number[]): Promise<BGGBatchFetchResult> {
+  const result: BGGBatchFetchResult = {
+    found: new Map(),
+    pending: [],
+    errors: []
+  }
+
+  if (bggIds.length === 0) return result
+
+  if (!shouldUsePuffin()) {
+    // All games error when Puffin is unavailable
+    result.errors = [...bggIds]
+    return result
+  }
+
+  const puffinResults = await fetchFromPuffinBatch(bggIds)
+
+  for (const id of bggIds) {
+    const game = puffinResults.get(id)
+    if (game) {
+      result.found.set(id, game)
+    } else {
+      // Game was queued by fetchFromPuffinBatch
+      result.pending.push(id)
+    }
+  }
+
+  return result
 }
 
 /**
