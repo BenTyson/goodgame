@@ -4,39 +4,51 @@
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
 
-### Session 4 (2026-01-15) - Platform Rebrand: Board Nomads → Boardmello
+### Session 4 (2026-01-15) - Platform Rebrand & Coming Soon Page
 
 **What was done:**
-- Renamed platform from "Board Nomads" to "Boardmello" across entire codebase
-- Updated all user-facing text, metadata, and SEO references
+
+**Part 1: Rebrand Board Nomads → Boardmello**
+- Renamed platform across entire codebase (30+ files)
+- Updated all user-facing text, metadata, SEO references
 - Updated User-Agent strings in all external API clients
 - Updated all documentation files
 
-**Files Modified (30+ source files):**
-| Area | Files | Changes |
-|------|-------|---------|
-| Layout/SEO | `layout.tsx`, `Header.tsx`, `Footer.tsx`, `json-ld.tsx` | Site name, copyright, SITE_NAME constant |
-| Auth | `login/page.tsx`, `LoginContent.tsx`, `admin/login/page.tsx` | Login page titles and branding |
-| Pages | Profile, Feed, Marketplace, Recommend pages | Metadata titles |
-| Components | `UsernameInput.tsx` | Reserved username, profile URL display |
-| SEO | `robots.ts`, `sitemap.ts` | Fallback URLs to boardmello.com |
-| AI Prompts | `rulebook/prompts.ts`, `recommend/prompts.ts` | Voice and branding in AI system prompts |
-| API Clients | `wikipedia/client.ts`, `wikidata/client.ts`, `wikimedia-commons/client.ts`, `bgg/client.ts`, `rulebook/discovery.ts`, `rulebook/thumbnail.ts` | User-Agent strings |
-| Types | `database.ts`, `wikidata/importer.ts` | Comments referencing platform name |
+**Part 2: Production Coming Soon Page**
+- Created coming soon page with email signup form (`/coming-soon`)
+- Added middleware intercept for production-only coming soon mode
+- URL-based admin bypass: `?access=CODE` sets 30-day cookie
+- Email signups stored in `coming_soon_signups` table
 
-**Documentation Updated:**
-- `docs/session-start/` - README, CURRENT-STATUS, DECISIONS, QUICK-REFERENCE
-- `docs/INDEX.md`, `docs/DEPLOYMENT.md`, `docs/STRIPE-SETUP.md`
-- `docs/EXPANSION-ROADMAP.md`, `docs/archive/phases/PHASES-29-34.md`
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/app/coming-soon/page.tsx` | Coming soon page with email signup |
+| `src/app/api/coming-soon/route.ts` | Email signup API endpoint |
+| `supabase/migrations/00074_coming_soon_signups.sql` | Signups table |
 
-**Pending Infrastructure Changes:**
-| Service | Changes Needed |
-|---------|----------------|
-| Railway | Add custom domain `boardmello.com`, update `NEXT_PUBLIC_SITE_URL` env var |
-| DNS | Configure CNAME/A records pointing to Railway |
-| Supabase (Production) | Update Site URL and Redirect URLs |
-| Google Cloud Console | Add `boardmello.com` to OAuth authorized origins |
-| Stripe | Update webhook endpoint URL |
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/middleware.ts` | Added coming soon intercept logic with bypass |
+
+**Environment Variables (Production Only):**
+```
+COMING_SOON_MODE=true
+COMING_SOON_BYPASS_CODE=your_secret_code
+```
+
+**Admin Access Flow:**
+1. Visit `boardmello.com?access=CODE` → bypass cookie set
+2. Navigate to `/admin` → admin login page
+3. Login with Google (email in `ADMIN_EMAILS`) → full admin access
+
+**Infrastructure Changes Completed:**
+- Railway: Custom domain `boardmello.com` configured
+- DNS: Records configured
+- Supabase: Site URL and redirects updated
+- Google Cloud: OAuth origins updated
+- Stripe: Webhook endpoint updated
 
 **Build Status:** Passing
 
