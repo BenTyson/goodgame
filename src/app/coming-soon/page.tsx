@@ -40,8 +40,16 @@ export default function ComingSoonPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Radial gradient overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(20, 184, 166, 0.15) 0%, transparent 70%)',
+        }}
+      />
+
       {/* Main content */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="relative flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           {/* Brand */}
           <h1 className="text-4xl font-bold tracking-[0.3em] uppercase mb-3">
@@ -69,7 +77,7 @@ export default function ComingSoonPage() {
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Interested in joining our Beta Group? Let us know. It will be worth it.
+                    You should join our Beta Group. Trust us.
                   </p>
 
                   <form onSubmit={handleSubmit} className="space-y-3">
@@ -100,7 +108,7 @@ export default function ComingSoonPage() {
                           Signing up...
                         </>
                       ) : (
-                        'Notify me'
+                        'Make a Good Decision'
                       )}
                     </Button>
                   </form>
@@ -111,7 +119,7 @@ export default function ComingSoonPage() {
 
           {/* Description */}
           <p className="mt-8 text-sm text-muted-foreground max-w-sm mx-auto">
-            Your new home for board game rules, reference guides, and everything tabletop.
+            The greatest Board Game hub in the history of the known (and possibly unknown) universe.
           </p>
         </div>
       </div>
