@@ -39,7 +39,7 @@ export default function ComingSoonPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-background via-background to-muted/30">
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
