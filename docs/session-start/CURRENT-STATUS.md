@@ -1,8 +1,57 @@
 # Current Status
 
-> Last Updated: 2026-01-15
+> Last Updated: 2026-01-16
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
+
+### Session 6 (2026-01-16) - Homepage Revamp
+
+**What was done:**
+- Complete homepage redesign focused on engagement and community
+- Added trending games section with recent rating activity
+- Added community pulse section showing live activity feed
+- Added awards section showcasing recent major award winners
+- Added community stats bar (games, ratings, collectors counts)
+- Added shelf CTA section encouraging users to build their shelf
+- Condensed content tools section (removed score sheets from primary display)
+- De-emphasized score sheets, kept focus on rules/setup/reference tools
+- Fixed several type errors related to nullable fields and import locations
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/home/index.ts` | Barrel exports for home components |
+| `src/components/home/CommunityStatsBar.tsx` | Stats banner showing games/ratings/collectors |
+| `src/components/home/TrendingGamesSection.tsx` | Trending games with vibe stats |
+| `src/components/home/CommunityPulseSection.tsx` | Recent community activity feed |
+| `src/components/home/AwardsSection.tsx` | Recent award winners showcase |
+| `src/components/home/ShelfCTASection.tsx` | Build your shelf call-to-action |
+| `src/components/home/ContentToolsSection.tsx` | Condensed 3 content tools |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/supabase/game-queries.ts` | Added `getTrendingGames()`, `getCommunityStats()`, `getRecentCommunityActivity()` |
+| `src/lib/supabase/award-queries.ts` | Added `getRecentAwardWinners()`, fixed nullable award_id handling |
+| `src/lib/supabase/queries.ts` | Updated exports for new query functions |
+| `src/app/page.tsx` | Complete restructure with new sections and parallel data fetching |
+
+**Homepage Section Order:**
+1. Hero with community stats
+2. Trending Games
+3. Community Pulse (activity feed)
+4. Awards Section
+5. Featured Game
+6. Featured Games Grid
+7. Shelf CTA
+8. Recommendation CTA
+9. Content Tools (condensed)
+10. Categories
+11. Final CTA
+
+**Build Status:** Passing
+
+---
 
 ### Session 5 (2026-01-15) - Awards Pre-Population from Wikidata
 

@@ -194,6 +194,95 @@ export async function getAwardWinners(awardSlug: string, options?: {
   return results
 }
 
+/**
+ * Get recent award winners for homepage showcase
+ * Returns winners from major awards in recent years
+ */
+export async function getRecentAwardWinners(options?: {
+  limit?: number
+  yearsBack?: number
+}): Promise<(AwardWinner & { award: Award })[]> {
+  const supabase = await createClient()
+  const limit = options?.limit ?? 6
+  const yearsBack = options?.yearsBack ?? 3
+  const minYear = new Date().getFullYear() - yearsBack
+
+  // Major awards to feature (ordered by prestige)
+  const majorAwardSlugs = [
+    'spiel-des-jahres',
+    'kennerspiel-des-jahres',
+    'golden-geek',
+    'as-dor',
+    'deutscher-spiele-preis',
+  ]
+
+  // Get major awards
+  const { data: awards, error: awardsError } = await supabase
+    .from('awards')
+    .select('*')
+    .in('slug', majorAwardSlugs)
+    .eq('is_active', true)
+
+  if (awardsError || !awards || awards.length === 0) {
+    return []
+  }
+
+  const awardIds = awards.map(a => a.id)
+  const awardMap = new Map(awards.map(a => [a.id, a]))
+
+  // Get recent winners
+  const { data: winners, error: winnersError } = await supabase
+    .from('game_awards')
+    .select(`
+      *,
+      game:games(*),
+      category:award_categories(*)
+    `)
+    .in('award_id', awardIds)
+    .eq('result', 'winner')
+    .gte('year', minYear)
+    .order('year', { ascending: false })
+    .limit(limit * 2) // Fetch extra to handle unpublished games
+
+  if (winnersError || !winners) {
+    return []
+  }
+
+  // Filter and transform results
+  const results: (AwardWinner & { award: Award })[] = []
+
+  for (const item of winners) {
+    const game = item.game as Game | null
+    const award = item.award_id ? awardMap.get(item.award_id) : undefined
+
+    // Skip if no award found
+    if (!award) continue
+
+    // Skip unpublished games (unless pending)
+    const isPending = !game && !!item.bgg_id
+    if (game && !game.is_published) continue
+
+    // Skip pending games for homepage
+    if (isPending) continue
+
+    results.push({
+      game: game || null,
+      bggId: item.bgg_id || null,
+      gameName: item.game_name || null,
+      category: item.category as AwardCategory | null,
+      year: item.year,
+      result: item.result,
+      notes: item.notes,
+      isPending,
+      award,
+    })
+
+    if (results.length >= limit) break
+  }
+
+  return results
+}
+
 export async function getAllAwardSlugs(): Promise<string[]> {
   const supabase = createStaticClient()
 

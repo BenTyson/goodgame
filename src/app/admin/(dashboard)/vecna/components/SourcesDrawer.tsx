@@ -138,8 +138,8 @@ export function SourcesDrawer({ open, onOpenChange, game }: SourcesDrawerProps) 
                     <DataField label="Players" value={`${bgg.minplayers}-${bgg.maxplayers}`} />
                     <DataField label="Playtime" value={`${bgg.minplaytime}-${bgg.maxplaytime} min`} />
                     <DataField label="Min Age" value={bgg.minAge} />
-                    <DataField label="Weight" value={bgg.weight?.toFixed(2)} />
-                    <DataField label="Rating" value={bgg.rating?.toFixed(2)} />
+                    <DataField label="Weight" value={bgg.weight != null ? Number(bgg.weight).toFixed(2) : undefined} />
+                    <DataField label="Rating" value={bgg.rating != null ? Number(bgg.rating).toFixed(2) : undefined} />
                     <DataField label="Rank" value={bgg.rank} />
                   </div>
 

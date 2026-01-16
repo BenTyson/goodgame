@@ -22,6 +22,9 @@ export {
   getGameBySlug,
   getFeaturedGames,
   getFeaturedGame,
+  getTrendingGames,
+  getCommunityStats,
+  getRecentCommunityActivity,
   getGameImages,
   getAffiliateLinks,
   searchGames,
@@ -35,6 +38,8 @@ export {
   getAdjacentGames,
   type GameFilters,
   type AdjacentGames,
+  type TrendingGame,
+  type CommunityStats,
 } from './game-queries'
 
 // Category, mechanic, theme, player experience, complexity tier, and BGG alias queries
@@ -83,6 +88,7 @@ export {
   getAwardWithCategories,
   getGameAwards,
   getAwardWinners,
+  getRecentAwardWinners,
   getAllAwardSlugs,
   type GameAwardWithDetails,
   type AwardWinner,

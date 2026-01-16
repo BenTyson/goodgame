@@ -17,7 +17,8 @@ import type {
   PlayerExperience,
   ComplexityTier,
   TaxonomySuggestion,
-  Database
+  Database,
+  ActivityWithDetails,
 } from '@/types/database'
 import type { ParsedTextStructured } from '@/lib/rulebook/types'
 import type { GameVideo } from '@/components/admin/VideoManager'
@@ -278,6 +279,84 @@ export async function getFeaturedGames(limit = 6): Promise<Game[]> {
   return getGames({ featured: true, limit })
 }
 
+export interface TrendingGame extends Game {
+  recentVibeCount: number
+  averageVibe: number | null
+}
+
+/**
+ * Get trending games based on recent rating activity
+ * Returns games with the most ratings in the last 7 days
+ */
+export async function getTrendingGames(limit = 6): Promise<TrendingGame[]> {
+  const supabase = await createClient()
+
+  // Get ratings from the last 7 days, grouped by game
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  const { data: recentRatings, error: ratingsError } = await supabase
+    .from('user_games')
+    .select('game_id, rating')
+    .not('rating', 'is', null)
+    .gte('updated_at', sevenDaysAgo.toISOString())
+
+  if (ratingsError || !recentRatings || recentRatings.length === 0) {
+    // Fallback to featured games if no recent activity
+    const featured = await getFeaturedGames(limit)
+    return featured.map(g => ({ ...g, recentVibeCount: 0, averageVibe: null }))
+  }
+
+  // Count ratings per game and calculate average
+  const gameStats = new Map<string, { count: number; sum: number }>()
+  for (const r of recentRatings) {
+    const stats = gameStats.get(r.game_id) || { count: 0, sum: 0 }
+    stats.count++
+    stats.sum += r.rating!
+    gameStats.set(r.game_id, stats)
+  }
+
+  // Sort by count and take top games
+  const sortedGameIds = [...gameStats.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit)
+    .map(([gameId]) => gameId)
+
+  if (sortedGameIds.length === 0) {
+    const featured = await getFeaturedGames(limit)
+    return featured.map(g => ({ ...g, recentVibeCount: 0, averageVibe: null }))
+  }
+
+  // Fetch the games
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('*')
+    .in('id', sortedGameIds)
+    .eq('is_published', true)
+
+  if (gamesError || !games) {
+    return []
+  }
+
+  // Combine game data with stats and maintain sort order
+  const gameMap = new Map(games.map(g => [g.id, g]))
+  const result: TrendingGame[] = []
+
+  for (const gameId of sortedGameIds) {
+    const game = gameMap.get(gameId)
+    if (game) {
+      const stats = gameStats.get(gameId)!
+      result.push({
+        ...game,
+        recentVibeCount: stats.count,
+        averageVibe: Math.round((stats.sum / stats.count) * 10) / 10,
+      })
+    }
+  }
+
+  return result
+}
+
 export async function getFeaturedGame(): Promise<(Game & {
   categories?: Category[]
   publishers_list?: Publisher[]
@@ -429,8 +508,92 @@ export async function getScoreSheetConfig(gameId: string) {
 }
 
 // ===========================================
+// COMMUNITY ACTIVITY (Server-side)
+// ===========================================
+
+/**
+ * Get recent public community activity (for homepage)
+ * Server-side query - shows activities from all public users
+ */
+export async function getRecentCommunityActivity(
+  limit = 10
+): Promise<ActivityWithDetails[]> {
+  const supabase = await createClient()
+
+  // Get recent activities from public profiles
+  const { data, error } = await supabase
+    .from('user_activities')
+    .select(`
+      *,
+      user:user_profiles!user_id(id, username, display_name, avatar_url, custom_avatar_url, profile_visibility),
+      target_user:user_profiles!target_user_id(id, username, display_name, avatar_url, custom_avatar_url),
+      game:games!game_id(id, name, slug, box_image_url, thumbnail_url, is_published)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit * 2) // Fetch extra to filter out private profiles
+
+  if (error) {
+    console.error('Error fetching community activity:', error)
+    return []
+  }
+
+  // Filter to only public profiles and published games
+  const publicActivities = (data || []).filter((item) => {
+    const user = item.user as { profile_visibility?: string } | null
+    const game = item.game as { is_published?: boolean } | null
+
+    // User must be public
+    if (user?.profile_visibility !== 'public') return false
+
+    // If activity has a game, it must be published
+    if (game && !game.is_published) return false
+
+    return true
+  })
+
+  return publicActivities.slice(0, limit) as ActivityWithDetails[]
+}
+
+// ===========================================
 // STATS / COUNTS
 // ===========================================
+
+export interface CommunityStats {
+  totalGames: number
+  totalRatings: number
+  totalUsers: number
+}
+
+/**
+ * Get community statistics for homepage display
+ */
+export async function getCommunityStats(): Promise<CommunityStats> {
+  const supabase = await createClient()
+
+  const [gamesResult, ratingsResult, usersResult] = await Promise.all([
+    // Published games count
+    supabase
+      .from('games')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_published', true),
+    // Ratings count (user_games with rating)
+    supabase
+      .from('user_games')
+      .select('*', { count: 'exact', head: true })
+      .not('rating', 'is', null),
+    // Public users count
+    supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('profile_visibility', 'public'),
+  ])
+
+  return {
+    totalGames: gamesResult.count || 0,
+    totalRatings: ratingsResult.count || 0,
+    totalUsers: usersResult.count || 0,
+  }
+}
 
 export async function getGameCount(): Promise<number> {
   const supabase = await createClient()

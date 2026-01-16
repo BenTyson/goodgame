@@ -1,0 +1,6 @@
+export { CommunityStatsBar } from './CommunityStatsBar'
+export { TrendingGamesSection } from './TrendingGamesSection'
+export { CommunityPulseSection } from './CommunityPulseSection'
+export { AwardsSection } from './AwardsSection'
+export { ShelfCTASection } from './ShelfCTASection'
+export { ContentToolsSection } from './ContentToolsSection'

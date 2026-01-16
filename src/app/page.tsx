@@ -20,34 +20,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { GameGrid } from '@/components/games'
-import { getFeaturedGames, getFeaturedGame, getCategories } from '@/lib/supabase/queries'
+import {
+  getFeaturedGames,
+  getFeaturedGame,
+  getCategories,
+  getTrendingGames,
+  getCommunityStats,
+  getRecentCommunityActivity,
+  getRecentAwardWinners,
+} from '@/lib/supabase/queries'
+import {
+  CommunityStatsBar,
+  TrendingGamesSection,
+  CommunityPulseSection,
+  AwardsSection,
+  ShelfCTASection,
+  ContentToolsSection,
+} from '@/components/home'
 
-const contentTypes = [
-  {
-    icon: BookOpen,
-    title: 'Rules Summaries',
-    description: 'Condensed how-to-play guides that get you gaming fast',
-    href: '/rules',
-  },
-  {
-    icon: FileText,
-    title: 'Score Sheets',
-    description: 'Printable PDFs generated in your browser, ready for game night',
-    href: '/score-sheets',
-  },
-  {
-    icon: ListChecks,
-    title: 'Setup Guides',
-    description: 'Step-by-step setup with component checklists',
-    href: '/games',
-  },
-  {
-    icon: Bookmark,
-    title: 'Quick Reference',
-    description: 'Turn structure, actions, and scoring at a glance',
-    href: '/games',
-  },
-]
+export const revalidate = 300 // Revalidate every 5 minutes
 
 const categoryIcons: Record<string, React.ElementType> = {
   strategy: Brain,
@@ -58,11 +49,24 @@ const categoryIcons: Record<string, React.ElementType> = {
 }
 
 export default async function HomePage() {
-  const [featuredGames, featuredGame, categories] = await Promise.all([
+  const [
+    featuredGames,
+    featuredGame,
+    categories,
+    trendingGames,
+    communityStats,
+    communityActivity,
+    awardWinners,
+  ] = await Promise.all([
     getFeaturedGames(6),
     getFeaturedGame(),
-    getCategories()
+    getCategories(),
+    getTrendingGames(6),
+    getCommunityStats(),
+    getRecentCommunityActivity(8),
+    getRecentAwardWinners({ limit: 6, yearsBack: 3 }),
   ])
+
   const primaryCategories = categories.filter((cat) => cat.is_primary)
 
   return (
@@ -83,7 +87,7 @@ export default async function HomePage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              For the Obsessed
+              Rate. Track. Discover.
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
@@ -95,9 +99,13 @@ export default async function HomePage() {
             </h1>
 
             <p className="mt-8 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed">
-              Publishers, designers, awards, mechanics—plus rules and score sheets.
-              Built for collectors and enthusiasts.
+              Discover your next favorite game, track your collection, and join a community of collectors and enthusiasts.
             </p>
+
+            {/* Community stats */}
+            <div className="mt-8">
+              <CommunityStatsBar stats={communityStats} />
+            </div>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" className="group" asChild>
@@ -107,9 +115,9 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="group" asChild>
-                <Link href="/recommend">
-                  <Star className="mr-2 h-4 w-4" />
-                  Find Your Perfect Game
+                <Link href="/shelf">
+                  Build Your Shelf
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>
@@ -117,36 +125,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Content Types Section */}
-      <section className="container py-16 md:py-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Everything You Need for Game Night
-          </h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            Four tools designed to make teaching, playing, and tracking board
-            games easier.
-          </p>
-        </div>
+      {/* Trending Games Section */}
+      <TrendingGamesSection games={trendingGames} />
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {contentTypes.map((type) => (
-            <Link key={type.title} href={type.href} className="group">
-              <Card
-                className="h-full [box-shadow:var(--shadow-card)] hover:[box-shadow:var(--shadow-card-hover)] transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/30"
-              >
-                <CardHeader>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:[box-shadow:var(--shadow-glow-primary)]">
-                    <type.icon className="h-7 w-7 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4 text-lg">{type.title}</CardTitle>
-                  <CardDescription className="leading-relaxed">{type.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Community Pulse Section */}
+      <CommunityPulseSection activities={communityActivity} />
+
+      {/* Awards Section */}
+      <AwardsSection winners={awardWinners} />
 
       {/* Featured Game Section */}
       {featuredGame && (
@@ -248,12 +234,6 @@ export default async function HomePage() {
                     Rules
                   </div>
                 )}
-                {featuredGame.has_score_sheet && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
-                    <FileText className="h-3.5 w-3.5" />
-                    Score Sheet
-                  </div>
-                )}
                 {featuredGame.has_setup_guide && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/20 backdrop-blur-sm text-primary text-xs font-medium">
                     <ListChecks className="h-3.5 w-3.5" />
@@ -317,6 +297,9 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Shelf CTA Section */}
+      <ShelfCTASection userCount={communityStats.totalUsers} />
+
       {/* Recommendation CTA Section */}
       <section className="container py-16 md:py-24">
         <Card className="bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20">
@@ -342,6 +325,9 @@ export default async function HomePage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Content Tools Section */}
+      <ContentToolsSection />
 
       {/* Categories Section */}
       <section className="container py-16 md:py-24">
