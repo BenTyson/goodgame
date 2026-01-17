@@ -189,6 +189,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       userReviews={userReviews}
       reviewCount={reviewCount}
       mutualGames={mutualGames}
+      currentUserId={currentUser?.id}
     />
   )
 }

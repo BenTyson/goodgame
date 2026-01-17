@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { MapPin, Calendar, Settings, Globe, Gamepad2 } from 'lucide-react'
+import { MapPin, Calendar, Settings, Globe, Gamepad2, GitCompare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -235,7 +235,7 @@ export function ProfileHeader({
               </div>
             )}
 
-            {/* Action Button */}
+            {/* Action Buttons */}
             {isOwnProfile ? (
               <Button variant="outline" size="sm" asChild>
                 <Link href="/settings">
@@ -244,11 +244,19 @@ export function ProfileHeader({
                 </Link>
               </Button>
             ) : (
-              <FollowButton
-                targetUserId={profile.id}
-                initialIsFollowing={isFollowingUser}
-                variant="compact"
-              />
+              <div className="flex items-center gap-2">
+                <FollowButton
+                  targetUserId={profile.id}
+                  initialIsFollowing={isFollowingUser}
+                  variant="compact"
+                />
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/u/${profile.username}/compare`}>
+                    <GitCompare className="h-4 w-4 mr-2" />
+                    Compare Shelves
+                  </Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

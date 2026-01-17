@@ -10,6 +10,7 @@ import { AwardBadgeList } from './AwardBadge'
 import { BuyButtons } from '@/components/monetization'
 import { HeroRating } from '@/components/ratings'
 import { AddToShelfButton } from '@/components/shelf/AddToShelfButton'
+import { RecommendToFriendButton } from './RecommendToFriendButton'
 import { cn } from '@/lib/utils'
 import type { GameImage, Json, ComplexityTier, Category, Award, AwardCategory } from '@/types/database'
 
@@ -187,6 +188,11 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
               gameSlug={game.slug}
             />
             <AddToShelfButton gameId={game.id} />
+            <RecommendToFriendButton
+              gameId={game.id}
+              gameName={game.name}
+              gameSlug={game.slug}
+            />
           </div>
         </div>
       </div>

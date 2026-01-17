@@ -3602,6 +3602,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      are_friends: {
+        Args: { p_user1: string; p_user2: string }
+        Returns: boolean
+      }
       auto_release_funds: { Args: never; Returns: number }
       calculate_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
@@ -3784,6 +3788,35 @@ export type Database = {
         }[]
       }
       get_complexity_tier_id: { Args: { game_weight: number }; Returns: string }
+      get_friend_count: { Args: { p_user_id: string }; Returns: number }
+      get_friend_suggestions: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          custom_avatar_url: string
+          display_name: string
+          last_active_at: string
+          mutual_games_count: number
+          sample_mutual_games: string[]
+          user_id: string
+          username: string
+        }[]
+      }
+      get_friends_of_friends: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          custom_avatar_url: string
+          display_name: string
+          last_active_at: string
+          mutual_friend_count: number
+          mutual_friend_names: string[]
+          user_id: string
+          username: string
+        }[]
+      }
       get_friends_vibes: {
         Args: { p_game_id: string; p_user_id: string }
         Returns: {
@@ -3816,9 +3849,49 @@ export type Database = {
           total_offers: number
         }[]
       }
+      get_mutual_friends: {
+        Args: { p_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          custom_avatar_url: string
+          display_name: string
+          followed_at: string
+          friend_id: string
+          last_active_at: string
+          mutual_games_count: number
+          username: string
+        }[]
+      }
       get_or_create_conversation: {
         Args: { p_buyer_id: string; p_listing_id: string }
         Returns: string
+      }
+      get_recently_active_users: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          custom_avatar_url: string
+          display_name: string
+          last_active_at: string
+          recent_activity_summary: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_shelf_comparison: {
+        Args: { p_user1: string; p_user2: string }
+        Returns: {
+          box_image_url: string
+          category: string
+          game_id: string
+          game_name: string
+          game_slug: string
+          thumbnail_url: string
+          user1_status: string
+          user2_status: string
+        }[]
       }
       get_similar_listings: {
         Args: { p_limit?: number; p_listing_id: string }
@@ -4187,6 +4260,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_users: {
+        Args: { p_current_user_id?: string; p_limit?: number; p_query: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          custom_avatar_url: string
+          display_name: string
+          is_following: boolean
+          is_friend: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       ship_transaction: {
         Args: {
           p_carrier: Database["public"]["Enums"]["shipping_carrier"]
@@ -4395,6 +4481,7 @@ export type Database = {
         | "offer_expired"
         | "listing_match"
         | "wishlist_listing"
+        | "game_recommendation"
       offer_status:
         | "pending"
         | "accepted"
@@ -4653,6 +4740,7 @@ export const Constants = {
         "offer_expired",
         "listing_match",
         "wishlist_listing",
+        "game_recommendation",
       ],
       offer_status: [
         "pending",

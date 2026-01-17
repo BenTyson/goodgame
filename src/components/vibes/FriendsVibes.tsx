@@ -6,7 +6,7 @@ import { Sparkles, Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth/AuthContext'
-import { getFriendsVibesJoin } from '@/lib/supabase/vibe-queries'
+import { getMutualFriendsVibes } from '@/lib/supabase/vibe-queries'
 import { cn } from '@/lib/utils'
 import type { FriendVibe } from '@/types/database'
 
@@ -33,7 +33,7 @@ export function FriendsVibes({
     }
 
     setIsLoading(true)
-    getFriendsVibesJoin(user.id, gameId)
+    getMutualFriendsVibes(user.id, gameId)
       .then(setFriendsVibes)
       .catch(console.error)
       .finally(() => setIsLoading(false))

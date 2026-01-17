@@ -22,6 +22,8 @@ export { GameRelationsSection } from './GameRelationsSection'
 export { GameDocumentsCard } from './GameDocumentsCard'
 export { DocumentPreview } from './DocumentPreview'
 export { PromoCard } from './PromoCard'
+export { RecommendToFriendButton } from './RecommendToFriendButton'
+export { RecommendToFriendDialog } from './RecommendToFriendDialog'
 
 // New tabbed game page components
 export { GameHero } from './GameHero'

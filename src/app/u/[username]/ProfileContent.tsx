@@ -6,6 +6,7 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileTabs, type ProfileTab } from '@/components/profile/ProfileTabs'
 import { ProfileOverviewTab } from '@/components/profile/ProfileOverviewTab'
 import { ProfileGamesTab } from '@/components/profile/ProfileGamesTab'
+import { ProfileFriendsTab } from '@/components/profile/ProfileFriendsTab'
 import { ProfileReviewsTab } from '@/components/profile/ProfileReviewsTab'
 import { ProfileActivityTab } from '@/components/profile/ProfileActivityTab'
 import type { UserProfile, SocialLinks, Game, FollowStats as FollowStatsType } from '@/types/database'
@@ -50,6 +51,7 @@ interface ProfileContentProps {
   userReviews: UserReviewWithGame[]
   reviewCount: number
   mutualGames: MutualGame[] | null
+  currentUserId?: string
 }
 
 function ProfileContentInner({
@@ -66,6 +68,7 @@ function ProfileContentInner({
   userReviews,
   reviewCount,
   mutualGames,
+  currentUserId,
 }: ProfileContentProps) {
   const searchParams = useSearchParams()
   const activeTab = (searchParams.get('tab') as ProfileTab) || 'overview'
@@ -107,6 +110,14 @@ function ProfileContentInner({
           shelfStats={shelfStats}
           isOwnProfile={isOwnProfile}
           showShelf={showShelf}
+        />
+      )}
+
+      {activeTab === 'friends' && (
+        <ProfileFriendsTab
+          userId={profile.id}
+          isOwnProfile={isOwnProfile}
+          currentUserId={currentUserId}
         />
       )}
 

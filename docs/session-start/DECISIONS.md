@@ -38,6 +38,8 @@
 - **BGG expansion/implementation parsing**: Expansion detection uses item `type` attribute (not link `inbound`). If `type='boardgameexpansion'`, expansion links point to base game. Implementation `inbound=true` means OTHER games reimplement THIS one (we're the original). Key files: Puffin `src/worker/bgg-fetcher.ts`, Boardmello `src/lib/bgg/client.ts`.
 - **Railway migrations need public DB URL**: Railway's internal DB hostname (`*.railway.internal`) only works within Railway's network. For running migrations locally, use the `DATABASE_PUBLIC_URL` (has `proxy.rlwy.net` hostname instead).
 - **RelationType additions require multiple file updates**: Adding a new relation type (like `promo_of`) requires updates to 5+ `Record<RelationType, string>` objects: `database.ts` (4 objects), `AutoLinkRelations.tsx`, `family-tree/types.ts`, `GameRelationsSection.tsx`, `family-queries.ts`. TypeScript won't catch missing entries if the Record uses optional values.
+- **PostgreSQL function return types must match exactly**: When creating `RETURNS TABLE(...)` functions, column types must match the actual table column types exactly. Example: if `user_profiles.custom_avatar_url` is `VARCHAR(500)`, the function must return `VARCHAR(500)` not `TEXT`. Type mismatches cause `42804` errors ("structure of query does not match function result type"). To fix, must `DROP FUNCTION` first then recreate with correct types.
+- **RPC functions need GRANT and SECURITY DEFINER**: Database functions called via `supabase.rpc()` need `GRANT EXECUTE ON FUNCTION ... TO authenticated, anon` for access. Functions querying across tables with RLS need `SECURITY DEFINER` to bypass row-level security.
 
 ## Tech Stack
 

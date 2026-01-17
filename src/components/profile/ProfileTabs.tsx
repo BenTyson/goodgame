@@ -1,11 +1,12 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { LayoutGrid, Package, MessageSquare, Activity } from 'lucide-react'
+import { LayoutGrid, Package, MessageSquare, Activity, Users } from 'lucide-react'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'games', label: 'Games', icon: Package },
+  { id: 'friends', label: 'Friends', icon: Users },
   { id: 'reviews', label: 'Reviews', icon: MessageSquare },
   { id: 'activity', label: 'Activity', icon: Activity },
 ] as const

@@ -133,3 +133,17 @@ export {
   getAllGameRelations,
   getGamePromos,
 } from './family-queries'
+
+// Friend queries (mutual follows system)
+export {
+  getMutualFriends,
+  areFriends,
+  getFriendCount,
+  getSuggestedFriends,
+  getFriendsOfFriends,
+  getRecentlyActiveUsers,
+  searchUsers,
+  getShelfComparison,
+  getMutualFriendsCount,
+  getMutualFriendsBetween,
+} from './friend-queries'

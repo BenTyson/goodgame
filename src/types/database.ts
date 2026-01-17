@@ -414,7 +414,7 @@ export interface ActivityFeedResponse {
 // USER NOTIFICATIONS
 // ===========================================
 
-export type NotificationType = 'new_follower' | 'rating'
+export type NotificationType = 'new_follower' | 'rating' | 'game_recommendation'
 
 export type UserNotification = Database['public']['Tables']['user_notifications']['Row']
 export type UserNotificationInsert = Database['public']['Tables']['user_notifications']['Insert']
@@ -652,4 +652,92 @@ export interface PromoGame {
   box_image_url: string | null
   thumbnail_url: string | null
   bgg_id: number | null
+}
+
+// ===========================================
+// FRIENDS SYSTEM (Mutual Follows)
+// ===========================================
+
+// Basic friend info
+export interface Friend {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  customAvatarUrl: string | null
+}
+
+// Friend with full profile data
+export interface FriendWithProfile extends Friend {
+  bio: string | null
+  lastActiveAt: string | null
+  followedAt: string
+  mutualGamesCount: number
+}
+
+// Friend suggestion based on mutual games
+export interface SuggestedFriend {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  customAvatarUrl: string | null
+  bio: string | null
+  lastActiveAt: string | null
+  mutualGamesCount: number
+  sampleMutualGames: string[]
+}
+
+// Friend of friend suggestion
+export interface FriendOfFriend {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  customAvatarUrl: string | null
+  bio: string | null
+  lastActiveAt: string | null
+  mutualFriendCount: number
+  mutualFriendNames: string[]
+}
+
+// Recently active user for discovery
+export interface RecentlyActiveUser {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  customAvatarUrl: string | null
+  bio: string | null
+  lastActiveAt: string | null
+  recentActivitySummary: string | null
+}
+
+// User search result
+export interface UserSearchResult {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  customAvatarUrl: string | null
+  bio: string | null
+  isFollowing: boolean
+  isFriend: boolean
+}
+
+// Shelf comparison types
+export interface ShelfComparisonGame {
+  id: string
+  name: string
+  slug: string
+  boxImageUrl: string | null
+  thumbnailUrl: string | null
+  user1Status: string | null
+  user2Status: string | null
+}
+
+export interface ShelfComparisonResult {
+  both: ShelfComparisonGame[]
+  onlyUser1: ShelfComparisonGame[]
+  onlyUser2: ShelfComparisonGame[]
 }

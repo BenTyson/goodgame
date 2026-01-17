@@ -226,6 +226,7 @@ export async function getGameVibes(
 
 /**
  * Get friends' vibes for a game (users the current user follows)
+ * @deprecated Use getMutualFriendsVibes for mutual friends instead
  */
 export async function getFriendsVibesJoin(
   userId: string,
@@ -271,6 +272,85 @@ export async function getFriendsVibesJoin(
 
   if (error) {
     console.error('Error fetching friends vibes:', error)
+    return []
+  }
+
+  return (data || [])
+    .filter((item) => {
+      const user = item.user as { profile_visibility?: string; shelf_visibility?: string } | null
+      return user?.profile_visibility === 'public' && user?.shelf_visibility === 'public'
+    })
+    .map((item) => ({
+      id: item.id,
+      userId: item.user_id,
+      value: item.rating!,
+      thoughts: item.review,
+      createdAt: item.created_at || new Date().toISOString(),
+      user: mapUser(item.user),
+    }))
+}
+
+/**
+ * Get mutual friends' vibes for a game (users who mutually follow each other)
+ */
+export async function getMutualFriendsVibes(
+  userId: string,
+  gameId: string
+): Promise<FriendVibe[]> {
+  const supabase = createClient()
+
+  // Get mutual friends (both users follow each other)
+  // Using a raw query since we need to join user_follows with itself
+  const { data: mutualFollows, error: mutualError } = await supabase
+    .from('user_follows')
+    .select('following_id')
+    .eq('follower_id', userId)
+
+  if (mutualError || !mutualFollows?.length) {
+    return []
+  }
+
+  // Filter to only those who follow back
+  const followedIds = mutualFollows.map(f => f.following_id)
+
+  const { data: followBacks, error: followBackError } = await supabase
+    .from('user_follows')
+    .select('follower_id')
+    .eq('following_id', userId)
+    .in('follower_id', followedIds)
+
+  if (followBackError || !followBacks?.length) {
+    return []
+  }
+
+  const mutualFriendIds = followBacks.map(f => f.follower_id)
+
+  // Get their vibes for this game
+  const { data, error } = await supabase
+    .from('user_games')
+    .select(`
+      id,
+      user_id,
+      rating,
+      review,
+      created_at,
+      user:user_profiles!user_id(
+        id,
+        username,
+        display_name,
+        avatar_url,
+        custom_avatar_url,
+        profile_visibility,
+        shelf_visibility
+      )
+    `)
+    .eq('game_id', gameId)
+    .not('rating', 'is', null)
+    .in('user_id', mutualFriendIds)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching mutual friends vibes:', error)
     return []
   }
 

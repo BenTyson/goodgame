@@ -1,8 +1,69 @@
 # Current Status
 
-> Last Updated: 2026-01-16
+> Last Updated: 2026-01-17
 
-## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
+## Current Phase: 79 - Friends System (IN PROGRESS)
+
+### Session Summary (2026-01-17) - Friends System
+
+**What was done:**
+- Built complete friends system where mutual follows = friends (both users follow each other)
+- Created `/discover` page for finding and connecting with users
+- Added Friends tab to user profiles showing mutual friends AND following (non-friends)
+- Created shelf comparison feature (`/u/[username]/compare`)
+- Added "Recommend to Friend" button on game pages
+- FriendsVibes component now shows only mutual friends instead of all follows
+
+**Bug Fixes:**
+- Fixed RPC function return types (VARCHAR(500) mismatch with TEXT caused empty `{}` errors)
+- Added SECURITY DEFINER to friend functions (required to bypass RLS for aggregate queries)
+- Added GRANT EXECUTE permissions for anon/authenticated roles on all friend functions
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00077_friends_system.sql` | DB functions: get_mutual_friends, are_friends, get_friend_suggestions, get_friends_of_friends, get_recently_active_users, get_friend_count, get_shelf_comparison, search_users + last_active_at trigger |
+| `supabase/migrations/00078_game_recommendation_notification.sql` | Adds game_recommendation notification type |
+| `supabase/migrations/00079_friends_system_grants.sql` | GRANT EXECUTE on friend functions to anon/authenticated |
+| `supabase/migrations/00080_friends_security_definer.sql` | Add SECURITY DEFINER to bypass RLS |
+| `supabase/migrations/00081_friends_fix_return_types.sql` | Fix VARCHAR/TEXT type mismatch in return types |
+| `src/lib/supabase/friend-queries.ts` | TypeScript query functions for all friend operations |
+| `src/app/discover/page.tsx` | Discover page with search and suggestion sections |
+| `src/components/discover/UserSearchBar.tsx` | Debounced user search with results |
+| `src/components/discover/UserCard.tsx` | User card component with follow button |
+| `src/components/discover/SuggestedUsersSection.tsx` | "People You May Know" based on mutual games |
+| `src/components/discover/FriendsOfFriendsSection.tsx` | Friends of your friends suggestions |
+| `src/components/discover/RecentlyActiveSection.tsx` | Recently active users for discovery |
+| `src/components/discover/index.ts` | Barrel exports |
+| `src/app/api/users/search/route.ts` | User search API endpoint |
+| `src/app/api/users/suggested/route.ts` | Friend suggestions API endpoint |
+| `src/components/profile/ProfileFriendsTab.tsx` | Friends tab with two sections: Friends (mutual) + Following (non-friends) |
+| `src/components/profile/MutualFriendsIndicator.tsx` | Mutual friends badge/indicator |
+| `src/app/u/[username]/compare/page.tsx` | Shelf comparison page |
+| `src/components/profile/ShelfComparison.tsx` | Comparison UI with stats and tabs |
+| `src/components/games/RecommendToFriendButton.tsx` | Recommend game button |
+| `src/components/games/RecommendToFriendDialog.tsx` | Friend selector dialog for recommendations |
+| `src/app/api/recommendations/send/route.ts` | Send game recommendation API |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added Friend types (Friend, FriendWithProfile, SuggestedFriend, FriendOfFriend, etc.), added game_recommendation to NotificationType |
+| `src/lib/supabase/queries.ts` | Added exports for friend query functions |
+| `src/lib/supabase/vibe-queries.ts` | Added getMutualFriendsVibes() for mutual friends only |
+| `src/components/vibes/FriendsVibes.tsx` | Uses getMutualFriendsVibes instead of getFriendsVibesJoin |
+| `src/components/profile/ProfileTabs.tsx` | Added Friends tab with Users icon |
+| `src/app/u/[username]/ProfileContent.tsx` | Integrated ProfileFriendsTab |
+| `src/app/u/[username]/page.tsx` | Pass currentUserId to ProfileContent |
+| `src/components/profile/ProfileHeader.tsx` | Added "Compare Shelves" button for other users |
+| `src/components/games/GameHero.tsx` | Added RecommendToFriendButton to CTAs |
+| `src/components/games/index.ts` | Added RecommendToFriendButton exports |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 78 - Puffin BGG Intermediary Service (COMPLETE)
 
 ### Session 7 (2026-01-16) - Promos & Extras System
 
