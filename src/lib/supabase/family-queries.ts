@@ -6,7 +6,8 @@ import type {
   GameFamilyWithGames,
   GameRelationWithTarget,
   GameRelationWithSource,
-  RelationType
+  RelationType,
+  PromoGame
 } from '@/types/database'
 
 // ===========================================
@@ -311,7 +312,8 @@ export async function getGameRelationsGrouped(gameId: string): Promise<GroupedGa
     'prequel_to': 'Prequels',
     'reimplementation_of': 'Reimplementations',
     'spin_off_of': 'Spin-offs',
-    'standalone_in_series': 'Related in Series'
+    'standalone_in_series': 'Related in Series',
+    'promo_of': 'Promos & Extras'
   }
 
   const otherRelations = Array.from(otherRelationsMap.entries())
@@ -339,7 +341,105 @@ function getInverseRelationType(type: RelationType): RelationType {
     'prequel_to': 'sequel_to',
     'reimplementation_of': 'reimplementation_of',
     'spin_off_of': 'spin_off_of',
-    'standalone_in_series': 'standalone_in_series'
+    'standalone_in_series': 'standalone_in_series',
+    'promo_of': 'promo_of'
   }
   return inverses[type] || type
+}
+
+// ===========================================
+// GAME PROMOS
+// ===========================================
+
+/**
+ * Get all promo games for a parent game.
+ * Queries via game_relations where relation_type = 'promo_of' and target is this game.
+ * Also checks parent_game_id for direct references.
+ */
+export async function getGamePromos(gameId: string): Promise<PromoGame[]> {
+  const supabase = await createClient()
+
+  // Get promos via game_relations (promo_of relation where target is this game)
+  const { data: relationPromos } = await supabase
+    .from('game_relations')
+    .select(`
+      source_game:games!game_relations_source_game_id_fkey(
+        id,
+        name,
+        slug,
+        year_published,
+        description,
+        box_image_url,
+        thumbnail_url,
+        bgg_id,
+        is_published,
+        is_promo
+      )
+    `)
+    .eq('target_game_id', gameId)
+    .eq('relation_type', 'promo_of')
+
+  // Also get promos via direct parent_game_id reference
+  const { data: directPromos } = await supabase
+    .from('games')
+    .select('id, name, slug, year_published, description, box_image_url, thumbnail_url, bgg_id')
+    .eq('parent_game_id', gameId)
+    .eq('is_promo', true)
+    .eq('is_published', true)
+    .order('name')
+
+  // Combine and deduplicate
+  const promoMap = new Map<string, PromoGame>()
+
+  // Add relation-based promos (filter to published promos only)
+  if (relationPromos) {
+    for (const r of relationPromos) {
+      const game = r.source_game as {
+        id: string
+        name: string
+        slug: string
+        year_published: number | null
+        description: string | null
+        box_image_url: string | null
+        thumbnail_url: string | null
+        bgg_id: number | null
+        is_published: boolean | null
+        is_promo: boolean | null
+      } | null
+
+      if (game && game.is_published && game.is_promo) {
+        promoMap.set(game.id, {
+          id: game.id,
+          name: game.name,
+          slug: game.slug,
+          year_published: game.year_published,
+          description: game.description,
+          box_image_url: game.box_image_url,
+          thumbnail_url: game.thumbnail_url,
+          bgg_id: game.bgg_id,
+        })
+      }
+    }
+  }
+
+  // Add direct promos
+  if (directPromos) {
+    for (const game of directPromos) {
+      if (!promoMap.has(game.id)) {
+        promoMap.set(game.id, {
+          id: game.id,
+          name: game.name,
+          slug: game.slug,
+          year_published: game.year_published,
+          description: game.description,
+          box_image_url: game.box_image_url,
+          thumbnail_url: game.thumbnail_url,
+          bgg_id: game.bgg_id,
+        })
+      }
+    }
+  }
+
+  // Sort by name
+  return Array.from(promoMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 }

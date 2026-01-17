@@ -81,6 +81,7 @@ type GameWithCategories = Omit<GameRow,
   | 'wikipedia_images' | 'wikipedia_external_links' | 'wikipedia_awards' | 'wikipedia_search_confidence'
   | 'vecna_state' | 'vecna_processed_at' | 'vecna_error'
   | 'wikidata_series_id'
+  | 'parent_game_id' | 'is_promo'
 > & {
   data_source?: string | null
   field_sources?: Json | null
@@ -113,6 +114,8 @@ type GameWithCategories = Omit<GameRow,
   vecna_processed_at?: string | null
   vecna_error?: string | null
   wikidata_series_id?: string | null
+  parent_game_id?: string | null
+  is_promo?: boolean | null
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

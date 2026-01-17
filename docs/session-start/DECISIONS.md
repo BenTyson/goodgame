@@ -37,6 +37,7 @@
 - **Puffin service architecture**: BGG data flows through Puffin intermediary service to reduce risk of BGG blocking Boardmello. Set `PUFFIN_ENABLED=true` with `PUFFIN_API_URL` and `PUFFIN_API_KEY` to activate. **No BGG fallback** - if Puffin doesn't have a game, it queues it for fetch and returns pending status. Boardmello retries with 30s window. See `src/lib/bgg/client.ts`.
 - **BGG expansion/implementation parsing**: Expansion detection uses item `type` attribute (not link `inbound`). If `type='boardgameexpansion'`, expansion links point to base game. Implementation `inbound=true` means OTHER games reimplement THIS one (we're the original). Key files: Puffin `src/worker/bgg-fetcher.ts`, Boardmello `src/lib/bgg/client.ts`.
 - **Railway migrations need public DB URL**: Railway's internal DB hostname (`*.railway.internal`) only works within Railway's network. For running migrations locally, use the `DATABASE_PUBLIC_URL` (has `proxy.rlwy.net` hostname instead).
+- **RelationType additions require multiple file updates**: Adding a new relation type (like `promo_of`) requires updates to 5+ `Record<RelationType, string>` objects: `database.ts` (4 objects), `AutoLinkRelations.tsx`, `family-tree/types.ts`, `GameRelationsSection.tsx`, `family-queries.ts`. TypeScript won't catch missing entries if the Record uses optional values.
 
 ## Tech Stack
 

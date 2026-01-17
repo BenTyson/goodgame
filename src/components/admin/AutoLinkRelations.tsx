@@ -79,6 +79,7 @@ const RELATION_LABELS: Record<RelationType, string> = {
   reimplementation_of: 'Reimplementation of',
   spin_off_of: 'Spin-off of',
   standalone_in_series: 'Standalone with',
+  promo_of: 'Promo for',
 }
 
 const RELATION_COLORS: Record<string, string> = {

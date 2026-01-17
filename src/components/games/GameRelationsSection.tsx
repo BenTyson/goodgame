@@ -6,7 +6,8 @@ import {
   Box,
   RefreshCw,
   Sparkles,
-  Users2
+  Users2,
+  Gift
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -49,7 +50,8 @@ const relationIcons: Record<RelationType, React.ReactNode> = {
   'prequel_to': <ArrowRight className="h-4 w-4 rotate-180" />,
   'reimplementation_of': <RefreshCw className="h-4 w-4" />,
   'spin_off_of': <Sparkles className="h-4 w-4" />,
-  'standalone_in_series': <Users2 className="h-4 w-4" />
+  'standalone_in_series': <Users2 className="h-4 w-4" />,
+  'promo_of': <Gift className="h-4 w-4" />
 }
 
 // Mini game card for relations

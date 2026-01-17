@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -1322,6 +1347,7 @@ export type Database = {
           is_featured: boolean | null
           is_hidden_gem: boolean | null
           is_new_release: boolean | null
+          is_promo: boolean | null
           is_published: boolean | null
           is_staff_pick: boolean | null
           is_top_rated: boolean | null
@@ -1332,6 +1358,7 @@ export type Database = {
           min_age: number | null
           name: string
           official_website: string | null
+          parent_game_id: string | null
           play_time_max: number | null
           play_time_min: number | null
           player_count_best: number[] | null
@@ -1406,6 +1433,7 @@ export type Database = {
           is_featured?: boolean | null
           is_hidden_gem?: boolean | null
           is_new_release?: boolean | null
+          is_promo?: boolean | null
           is_published?: boolean | null
           is_staff_pick?: boolean | null
           is_top_rated?: boolean | null
@@ -1416,6 +1444,7 @@ export type Database = {
           min_age?: number | null
           name: string
           official_website?: string | null
+          parent_game_id?: string | null
           play_time_max?: number | null
           play_time_min?: number | null
           player_count_best?: number[] | null
@@ -1490,6 +1519,7 @@ export type Database = {
           is_featured?: boolean | null
           is_hidden_gem?: boolean | null
           is_new_release?: boolean | null
+          is_promo?: boolean | null
           is_published?: boolean | null
           is_staff_pick?: boolean | null
           is_top_rated?: boolean | null
@@ -1500,6 +1530,7 @@ export type Database = {
           min_age?: number | null
           name?: string
           official_website?: string | null
+          parent_game_id?: string | null
           play_time_max?: number | null
           play_time_min?: number | null
           player_count_best?: number[] | null
@@ -1559,6 +1590,20 @@ export type Database = {
             columns: ["latest_parse_log_id"]
             isOneToOne: false
             referencedRelation: "rulebook_parse_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_parent_game_id_fkey"
+            columns: ["parent_game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "games_parent_game_id_fkey"
+            columns: ["parent_game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
             referencedColumns: ["id"]
           },
         ]
@@ -4084,6 +4129,7 @@ export type Database = {
           is_featured: boolean | null
           is_hidden_gem: boolean | null
           is_new_release: boolean | null
+          is_promo: boolean | null
           is_published: boolean | null
           is_staff_pick: boolean | null
           is_top_rated: boolean | null
@@ -4094,6 +4140,7 @@ export type Database = {
           min_age: number | null
           name: string
           official_website: string | null
+          parent_game_id: string | null
           play_time_max: number | null
           play_time_min: number | null
           player_count_best: number[] | null
@@ -4529,6 +4576,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: [

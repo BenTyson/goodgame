@@ -289,6 +289,7 @@ export type RelationType =
   | 'reimplementation_of'
   | 'spin_off_of'
   | 'standalone_in_series'
+  | 'promo_of'
 
 // Game type without generated columns (useful for mock data)
 export type GameRow = Omit<Game, 'fts'>
@@ -458,7 +459,8 @@ export const RELATION_TYPE_LABELS: Record<RelationType, string> = {
   'prequel_to': 'Prequel to',
   'reimplementation_of': 'Reimplementation of',
   'spin_off_of': 'Spin-off of',
-  'standalone_in_series': 'Standalone in series'
+  'standalone_in_series': 'Standalone in series',
+  'promo_of': 'Promo for'
 }
 
 // User-friendly labels for display (e.g., "This game has expansions:")
@@ -469,7 +471,8 @@ export const RELATION_TYPE_GROUP_LABELS: Record<RelationType, string> = {
   'prequel_to': 'Prequels',
   'reimplementation_of': 'Reimplementations',
   'spin_off_of': 'Spin-offs',
-  'standalone_in_series': 'Related Games'
+  'standalone_in_series': 'Related Games',
+  'promo_of': 'Promos & Extras'
 }
 
 // Inverse mapping for bidirectional display
@@ -481,7 +484,8 @@ export const INVERSE_RELATIONS: Record<RelationType, RelationType> = {
   'prequel_to': 'sequel_to',
   'reimplementation_of': 'reimplementation_of', // symmetric
   'spin_off_of': 'spin_off_of', // no clear inverse
-  'standalone_in_series': 'standalone_in_series' // symmetric
+  'standalone_in_series': 'standalone_in_series', // symmetric
+  'promo_of': 'promo_of' // promo points to parent, no inverse
 }
 
 // Comprehensive relation type styling config
@@ -499,6 +503,7 @@ export const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
   reimplementation_of: { label: 'Reimplementation', pluralLabel: 'Reimplementations', color: 'text-orange-600' },
   spin_off_of: { label: 'Spin-off', pluralLabel: 'Spin-offs', color: 'text-pink-600' },
   standalone_in_series: { label: 'Standalone', pluralLabel: 'Standalones', color: 'text-cyan-600' },
+  promo_of: { label: 'Promo', pluralLabel: 'Promos & Extras', color: 'text-teal-600' },
 }
 
 // ===========================================
@@ -632,3 +637,19 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 export type GameDocument = Database['public']['Tables']['game_documents']['Row']
 export type GameDocumentInsert = Database['public']['Tables']['game_documents']['Insert']
 export type GameDocumentUpdate = Database['public']['Tables']['game_documents']['Update']
+
+// ===========================================
+// PROMOS & EXTRAS
+// ===========================================
+
+// Lightweight promo game for display in Promos tab
+export interface PromoGame {
+  id: string
+  name: string
+  slug: string
+  year_published: number | null
+  description: string | null
+  box_image_url: string | null
+  thumbnail_url: string | null
+  bgg_id: number | null
+}

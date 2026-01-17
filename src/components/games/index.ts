@@ -21,6 +21,7 @@ export { WikipediaContent, WikipediaGameplay, WikipediaReception } from './Wikip
 export { GameRelationsSection } from './GameRelationsSection'
 export { GameDocumentsCard } from './GameDocumentsCard'
 export { DocumentPreview } from './DocumentPreview'
+export { PromoCard } from './PromoCard'
 
 // New tabbed game page components
 export { GameHero } from './GameHero'

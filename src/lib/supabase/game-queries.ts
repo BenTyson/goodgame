@@ -46,6 +46,7 @@ export async function getGames(options?: {
     .from('games')
     .select('*')
     .eq('is_published', true)
+    .or('is_promo.is.null,is_promo.eq.false')
     .order('name')
 
   if (options?.featured) {
@@ -222,6 +223,7 @@ export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
     .from('games')
     .select('*')
     .eq('is_published', true)
+    .or('is_promo.is.null,is_promo.eq.false')
     .order('name')
 
   // Apply search query
@@ -327,12 +329,13 @@ export async function getTrendingGames(limit = 6): Promise<TrendingGame[]> {
     return featured.map(g => ({ ...g, recentVibeCount: 0, averageVibe: null }))
   }
 
-  // Fetch the games
+  // Fetch the games (exclude promos)
   const { data: games, error: gamesError } = await supabase
     .from('games')
     .select('*')
     .in('id', sortedGameIds)
     .eq('is_published', true)
+    .or('is_promo.is.null,is_promo.eq.false')
 
   if (gamesError || !games) {
     return []
@@ -363,23 +366,25 @@ export async function getFeaturedGame(): Promise<(Game & {
 }) | null> {
   const supabase = await createClient()
 
-  // Get first featured game with an image
+  // Get first featured game with an image (exclude promos)
   const { data: game, error } = await supabase
     .from('games')
     .select('*')
     .eq('is_published', true)
     .eq('is_featured', true)
+    .or('is_promo.is.null,is_promo.eq.false')
     .not('hero_image_url', 'is', null)
     .limit(1)
     .single()
 
   if (error || !game) {
-    // Fallback: get any featured game
+    // Fallback: get any featured game (exclude promos)
     const { data: fallback } = await supabase
       .from('games')
       .select('*')
       .eq('is_published', true)
       .eq('is_featured', true)
+      .or('is_promo.is.null,is_promo.eq.false')
       .limit(1)
       .single()
 
@@ -571,11 +576,12 @@ export async function getCommunityStats(): Promise<CommunityStats> {
   const supabase = await createClient()
 
   const [gamesResult, ratingsResult, usersResult] = await Promise.all([
-    // Published games count
+    // Published games count (exclude promos)
     supabase
       .from('games')
       .select('*', { count: 'exact', head: true })
-      .eq('is_published', true),
+      .eq('is_published', true)
+      .or('is_promo.is.null,is_promo.eq.false'),
     // Ratings count (user_games with rating)
     supabase
       .from('user_games')
@@ -598,10 +604,12 @@ export async function getCommunityStats(): Promise<CommunityStats> {
 export async function getGameCount(): Promise<number> {
   const supabase = await createClient()
 
+  // Exclude promos from count
   const { count, error } = await supabase
     .from('games')
     .select('*', { count: 'exact', head: true })
     .eq('is_published', true)
+    .or('is_promo.is.null,is_promo.eq.false')
 
   if (error) {
     return 0
@@ -614,10 +622,12 @@ export async function getAllGameSlugs(): Promise<string[]> {
   // Use static client for generateStaticParams (no cookies)
   const supabase = createStaticClient()
 
+  // Exclude promos from static generation
   const { data, error } = await supabase
     .from('games')
     .select('slug')
     .eq('is_published', true)
+    .or('is_promo.is.null,is_promo.eq.false')
 
   if (error) {
     return []
@@ -999,12 +1009,13 @@ export async function getRelatedGames(gameSlug: string, limit = 4): Promise<Game
     .eq('game_id', game.id)
 
   if (!categoryLinks || categoryLinks.length === 0) {
-    // Fallback: just get other featured games
+    // Fallback: just get other featured games (exclude promos)
     const { data: featuredGames } = await supabase
       .from('games')
       .select('*')
       .eq('is_published', true)
       .eq('is_featured', true)
+      .or('is_promo.is.null,is_promo.eq.false')
       .neq('slug', gameSlug)
       .limit(limit)
 
@@ -1022,13 +1033,13 @@ export async function getRelatedGames(gameSlug: string, limit = 4): Promise<Game
 
   if (!relatedLinks) return []
 
-  // Deduplicate and filter published games
+  // Deduplicate and filter published games (exclude promos)
   const seenIds = new Set<string>()
   const relatedGames: Game[] = []
 
   for (const link of relatedLinks) {
     const g = link.games as Game | null
-    if (g && g.is_published && !seenIds.has(g.id)) {
+    if (g && g.is_published && !g.is_promo && !seenIds.has(g.id)) {
       seenIds.add(g.id)
       relatedGames.push(g)
       if (relatedGames.length >= limit) break

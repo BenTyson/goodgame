@@ -25,10 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { data: designers },
     { data: publishers }
   ] = await Promise.all([
+    // Exclude promos from sitemap
     supabase
       .from('games')
       .select('slug, updated_at, has_rules, has_score_sheet, has_setup_guide, has_reference')
-      .eq('is_published', true),
+      .eq('is_published', true)
+      .or('is_promo.is.null,is_promo.eq.false'),
     supabase
       .from('categories')
       .select('slug, updated_at'),

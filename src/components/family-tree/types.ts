@@ -127,6 +127,13 @@ export const RELATION_STYLES: Record<RelationType | 'base', RelationStyleConfig>
     lineColor: '#06b6d4',
     dashArray: '8,4',
   },
+  promo_of: {
+    label: 'Promo',
+    shortLabel: 'Promo',
+    borderClass: 'border-2 border-dashed border-teal-500/70',
+    lineColor: '#14b8a6',
+    dashArray: '4,4',
+  },
 }
 
 // Get the best available thumbnail for a game

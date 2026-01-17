@@ -4,6 +4,41 @@
 
 ## Current Phase: 78 - Puffin BGG Intermediary Service (IN PROGRESS)
 
+### Session 7 (2026-01-16) - Promos & Extras System
+
+**What was done:**
+- Added lightweight promo system for publisher promos, Kickstarter extras, convention exclusives
+- Promos are simplified game records linked to parent games via `is_promo` flag and `parent_game_id`
+- Display in dedicated "Promos & Extras" tab on game pages (only visible when promos exist)
+- Promos excluded from game directory, search, trending, community stats, sitemap
+- Promos allowed on user shelf and marketplace
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00076_game_promos.sql` | Schema: is_promo flag, parent_game_id, updated search_games() |
+| `src/components/games/PromoCard.tsx` | Minimal card with image, name, year, BGG link |
+| `src/components/games/tabs/PromosTab.tsx` | Grid display with intro text |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/database.ts` | Added `promo_of` to RelationType, PromoGame interface, updated all RELATION_TYPE configs |
+| `src/lib/supabase/family-queries.ts` | Added `getGamePromos()`, updated relation labels/inverse types |
+| `src/lib/supabase/game-queries.ts` | Added `.or('is_promo.is.null,is_promo.eq.false')` to all public queries |
+| `src/app/games/[slug]/page.tsx` | Added Promos tab integration with count display |
+| `src/app/sitemap.ts` | Excluded promos from sitemap |
+| `src/app/admin/(dashboard)/games/page.tsx` | Added "Promos" filter tab |
+| `src/components/games/GamePageTabs.tsx` | Added Gift icon to iconMap |
+| `src/components/games/GameRelationsSection.tsx` | Added promo_of to relationIcons |
+| `src/components/admin/AutoLinkRelations.tsx` | Added promo_of to RELATION_LABELS |
+| `src/components/family-tree/types.ts` | Added promo_of to RELATION_STYLES |
+| `src/data/mock-games.ts` | Added parent_game_id and is_promo to type |
+
+**Build Status:** Passing
+
+---
+
 ### Session 6 (2026-01-16) - Homepage Revamp
 
 **What was done:**

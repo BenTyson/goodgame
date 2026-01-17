@@ -33,6 +33,8 @@ async function getGames(filter?: string, search?: string, page: number = 1) {
     query = query.eq('is_published', false)
   } else if (filter === 'needs-relations') {
     query = query.eq('has_unimported_relations', true)
+  } else if (filter === 'promos') {
+    query = query.eq('is_promo', true)
   }
 
   if (search) {
@@ -61,6 +63,7 @@ async function getGameCounts() {
     { count: draft },
     { count: pending },
     { count: needsRelations },
+    { count: promos },
   ] = await Promise.all([
     supabase.from('games').select('*', { count: 'exact', head: true }),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', true),
@@ -68,6 +71,7 @@ async function getGameCounts() {
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).eq('content_status', 'draft'),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_published', false).or('content_status.is.null,content_status.eq.none'),
     supabase.from('games').select('*', { count: 'exact', head: true }).eq('has_unimported_relations', true),
+    supabase.from('games').select('*', { count: 'exact', head: true }).eq('is_promo', true),
   ])
 
   return {
@@ -77,6 +81,7 @@ async function getGameCounts() {
     draft: draft || 0,
     pending: pending || 0,
     needsRelations: needsRelations || 0,
+    promos: promos || 0,
   }
 }
 
@@ -100,6 +105,7 @@ export default async function AdminGamesPage({
     { label: 'Draft', value: 'draft', count: counts.draft },
     { label: 'Pending', value: 'pending', count: counts.pending },
     { label: 'Needs Relations', value: 'needs-relations', count: counts.needsRelations },
+    { label: 'Promos', value: 'promos', count: counts.promos },
   ]
 
   // Build pagination URL helper

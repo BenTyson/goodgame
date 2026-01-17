@@ -131,4 +131,5 @@ export {
   getGameRelations,
   getInverseGameRelations,
   getAllGameRelations,
+  getGamePromos,
 } from './family-queries'

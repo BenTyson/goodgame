@@ -10,11 +10,12 @@ import {
   RulesTab,
   SetupTab,
   ScoreSheetTab,
+  PromosTab,
 } from '@/components/games'
 import { VibesTab } from '@/components/vibes'
 import { getGameWithDetails, getGameWithDetailsForAdmin, getAllGameSlugs, getGameAwards, getScoreSheetConfig, getGameDocuments } from '@/lib/supabase/queries'
 import { isAdmin } from '@/lib/supabase/admin'
-import { getGameRelationsGrouped } from '@/lib/supabase/family-queries'
+import { getGameRelationsGrouped, getGamePromos } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { getGameVibeStats, getGameVibes } from '@/lib/supabase/vibe-queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
@@ -118,6 +119,7 @@ export default async function GamePage({ params }: GamePageProps) {
     rawScoreSheetConfig,
     vibeStats,
     vibesData,
+    gamePromos,
   ] = await Promise.all([
     getGameAwards(game.id),
     getGameRelationsGrouped(game.id),
@@ -127,6 +129,7 @@ export default async function GamePage({ params }: GamePageProps) {
     game.has_score_sheet ? getScoreSheetConfig(game.id) : Promise.resolve(null),
     getGameVibeStats(game.id),
     getGameVibes(game.id),
+    getGamePromos(game.id),
   ])
 
   const scoreSheetConfig = transformScoreSheetConfig(rawScoreSheetConfig)
@@ -193,6 +196,18 @@ export default async function GamePage({ params }: GamePageProps) {
           initialStats={vibeStats}
           initialVibes={vibesData.vibes}
           initialHasMore={vibesData.hasMore}
+        />
+      ),
+    },
+    {
+      id: 'promos',
+      label: gamePromos.length > 0 ? `Promos & Extras (${gamePromos.length})` : 'Promos & Extras',
+      icon: 'gift',
+      available: gamePromos.length > 0,
+      content: (
+        <PromosTab
+          gameName={game.name}
+          promos={gamePromos}
         />
       ),
     },
