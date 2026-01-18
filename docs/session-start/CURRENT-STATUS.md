@@ -2,7 +2,43 @@
 
 > Last Updated: 2026-01-18
 
-## Current Phase: 80 - Puffin Enrichment Integration (IN PROGRESS)
+## Current Phase: 81 - Family Tree V2 UI Polish (COMPLETE)
+
+### Session Summary (2026-01-18) - Premium Visual Polish
+
+**What was done:**
+- Transformed functional family tree into visually polished premium experience
+- Added CSS animations: `pulse-subtle` for base game glow, `selection-pulse` for selected nodes
+- Updated layout constants: NODE_GAP 24→32px, TIER_GAP 60→72px for better breathing room
+- Gradient connector lines with glow layer, highlight overlay, and faded ends
+- Glassmorphism badges with color-matched glows for relation types
+- Base game hero treatment: centered golden gradient badge + ambient radial glow
+- Selection state: multi-layer ring + scale bump + pulsing animation
+- Redesigned TreeLegend as floating pill with colored indicator dots
+- Added subtle gradient background to tree container
+- Moved family info from prominent top banner to subtle inline text below legend
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| (CSS additions to globals.css) | Family tree animations and glow effects |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/globals.css` | Added `@keyframes pulse-subtle`, `selection-pulse`, `.tree-node--base::before`, `.tree-node--selected::after` |
+| `src/components/family-tree/types.ts` | Updated NODE_GAP/TIER_GAP/NODE_HEIGHT, richer relation colors, uppercase shortLabels, added FamilyInfo interface |
+| `src/components/family-tree/TreeConnector.tsx` | SVG gradients, glow layer (6px/15% opacity), main line with gradient stroke, white highlight overlay |
+| `src/components/family-tree/TreeLegend.tsx` | Floating pill redesign with `rounded-full`, glassmorphism, colored dots with glow |
+| `src/components/family-tree/TreeNode.tsx` | `group/node` hover states, CSS variable shadows, `-translate-y-1` hover, `rounded-xl`, glassmorphism badges, golden base badge |
+| `src/components/family-tree/FamilyTreeDiagram.tsx` | Gradient background, `p-6 rounded-xl`, added `familyInfo` prop, subtle family info below legend |
+| `src/components/games/tabs/FamilyTreeTab.tsx` | Removed top info banner, passes `familyInfo` to diagram |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 80 - Puffin Enrichment Integration (COMPLETE)
 
 ### Session Summary (2026-01-18) - Simplify Import with Puffin Pre-Enrichment
 

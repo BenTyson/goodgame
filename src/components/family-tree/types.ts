@@ -2,9 +2,9 @@ import type { Game, GameRelation, RelationType } from '@/types/database'
 
 // Layout constants
 export const NODE_WIDTH = 140
-export const NODE_HEIGHT = 120
-export const NODE_GAP = 24
-export const TIER_GAP = 60
+export const NODE_HEIGHT = 125
+export const NODE_GAP = 32
+export const TIER_GAP = 72
 export const MAX_DEPTH = 4
 
 // A node positioned in the tree layout
@@ -25,6 +25,13 @@ export interface TierData {
   nodes: TreeLayoutNode[]
 }
 
+// Family info for subtitle display
+export interface FamilyInfo {
+  name: string
+  slug: string
+  description?: string | null
+}
+
 // Props for the main diagram component
 export interface FamilyTreeDiagramProps {
   games: Game[]
@@ -35,6 +42,7 @@ export interface FamilyTreeDiagramProps {
   // Display options
   variant?: 'admin' | 'public'
   className?: string
+  familyInfo?: FamilyInfo
 
   // Interactivity (admin)
   onNodeClick?: (game: Game) => void
@@ -69,68 +77,68 @@ export interface RelationStyleConfig {
   dashArray: string
 }
 
-// Visual styling for each relation type
+// Visual styling for each relation type - rich, saturated colors
 export const RELATION_STYLES: Record<RelationType | 'base', RelationStyleConfig> = {
   base: {
     label: 'Base Game',
-    shortLabel: 'Base',
-    borderClass: 'border-3 border-amber-500 ring-2 ring-amber-400/30',
-    lineColor: '#f59e0b',
+    shortLabel: 'BASE',
+    borderClass: 'border-2 border-amber-400 ring-2 ring-amber-400/30',
+    lineColor: '#fbbf24',
     dashArray: '',
   },
   expansion_of: {
     label: 'Expansion',
-    shortLabel: 'Exp',
-    borderClass: 'border-2 border-blue-500/70',
+    shortLabel: 'EXP',
+    borderClass: 'border-2 border-blue-500',
     lineColor: '#3b82f6',
     dashArray: '',
   },
   base_game_of: {
     label: 'Base Game',
-    shortLabel: 'Base',
-    borderClass: 'border-3 border-amber-500',
-    lineColor: '#f59e0b',
+    shortLabel: 'BASE',
+    borderClass: 'border-2 border-amber-400',
+    lineColor: '#fbbf24',
     dashArray: '',
   },
   sequel_to: {
     label: 'Sequel',
-    shortLabel: 'Seq',
-    borderClass: 'border-2 border-green-500/70',
-    lineColor: '#22c55e',
+    shortLabel: 'SEQ',
+    borderClass: 'border-2 border-emerald-500',
+    lineColor: '#10b981',
     dashArray: '',
   },
   prequel_to: {
     label: 'Prequel',
-    shortLabel: 'Preq',
-    borderClass: 'border-2 border-purple-500/70',
-    lineColor: '#a855f7',
+    shortLabel: 'PREQ',
+    borderClass: 'border-2 border-violet-500',
+    lineColor: '#8b5cf6',
     dashArray: '',
   },
   reimplementation_of: {
     label: 'Reimplementation',
-    shortLabel: 'Reimp',
-    borderClass: 'border-2 border-dashed border-orange-500/70',
+    shortLabel: 'REIMP',
+    borderClass: 'border-2 border-dashed border-orange-500',
     lineColor: '#f97316',
     dashArray: '4,4',
   },
   spin_off_of: {
     label: 'Spin-off',
-    shortLabel: 'Spin',
-    borderClass: 'border-2 border-dashed border-pink-500/70',
+    shortLabel: 'SPIN',
+    borderClass: 'border-2 border-dashed border-pink-500',
     lineColor: '#ec4899',
     dashArray: '8,4',
   },
   standalone_in_series: {
     label: 'Standalone',
-    shortLabel: 'Stand',
-    borderClass: 'border-2 border-dashed border-cyan-500/70',
+    shortLabel: 'STAND',
+    borderClass: 'border-2 border-dashed border-cyan-500',
     lineColor: '#06b6d4',
     dashArray: '8,4',
   },
   promo_of: {
     label: 'Promo',
-    shortLabel: 'Promo',
-    borderClass: 'border-2 border-dashed border-teal-500/70',
+    shortLabel: 'PROMO',
+    borderClass: 'border-2 border-dashed border-teal-500',
     lineColor: '#14b8a6',
     dashArray: '4,4',
   },

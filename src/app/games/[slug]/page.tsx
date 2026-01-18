@@ -11,11 +11,12 @@ import {
   SetupTab,
   ScoreSheetTab,
   PromosTab,
+  FamilyTreeTab,
 } from '@/components/games'
 import { VibesTab } from '@/components/vibes'
 import { getGameWithDetails, getGameWithDetailsForAdmin, getAllGameSlugs, getGameAwards, getScoreSheetConfig, getGameDocuments } from '@/lib/supabase/queries'
 import { isAdmin } from '@/lib/supabase/admin'
-import { getGameRelationsGrouped, getGamePromos } from '@/lib/supabase/family-queries'
+import { getGameRelationsGrouped, getGamePromos, getGameFamilyTreeData } from '@/lib/supabase/family-queries'
 import { getGameReviews, getGameAggregateRating } from '@/lib/supabase/user-queries'
 import { getGameVibeStats, getGameVibes } from '@/lib/supabase/vibe-queries'
 import { GameJsonLd, BreadcrumbJsonLd } from '@/lib/seo'
@@ -120,6 +121,7 @@ export default async function GamePage({ params }: GamePageProps) {
     vibeStats,
     vibesData,
     gamePromos,
+    familyTreeData,
   ] = await Promise.all([
     getGameAwards(game.id),
     getGameRelationsGrouped(game.id),
@@ -130,6 +132,7 @@ export default async function GamePage({ params }: GamePageProps) {
     getGameVibeStats(game.id),
     getGameVibes(game.id),
     getGamePromos(game.id),
+    getGameFamilyTreeData(game.id),
   ])
 
   const scoreSheetConfig = transformScoreSheetConfig(rawScoreSheetConfig)
@@ -198,6 +201,21 @@ export default async function GamePage({ params }: GamePageProps) {
           initialHasMore={vibesData.hasMore}
         />
       ),
+    },
+    {
+      id: 'family-tree',
+      label: familyTreeData ? `Family Tree (${familyTreeData.games.length})` : 'Family Tree',
+      icon: 'git-branch',
+      available: familyTreeData !== null,
+      content: familyTreeData ? (
+        <FamilyTreeTab
+          currentGameId={game.id}
+          family={familyTreeData.family}
+          games={familyTreeData.games}
+          relations={familyTreeData.relations}
+          baseGameId={familyTreeData.baseGameId}
+        />
+      ) : null,
     },
     {
       id: 'promos',

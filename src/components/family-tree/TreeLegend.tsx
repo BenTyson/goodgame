@@ -16,29 +16,34 @@ const LEGEND_ITEMS: { type: RelationType | 'base'; show: boolean }[] = [
 
 export function TreeLegend({ className }: { className?: string }) {
   return (
-    <div className={cn('flex flex-wrap gap-3 text-xs text-muted-foreground', className)}>
-      <span className="font-medium">Legend:</span>
+    <div
+      className={cn(
+        'inline-flex flex-wrap items-center gap-3 px-4 py-2',
+        'rounded-full backdrop-blur-sm',
+        'bg-card/80 border border-border/50',
+        'shadow-sm',
+        className
+      )}
+    >
       {LEGEND_ITEMS.filter(item => item.show).map(({ type }) => {
         const style = RELATION_STYLES[type]
+        const isDashed = style.borderClass.includes('dashed')
+
         return (
           <div key={type} className="flex items-center gap-1.5">
+            {/* Color indicator dot */}
             <span
-              className={cn(
-                'w-4 h-3 rounded-sm',
-                style.borderClass.includes('dashed') && 'border-dashed',
-                style.borderClass.includes('dotted') && 'border-dotted',
-              )}
+              className="w-2.5 h-2.5 rounded-full"
               style={{
-                borderWidth: 2,
-                borderColor: style.lineColor,
-                borderStyle: style.borderClass.includes('dashed')
-                  ? 'dashed'
-                  : style.borderClass.includes('dotted')
-                    ? 'dotted'
-                    : 'solid',
+                backgroundColor: style.lineColor,
+                boxShadow: isDashed
+                  ? `0 0 0 1px var(--background), 0 0 0 2px ${style.lineColor}`
+                  : `0 0 6px ${style.lineColor}40`,
               }}
             />
-            <span>{style.label}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {style.label}
+            </span>
           </div>
         )
       })}

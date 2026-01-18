@@ -4,6 +4,7 @@ import type {
   Game,
   GameFamily,
   GameFamilyWithGames,
+  GameRelation,
   GameRelationWithTarget,
   GameRelationWithSource,
   RelationType,
@@ -350,6 +351,79 @@ function getInverseRelationType(type: RelationType): RelationType {
 // ===========================================
 // GAME PROMOS
 // ===========================================
+
+/**
+ * Get family tree data for a specific game.
+ * Returns null if game has no family or family has fewer than 2 published games.
+ */
+export async function getGameFamilyTreeData(gameId: string): Promise<{
+  family: GameFamily
+  games: Game[]
+  relations: GameRelation[]
+  baseGameId: string | null
+} | null> {
+  const supabase = await createClient()
+
+  // Get the game's family_id first
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .select('family_id')
+    .eq('id', gameId)
+    .single()
+
+  if (gameError || !game || !game.family_id) {
+    return null
+  }
+
+  // Get the family details
+  const { data: family, error: familyError } = await supabase
+    .from('game_families')
+    .select('*')
+    .eq('id', game.family_id)
+    .single()
+
+  if (familyError || !family) {
+    return null
+  }
+
+  // Get all published games in this family
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('*')
+    .eq('family_id', game.family_id)
+    .eq('is_published', true)
+    .order('year_published', { ascending: true, nullsFirst: false })
+
+  if (gamesError || !games || games.length < 2) {
+    // Tree would be meaningless with fewer than 2 games
+    return null
+  }
+
+  // Get all relations between games in this family
+  const gameIds = games.map(g => g.id)
+  const { data: relations, error: relationsError } = await supabase
+    .from('game_relations')
+    .select('*')
+    .in('source_game_id', gameIds)
+    .in('target_game_id', gameIds)
+
+  if (relationsError) {
+    // Still return family data even if relations fail
+    return {
+      family,
+      games,
+      relations: [],
+      baseGameId: family.base_game_id,
+    }
+  }
+
+  return {
+    family,
+    games,
+    relations: relations || [],
+    baseGameId: family.base_game_id,
+  }
+}
 
 /**
  * Get all promo games for a parent game.

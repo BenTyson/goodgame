@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, ReactNode } from 'react'
-import { Info, BookOpen, Boxes, Zap, FileText, Sparkles, Gift, type LucideIcon } from 'lucide-react'
+import { Info, BookOpen, Boxes, Zap, FileText, Sparkles, Gift, GitBranch, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Map icon names to actual components (resolved client-side)
@@ -13,6 +13,7 @@ const iconMap: Record<string, LucideIcon> = {
   'file-text': FileText,
   sparkles: Sparkles,
   gift: Gift,
+  'git-branch': GitBranch,
 }
 
 export interface TabConfig {

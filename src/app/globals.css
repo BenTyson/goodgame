@@ -369,3 +369,67 @@
 .dice-interactive:hover {
   animation: dice-wobble 0.3s ease-in-out;
 }
+
+/* ============================================
+   FAMILY TREE ANIMATIONS & STYLES
+   ============================================ */
+
+/* Gentle pulse for base game ambient glow */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+/* Pulsing ring for selected node - uses CSS custom property for theme-aware color */
+@keyframes selection-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px var(--ring);
+    opacity: 0.5;
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--ring);
+    opacity: 0.25;
+  }
+}
+
+/* Base game ambient glow pseudo-element */
+.tree-node--base::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    oklch(0.75 0.15 85 / 0.25) 0%,
+    oklch(0.75 0.15 85 / 0.08) 50%,
+    transparent 70%
+  );
+  animation: pulse-subtle 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.dark .tree-node--base::before {
+  background: radial-gradient(
+    ellipse at center,
+    oklch(0.70 0.18 85 / 0.35) 0%,
+    oklch(0.70 0.18 85 / 0.12) 50%,
+    transparent 70%
+  );
+}
+
+/* Selection ring animation */
+.tree-node--selected::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 14px;
+  animation: selection-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}

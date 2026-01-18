@@ -1,13 +1,15 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTreeLayout } from './use-tree-layout'
 import { TreeNode } from './TreeNode'
 import { TreeConnector, TreeConnectorsOverlay } from './TreeConnector'
 import { TreeLegend } from './TreeLegend'
 import type { FamilyTreeDiagramProps, TreeLayoutNode } from './types'
-import { NODE_WIDTH, NODE_GAP, TIER_GAP } from './types'
+import { NODE_GAP, TIER_GAP } from './types'
 
 interface NodePosition {
   id: string
@@ -23,6 +25,7 @@ export function FamilyTreeDiagram({
   familyId,
   variant = 'admin',
   className,
+  familyInfo,
   onNodeClick,
   selectedGameId,
 }: FamilyTreeDiagramProps) {
@@ -138,7 +141,11 @@ export function FamilyTreeDiagram({
       {/* Tree Container */}
       <div
         ref={containerRef}
-        className="relative overflow-x-auto pb-4"
+        className={cn(
+          'relative overflow-x-auto',
+          'p-6 rounded-xl',
+          'bg-gradient-to-b from-transparent via-muted/20 to-muted/40'
+        )}
       >
         {/* SVG Connectors Layer */}
         {containerSize.width > 0 && (
@@ -164,8 +171,33 @@ export function FamilyTreeDiagram({
         </div>
       </div>
 
-      {/* Legend */}
-      <TreeLegend />
+      {/* Legend and Family Info */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <TreeLegend />
+
+        {/* Family info - subtle inline */}
+        {familyInfo && (
+          <div className="text-xs text-muted-foreground">
+            <span>
+              Part of{' '}
+              <Link
+                href={`/families/${familyInfo.slug}`}
+                className="font-medium text-foreground/80 hover:text-primary transition-colors"
+              >
+                {familyInfo.name}
+              </Link>
+              {' '}({games.length} games)
+            </span>
+            <Link
+              href={`/families/${familyInfo.slug}`}
+              className="inline-flex items-center gap-0.5 ml-2 text-muted-foreground hover:text-primary transition-colors"
+            >
+              View all
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* Orphan Games */}
       {orphanGames.length > 0 && (
