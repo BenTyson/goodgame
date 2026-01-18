@@ -14,10 +14,22 @@ export {
   fetchBGGGames,
   fetchBGGGamesWithStatus,
   searchBGGGames,
+  fetchEnrichedGame,
   type BGGRawGame,
   type BGGFetchResult,
   type BGGBatchFetchResult,
+  type ConsolidatedGameData,
+  type WikidataResult,
+  type WikipediaResult,
+  type CommonsImage,
 } from './client'
+
+// Enrichment Mapper
+export {
+  mapPuffinEnrichmentToGameUpdate,
+  extractRelationData,
+  determineVecnaStateFromPuffin,
+} from './enrichment-mapper'
 
 // Game Importer
 export {

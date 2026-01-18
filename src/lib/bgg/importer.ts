@@ -4,7 +4,12 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { fetchBGGGameWithStatus, type BGGRawGame, type BGGLink, type BGGFetchResult } from './client'
+import { fetchBGGGameWithStatus, fetchEnrichedGame, type BGGRawGame, type BGGLink, type BGGFetchResult } from './client'
+import {
+  mapPuffinEnrichmentToGameUpdate,
+  extractRelationData,
+  determineVecnaStateFromPuffin,
+} from './enrichment-mapper'
 
 /**
  * Fetch a game from Puffin with automatic retry for pending games
@@ -39,12 +44,7 @@ async function fetchWithRetry(bggId: number, maxRetries = 6, delayMs = 5000): Pr
 import { generateSlug } from '@/lib/utils/slug'
 import { BGG_CATEGORY_MAP, getBGGThemeSlugs, getBGGExperienceSlugs } from '@/lib/config/bgg-mappings'
 import { resolveBGGAliases } from '@/lib/supabase/category-queries'
-import { enrichPublisher, type WikidataBoardGame } from '@/lib/wikidata'
-import {
-  enrichGameParallel,
-  prepareGameUpdateFromEnrichment,
-  determineVecnaState,
-} from '@/lib/enrichment'
+import { enrichPublisher } from '@/lib/wikidata'
 import { enrichFamilyFromWikipedia } from '@/lib/wikipedia/family-enrichment'
 import { linkPendingAwards } from '@/lib/wikidata/award-importer'
 import type { Database } from '@/types/supabase'
@@ -210,8 +210,8 @@ async function upsertPublisher(
   return newPublisher.id
 }
 
-// NOTE: enrichGameFromWikidata removed - replaced by parallel enrichment in enrichGameParallel()
-// The parallel enrichment module fetches from Wikidata, Wikipedia, and Commons simultaneously
+// NOTE: Local enrichment (enrichGameParallel) replaced by Puffin pre-enrichment
+// Puffin caches enrichment data from Wikidata, Wikipedia, and Commons for faster imports
 
 /**
  * Link a game to a family based on Wikidata series (P179)
@@ -219,11 +219,14 @@ async function upsertPublisher(
  * Otherwise creates/links a new family from the Wikidata series
  */
 async function linkFamilyFromWikidataSeries(
-  supabase: SupabaseClient<Database>,
   gameId: string,
-  seriesId: string,
-  seriesName: string
+  data: { seriesId?: string; seriesName?: string }
 ): Promise<void> {
+  if (!data.seriesId) return
+
+  const supabase = createAdminClient()
+  const seriesId = data.seriesId
+  const seriesName = data.seriesName || 'Unknown Series'
   // Check if game already has a family (from BGG)
   const { data: game } = await supabase
     .from('games')
@@ -323,16 +326,19 @@ async function linkFamilyFromWikidataSeries(
  * Create sequel relationships based on Wikidata P155/P156 properties
  */
 async function createWikidataSequelRelations(
-  supabase: SupabaseClient<Database>,
   gameId: string,
-  wikidata: WikidataBoardGame
+  data: { followsBggId?: number; followedByBggId?: number }
 ): Promise<void> {
+  if (!data.followsBggId && !data.followedByBggId) return
+
+  const supabase = createAdminClient()
+
   // If this game follows another (is a sequel to)
-  if (wikidata.followsBggId) {
+  if (data.followsBggId) {
     const { data: targetGame } = await supabase
       .from('games')
       .select('id')
-      .eq('bgg_id', parseInt(wikidata.followsBggId))
+      .eq('bgg_id', data.followsBggId)
       .single()
 
     if (targetGame) {
@@ -353,17 +359,17 @@ async function createWikidataSequelRelations(
             target_game_id: targetGame.id,
             relation_type: 'sequel_to' as RelationType,
           })
-        console.log(`  [Wikidata] Created sequel_to relation: ${wikidata.name} → ${wikidata.followsName}`)
+        console.log(`  [Wikidata] Created sequel_to relation to BGG ${data.followsBggId}`)
       }
     }
   }
 
   // If this game is followed by another (has a sequel)
-  if (wikidata.followedByBggId) {
+  if (data.followedByBggId) {
     const { data: sourceGame } = await supabase
       .from('games')
       .select('id')
-      .eq('bgg_id', parseInt(wikidata.followedByBggId))
+      .eq('bgg_id', data.followedByBggId)
       .single()
 
     if (sourceGame) {
@@ -384,44 +390,9 @@ async function createWikidataSequelRelations(
             target_game_id: gameId,
             relation_type: 'sequel_to' as RelationType,
           })
-        console.log(`  [Wikidata] Created sequel_to relation: ${wikidata.followedByName} → ${wikidata.name}`)
+        console.log(`  [Wikidata] Created sequel_to relation from BGG ${data.followedByBggId}`)
       }
     }
-  }
-}
-
-/**
- * Log discrepancies between BGG and Wikidata data
- */
-function logDataDiscrepancies(bgg: BGGRawGame, wikidata: WikidataBoardGame): void {
-  const discrepancies: string[] = []
-
-  // Year published
-  if (bgg.yearPublished && wikidata.yearPublished && bgg.yearPublished !== wikidata.yearPublished) {
-    discrepancies.push(`Year: BGG=${bgg.yearPublished}, Wikidata=${wikidata.yearPublished}`)
-  }
-
-  // Min players
-  if (bgg.minPlayers && wikidata.minPlayers && bgg.minPlayers !== wikidata.minPlayers) {
-    discrepancies.push(`MinPlayers: BGG=${bgg.minPlayers}, Wikidata=${wikidata.minPlayers}`)
-  }
-
-  // Max players
-  if (bgg.maxPlayers && wikidata.maxPlayers && bgg.maxPlayers !== wikidata.maxPlayers) {
-    discrepancies.push(`MaxPlayers: BGG=${bgg.maxPlayers}, Wikidata=${wikidata.maxPlayers}`)
-  }
-
-  // Play time (BGG has min/max, Wikidata has single value)
-  if (wikidata.playTimeMinutes && bgg.playingTime) {
-    const avgBggTime = bgg.playingTime
-    if (Math.abs(avgBggTime - wikidata.playTimeMinutes) > 15) {
-      discrepancies.push(`PlayTime: BGG=${avgBggTime}min, Wikidata=${wikidata.playTimeMinutes}min`)
-    }
-  }
-
-  if (discrepancies.length > 0) {
-    console.log(`  [Wikidata] Data discrepancies found:`)
-    discrepancies.forEach(d => console.log(`    - ${d}`))
   }
 }
 
@@ -1245,109 +1216,103 @@ export async function importGameFromBGG(
   }
 
   // =====================================================
-  // PARALLEL ENRICHMENT: Wikidata + Wikipedia + Commons
+  // PUFFIN ENRICHMENT: Pre-enriched Wikidata + Wikipedia + Commons
   // =====================================================
-  // Fetches from all sources simultaneously for ~3x speedup
-  const enrichment = await enrichGameParallel(
-    bggId,
-    bggData.name,
-    bggData.yearPublished ?? undefined,
-    bggData.designers
-  )
+  // Fetches enrichment data from Puffin which has already gathered
+  // data from Wikidata, Wikipedia, and Commons in the background
+  const enrichedData = await fetchEnrichedGame(bggId)
 
-  // Prepare and apply enrichment data in a single update
-  const enrichmentUpdateData = prepareGameUpdateFromEnrichment(enrichment)
+  if (enrichedData && enrichedData.enrichment.status !== 'bgg_only') {
+    const gameUpdate = mapPuffinEnrichmentToGameUpdate(enrichedData)
+    const relationData = extractRelationData(enrichedData)
 
-  // Determine vecna_state from enrichment result (no extra DB fetch needed)
-  const vecnaState = determineVecnaState(enrichment)
+    // Determine Vecna state from enrichment
+    const vecnaState = determineVecnaStateFromPuffin(enrichedData)
 
-  if (Object.keys(enrichmentUpdateData).length > 0 || vecnaState !== 'imported') {
-    await supabase
-      .from('games')
-      .update({
-        ...enrichmentUpdateData,
-        vecna_state: vecnaState,
-        vecna_processed_at: new Date().toISOString(),
+    // Apply enrichment update
+    await supabase.from('games').update({
+      ...gameUpdate,
+      vecna_state: vecnaState,
+      vecna_processed_at: new Date().toISOString(),
+    }).eq('id', newGame.id)
+
+    console.log(`  [Puffin] Applied ${enrichedData.enrichment.status} enrichment (state: ${vecnaState})`)
+
+    // Post-processing: family linking from Wikidata series
+    if (relationData.seriesId) {
+      console.log(`  [Wikidata] Part of series: ${relationData.seriesName} (${relationData.seriesId})`)
+      await linkFamilyFromWikidataSeries(newGame.id, {
+        seriesId: relationData.seriesId,
+        seriesName: relationData.seriesName,
       })
-      .eq('id', newGame.id)
-  }
-
-  // Handle Wikidata-specific relations (family linking, sequel relations)
-  // These require the raw Wikidata data and database operations
-  if (enrichment.wikidata?.raw) {
-    const wikidataRaw = enrichment.wikidata.raw
-
-    // Log data discrepancies between BGG and Wikidata
-    logDataDiscrepancies(bggData, wikidataRaw)
-
-    // Link to family from Wikidata series if applicable
-    if (wikidataRaw.seriesId) {
-      console.log(`  [Wikidata] Part of series: ${wikidataRaw.seriesName} (${wikidataRaw.seriesId})`)
-      await linkFamilyFromWikidataSeries(
-        supabase,
-        newGame.id,
-        wikidataRaw.seriesId,
-        wikidataRaw.seriesName || 'Unknown Series'
-      )
     }
 
-    // Create sequel relationships from Wikidata P155/P156
-    await createWikidataSequelRelations(supabase, newGame.id, wikidataRaw)
-  }
+    // Post-processing: sequel relations from Wikidata
+    if (relationData.followsBggId || relationData.followedByBggId) {
+      await createWikidataSequelRelations(newGame.id, {
+        followsBggId: relationData.followsBggId,
+        followedByBggId: relationData.followedByBggId,
+      })
+    }
 
-  // =====================================================
-  // FAMILY ENRICHMENT: Auto-create game_relations from Wikipedia
-  // =====================================================
-  // If the game has a family AND a Wikipedia URL, enrich the family
-  // to auto-create game_relations based on Wikipedia data
-  const wikipediaUrl = enrichment.wikipedia?.wikipedia_url || enrichment.wikidata?.wikipedia_url
-  if (wikipediaUrl) {
-    // Check if game now has a family (may have been linked above)
-    const { data: gameWithFamily } = await supabase
-      .from('games')
-      .select('family_id')
-      .eq('id', newGame.id)
-      .single()
-
-    if (gameWithFamily?.family_id) {
-      // Check if family needs Wikipedia enrichment (throttle to avoid repeated calls)
-      const { data: family } = await supabase
-        .from('game_families')
-        .select('family_context')
-        .eq('id', gameWithFamily.family_id)
+    // Wikipedia family enrichment (if applicable)
+    const wikipediaUrl = gameUpdate.wikipedia_url
+    if (wikipediaUrl) {
+      // Check if game now has a family (may have been linked above)
+      const { data: gameWithFamily } = await supabase
+        .from('games')
+        .select('family_id')
+        .eq('id', newGame.id)
         .single()
 
-      const context = family?.family_context as { wikipediaEnrichment?: { lastEnrichedAt: string } } | null
-      const lastEnriched = context?.wikipediaEnrichment?.lastEnrichedAt
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-      const needsEnrichment = !lastEnriched || new Date(lastEnriched).getTime() < thirtyDaysAgo
+      if (gameWithFamily?.family_id) {
+        // Check if family needs Wikipedia enrichment (throttle to avoid repeated calls)
+        const { data: family } = await supabase
+          .from('game_families')
+          .select('family_context')
+          .eq('id', gameWithFamily.family_id)
+          .single()
 
-      if (needsEnrichment) {
-        try {
-          const familyResult = await enrichFamilyFromWikipedia(
-            supabase,
-            gameWithFamily.family_id,
-            newGame.id,
-            wikipediaUrl,
-            { autoLinkHighConfidence: true, createRelations: true }
-          )
-          if (familyResult.relationsCreated > 0) {
-            console.log(`  [Wikipedia] Created ${familyResult.relationsCreated} family relations`)
+        const context = family?.family_context as { wikipediaEnrichment?: { lastEnrichedAt: string } } | null
+        const lastEnriched = context?.wikipediaEnrichment?.lastEnrichedAt
+        // Only enrich on first game in family - 30-day refresh handled by background job
+        const needsEnrichment = !lastEnriched
+
+        if (needsEnrichment) {
+          try {
+            const familyResult = await enrichFamilyFromWikipedia(
+              supabase,
+              gameWithFamily.family_id,
+              newGame.id,
+              wikipediaUrl,
+              { autoLinkHighConfidence: true, createRelations: true }
+            )
+            if (familyResult.relationsCreated > 0) {
+              console.log(`  [Wikipedia] Created ${familyResult.relationsCreated} family relations`)
+            }
+            if (familyResult.gamesLinked > 0) {
+              console.log(`  [Wikipedia] Auto-linked ${familyResult.gamesLinked} games to family`)
+            }
+          } catch (error) {
+            // Don't fail the import if family enrichment fails
+            console.warn(`  [Wikipedia] Family enrichment failed:`, error instanceof Error ? error.message : error)
           }
-          if (familyResult.gamesLinked > 0) {
-            console.log(`  [Wikipedia] Auto-linked ${familyResult.gamesLinked} games to family`)
-          }
-        } catch (error) {
-          // Don't fail the import if family enrichment fails
-          console.warn(`  [Wikipedia] Family enrichment failed:`, error instanceof Error ? error.message : error)
         }
       }
     }
-  }
 
-  // Log Commons results (images are available for manual selection in admin)
-  if (enrichment.commonsImages.length > 0) {
-    console.log(`  [Commons] Found ${enrichment.commonsImages.length} CC-licensed images available for import`)
+    // Log Commons results (images are available for manual selection in admin)
+    if (relationData.commonsImages.length > 0) {
+      console.log(`  [Commons] Found ${relationData.commonsImages.length} CC-licensed images available for import`)
+    }
+  } else {
+    // No enrichment from Puffin - set to imported state
+    // Puffin will enrich async, can be refreshed later
+    await supabase.from('games').update({
+      vecna_state: 'imported',
+    }).eq('id', newGame.id)
+
+    console.log(`  [Puffin] No enrichment available yet, marked as imported`)
   }
 
   // Update has_unimported_relations flag for this game

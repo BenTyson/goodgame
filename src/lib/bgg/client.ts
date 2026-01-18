@@ -682,6 +682,114 @@ async function parseBGGItem(item: Record<string, unknown>): Promise<BGGRawGame |
   }
 }
 
+// ============================================================================
+// PUFFIN ENRICHMENT TYPES
+// ============================================================================
+
+/**
+ * Wikidata enrichment data from Puffin
+ */
+export interface WikidataResult {
+  id: string
+  seriesId?: string
+  seriesName?: string
+  followsBggId?: number
+  followedByBggId?: number
+  amazonAsin?: string
+  rulebookUrl?: string
+  officialWebsite?: string
+  imageUrl?: string
+  wikipediaUrl?: string
+  fetchedAt: string
+}
+
+/**
+ * Wikipedia enrichment data from Puffin
+ */
+export interface WikipediaResult {
+  url: string
+  summary?: string
+  gameplay?: string
+  reception?: string
+  origins?: string
+  awards?: unknown[]
+  images?: unknown[]
+  externalLinks?: unknown[]
+  infobox?: Record<string, unknown>
+  searchConfidence?: 'high' | 'medium' | 'low'
+  fetchedAt?: string
+}
+
+/**
+ * Commons image from Puffin
+ */
+export interface CommonsImage {
+  url: string
+  thumbUrl?: string
+  title: string
+  author?: string
+  license?: string
+  score?: number
+}
+
+/**
+ * Enrichment metadata from Puffin
+ */
+export interface EnrichmentMetadata {
+  status: 'complete' | 'partial' | 'bgg_only'
+  hasWikidata: boolean
+  hasWikipedia: boolean
+  hasRulebookUrl: boolean
+  completedAt?: string
+}
+
+/**
+ * Consolidated game data from Puffin with enrichment
+ */
+export interface ConsolidatedGameData extends BGGRawGame {
+  wikidata?: WikidataResult
+  wikipedia?: WikipediaResult
+  commonsImages?: CommonsImage[]
+  enrichment: EnrichmentMetadata
+}
+
+/**
+ * Fetch a game with enrichment data from Puffin
+ */
+export async function fetchEnrichedGame(bggId: number): Promise<ConsolidatedGameData | null> {
+  if (!shouldUsePuffin()) {
+    console.warn('Puffin is not enabled or unhealthy - cannot fetch enriched game data')
+    return null
+  }
+
+  try {
+    const response = await fetch(`${PUFFIN_API_URL}/game/${bggId}?enriched=true`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'boardmello',
+      },
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Game not in cache - request Puffin to fetch it
+        await requestPuffinFetch([bggId])
+      } else {
+        markPuffinUnhealthy()
+      }
+      return null
+    }
+
+    const data = await response.json()
+    return data.game as ConsolidatedGameData
+  } catch (error) {
+    console.warn(`Puffin enriched fetch failed for ${bggId}:`, error)
+    markPuffinUnhealthy()
+    return null
+  }
+}
+
 /**
  * Search for games on BGG by name
  */

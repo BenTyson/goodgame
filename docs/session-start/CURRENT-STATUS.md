@@ -1,8 +1,53 @@
 # Current Status
 
-> Last Updated: 2026-01-17
+> Last Updated: 2026-01-18
 
-## Current Phase: 79 - Friends System (IN PROGRESS)
+## Current Phase: 80 - Puffin Enrichment Integration (IN PROGRESS)
+
+### Session Summary (2026-01-18) - Simplify Import with Puffin Pre-Enrichment
+
+**What was done:**
+- Replaced local `enrichGameParallel()` with Puffin's pre-enriched data via `?enriched=true`
+- Added Puffin enrichment types to client.ts (WikidataResult, WikipediaResult, CommonsImage, ConsolidatedGameData)
+- Created `fetchEnrichedGame()` function for enriched data fetching
+- Created `enrichment-mapper.ts` module to map Puffin data to Boardmello's database format
+- Simplified helper function signatures (`linkFamilyFromWikidataSeries`, `createWikidataSequelRelations`)
+- Fixed family enrichment to only trigger on FIRST game in family (not every game)
+- Removed 30-day re-enrichment during import (will be background job instead)
+- Created comprehensive Puffin integration plan at `/puffin/BOARDMELLO-INTEGRATION-PLAN.md`
+
+**Import Flow Change:**
+- **Before:** Import → Insert → `enrichGameParallel()` (1.5s of parallel API calls to Wikidata/Wikipedia/Commons)
+- **After:** Import with `?enriched=true` → Insert with enrichment data already included
+
+**Remaining Slowdowns Identified (for Puffin to solve):**
+1. Publisher Wikidata enrichment - Still calling Wikidata per publisher during import
+2. Family enrichment - Still runs AI extraction (but now only for first game in family)
+
+**Puffin Integration Plan Created:**
+- Priority 1: Publisher enrichment (cache in Puffin, avoid per-import Wikidata calls)
+- Priority 2: Curated images system (Amazon API, Commons selection, manual uploads)
+- Priority 3: Game browse/search API (enable import widget in Boardmello)
+- Priority 4: Admin UI for image curation
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/bgg/enrichment-mapper.ts` | Maps Puffin ConsolidatedGameData to Boardmello's DB format |
+| `/puffin/BOARDMELLO-INTEGRATION-PLAN.md` | Comprehensive plan for Puffin-side work |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/bgg/client.ts` | Added Puffin enrichment types + `fetchEnrichedGame()` function |
+| `src/lib/bgg/importer.ts` | Replaced `enrichGameParallel()` with Puffin enrichment, simplified helper signatures, fixed family enrichment trigger |
+| `src/lib/bgg/index.ts` | Added exports for new types and functions |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 79 - Friends System (COMPLETE)
 
 ### Session Summary (2026-01-17) - Friends System
 
