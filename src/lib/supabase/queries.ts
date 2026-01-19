@@ -147,3 +147,20 @@ export {
   getMutualFriendsCount,
   getMutualFriendsBetween,
 } from './friend-queries'
+
+// Table queries (game meetups)
+export {
+  getUserUpcomingTables,
+  getUserPastTables,
+  getTableWithDetails,
+  getTableParticipants,
+  createTable,
+  updateTable,
+  deleteTable,
+  inviteFriendsToTable,
+  updateRSVP,
+  isTableParticipant,
+  isTableHost,
+  getUserUpcomingTablesCount,
+  removeParticipant,
+} from './table-queries'

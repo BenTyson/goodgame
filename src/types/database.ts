@@ -414,7 +414,7 @@ export interface ActivityFeedResponse {
 // USER NOTIFICATIONS
 // ===========================================
 
-export type NotificationType = 'new_follower' | 'rating' | 'game_recommendation'
+export type NotificationType = 'new_follower' | 'rating' | 'game_recommendation' | 'table_invite' | 'table_rsvp' | 'table_starting' | 'table_cancelled'
 
 export type UserNotification = Database['public']['Tables']['user_notifications']['Row']
 export type UserNotificationInsert = Database['public']['Tables']['user_notifications']['Insert']

@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Bell, Check, User } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Bell, Check, User, Users, Calendar, XCircle } from 'lucide-react'
+import { formatDistanceToNow, format } from 'date-fns'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -164,8 +164,9 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
   const { notification_type, actor, is_read, created_at } = notification
 
   // Render different content based on notification type
+  // Cast to string to handle types not yet in generated schema
   const renderContent = () => {
-    switch (notification_type) {
+    switch (notification_type as string) {
       case 'new_follower':
         if (!actor) return null
         return (
@@ -200,6 +201,139 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
       case 'rating':
         // For future rating notifications
         return null
+
+      case 'game_recommendation':
+        if (!actor || !notification.game) return null
+        return (
+          <Link
+            href={`/games/${notification.game.slug}`}
+            className="flex items-center gap-3 w-full"
+            onClick={onClick}
+          >
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+              {actor.custom_avatar_url || actor.avatar_url ? (
+                <img
+                  src={actor.custom_avatar_url || actor.avatar_url || ''}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">
+                <span className="font-medium">{actor.display_name || actor.username}</span>
+                {' '}recommended <span className="font-medium">{notification.game.name}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {created_at && formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+              </p>
+            </div>
+          </Link>
+        )
+
+      case 'table_invite': {
+        if (!actor) return null
+        const metadata = notification.metadata as { table_id?: string; table_title?: string; game_name?: string; scheduled_at?: string } | null
+        if (!metadata?.table_id) return null
+        return (
+          <Link
+            href={`/tables/${metadata.table_id}`}
+            className="flex items-center gap-3 w-full"
+            onClick={onClick}
+          >
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">
+                <span className="font-medium">{actor.display_name || actor.username}</span>
+                {' '}invited you to <span className="font-medium">{metadata.table_title || metadata.game_name}</span>
+              </p>
+              {metadata.scheduled_at && (
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(metadata.scheduled_at), 'MMM d, h:mm a')}
+                </p>
+              )}
+            </div>
+          </Link>
+        )
+      }
+
+      case 'table_rsvp': {
+        if (!actor) return null
+        const metadata = notification.metadata as { table_id?: string; table_title?: string; rsvp_status?: string } | null
+        if (!metadata?.table_id) return null
+        const rsvpLabel = metadata.rsvp_status === 'attending' ? 'is attending' :
+                          metadata.rsvp_status === 'maybe' ? 'might attend' : 'declined'
+        return (
+          <Link
+            href={`/tables/${metadata.table_id}`}
+            className="flex items-center gap-3 w-full"
+            onClick={onClick}
+          >
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">
+                <span className="font-medium">{actor.display_name || actor.username}</span>
+                {' '}{rsvpLabel} <span className="font-medium">{metadata.table_title}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {created_at && formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+              </p>
+            </div>
+          </Link>
+        )
+      }
+
+      case 'table_cancelled': {
+        if (!actor) return null
+        const metadata = notification.metadata as { table_id?: string; table_title?: string; game_name?: string } | null
+        return (
+          <div className="flex items-center gap-3 w-full">
+            <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+              <XCircle className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">
+                <span className="font-medium">{metadata?.table_title || metadata?.game_name || 'A table'}</span>
+                {' '}was cancelled by <span className="font-medium">{actor.display_name || actor.username}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {created_at && formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+      case 'table_starting': {
+        const metadata = notification.metadata as { table_id?: string; table_title?: string; game_name?: string } | null
+        if (!metadata?.table_id) return null
+        return (
+          <Link
+            href={`/tables/${metadata.table_id}`}
+            className="flex items-center gap-3 w-full"
+            onClick={onClick}
+          >
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <Calendar className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">
+                <span className="font-medium">{metadata.table_title || metadata.game_name}</span>
+                {' '}starts soon!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {created_at && formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+              </p>
+            </div>
+          </Link>
+        )
+      }
 
       default:
         return null

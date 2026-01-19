@@ -19,6 +19,7 @@ const navigation = [
   { name: 'Awards', href: '/awards' },
   { name: 'Categories', href: '/categories' },
   { name: 'Feed', href: '/feed' },
+  { name: 'Tables', href: '/tables' },
   { name: 'Shelf', href: '/shelf' },
   { name: 'Marketplace', href: '/marketplace' },
   { name: 'Recommend', href: '/recommend', featured: true },

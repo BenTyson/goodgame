@@ -2853,6 +2853,164 @@ export type Database = {
           },
         ]
       }
+      table_participants: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          is_host: boolean | null
+          rsvp_status: Database["public"]["Enums"]["rsvp_status"]
+          rsvp_updated_at: string | null
+          table_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_host?: boolean | null
+          rsvp_status?: Database["public"]["Enums"]["rsvp_status"]
+          rsvp_updated_at?: string | null
+          table_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_host?: boolean | null
+          rsvp_status?: Database["public"]["Enums"]["rsvp_status"]
+          rsvp_updated_at?: string | null
+          table_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_participants_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "table_participants_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_participants_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "table_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          game_id: string
+          host_id: string
+          id: string
+          location_address: string | null
+          location_name: string | null
+          max_players: number | null
+          privacy: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status: Database["public"]["Enums"]["table_status"]
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          game_id: string
+          host_id: string
+          id?: string
+          location_address?: string | null
+          location_name?: string | null
+          max_players?: number | null
+          privacy?: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["table_status"]
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          game_id?: string
+          host_id?: string
+          id?: string
+          location_address?: string | null
+          location_name?: string | null
+          max_players?: number | null
+          privacy?: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["table_status"]
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "tables_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tables_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "tables_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       taxonomy_suggestions: {
         Row: {
           confidence: number | null
@@ -3620,6 +3778,10 @@ export type Database = {
           role: Database["public"]["Enums"]["feedback_role"]
         }[]
       }
+      can_view_table: {
+        Args: { p_table_id: string; p_user_id: string }
+        Returns: boolean
+      }
       cancel_unpaid_transactions: { Args: never; Returns: number }
       confirm_delivery: {
         Args: { p_transaction_id: string; p_user_id: string }
@@ -3923,6 +4085,29 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      get_user_past_tables: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          attending_count: number
+          game_id: string
+          game_name: string
+          game_slug: string
+          game_thumbnail_url: string
+          host_avatar_url: string
+          host_custom_avatar_url: string
+          host_display_name: string
+          host_id: string
+          host_username: string
+          location_name: string
+          participant_count: number
+          privacy: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status: Database["public"]["Enums"]["table_status"]
+          table_id: string
+          title: string
+          user_rsvp_status: Database["public"]["Enums"]["rsvp_status"]
+        }[]
+      }
       get_user_reputation: {
         Args: { p_user_id: string }
         Returns: {
@@ -3971,6 +4156,29 @@ export type Database = {
           as_seller_pending: number
           total_earned_cents: number
           total_spent_cents: number
+        }[]
+      }
+      get_user_upcoming_tables: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          attending_count: number
+          game_id: string
+          game_name: string
+          game_slug: string
+          game_thumbnail_url: string
+          host_avatar_url: string
+          host_custom_avatar_url: string
+          host_display_name: string
+          host_id: string
+          host_username: string
+          location_name: string
+          participant_count: number
+          privacy: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status: Database["public"]["Enums"]["table_status"]
+          table_id: string
+          title: string
+          user_rsvp_status: Database["public"]["Enums"]["rsvp_status"]
         }[]
       }
       get_user_wishlist_alerts: {
@@ -4482,6 +4690,10 @@ export type Database = {
         | "listing_match"
         | "wishlist_listing"
         | "game_recommendation"
+        | "table_invite"
+        | "table_rsvp"
+        | "table_starting"
+        | "table_cancelled"
       offer_status:
         | "pending"
         | "accepted"
@@ -4490,6 +4702,7 @@ export type Database = {
         | "expired"
         | "withdrawn"
       offer_type: "buy" | "trade" | "buy_plus_trade"
+      rsvp_status: "invited" | "attending" | "maybe" | "declined"
       rulebook_source:
         | "publisher_website"
         | "publisher_partnership"
@@ -4505,6 +4718,8 @@ export type Database = {
         | "played"
       shipping_carrier: "usps" | "ups" | "fedex" | "dhl" | "other"
       shipping_preference: "local_only" | "will_ship" | "ship_only"
+      table_privacy: "private" | "friends_only" | "public"
+      table_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       transaction_status:
         | "pending_payment"
         | "payment_processing"
@@ -4741,6 +4956,10 @@ export const Constants = {
         "listing_match",
         "wishlist_listing",
         "game_recommendation",
+        "table_invite",
+        "table_rsvp",
+        "table_starting",
+        "table_cancelled",
       ],
       offer_status: [
         "pending",
@@ -4751,6 +4970,7 @@ export const Constants = {
         "withdrawn",
       ],
       offer_type: ["buy", "trade", "buy_plus_trade"],
+      rsvp_status: ["invited", "attending", "maybe", "declined"],
       rulebook_source: [
         "publisher_website",
         "publisher_partnership",
@@ -4768,6 +4988,8 @@ export const Constants = {
       ],
       shipping_carrier: ["usps", "ups", "fedex", "dhl", "other"],
       shipping_preference: ["local_only", "will_ship", "ship_only"],
+      table_privacy: ["private", "friends_only", "public"],
+      table_status: ["scheduled", "in_progress", "completed", "cancelled"],
       transaction_status: [
         "pending_payment",
         "payment_processing",

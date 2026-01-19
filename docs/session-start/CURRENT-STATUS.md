@@ -2,7 +2,73 @@
 
 > Last Updated: 2026-01-18
 
-## Current Phase: 81 - Family Tree V2 UI Polish (COMPLETE)
+## Current Phase: 82 - Tables Feature Phase 1 (IN PROGRESS)
+
+### Session Summary (2026-01-18) - Tables MVP Implementation
+
+**What was done:**
+- Created Tables feature for game meetup planning with friend invites and RSVP
+- Database schema with `tables` and `table_participants` tables, RLS policies, notification types
+- Full API routes for CRUD, invites, and RSVP management
+- Components: TableCard, RSVPButtons, ParticipantsList, InviteFriendsDialog, CreateTableForm
+- Pages: My Tables listing, Create Table wizard, Table Detail
+- Added "Tables" to main navigation header
+- Extended notification system for table_invite, table_rsvp, table_starting, table_cancelled
+
+**RLS Debugging (3 migrations):**
+- Migration 00082: Initial schema with RLS - caused infinite recursion
+- Migration 00083: First fix attempt - still recursion
+- Migration 00084: Simplified policies - fixed recursion but broke INSERT
+- Migration 00085: Final fix - `table_participants` SELECT now public (`USING (true)`), tables SELECT references participants safely
+
+**Fixed client/server context issue:**
+- Query functions were using browser client in server components
+- Updated `getTableWithDetails` and `getTableParticipants` to accept optional Supabase client parameter
+- API route now creates tables using server client directly
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00082_tables_foundation.sql` | Core schema, enums, triggers, RLS |
+| `supabase/migrations/00083_tables_fix_rls.sql` | First RLS fix attempt |
+| `supabase/migrations/00084_tables_fix_rls_v2.sql` | Second RLS fix |
+| `supabase/migrations/00085_tables_fix_rls_v3.sql` | Final RLS fix (public participants SELECT) |
+| `src/types/tables.ts` | TypeScript types for Tables feature |
+| `src/lib/supabase/table-queries.ts` | Database query functions |
+| `src/app/api/tables/route.ts` | GET/POST tables |
+| `src/app/api/tables/[id]/route.ts` | GET/PATCH/DELETE table |
+| `src/app/api/tables/[id]/invite/route.ts` | POST invite friends |
+| `src/app/api/tables/[id]/rsvp/route.ts` | POST RSVP, DELETE leave |
+| `src/components/tables/TableCard.tsx` | Card for listings |
+| `src/components/tables/RSVPButtons.tsx` | Attending/Maybe/Decline |
+| `src/components/tables/ParticipantsList.tsx` | Grouped participants |
+| `src/components/tables/InviteFriendsDialog.tsx` | Friend selector |
+| `src/components/tables/CreateTableForm.tsx` | Multi-step wizard |
+| `src/components/tables/index.ts` | Barrel exports |
+| `src/app/tables/page.tsx` | My Tables with tabs |
+| `src/app/tables/new/page.tsx` | Create table page |
+| `src/app/tables/[id]/page.tsx` | Table detail page |
+| `src/app/tables/[id]/TableDetailContent.tsx` | Client component for detail |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/layout/Header.tsx` | Added "Tables" to navigation |
+| `src/components/notifications/NotificationBell.tsx` | Table notification handling |
+| `src/types/database.ts` | Extended NotificationType union |
+
+**Build Status:** Passing
+
+**Next Steps:**
+1. Test table creation and detail page end-to-end
+2. Test invite flow and RSVP updates
+3. Test notification delivery for invites
+4. Mobile responsive testing
+5. Consider adding date picker component if needed
+
+---
+
+## Previous Phase: 81 - Family Tree V2 UI Polish (COMPLETE)
 
 ### Session Summary (2026-01-18) - Premium Visual Polish
 
