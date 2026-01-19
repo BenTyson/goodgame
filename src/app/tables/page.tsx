@@ -1,12 +1,13 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, Users, CalendarDays } from 'lucide-react'
+import { Plus, Users, CalendarDays, Compass } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getUserUpcomingTables, getUserPastTables } from '@/lib/supabase/table-queries'
+import { getUserUpcomingTables, getUserPastTables, getFriendsUpcomingTables } from '@/lib/supabase/table-queries'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TableCard } from '@/components/tables'
+import { FriendsTablesSection } from './FriendsTablesSection'
 
 export const metadata: Metadata = {
   title: 'My Tables | Boardmello',
@@ -21,9 +22,10 @@ export default async function TablesPage() {
     redirect('/login?redirect=/tables')
   }
 
-  const [upcomingTables, pastTables] = await Promise.all([
+  const [upcomingTables, pastTables, friendsTables] = await Promise.all([
     getUserUpcomingTables(user.id),
     getUserPastTables(user.id, 20, 0),
+    getFriendsUpcomingTables(user.id, 5),
   ])
 
   const hasNoTables = upcomingTables.length === 0 && pastTables.length === 0
@@ -41,12 +43,20 @@ export default async function TablesPage() {
             </p>
           </div>
         </div>
-        <Button asChild>
-          <Link href="/tables/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Host a Table
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/tables/discover">
+              <Compass className="h-4 w-4 mr-2" />
+              Discover
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/tables/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Host a Table
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {hasNoTables ? (
@@ -120,6 +130,11 @@ export default async function TablesPage() {
             )}
           </TabsContent>
         </Tabs>
+      )}
+
+      {/* Friends' Tables Section */}
+      {friendsTables.length > 0 && (
+        <FriendsTablesSection tables={friendsTables} currentUserId={user.id} />
       )}
     </div>
   )

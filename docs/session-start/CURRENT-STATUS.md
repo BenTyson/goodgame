@@ -1,8 +1,78 @@
 # Current Status
 
-> Last Updated: 2026-01-18
+> Last Updated: 2026-01-19
 
-## Current Phase: 82 - Tables Feature Phase 1 (IN PROGRESS)
+## Current Phase: 83 - Tables Phase 2 (COMPLETE)
+
+### Session Summary (2026-01-19) - Tables Phase 2 Continuation
+
+**What was done:**
+- Configured Mapbox integration for Discover page
+- Fixed LocationPicker: replaced Mapbox Geocoder widget with custom implementation using Mapbox Geocoding API (fixed duplicate inputs, z-index issues)
+- Added privacy selector to CreateTableForm (Public/Friends/Private), changed default from 'private' to 'public'
+- Applied 5 pending migrations (00086-00090) for Tables Phase 2 features
+- Fixed hydration mismatch errors with Select component (hasMounted state pattern)
+- Fixed map popup styling with explicit dark colors (CSS variables didn't apply in popup)
+- Set default location to Wheat Ridge, Colorado for Discover page
+- Added graceful degradation in API when location_lat/lng columns don't exist
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/tables/discover/DiscoverContent.tsx` | Default location (Wheat Ridge CO), `hasMounted` state for hydration fix, location banner instead of blocking screen |
+| `src/components/maps/MapView.tsx` | Fixed token env variable name, explicit dark popup styles |
+| `src/components/maps/LocationPicker.tsx` | Complete rewrite: custom implementation with Input + Mapbox Geocoding API, proper z-index dropdown |
+| `src/components/tables/CreateTableForm.tsx` | Added privacy selector UI (Globe/UserCheck/Lock), default 'public' |
+| `src/app/api/tables/route.ts` | Added location_lat/lng handling with graceful fallback |
+
+**Build Status:** Passing
+
+---
+
+### Session Summary (2026-01-19) - Tables Phase 2 Features (Initial)
+
+**What was done:**
+- Discover Tables page with Mapbox GL JS map view + list toggle
+- Friends' Tables section showing upcoming tables from friends
+- Table Comments system with threaded discussion
+- Post-Table Recap feature (multi-step wizard: attendance, rating, notes)
+- Table starting reminder cron job (sends notifications 1 hour before)
+- Graceful degradation pattern: all Phase 2 features silently return empty/null when migrations not applied
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00086_tables_location_and_visibility.sql` | Location coordinates, public/friends-only visibility |
+| `supabase/migrations/00087_tables_discover_functions.sql` | RPC functions for nearby tables, friends tables |
+| `supabase/migrations/00088_table_comments.sql` | Comments table and RLS |
+| `supabase/migrations/00089_table_recaps.sql` | Recap table, attended tracking, complete_table_with_recap RPC |
+| `supabase/migrations/00090_table_reminder_tracking.sql` | reminder_sent_at, get_tables_needing_reminders RPC |
+| `src/components/tables/TableComments.tsx` | Comments display and add form |
+| `src/components/tables/TableRecapForm.tsx` | Multi-step recap wizard (attendance, rating, notes) |
+| `src/components/tables/TableRecapView.tsx` | Recap display with stars, attendees, highlights |
+| `src/components/maps/MapView.tsx` | Mapbox GL JS map component |
+| `src/components/maps/index.ts` | Barrel exports with MapMarker type |
+| `src/app/tables/DiscoverContent.tsx` | Discover page with map/list toggle |
+| `src/app/tables/FriendsTablesSection.tsx` | Friends' upcoming tables |
+| `src/app/api/tables/[id]/comments/route.ts` | GET/POST comments |
+| `src/app/api/tables/[id]/recap/route.ts` | GET/POST/PATCH recap |
+| `src/app/api/cron/table-reminders/route.ts` | Cron endpoint for reminder notifications |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/types/tables.ts` | Added TableRecap, TableComment types, attended field on participants |
+| `src/lib/supabase/table-queries.ts` | Added recap, comments, nearby, friends queries + graceful degradation |
+| `src/components/tables/index.ts` | Added TableComments, TableRecapForm, TableRecapView exports |
+| `src/app/tables/page.tsx` | Added Discover and Friends sections |
+| `src/app/tables/[id]/page.tsx` | Fetch comments and recap |
+| `src/app/tables/[id]/TableDetailContent.tsx` | Display recap button/view and comments |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 82 - Tables Feature Phase 1 (COMPLETE)
 
 ### Session Summary (2026-01-18) - Tables MVP Implementation
 
@@ -26,45 +96,7 @@
 - Updated `getTableWithDetails` and `getTableParticipants` to accept optional Supabase client parameter
 - API route now creates tables using server client directly
 
-**New Files:**
-| File | Purpose |
-|------|---------|
-| `supabase/migrations/00082_tables_foundation.sql` | Core schema, enums, triggers, RLS |
-| `supabase/migrations/00083_tables_fix_rls.sql` | First RLS fix attempt |
-| `supabase/migrations/00084_tables_fix_rls_v2.sql` | Second RLS fix |
-| `supabase/migrations/00085_tables_fix_rls_v3.sql` | Final RLS fix (public participants SELECT) |
-| `src/types/tables.ts` | TypeScript types for Tables feature |
-| `src/lib/supabase/table-queries.ts` | Database query functions |
-| `src/app/api/tables/route.ts` | GET/POST tables |
-| `src/app/api/tables/[id]/route.ts` | GET/PATCH/DELETE table |
-| `src/app/api/tables/[id]/invite/route.ts` | POST invite friends |
-| `src/app/api/tables/[id]/rsvp/route.ts` | POST RSVP, DELETE leave |
-| `src/components/tables/TableCard.tsx` | Card for listings |
-| `src/components/tables/RSVPButtons.tsx` | Attending/Maybe/Decline |
-| `src/components/tables/ParticipantsList.tsx` | Grouped participants |
-| `src/components/tables/InviteFriendsDialog.tsx` | Friend selector |
-| `src/components/tables/CreateTableForm.tsx` | Multi-step wizard |
-| `src/components/tables/index.ts` | Barrel exports |
-| `src/app/tables/page.tsx` | My Tables with tabs |
-| `src/app/tables/new/page.tsx` | Create table page |
-| `src/app/tables/[id]/page.tsx` | Table detail page |
-| `src/app/tables/[id]/TableDetailContent.tsx` | Client component for detail |
-
-**Files Modified:**
-| File | Changes |
-|------|---------|
-| `src/components/layout/Header.tsx` | Added "Tables" to navigation |
-| `src/components/notifications/NotificationBell.tsx` | Table notification handling |
-| `src/types/database.ts` | Extended NotificationType union |
-
 **Build Status:** Passing
-
-**Next Steps:**
-1. Test table creation and detail page end-to-end
-2. Test invite flow and RSVP updates
-3. Test notification delivery for invites
-4. Mobile responsive testing
-5. Consider adding date picker component if needed
 
 ---
 

@@ -42,6 +42,9 @@
 - **RPC functions need GRANT and SECURITY DEFINER**: Database functions called via `supabase.rpc()` need `GRANT EXECUTE ON FUNCTION ... TO authenticated, anon` for access. Functions querying across tables with RLS need `SECURITY DEFINER` to bypass row-level security.
 - **RLS policies must avoid self-referencing EXISTS**: A SELECT policy on `table_participants` that uses `EXISTS (SELECT 1 FROM table_participants WHERE ...)` causes infinite recursion. Use simple conditions like `user_id = auth.uid()` or make the SELECT policy public (`USING (true)`) and control access at the tables level.
 - **Server components need server client for RLS**: Query functions in `src/lib/supabase/*-queries.ts` use browser client by default. When called from server components (pages, generateMetadata), pass the server client as parameter or RLS checks fail with empty results. Pattern: `getTableWithDetails(id, userId, supabase)` where `supabase = await createClient()` from server.ts.
+- **Graceful migration degradation**: When adding features that require new migrations, query functions should silently return empty arrays/null when tables/columns/RPC functions don't exist yet. This allows code to deploy before migrations are applied without breaking the app. Pattern: wrap queries in try/catch and return `[]` or `null` on error. See `table-queries.ts` for examples (getNearbyTables, getFriendsUpcomingTables, getTableComments, getTableRecap).
+- **Mapbox token env variable**: Use `NEXT_PUBLIC_MAPBOX_TOKEN` consistently. The Mapbox Geocoder widget uses different naming (`accessToken`), so check component code carefully. Key files: `MapView.tsx`, `LocationPicker.tsx`.
+- **Mapbox popup styling needs explicit colors**: CSS variables (`hsl(var(--foreground))`) don't work inside Mapbox popups because they render in a separate DOM context. Use explicit color values like `#ffffff` or `#1a1a1a`. See `MapView.tsx` popup styles.
 
 ## Tech Stack
 

@@ -72,25 +72,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Scheduled time must be in the future' }, { status: 400 })
     }
 
-    // Create the table using the server client (has auth context)
+    // Build insert data - location coordinates are optional (migration may not be applied)
+    const insertData: Record<string, unknown> = {
+      host_id: user.id,
+      game_id: body.gameId,
+      title: body.title || null,
+      description: body.description || null,
+      scheduled_at: body.scheduledAt,
+      duration_minutes: body.durationMinutes || 180,
+      location_name: body.locationName || null,
+      location_address: body.locationAddress || null,
+      max_players: body.maxPlayers || null,
+      privacy: body.privacy || 'private',
+      status: 'scheduled',
+    }
+
+    // Try to include location coordinates (requires migration 00086)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: result, error: createError } = await (supabase as any)
-      .from('tables')
-      .insert({
-        host_id: user.id,
-        game_id: body.gameId,
-        title: body.title || null,
-        description: body.description || null,
-        scheduled_at: body.scheduledAt,
-        duration_minutes: body.durationMinutes || 180,
-        location_name: body.locationName || null,
-        location_address: body.locationAddress || null,
-        max_players: body.maxPlayers || null,
-        privacy: body.privacy || 'private',
-        status: 'scheduled',
-      })
-      .select('id')
-      .single()
+    let result: any
+    let createError: any
+
+    // First try with location coordinates
+    if (body.locationLat && body.locationLng) {
+      const { data, error } = await (supabase as any)
+        .from('tables')
+        .insert({
+          ...insertData,
+          location_lat: body.locationLat,
+          location_lng: body.locationLng,
+        })
+        .select('id')
+        .single()
+
+      if (error?.code === 'PGRST204' && error?.message?.includes('location_lat')) {
+        // Column doesn't exist, retry without coordinates
+        console.warn('location_lat/lng columns not found, creating table without coordinates')
+        const { data: retryData, error: retryError } = await (supabase as any)
+          .from('tables')
+          .insert(insertData)
+          .select('id')
+          .single()
+        result = retryData
+        createError = retryError
+      } else {
+        result = data
+        createError = error
+      }
+    } else {
+      // No coordinates provided
+      const { data, error } = await (supabase as any)
+        .from('tables')
+        .insert(insertData)
+        .select('id')
+        .single()
+      result = data
+      createError = error
+    }
 
     if (createError) {
       console.error('Error creating table:', createError)

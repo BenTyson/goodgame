@@ -17,6 +17,7 @@ import {
   Trash2,
   XCircle,
   LogOut,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -38,14 +39,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { RSVPButtons, ParticipantsList, InviteFriendsDialog } from '@/components/tables'
-import type { TableWithDetails, ParticipantWithProfile, RSVPStatus } from '@/types/tables'
+import { RSVPButtons, ParticipantsList, InviteFriendsDialog, TableComments, TableRecapForm, TableRecapView } from '@/components/tables'
+import type { TableWithDetails, ParticipantWithProfile, RSVPStatus, TableCommentWithAuthor, TableRecap } from '@/types/tables'
 import { TABLE_STATUS_CONFIG } from '@/types/tables'
 import type { FriendWithProfile } from '@/types/database'
 
 interface TableDetailContentProps {
   table: TableWithDetails
   participants: ParticipantWithProfile[]
+  comments: TableCommentWithAuthor[]
+  recap: TableRecap | null
   currentUserId?: string
   friends: FriendWithProfile[]
   alreadyInvited: string[]
@@ -54,6 +57,8 @@ interface TableDetailContentProps {
 export function TableDetailContent({
   table,
   participants,
+  comments,
+  recap,
   currentUserId,
   friends,
   alreadyInvited,
@@ -63,6 +68,7 @@ export function TableDetailContent({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
+  const [recapOpen, setRecapOpen] = useState(false)
   const [localParticipants, setLocalParticipants] = useState(participants)
   const [localRsvpStatus, setLocalRsvpStatus] = useState(table.userRsvpStatus)
   const [localInvited, setLocalInvited] = useState(alreadyInvited)
@@ -72,6 +78,8 @@ export function TableDetailContent({
   const scheduledDate = new Date(table.scheduledAt)
   const isPastTable = isPast(scheduledDate)
   const statusConfig = TABLE_STATUS_CONFIG[table.status]
+  const showRecapButton = isHost && isPastTable && table.status === 'scheduled' && !recap
+  const showRecapView = recap && table.status === 'completed'
 
   const handleRSVP = async (status: RSVPStatus) => {
     if (!currentUserId) return
@@ -277,6 +285,23 @@ export function TableDetailContent({
               )}
             </div>
           </div>
+
+          {/* Comments Section */}
+          <TableComments
+            tableId={table.id}
+            initialComments={comments}
+            currentUserId={currentUserId}
+            isHost={isHost}
+            isParticipant={isParticipant}
+          />
+
+          {/* Recap View (for completed tables) */}
+          {showRecapView && recap && (
+            <TableRecapView
+              recap={recap}
+              participants={localParticipants}
+            />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -323,6 +348,17 @@ export function TableDetailContent({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          )}
+
+          {/* Recap button (host only, past tables without recap) */}
+          {showRecapButton && (
+            <Button
+              onClick={() => setRecapOpen(true)}
+              className="w-full bg-gradient-to-r from-primary to-primary/80"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Complete Table Recap
+            </Button>
           )}
 
           {/* Leave button (non-host participants) */}
@@ -426,6 +462,15 @@ export function TableDetailContent({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Recap Form */}
+      <TableRecapForm
+        tableId={table.id}
+        participants={localParticipants}
+        gameName={table.game.name}
+        open={recapOpen}
+        onOpenChange={setRecapOpen}
+      />
     </div>
   )
 }

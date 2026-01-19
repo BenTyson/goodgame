@@ -13,12 +13,16 @@ import {
   ChevronRight,
   Loader2,
   Dices,
+  Globe,
+  Lock,
+  UserCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { LocationPicker, type LocationData } from '@/components/maps'
 import type { Game } from '@/types/database'
 import type { CreateTableInput } from '@/types/tables'
 
@@ -41,10 +45,10 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
-  const [locationName, setLocationName] = useState('')
-  const [locationAddress, setLocationAddress] = useState('')
+  const [location, setLocation] = useState<LocationData | null>(null)
   const [maxPlayers, setMaxPlayers] = useState<string>('')
   const [durationMinutes, setDurationMinutes] = useState('180')
+  const [privacy, setPrivacy] = useState<'public' | 'friends_only' | 'private'>('public')
 
   // Game search
   const [gameSearch, setGameSearch] = useState('')
@@ -75,10 +79,12 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
         description: description || undefined,
         scheduledAt,
         durationMinutes: parseInt(durationMinutes, 10) || 180,
-        locationName: locationName || undefined,
-        locationAddress: locationAddress || undefined,
+        locationName: location?.name || undefined,
+        locationAddress: location?.address || undefined,
+        locationLat: location?.lat,
+        locationLng: location?.lng,
         maxPlayers: maxPlayers ? parseInt(maxPlayers, 10) : undefined,
-        privacy: 'private',
+        privacy,
       }
 
       const response = await fetch('/api/tables', {
@@ -273,22 +279,66 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
 
           {/* Location */}
           <div className="space-y-2">
-            <Label htmlFor="location" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
+            <Label className="flex items-center gap-2">
               Location
             </Label>
-            <Input
-              id="location"
-              placeholder="e.g., My place, Local game store, etc."
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
+            <LocationPicker
+              value={location}
+              onChange={setLocation}
+              placeholder="Search for a venue or address..."
+              showMap={true}
             />
-            <Input
-              placeholder="Address (optional)"
-              value={locationAddress}
-              onChange={(e) => setLocationAddress(e.target.value)}
-              className="mt-2"
-            />
+          </div>
+
+          {/* Privacy */}
+          <div className="space-y-2">
+            <Label>Who can see this table?</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPrivacy('public')}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors',
+                  privacy === 'public'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/30'
+                )}
+              >
+                <Globe className="h-5 w-5" />
+                <span className="text-xs font-medium">Public</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrivacy('friends_only')}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors',
+                  privacy === 'friends_only'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/30'
+                )}
+              >
+                <UserCheck className="h-5 w-5" />
+                <span className="text-xs font-medium">Friends</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrivacy('private')}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors',
+                  privacy === 'private'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/30'
+                )}
+              >
+                <Lock className="h-5 w-5" />
+                <span className="text-xs font-medium">Private</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {privacy === 'public' && 'Anyone can find and join this table'}
+              {privacy === 'friends_only' && 'Only your friends can discover this table'}
+              {privacy === 'private' && 'Only invited guests can see this table'}
+            </p>
           </div>
 
           {/* Max players */}
@@ -387,10 +437,10 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>{format(new Date(`${date}T${time}`), 'h:mm a')} ({parseInt(durationMinutes, 10) / 60} hours)</span>
           </div>
-          {locationName && (
+          {location && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{locationName}</span>
+              <span>{location.name}</span>
             </div>
           )}
           {maxPlayers && (
@@ -399,6 +449,16 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
               <span>Max {maxPlayers} players</span>
             </div>
           )}
+          <div className="flex items-center gap-2">
+            {privacy === 'public' && <Globe className="h-4 w-4 text-muted-foreground" />}
+            {privacy === 'friends_only' && <UserCheck className="h-4 w-4 text-muted-foreground" />}
+            {privacy === 'private' && <Lock className="h-4 w-4 text-muted-foreground" />}
+            <span>
+              {privacy === 'public' && 'Public table'}
+              {privacy === 'friends_only' && 'Friends only'}
+              {privacy === 'private' && 'Private (invite only)'}
+            </span>
+          </div>
         </div>
 
         {description && (

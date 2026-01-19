@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getTableWithDetails, getTableParticipants } from '@/lib/supabase/table-queries'
+import { getTableWithDetails, getTableParticipants, getTableComments, getTableRecap } from '@/lib/supabase/table-queries'
 import { getMutualFriends } from '@/lib/supabase/friend-queries'
 import { TableDetailContent } from './TableDetailContent'
 
@@ -31,9 +31,11 @@ export default async function TableDetailPage({ params }: PageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [table, participants] = await Promise.all([
+  const [table, participants, comments, recap] = await Promise.all([
     getTableWithDetails(id, user?.id, supabase),
     getTableParticipants(id, supabase),
+    getTableComments(id, supabase),
+    getTableRecap(id, supabase),
   ])
 
   if (!table) {
@@ -53,6 +55,8 @@ export default async function TableDetailPage({ params }: PageProps) {
     <TableDetailContent
       table={table}
       participants={participants}
+      comments={comments}
+      recap={recap}
       currentUserId={user?.id}
       friends={friends}
       alreadyInvited={alreadyInvited}

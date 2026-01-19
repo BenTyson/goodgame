@@ -26,6 +26,8 @@ export interface GameTable {
   durationMinutes: number
   locationName: string | null
   locationAddress: string | null
+  locationLat: number | null
+  locationLng: number | null
   maxPlayers: number | null
   privacy: TablePrivacy
   status: TableStatus
@@ -46,6 +48,8 @@ export interface TableParticipant {
   invitedAt: string
   isHost: boolean
   createdAt: string
+  attended: boolean | null
+  attendanceMarkedAt: string | null
 }
 
 // ===========================================
@@ -71,6 +75,8 @@ export interface TableWithDetails {
   durationMinutes: number
   locationName: string | null
   locationAddress: string | null
+  locationLat: number | null
+  locationLng: number | null
   description: string | null
   maxPlayers: number | null
   privacy: TablePrivacy
@@ -111,6 +117,8 @@ export interface TableCard {
   title: string | null
   scheduledAt: string
   locationName: string | null
+  locationLat: number | null
+  locationLng: number | null
   status: TableStatus
   privacy: TablePrivacy
   hostId: string
@@ -123,6 +131,33 @@ export interface TableCard {
   gameSlug: string
   gameThumbnailUrl: string | null
   userRsvpStatus: RSVPStatus
+  participantCount: number
+  attendingCount: number
+}
+
+// Nearby table for discovery (includes distance)
+export interface NearbyTable {
+  tableId: string
+  title: string | null
+  description: string | null
+  scheduledAt: string
+  durationMinutes: number
+  locationName: string | null
+  locationLat: number
+  locationLng: number
+  maxPlayers: number | null
+  status: TableStatus
+  privacy: TablePrivacy
+  distanceMiles: number
+  hostId: string
+  hostUsername: string | null
+  hostDisplayName: string | null
+  hostAvatarUrl: string | null
+  hostCustomAvatarUrl: string | null
+  gameId: string
+  gameName: string
+  gameSlug: string
+  gameThumbnailUrl: string | null
   participantCount: number
   attendingCount: number
 }
@@ -140,6 +175,8 @@ export interface CreateTableInput {
   durationMinutes?: number
   locationName?: string
   locationAddress?: string
+  locationLat?: number
+  locationLng?: number
   maxPlayers?: number
   privacy?: TablePrivacy
 }
@@ -152,6 +189,8 @@ export interface UpdateTableInput {
   durationMinutes?: number
   locationName?: string
   locationAddress?: string
+  locationLat?: number
+  locationLng?: number
   maxPlayers?: number
   privacy?: TablePrivacy
   status?: TableStatus
@@ -216,6 +255,88 @@ export const TABLE_PRIVACY_CONFIG: Record<TablePrivacy, { label: string; descrip
   private: { label: 'Private', description: 'Only invited friends can see this table' },
   friends_only: { label: 'Friends Only', description: 'All your friends can see and request to join' },
   public: { label: 'Public', description: 'Anyone can discover and request to join this table' },
+}
+
+// ===========================================
+// COMMENTS TYPES
+// ===========================================
+
+// Table comment record
+export interface TableComment {
+  id: string
+  tableId: string
+  userId: string
+  content: string
+  createdAt: string
+  updatedAt: string
+  parentId: string | null
+}
+
+// Comment with author info
+export interface TableCommentWithAuthor extends TableComment {
+  author: {
+    id: string
+    username: string | null
+    displayName: string | null
+    avatarUrl: string | null
+    customAvatarUrl: string | null
+  }
+}
+
+// Create comment input
+export interface CreateCommentInput {
+  tableId: string
+  content: string
+  parentId?: string
+}
+
+// ===========================================
+// RECAP TYPES
+// ===========================================
+
+// Table recap record
+export interface TableRecap {
+  id: string
+  tableId: string
+  hostNotes: string | null
+  highlights: string | null
+  playCount: number
+  experienceRating: number | null
+  wouldPlayAgain: boolean
+  photos: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+// Recap with table/game details for display
+export interface TableRecapWithDetails extends TableRecap {
+  table: {
+    id: string
+    title: string | null
+    scheduledAt: string
+    game: {
+      id: string
+      name: string
+      slug: string
+      thumbnailUrl: string | null
+    }
+  }
+  attendees: {
+    id: string
+    username: string | null
+    displayName: string | null
+    avatarUrl: string | null
+    customAvatarUrl: string | null
+  }[]
+}
+
+// Create/update recap input
+export interface RecapInput {
+  hostNotes?: string
+  highlights?: string
+  experienceRating?: number
+  wouldPlayAgain?: boolean
+  attendeeIds: string[]
 }
 
 // ===========================================

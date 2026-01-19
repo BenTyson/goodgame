@@ -24,6 +24,7 @@ export { DocumentPreview } from './DocumentPreview'
 export { PromoCard } from './PromoCard'
 export { RecommendToFriendButton } from './RecommendToFriendButton'
 export { RecommendToFriendDialog } from './RecommendToFriendDialog'
+export { HostTableButton } from './HostTableButton'
 
 // New tabbed game page components
 export { GameHero } from './GameHero'
