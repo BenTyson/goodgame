@@ -2,7 +2,47 @@
 
 > Last Updated: 2026-01-19
 
-## Current Phase: 83 - Tables Phase 2 (COMPLETE)
+## Current Phase: 84 - Tables Code Audit & Optimization (COMPLETE)
+
+### Session Summary (2026-01-19) - Tables Feature Optimization
+
+**What was done:**
+- Comprehensive code audit and optimization of `/tables` and `/tables/discover` features
+- Reduced query count in `getTableWithDetails()` from 5 sequential queries to 2 parallel queries
+- Changed `inviteFriendsToTable()` from loop inserts to single batch insert
+- Fixed discover page double-fetch issue (was fetching once with default location, then again with user location)
+- Created centralized row mapping utilities eliminating ~200 LOC of duplicate mapping code
+- Extracted large components into reusable hooks (useDiscoverTables, useTableActions, useTableDialogs)
+- Added React.memo to list components (TableCard, DiscoverTableCard)
+- Added useMemo for participant filtering in ParticipantsList
+- Added debounced game search (300ms) in CreateTableForm
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/table-mappers.ts` | Row mapping utilities (mapTableCardRow, mapNearbyTableRow, etc.) |
+| `src/hooks/tables/useDiscoverTables.ts` | Discovery location + fetch hook with double-fetch fix |
+| `src/hooks/tables/useTableActions.ts` | Table action handlers (RSVP, invite, cancel, delete, leave) |
+| `src/hooks/tables/useTableDialogs.ts` | Dialog state management hook |
+| `src/hooks/tables/index.ts` | Barrel exports |
+| `src/components/tables/DiscoverTableCard.tsx` | Memoized discover page table card |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/supabase/table-queries.ts` | Use mappers, consolidated queries, batch inserts |
+| `src/app/tables/discover/DiscoverContent.tsx` | Use hooks, fix double fetch (569→350 LOC) |
+| `src/app/tables/[id]/TableDetailContent.tsx` | Use hooks for actions and dialogs |
+| `src/components/tables/CreateTableForm.tsx` | Added debounced search with useMemo |
+| `src/components/tables/ParticipantsList.tsx` | Memoized filtering with useMemo |
+| `src/components/tables/TableCard.tsx` | Wrapped with React.memo |
+| `src/components/tables/index.ts` | Added DiscoverTableCard export |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 83 - Tables Phase 2 (COMPLETE)
 
 ### Session Summary (2026-01-19) - Tables Phase 2 Continuation
 

@@ -1,4 +1,5 @@
 export { TableCard } from './TableCard'
+export { DiscoverTableCard } from './DiscoverTableCard'
 export { RSVPButtons } from './RSVPButtons'
 export { ParticipantsList } from './ParticipantsList'
 export { InviteFriendsDialog } from './InviteFriendsDialog'

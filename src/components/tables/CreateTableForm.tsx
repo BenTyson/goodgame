@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { format } from 'date-fns'
@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { LocationPicker, type LocationData } from '@/components/maps'
+import { useDebounce } from '@/hooks/use-debounce'
 import type { Game } from '@/types/database'
 import type { CreateTableInput } from '@/types/tables'
 
@@ -50,13 +51,18 @@ export function CreateTableForm({ games, preselectedGame }: CreateTableFormProps
   const [durationMinutes, setDurationMinutes] = useState('180')
   const [privacy, setPrivacy] = useState<'public' | 'friends_only' | 'private'>('public')
 
-  // Game search
+  // Game search with debouncing
   const [gameSearch, setGameSearch] = useState('')
+  const debouncedSearch = useDebounce(gameSearch, 300)
 
-  const filteredGames = games.filter((game) => {
-    if (!gameSearch) return true
-    return game.name.toLowerCase().includes(gameSearch.toLowerCase())
-  })
+  const filteredGames = useMemo(
+    () =>
+      games.filter((game) => {
+        if (!debouncedSearch) return true
+        return game.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+      }),
+    [games, debouncedSearch]
+  )
 
   const handleSelectGame = (game: Game) => {
     setSelectedGame(game)

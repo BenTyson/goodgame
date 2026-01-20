@@ -17,6 +17,16 @@ import type {
   TableRecap,
   RecapInput,
 } from '@/types/tables'
+import {
+  mapTableCardRow,
+  mapNearbyTableRow,
+  mapParticipantRow,
+  mapCommentRow,
+  type TableCardRow,
+  type NearbyTableRow,
+  type ParticipantRow,
+  type CommentRow,
+} from './table-mappers'
 
 // Helper to call RPC functions that aren't in the generated types yet
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,45 +54,7 @@ export async function getUserUpcomingTables(
     return []
   }
 
-  return (data || []).map((row: {
-    table_id: string
-    title: string | null
-    scheduled_at: string
-    location_name: string | null
-    status: string
-    privacy: string
-    host_id: string
-    host_username: string | null
-    host_display_name: string | null
-    host_avatar_url: string | null
-    host_custom_avatar_url: string | null
-    game_id: string
-    game_name: string
-    game_slug: string
-    game_thumbnail_url: string | null
-    user_rsvp_status: string
-    participant_count: number
-    attending_count: number
-  }) => ({
-    tableId: row.table_id,
-    title: row.title,
-    scheduledAt: row.scheduled_at,
-    locationName: row.location_name,
-    status: row.status,
-    privacy: row.privacy,
-    hostId: row.host_id,
-    hostUsername: row.host_username,
-    hostDisplayName: row.host_display_name,
-    hostAvatarUrl: row.host_avatar_url,
-    hostCustomAvatarUrl: row.host_custom_avatar_url,
-    gameId: row.game_id,
-    gameName: row.game_name,
-    gameSlug: row.game_slug,
-    gameThumbnailUrl: row.game_thumbnail_url,
-    userRsvpStatus: row.user_rsvp_status,
-    participantCount: Number(row.participant_count),
-    attendingCount: Number(row.attending_count),
-  })) as TableCard[]
+  return (data || []).map((row: TableCardRow) => mapTableCardRow(row))
 }
 
 /**
@@ -106,49 +78,12 @@ export async function getUserPastTables(
     return []
   }
 
-  return (data || []).map((row: {
-    table_id: string
-    title: string | null
-    scheduled_at: string
-    location_name: string | null
-    status: string
-    privacy: string
-    host_id: string
-    host_username: string | null
-    host_display_name: string | null
-    host_avatar_url: string | null
-    host_custom_avatar_url: string | null
-    game_id: string
-    game_name: string
-    game_slug: string
-    game_thumbnail_url: string | null
-    user_rsvp_status: string
-    participant_count: number
-    attending_count: number
-  }) => ({
-    tableId: row.table_id,
-    title: row.title,
-    scheduledAt: row.scheduled_at,
-    locationName: row.location_name,
-    status: row.status,
-    privacy: row.privacy,
-    hostId: row.host_id,
-    hostUsername: row.host_username,
-    hostDisplayName: row.host_display_name,
-    hostAvatarUrl: row.host_avatar_url,
-    hostCustomAvatarUrl: row.host_custom_avatar_url,
-    gameId: row.game_id,
-    gameName: row.game_name,
-    gameSlug: row.game_slug,
-    gameThumbnailUrl: row.game_thumbnail_url,
-    userRsvpStatus: row.user_rsvp_status,
-    participantCount: Number(row.participant_count),
-    attendingCount: Number(row.attending_count),
-  })) as TableCard[]
+  return (data || []).map((row: TableCardRow) => mapTableCardRow(row))
 }
 
 /**
  * Get a single table with full details
+ * Optimized to use parallel queries instead of sequential
  * @param tableId - The table ID
  * @param userId - Optional user ID for RSVP status
  * @param client - Optional Supabase client (use server client when calling from server components)
@@ -160,9 +95,9 @@ export async function getTableWithDetails(
 ): Promise<TableWithDetails | null> {
   const supabase = client || createClient()
 
-  // Base query without location coordinates (those may not exist yet if migration not applied)
+  // Execute all queries in parallel for better performance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let { data: table, error } = await (supabase as any)
+  const tablePromise = (supabase as any)
     .from('tables')
     .select(`
       id,
@@ -172,6 +107,8 @@ export async function getTableWithDetails(
       duration_minutes,
       location_name,
       location_address,
+      location_lat,
+      location_lng,
       max_players,
       privacy,
       status,
@@ -196,56 +133,41 @@ export async function getTableWithDetails(
     .eq('id', tableId)
     .single()
 
-  if (error || !table) {
-    console.error('Error fetching table:', error)
+  // Get all participants in one query - we'll count client-side
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const participantsPromise = (supabase as any)
+    .from('table_participants')
+    .select('rsvp_status, user_id')
+    .eq('table_id', tableId)
+
+  // Execute in parallel
+  const [tableResult, participantsResult] = await Promise.all([
+    tablePromise,
+    participantsPromise,
+  ])
+
+  if (tableResult.error || !tableResult.data) {
+    console.error('Error fetching table:', tableResult.error)
     return null
   }
 
-  // Try to fetch location coordinates separately (may not exist yet)
-  let locationLat: number | null = null
-  let locationLng: number | null = null
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: locData } = await (supabase as any)
-      .from('tables')
-      .select('location_lat, location_lng')
-      .eq('id', tableId)
-      .single()
-    if (locData) {
-      locationLat = locData.location_lat ? parseFloat(locData.location_lat) : null
-      locationLng = locData.location_lng ? parseFloat(locData.location_lng) : null
-    }
-  } catch {
-    // Location columns may not exist yet - that's fine
-  }
+  const table = tableResult.data
+  const participants = participantsResult.data || []
 
-  // Get participant counts
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: participantCount } = await (supabase as any)
-    .from('table_participants')
-    .select('*', { count: 'exact', head: true })
-    .eq('table_id', tableId)
+  // Count participants client-side (more efficient than multiple count queries)
+  const participantCount = participants.length
+  const attendingCount = participants.filter(
+    (p: { rsvp_status: string }) => p.rsvp_status === 'attending'
+  ).length
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: attendingCount } = await (supabase as any)
-    .from('table_participants')
-    .select('*', { count: 'exact', head: true })
-    .eq('table_id', tableId)
-    .eq('rsvp_status', 'attending')
-
-  // Get user's RSVP status if userId provided
+  // Get user's RSVP status from the participants we already fetched
   let userRsvpStatus: RSVPStatus | undefined
   if (userId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: participant } = await (supabase as any)
-      .from('table_participants')
-      .select('rsvp_status')
-      .eq('table_id', tableId)
-      .eq('user_id', userId)
-      .single()
-
-    if (participant) {
-      userRsvpStatus = participant.rsvp_status as RSVPStatus
+    const userParticipant = participants.find(
+      (p: { user_id: string }) => p.user_id === userId
+    )
+    if (userParticipant) {
+      userRsvpStatus = userParticipant.rsvp_status as RSVPStatus
     }
   }
 
@@ -274,8 +196,8 @@ export async function getTableWithDetails(
     durationMinutes: table.duration_minutes,
     locationName: table.location_name,
     locationAddress: table.location_address,
-    locationLat,
-    locationLng,
+    locationLat: table.location_lat ? parseFloat(table.location_lat) : null,
+    locationLng: table.location_lng ? parseFloat(table.location_lng) : null,
     description: table.description,
     maxPlayers: table.max_players,
     privacy: table.privacy,
@@ -297,8 +219,8 @@ export async function getTableWithDetails(
       playerCountMin: game.player_count_min,
       playerCountMax: game.player_count_max,
     },
-    participantCount: participantCount || 0,
-    attendingCount: attendingCount || 0,
+    participantCount,
+    attendingCount,
     userRsvpStatus,
   }
 }
@@ -344,45 +266,7 @@ export async function getTableParticipants(
     return []
   }
 
-  return (data || []).map((row: {
-    id: string
-    table_id: string
-    user_id: string
-    rsvp_status: string
-    rsvp_updated_at: string | null
-    invited_by: string | null
-    invited_at: string
-    is_host: boolean
-    created_at: string
-    user: {
-      id: string
-      username: string | null
-      display_name: string | null
-      avatar_url: string | null
-      custom_avatar_url: string | null
-    }
-  }) => {
-    return {
-      id: row.id,
-      tableId: row.table_id,
-      userId: row.user_id,
-      rsvpStatus: row.rsvp_status as RSVPStatus,
-      rsvpUpdatedAt: row.rsvp_updated_at,
-      invitedBy: row.invited_by,
-      invitedAt: row.invited_at,
-      isHost: row.is_host,
-      createdAt: row.created_at,
-      attended: null, // Will be populated after migration is applied
-      attendanceMarkedAt: null,
-      user: {
-        id: row.user.id,
-        username: row.user.username,
-        displayName: row.user.display_name,
-        avatarUrl: row.user.avatar_url,
-        customAvatarUrl: row.user.custom_avatar_url,
-      },
-    }
-  })
+  return (data || []).map((row: ParticipantRow) => mapParticipantRow(row))
 }
 
 /**
@@ -488,6 +372,7 @@ export async function deleteTable(tableId: string): Promise<boolean> {
 
 /**
  * Invite friends to a table
+ * Uses batch insert for efficiency
  */
 export async function inviteFriendsToTable(
   tableId: string,
@@ -496,29 +381,35 @@ export async function inviteFriendsToTable(
 ): Promise<{ success: number; failed: number }> {
   const supabase = createClient()
 
-  let success = 0
-  let failed = 0
-
-  for (const userId of userIds) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from('table_participants')
-      .insert({
-        table_id: tableId,
-        user_id: userId,
-        rsvp_status: 'invited',
-        invited_by: invitedBy,
-      })
-
-    if (error) {
-      console.error('Error inviting user:', error)
-      failed++
-    } else {
-      success++
-    }
+  if (userIds.length === 0) {
+    return { success: 0, failed: 0 }
   }
 
-  return { success, failed }
+  // Build batch insert array
+  const participants = userIds.map((userId) => ({
+    table_id: tableId,
+    user_id: userId,
+    rsvp_status: 'invited',
+    invited_by: invitedBy,
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('table_participants')
+    .insert(participants)
+    .select('id')
+
+  if (error) {
+    console.error('Error batch inviting users:', error)
+    // On error, fall back to none succeeded
+    return { success: 0, failed: userIds.length }
+  }
+
+  const successCount = data?.length || 0
+  return {
+    success: successCount,
+    failed: userIds.length - successCount,
+  }
 }
 
 /**
@@ -669,48 +560,7 @@ export async function getFriendsUpcomingTables(
 
   if (!data) return []
 
-  return data.map((row: {
-    table_id: string
-    title: string | null
-    scheduled_at: string
-    location_name: string | null
-    location_lat: string | null
-    location_lng: string | null
-    status: string
-    privacy: string
-    host_id: string
-    host_username: string | null
-    host_display_name: string | null
-    host_avatar_url: string | null
-    host_custom_avatar_url: string | null
-    game_id: string
-    game_name: string
-    game_slug: string
-    game_thumbnail_url: string | null
-    participant_count: number
-    attending_count: number
-  }) => ({
-    tableId: row.table_id,
-    title: row.title,
-    scheduledAt: row.scheduled_at,
-    locationName: row.location_name,
-    locationLat: row.location_lat ? parseFloat(row.location_lat) : null,
-    locationLng: row.location_lng ? parseFloat(row.location_lng) : null,
-    status: row.status,
-    privacy: row.privacy,
-    hostId: row.host_id,
-    hostUsername: row.host_username,
-    hostDisplayName: row.host_display_name,
-    hostAvatarUrl: row.host_avatar_url,
-    hostCustomAvatarUrl: row.host_custom_avatar_url,
-    gameId: row.game_id,
-    gameName: row.game_name,
-    gameSlug: row.game_slug,
-    gameThumbnailUrl: row.game_thumbnail_url,
-    userRsvpStatus: 'invited' as const, // They haven't RSVP'd yet
-    participantCount: Number(row.participant_count),
-    attendingCount: Number(row.attending_count),
-  })) as TableCard[]
+  return data.map((row: TableCardRow) => mapTableCardRow(row))
 }
 
 /**
@@ -744,55 +594,7 @@ export async function getNearbyTables(
     return []
   }
 
-  return (data || []).map((row: {
-    table_id: string
-    title: string | null
-    description: string | null
-    scheduled_at: string
-    duration_minutes: number
-    location_name: string | null
-    location_lat: string
-    location_lng: string
-    max_players: number | null
-    status: string
-    privacy: string
-    distance_miles: string
-    host_id: string
-    host_username: string | null
-    host_display_name: string | null
-    host_avatar_url: string | null
-    host_custom_avatar_url: string | null
-    game_id: string
-    game_name: string
-    game_slug: string
-    game_thumbnail_url: string | null
-    participant_count: number
-    attending_count: number
-  }) => ({
-    tableId: row.table_id,
-    title: row.title,
-    description: row.description,
-    scheduledAt: row.scheduled_at,
-    durationMinutes: row.duration_minutes,
-    locationName: row.location_name,
-    locationLat: parseFloat(row.location_lat),
-    locationLng: parseFloat(row.location_lng),
-    maxPlayers: row.max_players,
-    status: row.status,
-    privacy: row.privacy,
-    distanceMiles: parseFloat(row.distance_miles),
-    hostId: row.host_id,
-    hostUsername: row.host_username,
-    hostDisplayName: row.host_display_name,
-    hostAvatarUrl: row.host_avatar_url,
-    hostCustomAvatarUrl: row.host_custom_avatar_url,
-    gameId: row.game_id,
-    gameName: row.game_name,
-    gameSlug: row.game_slug,
-    gameThumbnailUrl: row.game_thumbnail_url,
-    participantCount: Number(row.participant_count),
-    attendingCount: Number(row.attending_count),
-  })) as NearbyTable[]
+  return (data || []).map((row: NearbyTableRow) => mapNearbyTableRow(row))
 }
 
 // ===========================================
@@ -837,37 +639,7 @@ export async function getTableComments(
     return []
   }
 
-  return (data || []).map((row: {
-    id: string
-    table_id: string
-    user_id: string
-    content: string
-    created_at: string
-    updated_at: string
-    parent_id: string | null
-    author: {
-      id: string
-      username: string | null
-      display_name: string | null
-      avatar_url: string | null
-      custom_avatar_url: string | null
-    }
-  }) => ({
-    id: row.id,
-    tableId: row.table_id,
-    userId: row.user_id,
-    content: row.content,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    parentId: row.parent_id,
-    author: {
-      id: row.author.id,
-      username: row.author.username,
-      displayName: row.author.display_name,
-      avatarUrl: row.author.avatar_url,
-      customAvatarUrl: row.author.custom_avatar_url,
-    },
-  })) as TableCommentWithAuthor[]
+  return (data || []).map((row: CommentRow) => mapCommentRow(row))
 }
 
 /**
@@ -917,22 +689,7 @@ export async function createTableComment(
     return null
   }
 
-  return {
-    id: data.id,
-    tableId: data.table_id,
-    userId: data.user_id,
-    content: data.content,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-    parentId: data.parent_id,
-    author: {
-      id: data.author.id,
-      username: data.author.username,
-      displayName: data.author.display_name,
-      avatarUrl: data.author.avatar_url,
-      customAvatarUrl: data.author.custom_avatar_url,
-    },
-  }
+  return mapCommentRow(data as CommentRow)
 }
 
 /**
@@ -1093,25 +850,5 @@ export async function getParticipantsWithAttendance(
     return []
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    tableId: row.table_id,
-    userId: row.user_id,
-    rsvpStatus: row.rsvp_status,
-    rsvpUpdatedAt: row.rsvp_updated_at,
-    invitedBy: row.invited_by,
-    invitedAt: row.invited_at,
-    isHost: row.is_host,
-    createdAt: row.created_at,
-    attended: row.attended,
-    attendanceMarkedAt: row.attendance_marked_at,
-    user: {
-      id: row.user.id,
-      username: row.user.username,
-      displayName: row.user.display_name,
-      avatarUrl: row.user.avatar_url,
-      customAvatarUrl: row.user.custom_avatar_url,
-    },
-  }))
+  return (data || []).map((row: ParticipantRow) => mapParticipantRow(row))
 }

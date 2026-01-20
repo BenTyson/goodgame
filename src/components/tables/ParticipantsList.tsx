@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { Crown, Check, HelpCircle, X, Clock, UserMinus } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -42,11 +43,16 @@ export function ParticipantsList({
   isHost,
   onRemoveParticipant,
 }: ParticipantsListProps) {
-  // Group by status
-  const attending = participants.filter((p) => p.rsvpStatus === 'attending')
-  const maybe = participants.filter((p) => p.rsvpStatus === 'maybe')
-  const invited = participants.filter((p) => p.rsvpStatus === 'invited')
-  const declined = participants.filter((p) => p.rsvpStatus === 'declined')
+  // Group by status - memoized to prevent unnecessary recalculations
+  const { attending, maybe, invited, declined } = useMemo(
+    () => ({
+      attending: participants.filter((p) => p.rsvpStatus === 'attending'),
+      maybe: participants.filter((p) => p.rsvpStatus === 'maybe'),
+      invited: participants.filter((p) => p.rsvpStatus === 'invited'),
+      declined: participants.filter((p) => p.rsvpStatus === 'declined'),
+    }),
+    [participants]
+  )
 
   const renderParticipant = (participant: ParticipantWithProfile) => {
     const { user, isHost: participantIsHost, rsvpStatus } = participant

@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { format, isPast } from 'date-fns'
 import {
   ArrowLeft,
@@ -40,7 +38,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { RSVPButtons, ParticipantsList, InviteFriendsDialog, TableComments, TableRecapForm, TableRecapView } from '@/components/tables'
-import type { TableWithDetails, ParticipantWithProfile, RSVPStatus, TableCommentWithAuthor, TableRecap } from '@/types/tables'
+import { useTableActions, useTableDialogs } from '@/hooks/tables'
+import type { TableWithDetails, ParticipantWithProfile, TableCommentWithAuthor, TableRecap } from '@/types/tables'
 import { TABLE_STATUS_CONFIG } from '@/types/tables'
 import type { FriendWithProfile } from '@/types/database'
 
@@ -63,15 +62,37 @@ export function TableDetailContent({
   friends,
   alreadyInvited,
 }: TableDetailContentProps) {
-  const router = useRouter()
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [leaveOpen, setLeaveOpen] = useState(false)
-  const [recapOpen, setRecapOpen] = useState(false)
-  const [localParticipants, setLocalParticipants] = useState(participants)
-  const [localRsvpStatus, setLocalRsvpStatus] = useState(table.userRsvpStatus)
-  const [localInvited, setLocalInvited] = useState(alreadyInvited)
+  // Use extracted hooks for actions and dialog state
+  const {
+    localParticipants,
+    localRsvpStatus,
+    localInvited,
+    handleRSVP,
+    handleInvite,
+    handleRemoveParticipant,
+    handleCancel,
+    handleDelete,
+    handleLeave,
+  } = useTableActions({
+    tableId: table.id,
+    initialParticipants: participants,
+    initialRsvpStatus: table.userRsvpStatus,
+    initialInvited: alreadyInvited,
+    currentUserId,
+  })
+
+  const {
+    inviteOpen,
+    setInviteOpen,
+    deleteOpen,
+    setDeleteOpen,
+    cancelOpen,
+    setCancelOpen,
+    leaveOpen,
+    setLeaveOpen,
+    recapOpen,
+    setRecapOpen,
+  } = useTableDialogs()
 
   const isHost = currentUserId === table.host.id
   const isParticipant = localParticipants.some((p) => p.userId === currentUserId)
@@ -81,83 +102,18 @@ export function TableDetailContent({
   const showRecapButton = isHost && isPastTable && table.status === 'scheduled' && !recap
   const showRecapView = recap && table.status === 'completed'
 
-  const handleRSVP = async (status: RSVPStatus) => {
-    if (!currentUserId) return
-
-    const response = await fetch(`/api/tables/${table.id}/rsvp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rsvpStatus: status }),
-    })
-
-    if (response.ok) {
-      setLocalRsvpStatus(status)
-      setLocalParticipants((prev) =>
-        prev.map((p) =>
-          p.userId === currentUserId
-            ? { ...p, rsvpStatus: status, rsvpUpdatedAt: new Date().toISOString() }
-            : p
-        )
-      )
-    }
-  }
-
-  const handleInvite = async (userIds: string[]) => {
-    const response = await fetch(`/api/tables/${table.id}/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userIds }),
-    })
-
-    if (response.ok) {
-      setLocalInvited((prev) => [...prev, ...userIds])
-      router.refresh()
-    }
-  }
-
-  const handleRemoveParticipant = async (userId: string) => {
-    const response = await fetch(`/api/tables/${table.id}/rsvp`, {
-      method: 'DELETE',
-    })
-
-    if (response.ok) {
-      setLocalParticipants((prev) => prev.filter((p) => p.userId !== userId))
-      setLocalInvited((prev) => prev.filter((id) => id !== userId))
-    }
-  }
-
-  const handleCancel = async () => {
-    const response = await fetch(`/api/tables/${table.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'cancelled' }),
-    })
-
-    if (response.ok) {
-      router.refresh()
-    }
+  const onCancelConfirm = async () => {
+    await handleCancel()
     setCancelOpen(false)
   }
 
-  const handleDelete = async () => {
-    const response = await fetch(`/api/tables/${table.id}`, {
-      method: 'DELETE',
-    })
-
-    if (response.ok) {
-      router.push('/tables')
-    }
+  const onDeleteConfirm = async () => {
+    await handleDelete()
     setDeleteOpen(false)
   }
 
-  const handleLeave = async () => {
-    const response = await fetch(`/api/tables/${table.id}/rsvp`, {
-      method: 'DELETE',
-    })
-
-    if (response.ok) {
-      router.push('/tables')
-    }
+  const onLeaveConfirm = async () => {
+    await handleLeave()
     setLeaveOpen(false)
   }
 
@@ -413,7 +369,7 @@ export function TableDetailContent({
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Table</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleCancel}
+              onClick={onCancelConfirm}
               className="bg-amber-600 hover:bg-amber-700"
             >
               Cancel Table
@@ -435,7 +391,7 @@ export function TableDetailContent({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={onDeleteConfirm}
               className="bg-destructive hover:bg-destructive/90"
             >
               Delete
@@ -456,7 +412,7 @@ export function TableDetailContent({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLeave}>
+            <AlertDialogAction onClick={onLeaveConfirm}>
               Leave Table
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { format, isToday, isTomorrow, isPast } from 'date-fns'
@@ -21,7 +22,7 @@ function getDateLabel(date: Date): string {
   return format(date, 'EEE, MMM d')
 }
 
-export function TableCard({ table, currentUserId }: TableCardProps) {
+function TableCardComponent({ table, currentUserId }: TableCardProps) {
   const scheduledDate = new Date(table.scheduledAt)
   const isPastTable = isPast(scheduledDate)
   const isHost = table.hostId === currentUserId
@@ -139,3 +140,5 @@ export function TableCard({ table, currentUserId }: TableCardProps) {
     </Link>
   )
 }
+
+export const TableCard = memo(TableCardComponent)
