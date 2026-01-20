@@ -2,7 +2,30 @@
 
 > Last Updated: 2026-01-19
 
-## Current Phase: 84 - Tables Code Audit & Optimization (COMPLETE)
+## Current Phase: 85 - Navigation Menu Bar Redesign (COMPLETE)
+
+### Session Summary (2026-01-19) - Navigation Simplification
+
+**What was done:**
+- Simplified navigation from 9 flat items to 5 items + 1 dropdown + 1 featured button
+- Before: Games | Publishers | Awards | Categories | Feed | Tables | Shelf | Marketplace | [Recommend]
+- After: Games | Explore (dropdown) | Tables | Bazaar | Profile | [Recommend]
+- Created Explore dropdown containing Publishers, Awards, Categories
+- Renamed "Marketplace" display name to "Bazaar" (URL unchanged)
+- Added Profile link (auth-aware, only shows when logged in)
+- Removed Feed and Shelf from nav (accessible via profile pages and UserMenu)
+- Updated mobile menu with collapsible Explore section
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/layout/Header.tsx` | Complete navigation restructure: added Explore dropdown, Profile link, collapsible mobile menu section |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 84 - Tables Code Audit & Optimization (COMPLETE)
 
 ### Session Summary (2026-01-19) - Tables Feature Optimization
 

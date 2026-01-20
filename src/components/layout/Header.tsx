@@ -3,32 +3,53 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dices, Menu, Search } from 'lucide-react'
+import { ChevronDown, Dices, Menu, Search } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { SearchDialog } from '@/components/search'
 import { ThemeToggle } from './ThemeToggle'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { NotificationBell } from '@/components/notifications'
+import { useAuth } from '@/lib/auth/AuthContext'
 
+// Top-level navigation items
 const navigation = [
   { name: 'Games', href: '/games' },
+  { name: 'Tables', href: '/tables' },
+  { name: 'Bazaar', href: '/marketplace' },
+]
+
+// Explore dropdown items
+const exploreItems = [
   { name: 'Publishers', href: '/publishers' },
   { name: 'Awards', href: '/awards' },
   { name: 'Categories', href: '/categories' },
-  { name: 'Feed', href: '/feed' },
-  { name: 'Tables', href: '/tables' },
-  { name: 'Shelf', href: '/shelf' },
-  { name: 'Marketplace', href: '/marketplace' },
-  { name: 'Recommend', href: '/recommend', featured: true },
 ]
 
 export function Header() {
   const pathname = usePathname()
+  const { user, profile } = useAuth()
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const [exploreOpen, setExploreOpen] = React.useState(false)
+
+  // Check if any explore item is active
+  const isExploreActive = exploreItems.some(
+    (item) => pathname === item.href || pathname?.startsWith(item.href + '/')
+  )
 
   // Cmd+K keyboard shortcut
   React.useEffect(() => {
@@ -67,44 +88,117 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex md:items-center md:gap-1">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-            const isFeatured = 'featured' in item && item.featured
+          {/* Games link */}
+          <Link
+            href="/games"
+            className={cn(
+              'relative px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200',
+              pathname === '/games' || pathname?.startsWith('/games/')
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+            )}
+          >
+            Games
+            {(pathname === '/games' || pathname?.startsWith('/games/')) && (
+              <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
+            )}
+          </Link>
 
-            if (isFeatured) {
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
-                    'bg-primary text-primary-foreground hover:bg-primary/90',
-                    'shadow-sm hover:shadow-md'
-                  )}
-                >
-                  {item.name}
-                </Link>
-              )
-            }
+          {/* Explore dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(
+                'relative flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200 outline-none',
+                isExploreActive
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+              )}
+            >
+              Explore
+              <ChevronDown className="h-4 w-4" />
+              {isExploreActive && (
+                <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {exploreItems.map((item) => (
+                <DropdownMenuItem key={item.name} asChild>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      'w-full cursor-pointer',
+                      (pathname === item.href || pathname?.startsWith(item.href + '/')) &&
+                        'text-primary font-medium'
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'relative px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200',
-                  isActive
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                )}
-              >
-                {item.name}
-                {isActive && (
-                  <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
-                )}
-              </Link>
-            )
-          })}
+          {/* Tables link */}
+          <Link
+            href="/tables"
+            className={cn(
+              'relative px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200',
+              pathname === '/tables' || pathname?.startsWith('/tables/')
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+            )}
+          >
+            Tables
+            {(pathname === '/tables' || pathname?.startsWith('/tables/')) && (
+              <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
+            )}
+          </Link>
+
+          {/* Bazaar link */}
+          <Link
+            href="/marketplace"
+            className={cn(
+              'relative px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200',
+              pathname === '/marketplace' || pathname?.startsWith('/marketplace/')
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+            )}
+          >
+            Bazaar
+            {(pathname === '/marketplace' || pathname?.startsWith('/marketplace/')) && (
+              <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
+            )}
+          </Link>
+
+          {/* Profile link (only when logged in) */}
+          {user && profile?.username && (
+            <Link
+              href={`/u/${profile.username}`}
+              className={cn(
+                'relative px-3.5 py-2 text-sm font-medium rounded-md transition-all duration-200',
+                pathname === `/u/${profile.username}` || pathname?.startsWith(`/u/${profile.username}/`)
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+              )}
+            >
+              Profile
+              {(pathname === `/u/${profile.username}` || pathname?.startsWith(`/u/${profile.username}/`)) && (
+                <span className="absolute inset-x-2 -bottom-[9px] h-0.5 bg-primary rounded-full" />
+              )}
+            </Link>
+          )}
+
+          {/* Recommend (featured) */}
+          <Link
+            href="/recommend"
+            className={cn(
+              'ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
+              'bg-primary text-primary-foreground hover:bg-primary/90',
+              'shadow-sm hover:shadow-md'
+            )}
+          >
+            Recommend
+          </Link>
         </nav>
 
         {/* Right side actions */}
@@ -146,39 +240,109 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <nav className="flex flex-col gap-2 mt-8">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                  const isFeatured = 'featured' in item && item.featured
+                {/* Games link */}
+                <Link
+                  href="/games"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    'px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
+                    pathname === '/games' || pathname?.startsWith('/games/')
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  )}
+                >
+                  Games
+                </Link>
 
-                  if (isFeatured) {
-                    return (
-                      <a
+                {/* Explore collapsible section */}
+                <Collapsible open={exploreOpen} onOpenChange={setExploreOpen}>
+                  <CollapsibleTrigger
+                    className={cn(
+                      'flex w-full items-center justify-between px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
+                      isExploreActive
+                        ? 'text-primary bg-primary/10'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                    )}
+                  >
+                    Explore
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 transition-transform duration-200',
+                        exploreOpen && 'rotate-180'
+                      )}
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-4">
+                    {exploreItems.map((item) => (
+                      <Link
                         key={item.name}
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className="mt-4 px-4 py-3 text-base font-medium rounded-lg text-center bg-primary text-primary-foreground"
+                        className={cn(
+                          'block px-4 py-2.5 text-base font-medium rounded-lg transition-all duration-200',
+                          pathname === item.href || pathname?.startsWith(item.href + '/')
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                        )}
                       >
                         {item.name}
-                      </a>
-                    )
-                  }
+                      </Link>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
 
-                  return (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        'px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
-                        isActive
-                          ? 'text-primary bg-primary/10'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                      )}
-                    >
-                      {item.name}
-                    </a>
-                  )
-                })}
+                {/* Tables link */}
+                <Link
+                  href="/tables"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    'px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
+                    pathname === '/tables' || pathname?.startsWith('/tables/')
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  )}
+                >
+                  Tables
+                </Link>
+
+                {/* Bazaar link */}
+                <Link
+                  href="/marketplace"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    'px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
+                    pathname === '/marketplace' || pathname?.startsWith('/marketplace/')
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  )}
+                >
+                  Bazaar
+                </Link>
+
+                {/* Profile link (only when logged in) */}
+                {user && profile?.username && (
+                  <Link
+                    href={`/u/${profile.username}`}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      'px-4 py-3 text-base font-medium rounded-lg transition-all duration-200',
+                      pathname === `/u/${profile.username}` || pathname?.startsWith(`/u/${profile.username}/`)
+                        ? 'text-primary bg-primary/10'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                    )}
+                  >
+                    Profile
+                  </Link>
+                )}
+
+                {/* Recommend (featured) */}
+                <Link
+                  href="/recommend"
+                  onClick={() => setIsOpen(false)}
+                  className="mt-4 px-4 py-3 text-base font-medium rounded-lg text-center bg-primary text-primary-foreground"
+                >
+                  Recommend
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>
