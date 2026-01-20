@@ -1054,7 +1054,7 @@ export function transformBGGToGame(bgg: BGGRawGame): GameInsert {
     play_time_min: bgg.minPlayTime,
     play_time_max: bgg.maxPlayTime,
     min_age: bgg.minAge,
-    weight: bgg.weight,  // BGG weight = complexity
+    weight: bgg.weight >= 1 && bgg.weight <= 5 ? bgg.weight : null,  // BGG weight must be 1-5
     year_published: bgg.yearPublished,
     designers: bgg.designers.slice(0, 5),
     publisher: bgg.publishers[0] || null,
@@ -1589,7 +1589,7 @@ export async function syncGameWithBGG(gameId: string): Promise<ImportResult> {
   const { error: updateError } = await supabase
     .from('games')
     .update({
-      weight: bggData.weight,
+      weight: bggData.weight >= 1 && bggData.weight <= 5 ? bggData.weight : null,  // BGG weight must be 1-5
       bgg_raw_data: JSON.parse(JSON.stringify(bggData)),
       bgg_last_synced: new Date().toISOString(),
     })

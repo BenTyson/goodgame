@@ -119,6 +119,102 @@ export function ImportWizard() {
     }
   }, [])
 
+  // Handler for Puffin browser import (goes through preview)
+  const handlePuffinImport = useCallback((bggIds: number[], relationMode: RelationMode) => {
+    handleAnalyze({
+      bggIds,
+      relationMode,
+      maxDepth: 3,
+      resyncExisting: true,
+      excludedBggIds: [],
+    })
+  }, [handleAnalyze])
+
+  // Handler for Puffin quick import (bypasses preview)
+  const handlePuffinQuickImport = useCallback(async (bggIds: number[]) => {
+    const newSettings: ImportSettings = {
+      bggIds,
+      relationMode: 'none',
+      maxDepth: 0,
+      resyncExisting: true,
+      excludedBggIds: [],
+    }
+    setSettings(newSettings)
+    setState('progress')
+    setProgressItems([])
+    setSummary(null)
+
+    try {
+      const response = await fetch('/api/admin/import/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bggIds: newSettings.bggIds,
+          relationMode: newSettings.relationMode,
+          maxDepth: newSettings.maxDepth,
+          resyncExisting: newSettings.resyncExisting,
+          excludedBggIds: newSettings.excludedBggIds,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Import failed to start')
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response stream')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6))
+
+              if (event.type === 'progress') {
+                setProgressItems(prev => {
+                  const existing = prev.findIndex(p => p.bggId === event.bggId)
+                  if (existing >= 0) {
+                    const updated = [...prev]
+                    updated[existing] = event
+                    return updated
+                  }
+                  return [...prev, event]
+                })
+              } else if (event.type === 'complete') {
+                setSummary(event.summary)
+                setState('report')
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE event:', e)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Quick import failed:', error)
+      setSummary({
+        imported: 0,
+        synced: 0,
+        failed: bggIds.length,
+        skipped: 0,
+        duration: 0,
+      })
+      setState('report')
+    }
+  }, [])
+
   const handleStartImport = useCallback(async () => {
     setState('progress')
     setProgressItems([])
@@ -221,8 +317,8 @@ export function ImportWizard() {
     <div className="space-y-6">
       {state === 'input' && (
         <ImportInput
-          initialSettings={settings}
-          onAnalyze={handleAnalyze}
+          onPuffinImport={handlePuffinImport}
+          onPuffinQuickImport={handlePuffinQuickImport}
         />
       )}
 

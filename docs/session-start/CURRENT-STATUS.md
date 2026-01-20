@@ -1,8 +1,43 @@
 # Current Status
 
-> Last Updated: 2026-01-19
+> Last Updated: 2026-01-20
 
-## Current Phase: 85 - Navigation Menu Bar Redesign (COMPLETE)
+## Current Phase: 86 - Puffin Browser Import Feature (COMPLETE)
+
+### Session Summary (2026-01-20) - 1-Click Import from Puffin
+
+**What was done:**
+- Added "Browse Puffin" tab to admin import page for browsing and importing games from Puffin cache
+- Removed legacy single/batch BGG import options (all imports now flow through Puffin)
+- Added enrichment and rank filters to Puffin API (`GET /admin/api/games`)
+- Created Boardmello proxy endpoint that merges Puffin data with import status
+- Built PuffinBrowser component with search, filters, paginated table, and multi-select
+- "Import Selected" goes through preview flow, "Quick Import" bypasses preview
+- Fixed weight constraint bug (games with weight 0 now stored as null)
+- Fixed import status detection (switched to admin client to bypass RLS)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/puffin/games/route.ts` | Proxy endpoint merging Puffin data with Boardmello import status |
+| `src/components/admin/import/PuffinBrowser.tsx` | Browse UI with search, filters, table, selection, action bar |
+| `src/components/admin/import/EnrichmentBadges.tsx` | W/P/R badges for Wikidata/Wikipedia/Rulebook status |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `puffin/src/db/admin.ts` | Added GamesListFilters interface, enrichment/rank filters to getGamesList() |
+| `puffin/src/api/routes/admin.ts` | Added filter query params (enriched, hasWikidata, hasWikipedia, hasRulebook, minRank, maxRank) |
+| `src/components/admin/import/ImportInput.tsx` | Simplified to only show PuffinBrowser (removed legacy BGG options) |
+| `src/components/admin/import/ImportWizard.tsx` | Added handlePuffinImport and handlePuffinQuickImport handlers |
+| `src/components/admin/import/index.ts` | Added PuffinBrowser and EnrichmentBadges exports |
+| `src/lib/bgg/importer.ts` | Fixed weight constraint (clamp to 1-5 range or null) |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 85 - Navigation Menu Bar Redesign (COMPLETE)
 
 ### Session Summary (2026-01-19) - Navigation Simplification
 
