@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affiliate_links: {
@@ -567,6 +542,59 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_requests: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          ip_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_requests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "content_requests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "content_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1347,6 +1375,7 @@ export type Database = {
           is_featured: boolean | null
           is_hidden_gem: boolean | null
           is_new_release: boolean | null
+          is_preview_visible: boolean | null
           is_promo: boolean | null
           is_published: boolean | null
           is_staff_pick: boolean | null
@@ -1433,6 +1462,7 @@ export type Database = {
           is_featured?: boolean | null
           is_hidden_gem?: boolean | null
           is_new_release?: boolean | null
+          is_preview_visible?: boolean | null
           is_promo?: boolean | null
           is_published?: boolean | null
           is_staff_pick?: boolean | null
@@ -1519,6 +1549,7 @@ export type Database = {
           is_featured?: boolean | null
           is_hidden_gem?: boolean | null
           is_new_release?: boolean | null
+          is_preview_visible?: boolean | null
           is_promo?: boolean | null
           is_published?: boolean | null
           is_staff_pick?: boolean | null
@@ -2853,8 +2884,69 @@ export type Database = {
           },
         ]
       }
+      table_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          parent_id: string | null
+          table_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          parent_id?: string | null
+          table_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          parent_id?: string | null
+          table_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "table_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_comments_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reputation_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "table_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       table_participants: {
         Row: {
+          attendance_marked_at: string | null
+          attended: boolean | null
           created_at: string | null
           id: string
           invited_at: string | null
@@ -2866,6 +2958,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attendance_marked_at?: string | null
+          attended?: boolean | null
           created_at?: string | null
           id?: string
           invited_at?: string | null
@@ -2877,6 +2971,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attendance_marked_at?: string | null
+          attended?: boolean | null
           created_at?: string | null
           id?: string
           invited_at?: string | null
@@ -2925,6 +3021,53 @@ export type Database = {
           },
         ]
       }
+      table_recaps: {
+        Row: {
+          created_at: string | null
+          experience_rating: number | null
+          highlights: string | null
+          host_notes: string | null
+          id: string
+          photos: Json | null
+          play_count: number | null
+          table_id: string
+          updated_at: string | null
+          would_play_again: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          experience_rating?: number | null
+          highlights?: string | null
+          host_notes?: string | null
+          id?: string
+          photos?: Json | null
+          play_count?: number | null
+          table_id: string
+          updated_at?: string | null
+          would_play_again?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          experience_rating?: number | null
+          highlights?: string | null
+          host_notes?: string | null
+          id?: string
+          photos?: Json | null
+          play_count?: number | null
+          table_id?: string
+          updated_at?: string | null
+          would_play_again?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_recaps_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: true
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           cancelled_at: string | null
@@ -2936,9 +3079,12 @@ export type Database = {
           host_id: string
           id: string
           location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
           location_name: string | null
           max_players: number | null
           privacy: Database["public"]["Enums"]["table_privacy"]
+          reminder_sent_at: string | null
           scheduled_at: string
           status: Database["public"]["Enums"]["table_status"]
           title: string | null
@@ -2954,9 +3100,12 @@ export type Database = {
           host_id: string
           id?: string
           location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           location_name?: string | null
           max_players?: number | null
           privacy?: Database["public"]["Enums"]["table_privacy"]
+          reminder_sent_at?: string | null
           scheduled_at: string
           status?: Database["public"]["Enums"]["table_status"]
           title?: string | null
@@ -2972,9 +3121,12 @@ export type Database = {
           host_id?: string
           id?: string
           location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           location_name?: string | null
           max_players?: number | null
           privacy?: Database["public"]["Enums"]["table_privacy"]
+          reminder_sent_at?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["table_status"]
           title?: string | null
@@ -3686,6 +3838,29 @@ export type Database = {
       }
     }
     Views: {
+      game_request_counts: {
+        Row: {
+          game_id: string | null
+          last_request_at: string | null
+          request_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_requests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_vibe_stats"
+            referencedColumns: ["game_id"]
+          },
+          {
+            foreignKeyName: "content_requests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_vibe_stats: {
         Row: {
           average_vibe: number | null
@@ -3783,6 +3958,17 @@ export type Database = {
         Returns: boolean
       }
       cancel_unpaid_transactions: { Args: never; Returns: number }
+      complete_table_with_recap: {
+        Args: {
+          p_attendee_ids?: string[]
+          p_experience_rating?: number
+          p_highlights?: string
+          p_host_notes?: string
+          p_table_id: string
+          p_would_play_again?: boolean
+        }
+        Returns: Json
+      }
       confirm_delivery: {
         Args: { p_transaction_id: string; p_user_id: string }
         Returns: {
@@ -3979,6 +4165,30 @@ export type Database = {
           username: string
         }[]
       }
+      get_friends_upcoming_tables: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          attending_count: number
+          game_id: string
+          game_name: string
+          game_slug: string
+          game_thumbnail_url: string
+          host_avatar_url: string
+          host_custom_avatar_url: string
+          host_display_name: string
+          host_id: string
+          host_username: string
+          location_lat: number
+          location_lng: number
+          location_name: string
+          participant_count: number
+          privacy: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status: Database["public"]["Enums"]["table_status"]
+          table_id: string
+          title: string
+        }[]
+      }
       get_friends_vibes: {
         Args: { p_game_id: string; p_user_id: string }
         Returns: {
@@ -3992,6 +4202,10 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      get_game_request_count: {
+        Args: { target_game_id: string }
+        Returns: number
       }
       get_game_vibe_stats: {
         Args: { p_game_id: string }
@@ -4023,6 +4237,40 @@ export type Database = {
           last_active_at: string
           mutual_games_count: number
           username: string
+        }[]
+      }
+      get_nearby_tables: {
+        Args: {
+          p_lat: number
+          p_limit?: number
+          p_lng: number
+          p_radius_miles?: number
+          p_user_id?: string
+        }
+        Returns: {
+          attending_count: number
+          description: string
+          distance_miles: number
+          duration_minutes: number
+          game_id: string
+          game_name: string
+          game_slug: string
+          game_thumbnail_url: string
+          host_avatar_url: string
+          host_custom_avatar_url: string
+          host_display_name: string
+          host_id: string
+          host_username: string
+          location_lat: number
+          location_lng: number
+          location_name: string
+          max_players: number
+          participant_count: number
+          privacy: Database["public"]["Enums"]["table_privacy"]
+          scheduled_at: string
+          status: Database["public"]["Enums"]["table_status"]
+          table_id: string
+          title: string
         }[]
       }
       get_or_create_conversation: {
@@ -4060,6 +4308,18 @@ export type Database = {
         Returns: {
           listing_id: string
           similarity_score: number
+        }[]
+      }
+      get_tables_needing_reminders: {
+        Args: { p_minutes_ahead?: number }
+        Returns: {
+          game_name: string
+          host_display_name: string
+          host_id: string
+          participant_ids: string[]
+          scheduled_at: string
+          table_id: string
+          title: string
         }[]
       }
       get_user_feedback: {
@@ -4230,6 +4490,10 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: undefined
       }
+      mark_table_reminder_sent: {
+        Args: { p_table_id: string }
+        Returns: boolean
+      }
       mark_transaction_paid: {
         Args: {
           p_charge_id?: string
@@ -4297,6 +4561,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      refresh_game_request_counts: { Args: never; Returns: undefined }
       refresh_game_vibe_stats: { Args: never; Returns: undefined }
       refresh_seller_reputation: { Args: never; Returns: undefined }
       release_transaction_funds: {
@@ -4410,6 +4675,7 @@ export type Database = {
           is_featured: boolean | null
           is_hidden_gem: boolean | null
           is_new_release: boolean | null
+          is_preview_visible: boolean | null
           is_promo: boolean | null
           is_published: boolean | null
           is_staff_pick: boolean | null
@@ -4878,9 +5144,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_type: [

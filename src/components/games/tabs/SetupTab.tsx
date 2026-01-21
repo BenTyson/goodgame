@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SetupChecklist } from '@/components/setup/SetupChecklist'
 import { GameDocumentsCard } from '../GameDocumentsCard'
 import { DocumentPreview } from '../DocumentPreview'
+import { ContentPlaceholder } from '../ContentPlaceholder'
 import type { GameDocument } from '@/types/database'
 
 // Type for AI-generated content
@@ -42,6 +43,7 @@ function isAIContent(content: SetupContent): content is AISetupContent {
 
 export interface SetupTabProps {
   game: {
+    id: string
     name: string
     slug: string
     bgg_id?: number | null
@@ -55,9 +57,11 @@ export interface SetupTabProps {
 export function SetupTab({ game, content, gameDocuments = [] }: SetupTabProps) {
   if (!content) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Setup guide is being generated. Check back soon!</p>
-      </div>
+      <ContentPlaceholder
+        game={{ id: game.id, name: game.name, slug: game.slug }}
+        contentType="setup"
+        rulebookUrl={game.rulebook_url}
+      />
     )
   }
 

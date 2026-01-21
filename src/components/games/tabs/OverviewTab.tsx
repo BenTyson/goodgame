@@ -267,7 +267,7 @@ export interface OverviewTabProps {
     id: string
     name: string
     slug: string
-    description?: string | null
+    wikipedia_summary?: Json | null
     wikipedia_gameplay?: string | null
     wikipedia_reception?: string | null
     wikipedia_url?: string | null
@@ -321,15 +321,15 @@ export function OverviewTab({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       {/* Main Content Column */}
       <div className={cn('space-y-12', hasSidebar ? 'lg:col-span-2' : 'lg:col-span-3')}>
-        {/* About Section */}
-        <section>
-          <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">About</h2>
-          {game.description && (
+        {/* About Section - Uses Wikipedia summary (CC-licensed) */}
+        {game.wikipedia_summary && typeof game.wikipedia_summary === 'string' && (
+          <section>
+            <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">About</h2>
             <p className="text-muted-foreground leading-relaxed">
-              {game.description}
+              {game.wikipedia_summary}
             </p>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Video Section */}
         {game.featured_video && (
@@ -417,7 +417,7 @@ export function OverviewTab({
         </section>
 
         {/* External Links */}
-        {(game.bgg_id || game.official_website || game.rulebook_url) && (
+        {(game.official_website || game.rulebook_url) && (
           <section>
             <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">External Links</h2>
             <div className="flex flex-wrap gap-3">
@@ -448,19 +448,7 @@ export function OverviewTab({
                   </a>
                 </Button>
               )}
-              {game.bgg_id && (
-                <Button variant="outline" asChild>
-                  <a
-                    href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-2"
-                  >
-                    BoardGameGeek
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
+              {/* BGG link hidden for now - can re-enable later */}
             </div>
           </section>
         )}

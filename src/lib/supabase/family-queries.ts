@@ -386,12 +386,12 @@ export async function getGameFamilyTreeData(gameId: string): Promise<{
     return null
   }
 
-  // Get all published games in this family
+  // Get all visible games in this family (published or preview)
   const { data: games, error: gamesError } = await supabase
     .from('games')
     .select('*')
     .eq('family_id', game.family_id)
-    .eq('is_published', true)
+    .or('is_published.eq.true,is_preview_visible.eq.true')
     .order('year_published', { ascending: true, nullsFirst: false })
 
   if (gamesError || !games || games.length < 2) {

@@ -12,12 +12,18 @@ import { SourcesDrawer } from './SourcesDrawer'
 import type { VecnaFamily, VecnaGame, Phase } from '@/lib/vecna'
 import { getPhaseForState, isBlockedState } from '@/lib/vecna'
 
+interface RequestedGame {
+  game: VecnaGame
+  requestCount: number
+}
+
 interface VecnaPipelineProps {
   families: VecnaFamily[]
   standaloneGames: VecnaGame[]
+  mostRequestedGames?: RequestedGame[]
 }
 
-export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps) {
+export function VecnaPipeline({ families, standaloneGames, mostRequestedGames = [] }: VecnaPipelineProps) {
   const router = useRouter()
 
   // Auto-select first family on mount
@@ -166,6 +172,7 @@ export function VecnaPipeline({ families, standaloneGames }: VecnaPipelineProps)
       <VecnaFamilySidebar
         families={filteredFamilies}
         standaloneGames={filteredStandaloneGames}
+        mostRequestedGames={mostRequestedGames}
         selectedFamilyId={selectedFamilyId}
         selectedGameId={selectedGameId}
         showStandalone={showStandalone}

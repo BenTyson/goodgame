@@ -45,7 +45,7 @@ export async function getGames(options?: {
   let query = supabase
     .from('games')
     .select('*')
-    .eq('is_published', true)
+    .or('is_published.eq.true,is_preview_visible.eq.true')
     .or('is_promo.is.null,is_promo.eq.false')
     .order('name')
 
@@ -222,7 +222,7 @@ export async function getFilteredGames(filters: GameFilters): Promise<Game[]> {
   let query = supabase
     .from('games')
     .select('*')
-    .eq('is_published', true)
+    .or('is_published.eq.true,is_preview_visible.eq.true')
     .or('is_promo.is.null,is_promo.eq.false')
     .order('name')
 
@@ -267,7 +267,7 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
     .from('games')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
+    .or('is_published.eq.true,is_preview_visible.eq.true')
     .single()
 
   if (error) {
@@ -648,7 +648,7 @@ export async function getGameWithDetails(slug: string) {
     .from('games')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
+    .or('is_published.eq.true,is_preview_visible.eq.true')
     .single()
 
   if (gameError || !game) {

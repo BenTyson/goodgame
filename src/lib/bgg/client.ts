@@ -233,14 +233,15 @@ function markPuffinUnhealthy(): void {
 /**
  * Fetch a single game from Puffin cache
  */
-async function fetchFromPuffin(bggId: number): Promise<BGGRawGame | null> {
+async function fetchFromPuffin(bggId: number): Promise<ConsolidatedGameData | null> {
   try {
-    const response = await fetch(`${PUFFIN_API_URL}/game/${bggId}`, {
+    // Always fetch with enrichment - Puffin provides BGG + Wikidata/Wikipedia/Commons in one call
+    const response = await fetch(`${PUFFIN_API_URL}/game/${bggId}?enriched=true`, {
       headers: {
         'Authorization': `Bearer ${PUFFIN_API_KEY}`,
         'X-Client': 'boardmello',
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000), // Longer timeout for enriched data
     })
 
     if (response.status === 404) {
@@ -255,7 +256,7 @@ async function fetchFromPuffin(bggId: number): Promise<BGGRawGame | null> {
     }
 
     const data = await response.json()
-    return data.game as BGGRawGame
+    return data.game as ConsolidatedGameData
   } catch (error) {
     console.warn(`Puffin fetch failed for ${bggId}:`, error)
     markPuffinUnhealthy()
@@ -455,7 +456,7 @@ async function fetchBGGGameDirect(bggId: number): Promise<BGGRawGame | null> {
  * Result type for BGG fetch operations
  */
 export interface BGGFetchResult {
-  game: BGGRawGame | null
+  game: ConsolidatedGameData | null
   status: 'found' | 'pending' | 'error'
   message?: string
 }
@@ -744,12 +745,26 @@ export interface EnrichmentMetadata {
 }
 
 /**
+ * Publisher data from Puffin (enriched from Wikidata)
+ */
+export interface PuffinPublisherData {
+  name: string
+  wikidataId?: string
+  website?: string
+  logoUrl?: string
+  description?: string
+  country?: string
+  foundedYear?: number
+}
+
+/**
  * Consolidated game data from Puffin with enrichment
  */
 export interface ConsolidatedGameData extends BGGRawGame {
   wikidata?: WikidataResult
   wikipedia?: WikipediaResult
   commonsImages?: CommonsImage[]
+  publisherData?: PuffinPublisherData[]
   enrichment: EnrichmentMetadata
 }
 

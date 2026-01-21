@@ -11,6 +11,7 @@ import { cleanWikipediaContentParagraphs } from '@/lib/utils/wikipedia'
 import { VideoCarousel } from '../VideoCarousel'
 import { GameDocumentsCard } from '../GameDocumentsCard'
 import { DocumentPreview } from '../DocumentPreview'
+import { ContentPlaceholder } from '../ContentPlaceholder'
 import type { GameDocument } from '@/types/database'
 
 // Wikipedia gameplay section with subtle attribution
@@ -92,6 +93,8 @@ interface GameVideo {
 
 export interface RulesTabProps {
   game: {
+    id: string
+    name: string
     slug: string
     bgg_id?: number | null
     amazon_asin?: string | null
@@ -100,7 +103,6 @@ export interface RulesTabProps {
     has_reference?: boolean | null
     rulebook_url?: string | null
     rulebook_thumbnail_url?: string | null
-    name?: string
   }
   content: RulesContent | null
   wikipediaGameplay?: string | null
@@ -113,9 +115,13 @@ export interface RulesTabProps {
 export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyReminders, gameplayVideos, gameDocuments = [] }: RulesTabProps) {
   if (!content) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Rules content is being generated. Check back soon!</p>
-      </div>
+      <ContentPlaceholder
+        game={{ id: game.id, name: game.name, slug: game.slug }}
+        contentType="rules"
+        wikipediaGameplay={wikipediaGameplay}
+        wikipediaUrl={wikipediaUrl}
+        rulebookUrl={game.rulebook_url}
+      />
     )
   }
 
@@ -164,7 +170,7 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
         {gameplayVideos && gameplayVideos.length > 0 && (
           <div>
             <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">Watch How to Play</h2>
-            <VideoCarousel videos={gameplayVideos} gameName={game.name || 'this game'} />
+            <VideoCarousel videos={gameplayVideos} gameName={game.name} />
           </div>
         )}
 
@@ -233,7 +239,7 @@ export function RulesTab({ game, content, wikipediaGameplay, wikipediaUrl, keyRe
             label="Official Rulebook"
             hoverText="View Rulebook"
             buttonText="Read the Official Rules"
-            description={`The best way to learn ${game.name || 'the game'} (other than playing it) is to read the rulebook!`}
+            description={`The best way to learn ${game.name} (other than playing it) is to read the rulebook!`}
             gameName={game.name}
             icon={BookOpen}
           />

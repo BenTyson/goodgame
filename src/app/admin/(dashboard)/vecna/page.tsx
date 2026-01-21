@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VecnaPipeline } from './components/VecnaPipeline'
+import { getTopRequestedGames } from '@/lib/supabase/request-queries'
 import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
 
 export const metadata = {
@@ -643,10 +644,102 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
   }))
 }
 
+// Get most requested games with game details
+async function getMostRequestedGames(): Promise<{ game: VecnaGame; requestCount: number }[]> {
+  const supabase = createAdminClient()
+  const topRequested = await getTopRequestedGames(10)
+
+  if (topRequested.length === 0) return []
+
+  // Fetch game details for requested games
+  const gameIds = topRequested.map(r => r.game_id)
+  const { data: games } = await supabase
+    .from('games')
+    .select(`
+      id,
+      name,
+      slug,
+      year_published,
+      thumbnail_url,
+      box_image_url,
+      vecna_state,
+      is_published,
+      bgg_id
+    `)
+    .in('id', gameIds)
+
+  if (!games) return []
+
+  // Map games with request counts
+  const gameMap = new Map(games.map(g => [g.id, g]))
+  return topRequested
+    .filter(r => gameMap.has(r.game_id))
+    .map(r => ({
+      game: {
+        id: gameMap.get(r.game_id)!.id,
+        name: gameMap.get(r.game_id)!.name,
+        slug: gameMap.get(r.game_id)!.slug,
+        year_published: gameMap.get(r.game_id)!.year_published,
+        thumbnail_url: gameMap.get(r.game_id)!.thumbnail_url,
+        box_image_url: gameMap.get(r.game_id)!.box_image_url,
+        vecna_state: (gameMap.get(r.game_id)!.vecna_state || 'imported') as VecnaState,
+        is_published: gameMap.get(r.game_id)!.is_published,
+        bgg_id: gameMap.get(r.game_id)!.bgg_id,
+        // Minimal VecnaGame fields
+        vecna_processed_at: null,
+        vecna_error: null,
+        has_rulebook: false,
+        has_wikipedia: false,
+        has_wikidata: false,
+        has_content: false,
+        crunch_score: null,
+        description: null,
+        hero_image_url: null,
+        bgg_raw_data: null,
+        bgg_last_synced: null,
+        weight: null,
+        min_age: null,
+        player_count_min: null,
+        player_count_max: null,
+        play_time_min: null,
+        play_time_max: null,
+        wikidata_id: null,
+        wikidata_image_url: null,
+        wikidata_series_id: null,
+        official_website: null,
+        wikidata_last_synced: null,
+        wikipedia_url: null,
+        wikipedia_summary: null,
+        wikipedia_infobox: null,
+        wikipedia_gameplay: null,
+        wikipedia_origins: null,
+        wikipedia_reception: null,
+        wikipedia_images: null,
+        wikipedia_external_links: null,
+        wikipedia_awards: null,
+        wikipedia_search_confidence: null,
+        wikipedia_fetched_at: null,
+        rulebook_url: null,
+        rulebook_source: null,
+        rules_content: null,
+        setup_content: null,
+        reference_content: null,
+        content_generated_at: null,
+        amazon_asin: null,
+        categories: [],
+        mechanics: [],
+        themes: [],
+        player_experiences: [],
+      } as VecnaGame,
+      requestCount: r.request_count,
+    }))
+}
+
 export default async function VecnaPage() {
-  const [families, standaloneGames] = await Promise.all([
+  const [families, standaloneGames, mostRequested] = await Promise.all([
     getFamilies(),
     getStandaloneGames(),
+    getMostRequestedGames(),
   ])
 
   return (
@@ -655,6 +748,7 @@ export default async function VecnaPage() {
         <VecnaPipeline
           families={families}
           standaloneGames={standaloneGames}
+          mostRequestedGames={mostRequested}
         />
       </Suspense>
     </div>

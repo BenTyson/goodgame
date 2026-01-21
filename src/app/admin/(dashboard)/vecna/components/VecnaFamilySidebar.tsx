@@ -10,6 +10,7 @@ import {
   Users2,
   Gamepad2,
   PanelLeftClose,
+  Sparkles,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -20,9 +21,15 @@ import type { VecnaFamily, VecnaGame, VecnaState, Phase } from '@/lib/vecna'
 import { VECNA_STATE_CONFIG, PHASE_CONFIG, getPhaseForState, isBlockedState } from '@/lib/vecna'
 import { PipelineProgressDots } from './PipelineProgressBar'
 
+interface RequestedGame {
+  game: VecnaGame
+  requestCount: number
+}
+
 interface VecnaFamilySidebarProps {
   families: VecnaFamily[]
   standaloneGames: VecnaGame[]
+  mostRequestedGames?: RequestedGame[]
   selectedFamilyId: string | null
   selectedGameId: string | null
   showStandalone: boolean
@@ -57,6 +64,7 @@ const PHASE_FILTERS = [
 export function VecnaFamilySidebar({
   families,
   standaloneGames,
+  mostRequestedGames = [],
   selectedFamilyId,
   selectedGameId,
   showStandalone,
@@ -173,6 +181,50 @@ export function VecnaFamilySidebar({
       {/* Family List */}
       <ScrollArea className="flex-1">
         <div className="p-2 pr-4 space-y-1">
+          {/* Most Requested Section */}
+          {mostRequestedGames.length > 0 && (
+            <div className="pb-2 mb-2 border-b">
+              <div className="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-amber-600">
+                <Sparkles className="h-4 w-4" />
+                Most Requested
+              </div>
+              <div className="space-y-0.5">
+                {mostRequestedGames.slice(0, 5).map(({ game, requestCount }) => (
+                  <button
+                    key={game.id}
+                    onClick={() => onSelectGame(game.id)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors',
+                      selectedGameId === game.id
+                        ? 'bg-primary/10 border border-primary/30'
+                        : 'hover:bg-accent'
+                    )}
+                  >
+                    <div className="relative h-8 w-8 rounded overflow-hidden bg-muted flex-shrink-0">
+                      {game.thumbnail_url ? (
+                        <Image
+                          src={game.thumbnail_url}
+                          alt={game.name}
+                          fill
+                          className="object-cover"
+                          sizes="32px"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Gamepad2 className="h-4 w-4 text-muted-foreground/30" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="flex-1 text-sm truncate">{game.name}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      {requestCount} {requestCount === 1 ? 'req' : 'reqs'}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Families */}
           {families.map(family => {
             const isExpanded = expandedFamilies.has(family.id)

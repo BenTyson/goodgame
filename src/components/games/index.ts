@@ -1,5 +1,7 @@
 export { AdminPreviewBanner } from './AdminPreviewBanner'
 export { GameCard } from './GameCard'
+export { PlaceholderGameImage } from './PlaceholderGameImage'
+export { ContentPlaceholder } from './ContentPlaceholder'
 export { GameGrid } from './GameGrid'
 export { GameCardSkeleton, GameGridSkeleton } from './GameCardSkeleton'
 export { GamesSidebar } from './GamesSidebar'

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Users, Clock, Brain, BookOpen, FileText, ListChecks, Bookmark } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { PlaceholderGameImage } from './PlaceholderGameImage'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { GameRow, Category } from '@/types/database'
@@ -64,11 +65,7 @@ export function GameCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10">
-            <span className="text-5xl font-bold text-primary/30 transition-transform duration-300 group-hover:scale-110">
-              {game.name.charAt(0)}
-            </span>
-          </div>
+          <PlaceholderGameImage gameName={game.name} gameId={game.id} className="transition-transform duration-300 group-hover:scale-105" />
         )}
 
         {/* Hover overlay with quick actions */}

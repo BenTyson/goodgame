@@ -2,7 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, ImageOff } from 'lucide-react'
+import { Package } from 'lucide-react'
+
+import { PlaceholderGameImage } from './PlaceholderGameImage'
 
 import { Badge } from '@/components/ui/badge'
 import { QuickStatsBar } from './QuickStatsBar'
@@ -116,10 +118,7 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
                 unoptimized={imageUrl.includes('cf.geekdo') || imageUrl.includes('wikimedia')}
               />
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-                <ImageOff className="h-16 w-16 opacity-50" />
-                <span className="text-sm">No image available</span>
-              </div>
+              <PlaceholderGameImage gameName={game.name} gameId={game.id} />
             )}
           </div>
         </div>
