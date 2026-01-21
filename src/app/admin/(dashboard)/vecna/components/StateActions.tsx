@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { VecnaState } from '@/lib/vecna'
 import { VECNA_STATE_CONFIG } from '@/lib/vecna'
+import { useVecnaStateUpdate } from '@/hooks/admin'
 
 interface StateActionsProps {
   gameId: string
@@ -56,43 +57,26 @@ export function StateActions({
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
 
-  const updateState = async (newState: VecnaState, clearError = true) => {
-    setIsProcessing(true)
-    if (clearError) setError(null)
+  // Hook for state updates
+  const { updateState, isUpdating, error: stateError } = useVecnaStateUpdate({
+    gameId,
+    onSuccess: onStateChange,
+  })
 
-    try {
-      const response = await fetch(`/api/admin/vecna/${gameId}/state`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: newState, error: clearError ? null : undefined }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to update state')
-      }
-
-      onStateChange(newState)
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update state')
-    } finally {
-      setIsProcessing(false)
-      setProcessingMessage(null)
-    }
-  }
+  // Combined error from local operations and state updates
+  const error = localError || stateError
 
   // Actually parse the rulebook (calls the parse API)
   const startParsing = async () => {
     if (!rulebookUrl) {
-      setError('No rulebook URL set')
+      setLocalError('No rulebook URL set')
       return
     }
 
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage('Parsing rulebook PDF...')
 
     try {
@@ -122,7 +106,7 @@ export function StateActions({
       setProcessingMessage('Parsing complete!')
       await updateState('parsed')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Parsing failed')
+      setLocalError(err instanceof Error ? err.message : 'Parsing failed')
       // Reset state to rulebook_ready on failure
       await updateState('rulebook_ready', false)
     } finally {
@@ -134,7 +118,7 @@ export function StateActions({
   // Generate content (calls the generate-content API)
   const startGenerating = async () => {
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage('Generating content with AI...')
 
     try {
@@ -164,7 +148,7 @@ export function StateActions({
       setProcessingMessage('Content generated!')
       await updateState('generated')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      setLocalError(err instanceof Error ? err.message : 'Generation failed')
       // Reset state to taxonomy_assigned on failure
       await updateState('taxonomy_assigned', false)
     } finally {
@@ -400,7 +384,7 @@ export function StateActions({
                 key={index}
                 variant={action.variant}
                 className="w-full justify-start gap-2"
-                disabled={isProcessing || action.disabled}
+                disabled={isProcessing || isUpdating || action.disabled}
                 onClick={action.requireConfirm ? undefined : handleClick}
                 title={action.disabled ? action.disabledReason : undefined}
               >
@@ -447,7 +431,7 @@ export function StateActions({
                   key={index}
                   variant="ghost"
                   size="sm"
-                  disabled={isProcessing}
+                  disabled={isProcessing || isUpdating}
                   onClick={() => updateState(option.state)}
                   className="text-muted-foreground hover:text-foreground"
                 >

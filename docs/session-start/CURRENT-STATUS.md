@@ -1,8 +1,42 @@
 # Current Status
 
-> Last Updated: 2026-01-20
+> Last Updated: 2026-01-21
 
-## Current Phase: 89 - Remove BGG Content from Public Pages (COMPLETE)
+## Current Phase: 90 - Vecna Admin Refactoring (COMPLETE)
+
+### Session Summary (2026-01-21) - Technical Debt Cleanup
+
+**What was done:**
+- Extracted `useVecnaStateUpdate` hook eliminating 3 duplicated updateState functions
+- Created `fetchGameTaxonomy` utility eliminating ~180 lines of duplicated taxonomy queries
+- Fixed unsafe `family_id` type cast in page.tsx
+- Extracted 3 reusable components: `JsonEditor`, `RegenerateButton`, `ModelSelector`
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/hooks/admin/useVecnaStateUpdate.ts` | Hook for Vecna state updates with loading/error states |
+| `src/lib/vecna/queries.ts` | Taxonomy query utility with parallel fetches |
+| `src/app/admin/(dashboard)/vecna/components/JsonEditor.tsx` | JSON editor with validation |
+| `src/app/admin/(dashboard)/vecna/components/RegenerateButton.tsx` | Regenerate content with model selector |
+| `src/app/admin/(dashboard)/vecna/components/ModelSelector.tsx` | AI model toggle selector |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/hooks/admin/index.ts` | Added useVecnaStateUpdate export |
+| `src/lib/vecna/types.ts` | Added 8 taxonomy join types |
+| `src/lib/vecna/index.ts` | Added queries export |
+| `src/app/admin/(dashboard)/vecna/page.tsx` | Uses fetchGameTaxonomy, fixed family_id type |
+| `src/app/admin/(dashboard)/vecna/components/VecnaGamePanel.tsx` | Uses hook + ModelSelector |
+| `src/app/admin/(dashboard)/vecna/components/StateActions.tsx` | Uses hook |
+| `src/app/admin/(dashboard)/vecna/components/ContentReviewPanel.tsx` | Uses hook + extracted components |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 89 - Remove BGG Content from Public Pages (COMPLETE)
 
 ### Session Summary (2026-01-20) - Use Wikipedia Instead of BGG
 
@@ -1261,7 +1295,6 @@ See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for URLs, commands, and file locati
 ### Content Pipeline
 - Process more game families through Vecna
 - Use Commons search to fill image gaps
-- Import more games via Wikidata skill
 - Fill in missing primary publishers
 
 ### Potential Future Initiatives

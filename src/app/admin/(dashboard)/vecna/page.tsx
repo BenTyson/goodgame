@@ -2,7 +2,8 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VecnaPipeline } from './components/VecnaPipeline'
 import { getTopRequestedGames } from '@/lib/supabase/request-queries'
-import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
+import type { VecnaFamily, VecnaGame, VecnaState, CategoryRow, MechanicRow, ThemeRow, PlayerExperienceRow } from '@/lib/vecna'
+import { fetchGameTaxonomy } from '@/lib/vecna'
 
 export const metadata = {
   title: 'Vecna Pipeline | Admin',
@@ -30,6 +31,7 @@ interface GameRow {
   vecna_error: string | null
   is_published: boolean
   description: string | null
+  family_id: string | null
 
   // BGG data
   bgg_id: number | null
@@ -73,35 +75,6 @@ interface GameRow {
 
   // Amazon
   amazon_asin: string | null
-}
-
-interface CategoryRow {
-  id: string
-  name: string
-  slug: string
-  is_primary: boolean
-  source: string | null
-}
-
-interface MechanicRow {
-  id: string
-  name: string
-  slug: string
-  source: string | null
-}
-
-interface ThemeRow {
-  id: string
-  name: string
-  slug: string
-  source: string | null
-}
-
-interface PlayerExperienceRow {
-  id: string
-  name: string
-  slug: string
-  is_primary: boolean
 }
 
 interface RelationRow {
@@ -196,95 +169,13 @@ async function getFamilies(): Promise<VecnaFamily[]> {
     .select('source_game_id, target_game_id, relation_type')
     .in('source_game_id', gameIds)
 
-  // Get taxonomy for all games
-  // Using explicit types to handle schema sync issues
-  type GameCategoryJoin = {
-    game_id: string
-    is_primary: boolean | null
-    source: string | null
-    categories: { id: string; name: string; slug: string } | null
-  }
-  type GameMechanicJoin = {
-    game_id: string
-    source: string | null
-    mechanics: { id: string; name: string; slug: string } | null
-  }
-  type GameThemeJoin = {
-    game_id: string
-    source: string | null
-    themes: { id: string; name: string; slug: string } | null
-  }
-  type GamePlayerExperienceJoin = {
-    game_id: string
-    is_primary: boolean | null
-    player_experiences: { id: string; name: string; slug: string } | null
-  }
-
-  const { data: gameCategories } = await supabase
-    .from('game_categories')
-    .select('game_id, is_primary, source, categories:category_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameCategoryJoin[] | null }
-
-  const { data: gameMechanics } = await supabase
-    .from('game_mechanics')
-    .select('game_id, source, mechanics:mechanic_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameMechanicJoin[] | null }
-
-  const { data: gameThemes } = await supabase
-    .from('game_themes')
-    .select('game_id, source, themes:theme_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameThemeJoin[] | null }
-
-  const { data: gamePlayerExperiences } = await supabase
-    .from('game_player_experiences')
-    .select('game_id, is_primary, player_experiences:player_experience_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GamePlayerExperienceJoin[] | null }
-
-  // Build taxonomy maps
-  const categoriesMap = new Map<string, CategoryRow[]>()
-  for (const gc of gameCategories || []) {
-    const cat = gc.categories as unknown as { id: string; name: string; slug: string } | null
-    if (!cat) continue
-    if (!categoriesMap.has(gc.game_id)) categoriesMap.set(gc.game_id, [])
-    categoriesMap.get(gc.game_id)!.push({
-      ...cat,
-      is_primary: gc.is_primary ?? false,
-      source: gc.source
-    })
-  }
-
-  const mechanicsMap = new Map<string, MechanicRow[]>()
-  for (const gm of gameMechanics || []) {
-    const mech = gm.mechanics as unknown as { id: string; name: string; slug: string } | null
-    if (!mech) continue
-    if (!mechanicsMap.has(gm.game_id)) mechanicsMap.set(gm.game_id, [])
-    mechanicsMap.get(gm.game_id)!.push({
-      ...mech,
-      source: gm.source
-    })
-  }
-
-  const themesMap = new Map<string, ThemeRow[]>()
-  for (const gt of gameThemes || []) {
-    const theme = gt.themes as unknown as { id: string; name: string; slug: string } | null
-    if (!theme) continue
-    if (!themesMap.has(gt.game_id)) themesMap.set(gt.game_id, [])
-    themesMap.get(gt.game_id)!.push({
-      ...theme,
-      source: gt.source
-    })
-  }
-
-  const playerExperiencesMap = new Map<string, PlayerExperienceRow[]>()
-  for (const gpe of gamePlayerExperiences || []) {
-    const pe = gpe.player_experiences as unknown as { id: string; name: string; slug: string } | null
-    if (!pe) continue
-    if (!playerExperiencesMap.has(gpe.game_id)) playerExperiencesMap.set(gpe.game_id, [])
-    playerExperiencesMap.get(gpe.game_id)!.push({
-      ...pe,
-      is_primary: gpe.is_primary ?? false
-    })
-  }
+  // Get taxonomy for all games using shared utility
+  const {
+    categories: categoriesMap,
+    mechanics: mechanicsMap,
+    themes: themesMap,
+    playerExperiences: playerExperiencesMap,
+  } = await fetchGameTaxonomy(supabase, gameIds)
 
   // Build a map of game relations
   const gameRelations = new Map<string, { type: string; targetId: string }>()
@@ -304,11 +195,11 @@ async function getFamilies(): Promise<VecnaFamily[]> {
   // Group games by family
   const gamesByFamily = new Map<string, GameRow[]>()
   for (const game of (games as GameRow[] | null) || []) {
-    const familyId = (game as unknown as { family_id: string }).family_id
-    if (!gamesByFamily.has(familyId)) {
-      gamesByFamily.set(familyId, [])
+    if (!game.family_id) continue
+    if (!gamesByFamily.has(game.family_id)) {
+      gamesByFamily.set(game.family_id, [])
     }
-    gamesByFamily.get(familyId)!.push(game)
+    gamesByFamily.get(game.family_id)!.push(game)
   }
 
   // Transform to VecnaFamily format
@@ -483,97 +374,14 @@ async function getStandaloneGames(): Promise<VecnaGame[]> {
     return []
   }
 
-  // Get taxonomy for standalone games
+  // Get taxonomy for standalone games using shared utility
   const gameIds = games.map(g => g.id)
-
-  // Using explicit types to handle schema sync issues
-  type GameCategoryJoin = {
-    game_id: string
-    is_primary: boolean | null
-    source: string | null
-    categories: { id: string; name: string; slug: string } | null
-  }
-  type GameMechanicJoin = {
-    game_id: string
-    source: string | null
-    mechanics: { id: string; name: string; slug: string } | null
-  }
-  type GameThemeJoin = {
-    game_id: string
-    source: string | null
-    themes: { id: string; name: string; slug: string } | null
-  }
-  type GamePlayerExperienceJoin = {
-    game_id: string
-    is_primary: boolean | null
-    player_experiences: { id: string; name: string; slug: string } | null
-  }
-
-  const { data: gameCategories } = await supabase
-    .from('game_categories')
-    .select('game_id, is_primary, source, categories:category_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameCategoryJoin[] | null }
-
-  const { data: gameMechanics } = await supabase
-    .from('game_mechanics')
-    .select('game_id, source, mechanics:mechanic_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameMechanicJoin[] | null }
-
-  const { data: gameThemes } = await supabase
-    .from('game_themes')
-    .select('game_id, source, themes:theme_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GameThemeJoin[] | null }
-
-  const { data: gamePlayerExperiences } = await supabase
-    .from('game_player_experiences')
-    .select('game_id, is_primary, player_experiences:player_experience_id(id, name, slug)')
-    .in('game_id', gameIds) as { data: GamePlayerExperienceJoin[] | null }
-
-  // Build taxonomy maps
-  const categoriesMap = new Map<string, CategoryRow[]>()
-  for (const gc of gameCategories || []) {
-    const cat = gc.categories as unknown as { id: string; name: string; slug: string } | null
-    if (!cat) continue
-    if (!categoriesMap.has(gc.game_id)) categoriesMap.set(gc.game_id, [])
-    categoriesMap.get(gc.game_id)!.push({
-      ...cat,
-      is_primary: gc.is_primary ?? false,
-      source: gc.source
-    })
-  }
-
-  const mechanicsMap = new Map<string, MechanicRow[]>()
-  for (const gm of gameMechanics || []) {
-    const mech = gm.mechanics as unknown as { id: string; name: string; slug: string } | null
-    if (!mech) continue
-    if (!mechanicsMap.has(gm.game_id)) mechanicsMap.set(gm.game_id, [])
-    mechanicsMap.get(gm.game_id)!.push({
-      ...mech,
-      source: gm.source
-    })
-  }
-
-  const themesMap = new Map<string, ThemeRow[]>()
-  for (const gt of gameThemes || []) {
-    const theme = gt.themes as unknown as { id: string; name: string; slug: string } | null
-    if (!theme) continue
-    if (!themesMap.has(gt.game_id)) themesMap.set(gt.game_id, [])
-    themesMap.get(gt.game_id)!.push({
-      ...theme,
-      source: gt.source
-    })
-  }
-
-  const playerExperiencesMap = new Map<string, PlayerExperienceRow[]>()
-  for (const gpe of gamePlayerExperiences || []) {
-    const pe = gpe.player_experiences as unknown as { id: string; name: string; slug: string } | null
-    if (!pe) continue
-    if (!playerExperiencesMap.has(gpe.game_id)) playerExperiencesMap.set(gpe.game_id, [])
-    playerExperiencesMap.get(gpe.game_id)!.push({
-      ...pe,
-      is_primary: gpe.is_primary ?? false
-    })
-  }
+  const {
+    categories: categoriesMap,
+    mechanics: mechanicsMap,
+    themes: themesMap,
+    playerExperiences: playerExperiencesMap,
+  } = await fetchGameTaxonomy(supabase, gameIds)
 
   return (games as GameRow[]).map((game): VecnaGame => ({
     id: game.id,

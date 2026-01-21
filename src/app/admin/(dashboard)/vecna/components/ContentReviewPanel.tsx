@@ -14,25 +14,14 @@ import {
   Eye,
   Sparkles,
   Pencil,
-  Save,
-  RotateCcw,
-  AlertCircle,
-  RefreshCw,
-  Zap,
-  Brain,
-  Gem,
   ExternalLink,
   EyeOff,
   MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { JsonEditor } from './JsonEditor'
+import { RegenerateButton } from './RegenerateButton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,15 +48,9 @@ import {
 import { cn } from '@/lib/utils'
 import type { VecnaGame, RulesContent, SetupContent, ReferenceContent } from '@/lib/vecna'
 import { DataSourceBadge } from '@/lib/vecna'
+import { useVecnaStateUpdate } from '@/hooks/admin'
 
 type ContentType = 'rules' | 'setup' | 'reference'
-type ModelType = 'haiku' | 'sonnet' | 'opus'
-
-const MODEL_OPTIONS: { value: ModelType; label: string; description: string; icon: React.ElementType }[] = [
-  { value: 'haiku', label: 'Haiku', description: 'Fast, good for testing', icon: Zap },
-  { value: 'sonnet', label: 'Sonnet', description: 'Balanced (recommended)', icon: Brain },
-  { value: 'opus', label: 'Opus', description: 'Best quality', icon: Gem },
-]
 
 interface ContentReviewPanelProps {
   game: VecnaGame
@@ -94,215 +77,6 @@ function SourcePreview({
         <DataSourceBadge source={source} size="sm" showTooltip={false} />
       </div>
       <p className="text-muted-foreground text-xs leading-relaxed">{truncated}</p>
-    </div>
-  )
-}
-
-// JSON Editor component
-function JsonEditor({
-  value,
-  onChange,
-  onSave,
-  onReset,
-  isSaving,
-  hasChanges,
-}: {
-  value: string
-  onChange: (value: string) => void
-  onSave: () => void
-  onReset: () => void
-  isSaving: boolean
-  hasChanges: boolean
-}) {
-  const [isValid, setIsValid] = useState(true)
-
-  const handleChange = (newValue: string) => {
-    onChange(newValue)
-    try {
-      JSON.parse(newValue)
-      setIsValid(true)
-    } catch {
-      setIsValid(false)
-    }
-  }
-
-  const formatJson = () => {
-    try {
-      const parsed = JSON.parse(value)
-      onChange(JSON.stringify(parsed, null, 2))
-      setIsValid(true)
-    } catch {
-      // Keep as-is if invalid
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {!isValid && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Invalid JSON
-            </Badge>
-          )}
-          {hasChanges && isValid && (
-            <Badge variant="outline" className="text-xs text-amber-600 border-amber-600">
-              Unsaved changes
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={formatJson}
-            className="h-7 text-xs"
-            disabled={!isValid}
-          >
-            Format
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onReset}
-            className="h-7 text-xs"
-            disabled={!hasChanges || isSaving}
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Reset
-          </Button>
-          <Button
-            size="sm"
-            onClick={onSave}
-            className="h-7 text-xs"
-            disabled={!hasChanges || !isValid || isSaving}
-          >
-            {isSaving ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <Save className="h-3 w-3 mr-1" />
-            )}
-            Save
-          </Button>
-        </div>
-      </div>
-      <Textarea
-        value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        className={cn(
-          'font-mono text-xs min-h-[200px] resize-y',
-          !isValid && 'border-destructive focus-visible:ring-destructive'
-        )}
-        placeholder="No content"
-      />
-    </div>
-  )
-}
-
-// Regenerate button with model selector
-function RegenerateButton({
-  contentType,
-  gameId,
-  onComplete,
-  disabled,
-}: {
-  contentType: ContentType
-  gameId: string
-  onComplete: () => void
-  disabled?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isRegenerating, setIsRegenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleRegenerate = async (model: ModelType) => {
-    setIsRegenerating(true)
-    setError(null)
-    setIsOpen(false)
-
-    try {
-      const response = await fetch('/api/admin/rulebook/generate-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId,
-          contentTypes: [contentType],
-          model,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Regeneration failed')
-      }
-
-      onComplete()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to regenerate')
-    } finally {
-      setIsRegenerating(false)
-    }
-  }
-
-  if (isRegenerating) {
-    return (
-      <Badge variant="secondary" className="text-xs gap-1">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Regenerating...
-      </Badge>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      {error && (
-        <span className="text-xs text-destructive">{error}</span>
-      )}
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs gap-1"
-            disabled={disabled}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <RefreshCw className="h-3 w-3" />
-            Regenerate
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-48 p-2"
-          align="end"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground px-2 pb-1">
-              Select model
-            </p>
-            {MODEL_OPTIONS.map((option) => {
-              const OptionIcon = option.icon
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => handleRegenerate(option.value)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors text-left"
-                >
-                  <OptionIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <div>
-                    <span className="font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {option.value === 'sonnet' && '(rec)'}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
     </div>
   )
 }
@@ -629,7 +403,11 @@ function ChecklistItem({
 export function ContentReviewPanel({ game, onPublish }: ContentReviewPanelProps) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = useState(false)
-  const [isUnpublishing, setIsUnpublishing] = useState(false)
+
+  // Hook for unpublish state update
+  const { updateState: unpublishState, isUpdating: isUnpublishing } = useVecnaStateUpdate({
+    gameId: game.id,
+  })
 
   const gameEditorUrl = `/admin/games/${game.id}`
 
@@ -704,20 +482,7 @@ export function ContentReviewPanel({ game, onPublish }: ContentReviewPanelProps)
   }
 
   const handleUnpublish = async () => {
-    setIsUnpublishing(true)
-    try {
-      const response = await fetch(`/api/admin/vecna/${game.id}/state`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: 'review_pending' }),
-      })
-      if (!response.ok) throw new Error('Failed to unpublish')
-      router.refresh()
-    } catch (error) {
-      console.error('Unpublish error:', error)
-    } finally {
-      setIsUnpublishing(false)
-    }
+    await unpublishState('review_pending')
   }
 
   const previewLinks = [

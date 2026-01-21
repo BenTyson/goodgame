@@ -19,9 +19,7 @@ import {
   Image as ImageIcon,
   SkipForward,
   XCircle,
-  Cpu,
   Zap,
-  Brain,
   RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -38,10 +36,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { VecnaFamily, VecnaGame, VecnaState } from '@/lib/vecna'
+import { useVecnaStateUpdate } from '@/hooks/admin'
 import { PipelineProgressBar } from './PipelineProgressBar'
 import { BlockedStateAlert } from './BlockedStateAlert'
 import { RulebookDiscovery } from './RulebookDiscovery'
 import { AutoProcessModal } from './AutoProcessModal'
+import { ModelSelector, type ModelType } from './ModelSelector'
 
 interface VecnaGamePanelProps {
   game: VecnaGame
@@ -61,10 +61,21 @@ export function VecnaGamePanel({
   const [hasRulebook, setHasRulebook] = useState(game.has_rulebook)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
   const [showRulebookDiscovery, setShowRulebookDiscovery] = useState(false)
   const [showAutoProcess, setShowAutoProcess] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<'sonnet' | 'haiku' | 'opus'>('sonnet')
+  const [selectedModel, setSelectedModel] = useState<ModelType>('sonnet')
+
+  // Hook for state updates
+  const { updateState, isUpdating, error: stateError } = useVecnaStateUpdate({
+    gameId: game.id,
+    onSuccess: (newState) => {
+      setCurrentState(newState)
+    },
+  })
+
+  // Combined error from local operations and state updates
+  const error = localError || stateError
 
   // Sync local state when game prop changes (e.g., after router.refresh())
   useEffect(() => {
@@ -76,11 +87,6 @@ export function VecnaGamePanel({
   // Show rulebook discovery for early states that don't have a rulebook yet
   const needsRulebook = !hasRulebook && ['imported', 'enriched', 'rulebook_missing'].includes(currentState)
 
-  const handleStateChange = (newState: VecnaState) => {
-    setCurrentState(newState)
-    router.refresh()
-  }
-
   const handleRulebookSet = (url: string) => {
     setHasRulebook(true)
     setCurrentState('rulebook_ready')
@@ -88,41 +94,15 @@ export function VecnaGamePanel({
     router.refresh()
   }
 
-  // State update function
-  const updateState = async (newState: VecnaState, clearError = true) => {
-    setIsProcessing(true)
-    if (clearError) setError(null)
-
-    try {
-      const response = await fetch(`/api/admin/vecna/${game.id}/state`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: newState, error: clearError ? null : undefined }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to update state')
-      }
-
-      handleStateChange(newState)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update state')
-    } finally {
-      setIsProcessing(false)
-      setProcessingMessage(null)
-    }
-  }
-
   // Parse rulebook
   const startParsing = async () => {
     if (!game.rulebook_url) {
-      setError('No rulebook URL set')
+      setLocalError('No rulebook URL set')
       return
     }
 
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage('Parsing rulebook PDF...')
 
     try {
@@ -131,7 +111,7 @@ export function VecnaGamePanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: 'parsing' }),
       })
-      handleStateChange('parsing')
+      setCurrentState('parsing')
 
       setProcessingMessage('Extracting text and analyzing complexity...')
       const parseResponse = await fetch('/api/admin/rulebook/parse', {
@@ -148,7 +128,7 @@ export function VecnaGamePanel({
 
       await updateState('parsed')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Parsing failed')
+      setLocalError(err instanceof Error ? err.message : 'Parsing failed')
       await updateState('rulebook_ready', false)
     } finally {
       setIsProcessing(false)
@@ -166,7 +146,7 @@ export function VecnaGamePanel({
   // Generate content
   const startGenerating = async () => {
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage(`Generating with ${modelLabels[selectedModel]}...`)
 
     try {
@@ -175,7 +155,7 @@ export function VecnaGamePanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: 'generating' }),
       })
-      handleStateChange('generating')
+      setCurrentState('generating')
 
       setProcessingMessage(`Creating rules, setup, reference with ${modelLabels[selectedModel]}...`)
       const generateResponse = await fetch('/api/admin/rulebook/generate-content', {
@@ -192,7 +172,7 @@ export function VecnaGamePanel({
 
       await updateState('generated')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      setLocalError(err instanceof Error ? err.message : 'Generation failed')
       await updateState('taxonomy_assigned', false)
     } finally {
       setIsProcessing(false)
@@ -203,7 +183,7 @@ export function VecnaGamePanel({
   // Re-sync with BGG
   const resyncBGG = async () => {
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage('Re-syncing with BoardGameGeek...')
 
     try {
@@ -220,7 +200,7 @@ export function VecnaGamePanel({
       // Refresh to show updated data
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Re-sync failed')
+      setLocalError(err instanceof Error ? err.message : 'Re-sync failed')
     } finally {
       setIsProcessing(false)
       setProcessingMessage(null)
@@ -230,7 +210,7 @@ export function VecnaGamePanel({
   // Re-sync Wikipedia data
   const resyncWikipedia = async () => {
     setIsProcessing(true)
-    setError(null)
+    setLocalError(null)
     setProcessingMessage('Re-syncing Wikipedia data...')
 
     try {
@@ -247,7 +227,7 @@ export function VecnaGamePanel({
       // Refresh to show updated data
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Re-sync failed')
+      setLocalError(err instanceof Error ? err.message : 'Re-sync failed')
     } finally {
       setIsProcessing(false)
       setProcessingMessage(null)
@@ -366,53 +346,7 @@ export function VecnaGamePanel({
       <div className="space-y-4">
         {/* Model Selector - show when ready to generate (before generation only) */}
         {currentState === 'taxonomy_assigned' && (
-          <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Model:</span>
-            <div className="flex gap-1 bg-muted/50 rounded-md p-0.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedModel('haiku')}
-                className={cn(
-                  'h-7 text-xs gap-1',
-                  selectedModel === 'haiku' && 'bg-background shadow-sm'
-                )}
-              >
-                <Zap className="h-3 w-3" />
-                Haiku
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedModel('sonnet')}
-                className={cn(
-                  'h-7 text-xs gap-1',
-                  selectedModel === 'sonnet' && 'bg-background shadow-sm'
-                )}
-              >
-                <Sparkles className="h-3 w-3" />
-                Sonnet
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedModel('opus')}
-                className={cn(
-                  'h-7 text-xs gap-1',
-                  selectedModel === 'opus' && 'bg-background shadow-sm'
-                )}
-              >
-                <Brain className="h-3 w-3" />
-                Opus
-              </Button>
-            </div>
-            <span className="text-xs text-muted-foreground ml-auto">
-              {selectedModel === 'haiku' && 'Fast & cheap for testing'}
-              {selectedModel === 'sonnet' && 'Balanced quality & speed'}
-              {selectedModel === 'opus' && 'Best quality, slower'}
-            </span>
-          </div>
+          <ModelSelector value={selectedModel} onChange={setSelectedModel} />
         )}
 
         {/* Auto Process Button - show when game has rulebook and can be processed */}
@@ -422,7 +356,7 @@ export function VecnaGamePanel({
               variant="outline"
               size="lg"
               onClick={() => setShowAutoProcess(true)}
-              disabled={isProcessing}
+              disabled={isProcessing || isUpdating}
               className="gap-2"
             >
               <Zap className="h-4 w-4" />
@@ -438,10 +372,10 @@ export function VecnaGamePanel({
               variant="ghost"
               size="lg"
               onClick={nextAction.action}
-              disabled={isProcessing}
+              disabled={isProcessing || isUpdating}
               className="gap-2"
             >
-              {isProcessing ? (
+              {(isProcessing || isUpdating) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <nextAction.icon className="h-4 w-4" />
@@ -497,7 +431,7 @@ export function VecnaGamePanel({
               variant="ghost"
               size="sm"
               onClick={() => updateState('taxonomy_assigned')}
-              disabled={isProcessing}
+              disabled={isProcessing || isUpdating}
             >
               <SkipForward className="h-4 w-4 mr-1" />
               Skip (Use Wikipedia Only)
@@ -514,7 +448,7 @@ export function VecnaGamePanel({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={isProcessing}
+                disabled={isProcessing || isUpdating}
                 onClick={resyncBGG}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -525,7 +459,7 @@ export function VecnaGamePanel({
                 <Button
                   variant="ghost"
                   size="sm"
-                  disabled={isProcessing}
+                  disabled={isProcessing || isUpdating}
                   onClick={resyncWikipedia}
                   className="text-muted-foreground hover:text-foreground"
                 >
@@ -546,7 +480,7 @@ export function VecnaGamePanel({
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={isProcessing}
+                    disabled={isProcessing || isUpdating}
                     onClick={() => updateState('rulebook_ready')}
                     className="text-muted-foreground hover:text-foreground"
                   >
@@ -559,7 +493,7 @@ export function VecnaGamePanel({
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={isProcessing}
+                    disabled={isProcessing || isUpdating}
                     onClick={() => updateState('taxonomy_assigned')}
                     className="text-muted-foreground hover:text-foreground"
                   >
@@ -573,7 +507,7 @@ export function VecnaGamePanel({
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={isProcessing}
+                      disabled={isProcessing || isUpdating}
                       className="text-muted-foreground hover:text-foreground"
                     >
                       <RotateCcw className="h-3 w-3 mr-1" />

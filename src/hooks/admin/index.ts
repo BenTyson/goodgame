@@ -12,3 +12,6 @@ export type { UseGameEditorShortcutsOptions, UseGameEditorShortcutsReturn } from
 
 export { useGameEditorCache } from './useGameEditorCache'
 export type { UseGameEditorCacheReturn } from './useGameEditorCache'
+
+export { useVecnaStateUpdate } from './useVecnaStateUpdate'
+export type { UseVecnaStateUpdateOptions, UseVecnaStateUpdateReturn } from './useVecnaStateUpdate'

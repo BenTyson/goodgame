@@ -21,4 +21,3 @@ npm run build    # Must pass
 ## Skills Available
 
 - `/phase` - Start/complete development phases
-- `/wikidata` - Import games from Wikidata

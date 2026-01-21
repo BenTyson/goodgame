@@ -617,3 +617,77 @@ export interface PipelineResponse {
   progress?: PipelineProgress
   error?: string
 }
+
+// =====================================================
+// Taxonomy Query Types
+// =====================================================
+
+/** Game-category join with source tracking */
+export interface GameCategoryJoin {
+  game_id: string
+  is_primary: boolean | null
+  source: string | null
+  categories: { id: string; name: string; slug: string } | null
+}
+
+/** Game-mechanic join with source tracking */
+export interface GameMechanicJoin {
+  game_id: string
+  source: string | null
+  mechanics: { id: string; name: string; slug: string } | null
+}
+
+/** Game-theme join with source tracking */
+export interface GameThemeJoin {
+  game_id: string
+  source: string | null
+  themes: { id: string; name: string; slug: string } | null
+}
+
+/** Game-player experience join */
+export interface GamePlayerExperienceJoin {
+  game_id: string
+  is_primary: boolean | null
+  player_experiences: { id: string; name: string; slug: string } | null
+}
+
+/** Category row for taxonomy maps */
+export interface CategoryRow {
+  id: string
+  name: string
+  slug: string
+  is_primary: boolean
+  source: string | null
+}
+
+/** Mechanic row for taxonomy maps */
+export interface MechanicRow {
+  id: string
+  name: string
+  slug: string
+  source: string | null
+}
+
+/** Theme row for taxonomy maps */
+export interface ThemeRow {
+  id: string
+  name: string
+  slug: string
+  source: string | null
+}
+
+/** Player experience row for taxonomy maps */
+export interface PlayerExperienceRow {
+  id: string
+  name: string
+  slug: string
+  is_primary: boolean
+}
+
+/** Maps of game IDs to their taxonomy items */
+export interface TaxonomyMaps {
+  categories: Map<string, CategoryRow[]>
+  mechanics: Map<string, MechanicRow[]>
+  themes: Map<string, ThemeRow[]>
+  playerExperiences: Map<string, PlayerExperienceRow[]>
+}
