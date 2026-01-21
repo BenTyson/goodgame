@@ -2,7 +2,54 @@
 
 > Last Updated: 2026-01-21
 
-## Current Phase: 90 - Vecna Admin Refactoring (COMPLETE)
+## Current Phase: 91 - Vecna Admin UI/UX Redesign (COMPLETE)
+
+### Session Summary (2026-01-21) - Tab-Based Layout Redesign
+
+**What was done:**
+- Complete UI/UX redesign of Vecna Admin from split-screen to tab-based layout
+- **Discovery Tab**: Full-page card grid for browsing/preparing games with inline rulebook upload
+- **Processing Tab**: Queue sidebar + processing panel for running pipeline
+- Progressive disclosure: only show what's needed for current task
+- Batch selection with floating action bar
+- Quick rulebook popover (2-click upload/URL paste)
+- Collapsible family sections with progress bars
+- Processing queue with pending/active/completed sections
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `vecna/components/VecnaAdmin.tsx` | Main container with 2-tab navigation |
+| `vecna/components/discovery/DiscoveryTab.tsx` | Full-page discovery view with filters |
+| `vecna/components/discovery/DiscoveryFilters.tsx` | Filter bar (state, rulebook, family, sort) |
+| `vecna/components/discovery/GameDiscoveryCard.tsx` | Game card with badges, selection, hover actions |
+| `vecna/components/discovery/FamilySection.tsx` | Collapsible family groups |
+| `vecna/components/discovery/QuickRulebookPopover.tsx` | Inline URL/upload popover |
+| `vecna/components/discovery/BatchActionBar.tsx` | Floating selection bar |
+| `vecna/components/discovery/index.ts` | Barrel exports |
+| `vecna/components/processing/ProcessingTab.tsx` | Split layout with queue + panel |
+| `vecna/components/processing/ProcessingQueue.tsx` | Queue sidebar (pending/active/completed) |
+| `vecna/components/processing/ProcessingPanel.tsx` | Refactored game panel for processing |
+| `vecna/components/processing/index.ts` | Barrel exports |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `vecna/page.tsx` | Uses VecnaAdmin instead of VecnaPipeline |
+| `vecna/components/index.ts` | Added new exports, kept legacy for compatibility |
+
+**Key UX Improvements:**
+- Tab-based layout (Discovery | Processing) vs cluttered split-screen
+- Full-page card grid vs dense sidebar tree
+- Inline rulebook popover (2 clicks) vs buried in pipeline
+- Batch selection + floating action bar vs manual one-by-one
+- Processing queue with auto-advance vs manual game switching
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 90 - Vecna Admin Refactoring (COMPLETE)
 
 ### Session Summary (2026-01-21) - Technical Debt Cleanup
 

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/server'
-import { VecnaPipeline } from './components/VecnaPipeline'
+import { VecnaAdmin } from './components/VecnaAdmin'
 import { getTopRequestedGames } from '@/lib/supabase/request-queries'
 import type { VecnaFamily, VecnaGame, VecnaState, CategoryRow, MechanicRow, ThemeRow, PlayerExperienceRow } from '@/lib/vecna'
 import { fetchGameTaxonomy } from '@/lib/vecna'
@@ -553,7 +553,7 @@ export default async function VecnaPage() {
   return (
     <div className="h-[calc(100vh-4rem)]">
       <Suspense fallback={<div className="p-8">Loading pipeline...</div>}>
-        <VecnaPipeline
+        <VecnaAdmin
           families={families}
           standaloneGames={standaloneGames}
           mostRequestedGames={mostRequested}
