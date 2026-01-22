@@ -92,6 +92,34 @@ function parseErrorMessage(error: string): ParsedError {
     }
   }
 
+  // Content generation failures - check for specific type failures
+  if (errorLower.includes('content generation failed')) {
+    // Check if there's detail about which types failed
+    const typeMatch = error.match(/\((rules|setup|reference)(?:,\s*(rules|setup|reference))*\)/i)
+    if (typeMatch) {
+      const failedTypes = typeMatch[0].replace(/[()]/g, '')
+      return {
+        title: 'Content Generation Failed',
+        description: `Failed to generate: ${failedTypes}. The AI may have encountered issues with the rulebook content.`,
+        suggestion: 'Try regenerating with a different model, or check if the rulebook text was parsed correctly.',
+      }
+    }
+    return {
+      title: 'Content Generation Failed',
+      description: 'The AI was unable to generate content from the rulebook.',
+      suggestion: 'Check the server logs for details. Common causes: rate limits, context too long, or network issues.',
+    }
+  }
+
+  // Generic "generation failed" without details
+  if (errorLower.includes('generation failed') && !errorLower.includes('content generation')) {
+    return {
+      title: 'Generation Failed',
+      description: 'The content generation process encountered an error.',
+      suggestion: 'Check server logs for details and try regenerating.',
+    }
+  }
+
   // Generic fallback
   return {
     title: 'Processing Error',

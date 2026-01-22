@@ -138,14 +138,26 @@ export async function runGenerateStep(
     const result = await response.json()
 
     if (!response.ok || !result.success) {
+      // Construct error message from response
+      let errorMessage = result.error || 'Generation failed'
+
+      // If there's a detailed errors object, include the first error
+      if (result.errors && typeof result.errors === 'object') {
+        const errorKeys = Object.keys(result.errors)
+        if (errorKeys.length > 0) {
+          const firstError = result.errors[errorKeys[0]]
+          errorMessage = `Content generation failed (${errorKeys.join(', ')}): ${firstError}`
+        }
+      }
+
       await supabase
         .from('games')
         .update({
           vecna_state: 'taxonomy_assigned',
-          vecna_error: result.error || 'Generation failed',
+          vecna_error: errorMessage,
         })
         .eq('id', gameId)
-      return { success: false, newState: 'taxonomy_assigned', error: result.error || 'Generation failed' }
+      return { success: false, newState: 'taxonomy_assigned', error: errorMessage }
     }
 
     // Update state to generated

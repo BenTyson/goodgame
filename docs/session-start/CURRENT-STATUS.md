@@ -1,8 +1,51 @@
 # Current Status
 
-> Last Updated: 2026-01-21
+> Last Updated: 2026-01-22
 
-## Current Phase: 93 - Taxonomy System Audit & Implementation (COMPLETE)
+## Current Phase: 94 - Vecna Processing UX Fixes
+
+### Session Summary (2026-01-22) - Processing Tab UX & Expansion Handling
+
+**What was done:**
+
+**Processing Tab UX Improvements:**
+- Fixed game name truncation in sidebar - now wraps text instead of truncating
+- Added `imported` state to Auto Process button visibility (games with rulebooks can now auto-process from imported state)
+- Updated imported state action to show "Parse Rulebook" when rulebook exists (skips pointless "enriched" step)
+- Changed state labels from completion-based to action-oriented:
+  - "Imported/Enriched" → "Needs Processing"
+  - "Categorized" → "Needs Generation"
+  - "Generated" → "Ready to Publish"
+  - Labels now indicate what action is needed, not what was done
+
+**Expansion Content Handling:**
+- Updated AI prompts to handle minimal expansion rulebooks (those that say "same rules as base game")
+- Prompts now instruct AI to use base game context when expansion rulebook is minimal
+- Fixed aggressive expansion state reset - now only sets warning flag instead of resetting state
+- Before: Base game regeneration would reset expansions to `taxonomy_assigned` (confusing)
+- After: Base game regeneration sets error message "consider regenerating" but preserves state and content
+
+**Discovery Tab Improvements:**
+- Added error icon indicator on game cards when `vecna_error` is set
+- Hover tooltip shows the error message
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/admin/(dashboard)/vecna/components/processing/ProcessingTab.tsx` | Kept sidebar at w-80 (not widened) |
+| `src/app/admin/(dashboard)/vecna/components/processing/ProcessingQueue.tsx` | Removed `truncate`, added `leading-tight` for text wrapping |
+| `src/app/admin/(dashboard)/vecna/components/processing/ProcessingPanel.tsx` | Added `imported` to Auto Process, updated getNextAction for imported+rulebook |
+| `src/app/admin/(dashboard)/vecna/components/discovery/GameDiscoveryCard.tsx` | Updated state labels, added error icon |
+| `src/lib/vecna/types.ts` | Updated VECNA_STATE_CONFIG labels to action-oriented |
+| `src/lib/vecna/context.ts` | Updated expansion note to handle minimal rulebooks |
+| `src/lib/rulebook/prompts.ts` | Updated rules/setup/reference prompts for minimal expansion rulebooks |
+| `src/app/api/admin/rulebook/generate-content/route.ts` | Changed expansion invalidation to warning-only (preserves state) |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 93 - Taxonomy System Audit & Implementation (COMPLETE)
 
 ### Session Summary (2026-01-21) - Taxonomy Improvements
 

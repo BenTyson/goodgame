@@ -35,18 +35,18 @@ interface GameDiscoveryCardProps {
   onRulebookSet?: () => void
 }
 
-// State badge configuration
+// State badge configuration - labels indicate what's NEEDED, not what's done
 const STATE_BADGES: Record<VecnaState, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className?: string }> = {
-  imported: { label: 'Imported', variant: 'secondary' },
-  enriched: { label: 'Enriched', variant: 'secondary' },
+  imported: { label: 'Needs Processing', variant: 'secondary' },
+  enriched: { label: 'Needs Processing', variant: 'secondary' },
   rulebook_missing: { label: 'No Rulebook', variant: 'outline', className: 'border-amber-500 text-amber-600' },
-  rulebook_ready: { label: 'Ready', variant: 'outline', className: 'border-green-500 text-green-600' },
-  parsing: { label: 'Parsing', variant: 'default', className: 'bg-blue-500' },
-  parsed: { label: 'Parsed', variant: 'outline', className: 'border-violet-500 text-violet-600' },
-  taxonomy_assigned: { label: 'Categorized', variant: 'outline', className: 'border-indigo-500 text-indigo-600' },
-  generating: { label: 'Generating', variant: 'default', className: 'bg-cyan-500' },
-  generated: { label: 'Generated', variant: 'outline', className: 'border-purple-500 text-purple-600' },
-  review_pending: { label: 'Review', variant: 'outline', className: 'border-amber-500 text-amber-600' },
+  rulebook_ready: { label: 'Needs Parsing', variant: 'outline', className: 'border-blue-500 text-blue-600' },
+  parsing: { label: 'Parsing...', variant: 'default', className: 'bg-blue-500' },
+  parsed: { label: 'Needs Generation', variant: 'outline', className: 'border-violet-500 text-violet-600' },
+  taxonomy_assigned: { label: 'Needs Generation', variant: 'outline', className: 'border-violet-500 text-violet-600' },
+  generating: { label: 'Generating...', variant: 'default', className: 'bg-cyan-500' },
+  generated: { label: 'Ready to Publish', variant: 'outline', className: 'border-green-500 text-green-600' },
+  review_pending: { label: 'Needs Review', variant: 'outline', className: 'border-amber-500 text-amber-600' },
   published: { label: 'Published', variant: 'default', className: 'bg-green-600' },
 }
 
@@ -148,9 +148,17 @@ export function GameDiscoveryCard({
           <Badge
             variant={stateBadge.variant}
             className={cn('text-xs py-0 h-5', stateBadge.className)}
+            title={game.vecna_error || undefined}
           >
             {stateBadge.label}
           </Badge>
+
+          {/* Error indicator */}
+          {game.vecna_error && (
+            <span className="text-amber-500" title={game.vecna_error}>
+              <AlertCircle className="h-4 w-4" />
+            </span>
+          )}
 
           {/* Rulebook button */}
           <QuickRulebookPopover

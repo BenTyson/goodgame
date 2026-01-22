@@ -602,7 +602,7 @@ ${truncatedText}
 
 Create an approachable quick start guide. Write in YOUR voice - warm, expert, and genuinely helpful. Never copy rulebook text verbatim.
 
-${context.expansionNote ? `Since this is an expansion, focus on:\n- What NEW mechanics or rules this adds\n- How it CHANGES the base game experience\n- Setup additions/modifications\n- New victory conditions or scoring (if any)\nDon't repeat base game rules unless modified.\n\n` : ''}Return as JSON:
+${context.expansionNote ? `Since this is an expansion, focus on:\n- What NEW mechanics or rules this adds\n- How it CHANGES the base game experience\n- Setup additions/modifications\n- New victory conditions or scoring (if any)\n\nIf the expansion rulebook is minimal (just says "same rules as base game"), clearly explain that base game knowledge is required and summarize what base game rules apply. Don't produce thin content - use the Base Game Context above.\n\n` : ''}Return as JSON:
 {
   "whatMakesThisSpecial": {
     "hook": "One compelling sentence - what's the unique draw of this game?",
@@ -734,7 +734,7 @@ RULEBOOK TEXT (primary source for setup instructions):
 ${truncatedText}
 ---
 
-${context.expansionNote ? `Since this is an expansion:\n- Focus on what's ADDED to base game setup\n- Note which base game components are still used\n- Highlight any base game setup MODIFICATIONS\n- Don't repeat base game setup steps unless changed\n\n` : ''}Create a setup guide that gets people from "box on table" to "ready to play" efficiently. Write conversationally but stay practical.
+${context.expansionNote ? `Since this is an expansion:\n- Focus on what's ADDED to base game setup\n- Note which base game components are still used\n- Highlight any base game setup MODIFICATIONS\n\nIf the expansion rulebook is minimal about setup, explain that base game setup applies and summarize the key steps from the Base Game Context above.\n\n` : ''}Create a setup guide that gets people from "box on table" to "ready to play" efficiently. Write conversationally but stay practical.
 
 Return as JSON:
 {
@@ -834,7 +834,7 @@ RULEBOOK TEXT (primary source for all reference content):
 ${truncatedText}
 ---
 
-${context.expansionNote ? `Since this is an expansion, focus on:\n- NEW actions and their costs\n- Modified rules from base game\n- New scoring opportunities\n- New icons/symbols introduced\n\n` : ''}Create a reference that answers the most common "wait, how does this work again?" questions during play.
+${context.expansionNote ? `Since this is an expansion, focus on:\n- NEW actions and their costs\n- Modified rules from base game\n- New scoring opportunities\n- New icons/symbols introduced\n\nIf the expansion rulebook is minimal, include the key base game reference info that players will need.\n\n` : ''}Create a reference that answers the most common "wait, how does this work again?" questions during play.
 
 Return as JSON:
 {

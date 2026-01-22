@@ -93,7 +93,7 @@ export type VecnaState =
   | 'review_pending'     // Ready for human review
   | 'published'          // Live on site
 
-// State display configuration
+// State display configuration - labels indicate what's NEEDED or current status
 export const VECNA_STATE_CONFIG: Record<VecnaState, {
   label: string
   description: string
@@ -102,15 +102,15 @@ export const VECNA_STATE_CONFIG: Record<VecnaState, {
   canProgress: boolean
 }> = {
   imported: {
-    label: 'Imported',
-    description: 'BGG data imported, awaiting enrichment',
+    label: 'Needs Processing',
+    description: 'BGG data imported, ready to process',
     color: 'text-slate-500',
     icon: 'Download',
     canProgress: true,
   },
   enriched: {
-    label: 'Enriched',
-    description: 'Wikidata + Wikipedia data fetched',
+    label: 'Needs Processing',
+    description: 'Data enriched, ready to process',
     color: 'text-blue-500',
     icon: 'Database',
     canProgress: true,
@@ -123,49 +123,49 @@ export const VECNA_STATE_CONFIG: Record<VecnaState, {
     canProgress: false,
   },
   rulebook_ready: {
-    label: 'Rulebook Ready',
-    description: 'Rulebook URL confirmed',
-    color: 'text-green-500',
+    label: 'Needs Parsing',
+    description: 'Rulebook ready to parse',
+    color: 'text-blue-500',
     icon: 'FileCheck',
     canProgress: true,
   },
   parsing: {
-    label: 'Parsing',
+    label: 'Parsing...',
     description: 'Extracting text from rulebook',
     color: 'text-violet-500',
     icon: 'Loader2',
     canProgress: false,
   },
   parsed: {
-    label: 'Parsed',
-    description: 'Rulebook text extracted',
+    label: 'Needs Generation',
+    description: 'Rulebook parsed, ready to generate',
     color: 'text-violet-600',
     icon: 'FileText',
     canProgress: true,
   },
   taxonomy_assigned: {
-    label: 'Categorized',
-    description: 'Categories/mechanics assigned',
-    color: 'text-indigo-500',
+    label: 'Needs Generation',
+    description: 'Categorized, ready to generate content',
+    color: 'text-violet-500',
     icon: 'Tags',
     canProgress: true,
   },
   generating: {
-    label: 'Generating',
+    label: 'Generating...',
     description: 'AI content being generated',
     color: 'text-cyan-500',
     icon: 'Sparkles',
     canProgress: false,
   },
   generated: {
-    label: 'Generated',
+    label: 'Ready to Publish',
     description: 'AI content ready for review',
-    color: 'text-cyan-600',
+    color: 'text-green-600',
     icon: 'CheckCircle2',
     canProgress: true,
   },
   review_pending: {
-    label: 'Review',
+    label: 'Needs Review',
     description: 'Ready for human review',
     color: 'text-amber-600',
     icon: 'Eye',

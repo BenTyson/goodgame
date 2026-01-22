@@ -268,6 +268,24 @@ export async function POST(request: NextRequest) {
     const hasErrors = Object.keys(results.errors).length > 0
     const hasContent = results.rules || results.setup || results.reference
 
+    // Build summary error message if there were failures
+    let errorSummary: string | undefined
+    if (hasErrors) {
+      const failedTypes = Object.keys(results.errors)
+      if (!hasContent) {
+        // Complete failure
+        errorSummary = `All content generation failed: ${failedTypes.join(', ')}`
+      } else {
+        // Partial failure
+        errorSummary = `Some content failed to generate: ${failedTypes.join(', ')}`
+      }
+      // Include first actual error for detail
+      const firstError = results.errors[failedTypes[0] as keyof typeof results.errors]
+      if (firstError) {
+        errorSummary += `. ${firstError}`
+      }
+    }
+
     // Check if we need to invalidate expansion content (base game regeneration)
     let invalidatedExpansionCount = 0
     let invalidatedExpansionNames: string[] = []
@@ -283,13 +301,13 @@ export async function POST(request: NextRequest) {
       if (expansions && expansions.length > 0) {
         const expansionIds = expansions.map(e => e.source_game_id)
 
-        // Reset generated expansions to taxonomy_assigned so they get regenerated
-        // NOTE: We don't reset 'published' expansions - those are already live and should be manually handled
+        // Flag expansions that base game content has changed - but DON'T reset their state
+        // This preserves existing content while alerting that regeneration may be beneficial
+        // Content is NOT deleted - user can choose to regenerate or keep existing
         const { data: updatedExpansions, error: expansionError } = await supabase
           .from('games')
           .update({
-            vecna_state: 'taxonomy_assigned',
-            vecna_error: 'Base game content updated - regeneration recommended',
+            vecna_error: 'Base game content updated - consider regenerating for updated context',
           })
           .in('id', expansionIds)
           .in('vecna_state', ['generated', 'review_pending'])
@@ -298,7 +316,7 @@ export async function POST(request: NextRequest) {
         if (!expansionError && updatedExpansions && updatedExpansions.length > 0) {
           invalidatedExpansionCount = updatedExpansions.length
           invalidatedExpansionNames = updatedExpansions.map(e => e.name)
-          console.log(`Marked ${invalidatedExpansionCount} unpublished expansion(s) for regeneration:`,
+          console.log(`Flagged ${invalidatedExpansionCount} expansion(s) for optional regeneration:`,
             invalidatedExpansionNames.join(', '))
         }
       }
@@ -329,6 +347,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: hasContent,
+      error: hasContent ? undefined : errorSummary,  // Only set error if complete failure
       generated: {
         rules: !!results.rules,
         setup: !!results.setup,
@@ -374,8 +393,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Content generation error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Content generation failed'
     return NextResponse.json(
-      { success: false, error: 'Content generation failed' },
+      { success: false, error: errorMessage },
       { status: 500 }
     )
   }

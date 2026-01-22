@@ -236,6 +236,9 @@ export function ProcessingPanel({
   const getNextAction = () => {
     switch (currentState) {
       case 'imported':
+        if (hasRulebook) {
+          return { label: 'Parse Rulebook', icon: Play, action: startParsing }
+        }
         return { label: 'Mark as Enriched', icon: CheckCircle2, action: () => updateState('enriched') }
       case 'enriched':
         if (hasRulebook) {
@@ -355,7 +358,7 @@ export function ProcessingPanel({
         )}
 
         {/* Auto Process Button */}
-        {hasRulebook && ['enriched', 'rulebook_ready', 'rulebook_missing', 'parsed', 'taxonomy_assigned'].includes(currentState) && (
+        {hasRulebook && ['imported', 'enriched', 'rulebook_ready', 'rulebook_missing', 'parsed', 'taxonomy_assigned'].includes(currentState) && (
           <div className="flex justify-center">
             <Button
               variant="outline"
@@ -418,17 +421,6 @@ export function ProcessingPanel({
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 dark:bg-red-950/30 dark:border-red-800">
             <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
             <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
-          </div>
-        )}
-
-        {/* Critical Errors */}
-        {game.vecna_error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/30 dark:border-red-800">
-            <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              <span className="text-sm font-medium">Processing Error</span>
-            </div>
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{game.vecna_error}</p>
           </div>
         )}
 

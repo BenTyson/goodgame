@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  GripVertical,
   Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -61,16 +60,13 @@ export function ProcessingQueue({
                 key={game.id}
                 onClick={() => onSelectGame(game)}
                 className={cn(
-                  'group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors',
+                  'group flex items-center gap-2.5 p-2.5 rounded-xl cursor-pointer transition-colors',
                   isActive
                     ? 'bg-primary/10 border-2 border-primary/30'
                     : 'hover:bg-muted border-2 border-transparent',
                   isProcessing && 'animate-pulse'
                 )}
               >
-                {/* Drag handle */}
-                <GripVertical className="h-5 w-5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab flex-shrink-0" />
-
                 {/* Thumbnail */}
                 <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                   {game.thumbnail_url ? (
@@ -91,7 +87,7 @@ export function ProcessingQueue({
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className={cn(
-                    'font-medium truncate',
+                    'font-medium leading-tight',
                     isActive && 'text-primary'
                   )}>
                     {game.name}
@@ -172,7 +168,7 @@ export function ProcessingQueue({
                         )}
                       </div>
 
-                      <p className="truncate flex-1">{game.name}</p>
+                      <p className="flex-1 leading-tight">{game.name}</p>
                     </div>
                   ))}
 

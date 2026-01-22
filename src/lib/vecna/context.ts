@@ -163,10 +163,10 @@ export function buildWikipediaContext(data: {
     sections.push('=== WIKIPEDIA SUMMARY ===')
     sections.push(data.summary.summary)
 
-    if (data.summary.themes.length > 0) {
+    if (data.summary.themes?.length > 0) {
       sections.push(`\nKey Themes: ${data.summary.themes.join(', ')}`)
     }
-    if (data.summary.mechanics.length > 0) {
+    if (data.summary.mechanics?.length > 0) {
       sections.push(`Core Mechanics: ${data.summary.mechanics.join(', ')}`)
     }
   }
@@ -343,8 +343,10 @@ export function buildAIContext(data: GameContextData): {
   if (data.isExpansion && data.familyContext) {
     const relationType = data.relationToBase?.replace(/_/g, ' ') || 'expansion'
     expansionNote = `NOTE: This is a ${relationType} for "${data.familyContext.baseGameName}". ` +
-      `Focus on what this expansion ADDS or CHANGES - don't repeat base game information. ` +
-      `Players reading this will already know the base game.`
+      `Focus on what this expansion ADDS or CHANGES. ` +
+      `If the expansion rulebook is minimal and says "same rules as base game" without details, ` +
+      `clearly state that players need the base game knowledge and summarize what base game rules apply. ` +
+      `Use the Base Game Context provided above for reference.`
   }
 
   return {
