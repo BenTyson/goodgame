@@ -3,8 +3,12 @@ import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import type { VecnaState, FamilyContext, ProcessingMode, ProcessingResult } from '@/lib/vecna'
 import {
   runParseStep,
+  runTaxonomyStep,
   runGenerateStep,
   rebuildFamilyContext,
+  shouldSkipGame,
+  acquireProcessingLock,
+  releaseProcessingLock,
 } from '@/lib/vecna/processing'
 
 interface GameForProcessing {
@@ -63,6 +67,18 @@ export async function POST(
       return NextResponse.json({ error: 'Family not found' }, { status: 404 })
     }
 
+    // Acquire processing lock to prevent concurrent processing
+    const lockId = `family-process-${Date.now()}`
+    const lockAcquired = await acquireProcessingLock(supabase, familyId, lockId)
+    if (!lockAcquired) {
+      return NextResponse.json({
+        error: 'Family is already being processed by another request',
+        familyId,
+        familyName: family.name,
+      }, { status: 409 })
+    }
+
+    try {
     // Get all games in the family with their current state
     const { data: familyGames, error: gamesError } = await supabase
       .from('games')
@@ -114,13 +130,24 @@ export async function POST(
     const results: ProcessingResult[] = []
     let familyContext: FamilyContext | null = family.family_context as FamilyContext | null
 
+    // Pre-check: If base game already has content but family context is missing/stale,
+    // rebuild it before processing expansions
+    if (!familyContext && family.base_game_id) {
+      const baseGame = gamesForProcessing.find(g => g.id === family.base_game_id)
+      if (baseGame && baseGame.vecna_state === 'generated') {
+        // Base game is already generated but no cached context - rebuild it
+        familyContext = await rebuildFamilyContext(supabase, familyId, baseGame.id)
+        console.log('Pre-built family context from existing base game content')
+      }
+    }
+
     // Process each game
     for (const game of gamesForProcessing) {
       const previousState = game.vecna_state
 
       try {
         // Check if game should be skipped
-        const skipResult = shouldSkipGame(game, mode, skipBlocked)
+        const skipResult = shouldSkipGame(game, { mode, skipBlocked })
         if (skipResult.skip) {
           results.push({
             gameId: game.id,
@@ -186,6 +213,9 @@ export async function POST(
     const skippedCount = results.filter(r => r.skipped).length
     const errorCount = results.filter(r => !r.success && !r.skipped).length
 
+    // Release the lock before returning
+    await releaseProcessingLock(supabase, familyId)
+
     return NextResponse.json({
       success: errorCount === 0,
       familyId: family.id,
@@ -199,6 +229,11 @@ export async function POST(
       },
       results,
     })
+    } catch (innerError) {
+      // Release lock on processing error
+      await releaseProcessingLock(supabase, familyId)
+      throw innerError
+    }
   } catch (error) {
     console.error('Family batch processing error:', error)
     return NextResponse.json({
@@ -206,78 +241,6 @@ export async function POST(
       details: error instanceof Error ? error.message : 'Unknown error',
     }, { status: 500 })
   }
-}
-
-/**
- * Determine if a game should be skipped based on its state and mode
- */
-function shouldSkipGame(
-  game: GameForProcessing,
-  mode: ProcessingMode,
-  skipBlocked: boolean
-): { skip: boolean; reason?: string } {
-  // Always skip published games
-  if (game.vecna_state === 'published') {
-    return { skip: true, reason: 'Already published' }
-  }
-
-  // Skip games already in review
-  if (game.vecna_state === 'review_pending') {
-    return { skip: true, reason: 'Awaiting review' }
-  }
-
-  // Skip games already generated (they just need review)
-  if (game.vecna_state === 'generated') {
-    return { skip: true, reason: 'Already generated - needs review' }
-  }
-
-  // Mode-specific skips
-  switch (mode) {
-    case 'parse-only':
-      // Skip if already parsed or beyond
-      if (['parsed', 'taxonomy_assigned', 'generating', 'generated', 'review_pending', 'published'].includes(game.vecna_state)) {
-        return { skip: true, reason: 'Already parsed' }
-      }
-      // Skip if no rulebook
-      if (!game.rulebook_url) {
-        return { skip: true, reason: 'No rulebook to parse' }
-      }
-      break
-
-    case 'generate-only':
-      // Skip if already generated or beyond
-      if (['generated', 'review_pending', 'published'].includes(game.vecna_state)) {
-        return { skip: true, reason: 'Already has content' }
-      }
-      break
-
-    case 'full':
-    case 'from-current':
-      // For full pipeline modes, we need a rulebook to proceed past enrichment
-      // Skip games without rulebooks unless they're still in early stages that don't need it
-      if (!game.rulebook_url) {
-        // Games without rulebooks can only progress to 'enriched' state
-        // If already enriched or beyond, they're blocked
-        if (['enriched', 'rulebook_missing', 'rulebook_ready', 'parsing', 'parsed', 'taxonomy_assigned', 'generating'].includes(game.vecna_state)) {
-          if (skipBlocked) {
-            return { skip: true, reason: 'No rulebook URL' }
-          }
-        }
-        // If in 'imported' state, check if we can at least update to enriched
-        if (game.vecna_state === 'imported') {
-          if (!(game.wikidata_id || game.wikipedia_url)) {
-            // No enrichment data and no rulebook - nothing to do
-            if (skipBlocked) {
-              return { skip: true, reason: 'No enrichment data or rulebook' }
-            }
-          }
-          // Has enrichment data, can at least progress to enriched
-        }
-      }
-      break
-  }
-
-  return { skip: false }
 }
 
 /**
@@ -460,15 +423,7 @@ async function runProcessingStep(
       return await runParseStep(supabase, gameId, cookieHeader)
 
     case 'assign-taxonomy':
-      await supabase
-        .from('games')
-        .update({
-          vecna_state: 'taxonomy_assigned',
-          vecna_processed_at: new Date().toISOString(),
-          vecna_error: null,
-        })
-        .eq('id', gameId)
-      return { success: true, newState: 'taxonomy_assigned' }
+      return await runTaxonomyStep(supabase, gameId)
 
     case 'generate':
       return await runGenerateStep(supabase, gameId, familyContext, isExpansion, cookieHeader)

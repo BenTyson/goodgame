@@ -4,8 +4,99 @@
  * Builds rich context for AI content generation using all available data sources.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FamilyContext } from './types'
 import type { Json } from '@/types/database'
+
+// Content types for family context building
+interface RulesContent {
+  quickStart?: string[]
+  coreRules?: Array<{ title: string; content: string }>
+}
+
+interface SetupContent {
+  steps?: Array<{ step: string; details?: string }>
+  components?: Array<{ name: string; quantity?: number | string; description?: string }>
+}
+
+// =====================================================
+// Database-driven Family Context Building
+// =====================================================
+
+/**
+ * Build FamilyContext from database by querying the base game.
+ * This is the canonical source for building family context - all other
+ * implementations should use this function.
+ *
+ * @param supabase - Supabase client instance
+ * @param baseGameId - ID of the base game to build context from
+ * @returns FamilyContext or null if base game not found
+ */
+export async function buildFamilyContextFromDb(
+  supabase: SupabaseClient,
+  baseGameId: string
+): Promise<FamilyContext | null> {
+  const { data: baseGame } = await supabase
+    .from('games')
+    .select(`
+      id, name,
+      rules_content, setup_content,
+      wikipedia_summary, wikipedia_origins,
+      wikipedia_reception, wikipedia_awards,
+      wikipedia_infobox
+    `)
+    .eq('id', baseGameId)
+    .single()
+
+  if (!baseGame) return null
+
+  // Extract typed content from JSON fields
+  const rulesContent = baseGame.rules_content as RulesContent | null
+  const setupContent = baseGame.setup_content as SetupContent | null
+  const wikiSummary = baseGame.wikipedia_summary as {
+    themes?: string[]
+    mechanics?: string[]
+    summary?: string
+  } | null
+  const wikiAwards = baseGame.wikipedia_awards as Array<{ name: string; status?: string }> | null
+  const wikiInfobox = baseGame.wikipedia_infobox as {
+    designers?: string[]
+    publishers?: Array<{ name: string }> | string[]
+  } | null
+
+  // Extract award names (winners only or unspecified status)
+  const awardNames = wikiAwards
+    ?.filter(a => a.status === 'winner' || !a.status)
+    .map(a => a.name) || null
+
+  // Extract publisher names (handle both array of objects and array of strings)
+  const publisherNames = wikiInfobox?.publishers
+    ? wikiInfobox.publishers.map(p => typeof p === 'string' ? p : p.name)
+    : null
+
+  return {
+    baseGameId: baseGame.id,
+    baseGameName: baseGame.name,
+    coreMechanics: wikiSummary?.mechanics ||
+      rulesContent?.coreRules?.slice(0, 5).map(r => r.title) ||
+      [],
+    coreTheme: wikiSummary?.themes?.[0] || null,
+    baseRulesOverview: rulesContent?.quickStart?.join(' ') ||
+      wikiSummary?.summary?.slice(0, 500) ||
+      null,
+    baseSetupSummary: setupContent?.steps?.slice(0, 5).map(s => s.step).join('. ') || null,
+    componentTypes: setupContent?.components?.map(c => c.name) || [],
+    baseGameOrigins: baseGame.wikipedia_origins as string | null,
+    baseGameReception: baseGame.wikipedia_reception as string | null,
+    baseGameAwards: awardNames,
+    baseGameDesigners: wikiInfobox?.designers || null,
+    baseGamePublishers: publisherNames,
+  }
+}
+
+// =====================================================
+// Wikipedia Context Building
+// =====================================================
 
 // Wikipedia summary structure from AI extraction
 interface WikipediaSummary {

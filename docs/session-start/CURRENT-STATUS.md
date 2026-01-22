@@ -2,7 +2,70 @@
 
 > Last Updated: 2026-01-21
 
-## Current Phase: 91 - Vecna Admin UI/UX Redesign (COMPLETE)
+## Current Phase: 92 - Vecna Pipeline & Content Quality (COMPLETE)
+
+### Session Summary (2026-01-21) - Pipeline Fixes + Content Quality System
+
+**What was done:**
+
+**Part 1: Pipeline Issues (8 of 9 fixed)**
+- Issue 2: Fixed published expansions reset on cascade (removed 'published' from reset list)
+- Issue 8: Added warning when PDF re-parsed in generate step
+- Issue 7: Consolidated duplicate `shouldSkipGame()` implementations into shared utility
+- Issue 4: Added expansion detection utilities (`getExpansionGameIds()`, `getExpansionInfo()`, `getExpansionsOfGame()`)
+- Issue 3: Consolidated 3 duplicate family context builders into `buildFamilyContextFromDb()`
+- Issue 5: Added pre-check for stale family context when processing families
+- Issue 1: `runTaxonomyStep()` now auto-accepts high-confidence (≥70%) suggestions to junction tables
+- Issue 9: Added processing locks to prevent concurrent family processing (30-min expiry)
+- Issue 6 (skipped): Transaction safety deferred as optional high-effort item
+
+**Part 2: Wikipedia Storage Enhancements**
+- Added 8 new columns for comprehensive Wikipedia data capture
+- Updated section extraction to capture variants, strategy, components, lead, legacy sections
+- Full article text now stored for complete context during content generation
+
+**Part 3: Prompt Reframing as "Quick Start Guides"**
+- Rewrote rules prompts with teaching mindset (vs dry rulebook condensation)
+- Added `whatMakesThisSpecial` section (hook, bestMoments, perfectFor, notFor)
+- Added `atAGlance` section (goal, onYourTurn, gameEnds, youWin)
+- Added `teachingTips` section (openingExplanation, startWithThis, saveForLater)
+- Added `complexityNote` for heavy games (>15 pages or >4000 words)
+
+**Part 4: Quality Validation System**
+- Created quality.ts with validation functions for rules/setup/reference content
+- AI artifact detection (catches "I'll", "Let me", "As an AI", etc.)
+- Placeholder detection (catches [brackets], <angles>, TODO, TBD, etc.)
+- Quality scoring 0-100 with pass/fail based on errors
+- Created validation API endpoint at `/api/admin/vecna/[gameId]/validate`
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00092_processing_lock.sql` | Processing lock columns and RPC functions |
+| `supabase/migrations/00093_wikipedia_enhanced_storage.sql` | Enhanced Wikipedia storage columns |
+| `src/lib/vecna/quality.ts` | Content quality validation with AI artifact detection |
+| `src/app/api/admin/vecna/[gameId]/validate/route.ts` | Validation API endpoint |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/vecna/processing.ts` | Added `runTaxonomyStep()`, `shouldSkipGame()`, lock functions |
+| `src/lib/vecna/queries.ts` | Added expansion detection utilities |
+| `src/lib/vecna/context.ts` | Added `buildFamilyContextFromDb()` |
+| `src/lib/wikipedia/sections.ts` | Extended section extraction (variants, strategy, components) |
+| `src/lib/wikipedia/types.ts` | Extended `WikipediaSections` with new fields |
+| `src/lib/wikipedia/index.ts` | Updated to capture full text and new sections |
+| `src/lib/rulebook/prompts.ts` | Reframed as Quick Start Guide with new sections |
+| `src/lib/rulebook/types.ts` | Added new `RulesContent` optional fields |
+| `src/app/api/admin/rulebook/generate-content/route.ts` | Uses consolidated context, fixed cascade |
+| `src/app/api/admin/vecna/auto-process/route.ts` | Uses shared utilities, processing locks |
+| `src/app/api/admin/vecna/family/[familyId]/process/route.ts` | Uses shared utilities, processing locks |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 91 - Vecna Admin UI/UX Redesign (COMPLETE)
 
 ### Session Summary (2026-01-21) - Tab-Based Layout Redesign
 

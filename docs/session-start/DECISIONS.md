@@ -46,6 +46,9 @@
 - **Mapbox token env variable**: Use `NEXT_PUBLIC_MAPBOX_TOKEN` consistently. The Mapbox Geocoder widget uses different naming (`accessToken`), so check component code carefully. Key files: `MapView.tsx`, `LocationPicker.tsx`.
 - **Mapbox popup styling needs explicit colors**: CSS variables (`hsl(var(--foreground))`) don't work inside Mapbox popups because they render in a separate DOM context. Use explicit color values like `#ffffff` or `#1a1a1a`. See `MapView.tsx` popup styles.
 - **Admin API routes need admin client for cross-table queries**: Admin API routes that query across tables (e.g., checking if games exist by bgg_id) should use `createAdminClient()` not `createClient()`. The user-scoped client respects RLS policies which may filter results unexpectedly. Key file: `src/app/api/admin/puffin/games/route.ts`.
+- **Family processing needs locks for concurrency**: Family processing can race if triggered multiple times (e.g., UI click + auto-process). Use `acquireProcessingLock()` and `releaseProcessingLock()` from `src/lib/vecna/processing.ts`. Locks expire after 30 minutes as safety. Uses RPC functions in `00092_processing_lock.sql`.
+- **Taxonomy step was no-op until Phase 92**: Before Phase 92, the taxonomy step only changed state without applying suggestions. Now `runTaxonomyStep()` auto-accepts high-confidence (≥70%) suggestions to junction tables (`game_themes`, `game_player_experiences`). Key file: `src/lib/vecna/processing.ts`.
+- **Quality validation catches AI artifacts**: Generated content must be validated before publishing. `validateAllContent()` in `src/lib/vecna/quality.ts` detects AI artifacts ("I'll", "Let me", "As an AI") and placeholders ([brackets], TODO, TBD). Use `/api/admin/vecna/[gameId]/validate` endpoint.
 
 ## Tech Stack
 

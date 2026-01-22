@@ -107,10 +107,21 @@ export interface SectionInfo {
 }
 
 export interface WikipediaSections {
+  // Core sections (already extracted)
   origins?: string // "History", "Origins", "Development", "Background", "Design"
   reception?: string // "Reception", "Critical reception", "Reviews"
   gameplay?: string // "Gameplay", "Rules"
-  expansions?: string // "Expansions", "Variants"
+  expansions?: string // "Expansions", "Editions"
+
+  // New sections for enhanced content generation
+  lead?: string // Intro paragraphs before first heading (always valuable)
+  variants?: string // "Variants", "House rules", "Alternative rules"
+  strategy?: string // "Strategy", "Tactics" (rare but gold)
+  components?: string // "Components", "Contents", "Equipment"
+  legacy?: string // "Legacy", "Cultural impact", "Influence"
+
+  // All sections as a map for flexible access
+  allSections?: Record<string, string>
 }
 
 // =====================================================
@@ -157,11 +168,19 @@ export interface WikipediaEnrichmentResult {
   categoryMappings: CategoryMapping[]
   searchConfidence?: 'high' | 'medium' | 'low'
   error: string | null
-  // New fields - Tier 1 extraction
+  // Tier 1 extraction
   images: WikipediaImage[]
   externalLinks: WikipediaExternalLink[]
   awards: WikipediaAward[]
   gameplay?: string // Gameplay section content
+  // Enhanced storage (Phase 1)
+  fullText?: string // Full article text for comprehensive context
+  lead?: string // Lead/intro section
+  variants?: string // Variants section
+  strategy?: string // Strategy section (rare but valuable)
+  components?: string // Components section
+  expansionsSection?: string // Expansions section text
+  allSections?: Record<string, string> // All sections as map
 }
 
 // =====================================================

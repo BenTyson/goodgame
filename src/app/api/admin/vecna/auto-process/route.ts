@@ -3,8 +3,12 @@ import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import type { VecnaState, FamilyContext } from '@/lib/vecna'
 import {
   runParseStep,
+  runTaxonomyStep,
   runGenerateStep,
   rebuildFamilyContext,
+  shouldSkipGame,
+  acquireProcessingLock,
+  releaseProcessingLock,
 } from '@/lib/vecna/processing'
 
 /**
@@ -157,6 +161,7 @@ export async function POST(request: NextRequest) {
       let processed = 0
       let skipped = 0
       let errors = 0
+      let currentFamilyId: string | null = null  // Declared outside try for error handling
 
       const supabase = createAdminClient()
 
@@ -164,7 +169,6 @@ export async function POST(request: NextRequest) {
         // Get games to process
         let gamesForProcessing: GameForProcessing[] = []
         let familyContext: FamilyContext | null = null
-        let currentFamilyId: string | null = null
 
         if (mode === 'single' && gameId) {
           // Single game mode
@@ -233,6 +237,20 @@ export async function POST(request: NextRequest) {
           currentFamilyId = family.id
           familyContext = family.family_context as FamilyContext | null
 
+          // Acquire processing lock to prevent concurrent processing
+          const lockId = `auto-process-${Date.now()}`
+          const lockAcquired = await acquireProcessingLock(supabase, familyId, lockId)
+          if (!lockAcquired) {
+            sendEvent({
+              type: 'complete',
+              summary: { total: 0, processed: 0, skipped: 0, errors: 1, duration: 0 },
+            })
+            // Note: Could also send a specific error event here
+            console.warn(`Failed to acquire lock for family ${familyId} - already being processed`)
+            controller.close()
+            return
+          }
+
           // Get all games in family
           const { data: familyGames, error: gamesError } = await supabase
             .from('games')
@@ -279,6 +297,17 @@ export async function POST(request: NextRequest) {
             const yearB = b.year_published || 9999
             return yearA - yearB
           })
+
+          // Pre-check: If base game already has content but family context is missing/stale,
+          // rebuild it before processing expansions
+          if (!familyContext && family.base_game_id) {
+            const baseGame = gamesForProcessing.find(g => g.id === family.base_game_id)
+            if (baseGame && baseGame.vecna_state === 'generated') {
+              // Base game is already generated but no cached context - rebuild it
+              familyContext = await rebuildFamilyContext(supabase, familyId, baseGame.id)
+              console.log('Pre-built family context from existing base game content')
+            }
+          }
         }
 
         // Send start event
@@ -294,7 +323,7 @@ export async function POST(request: NextRequest) {
           const previousState = game.vecna_state
 
           // Check if should skip
-          const skipResult = shouldSkipGame(game, skipBlocked)
+          const skipResult = shouldSkipGame(game, { skipBlocked })
           if (skipResult.skip) {
             sendEvent({
               type: 'game_skip',
@@ -418,8 +447,19 @@ export async function POST(request: NextRequest) {
             duration,
           },
         })
+
+        // Release processing lock if we acquired one (family mode)
+        if (mode === 'family' && currentFamilyId) {
+          await releaseProcessingLock(supabase, currentFamilyId)
+        }
       } catch (error) {
         console.error('Auto-process error:', error)
+
+        // Release processing lock on error
+        if (mode === 'family' && currentFamilyId) {
+          await releaseProcessingLock(supabase, currentFamilyId)
+        }
+
         sendEvent({
           type: 'complete',
           summary: {
@@ -443,36 +483,6 @@ export async function POST(request: NextRequest) {
       'Connection': 'keep-alive',
     },
   })
-}
-
-/**
- * Determine if a game should be skipped
- */
-function shouldSkipGame(
-  game: GameForProcessing,
-  skipBlocked: boolean
-): { skip: boolean; reason?: string } {
-  // Always skip published games
-  if (game.vecna_state === 'published') {
-    return { skip: true, reason: 'Already published' }
-  }
-
-  // Skip games already in review
-  if (game.vecna_state === 'review_pending') {
-    return { skip: true, reason: 'Awaiting review' }
-  }
-
-  // Skip games already generated
-  if (game.vecna_state === 'generated') {
-    return { skip: true, reason: 'Already generated' }
-  }
-
-  // Skip games without rulebook if skipBlocked is true
-  if (!game.rulebook_url && skipBlocked) {
-    return { skip: true, reason: 'No rulebook URL' }
-  }
-
-  return { skip: false }
 }
 
 type ProcessingStep = 'parsing' | 'taxonomy' | 'generating'
@@ -519,15 +529,7 @@ async function runProcessingStep(
       return await runParseStep(supabase, gameId, cookieHeader)
 
     case 'taxonomy':
-      await supabase
-        .from('games')
-        .update({
-          vecna_state: 'taxonomy_assigned',
-          vecna_processed_at: new Date().toISOString(),
-          vecna_error: null,
-        })
-        .eq('id', gameId)
-      return { success: true, newState: 'taxonomy_assigned' }
+      return await runTaxonomyStep(supabase, gameId)
 
     case 'generating':
       return await runGenerateStep(supabase, gameId, familyContext, isExpansion, cookieHeader, model)

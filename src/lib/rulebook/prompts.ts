@@ -7,6 +7,13 @@
  * - Uses "you" directly, occasional light humor
  * - Expert knowledge delivered with warmth
  * - Clear and scannable, never condescending
+ *
+ * Content Philosophy (Phase 2):
+ * - We create QUICK START GUIDES, not rulebook replacements
+ * - Focus on "getting you playing" not "covering every rule"
+ * - For complex games, explicitly acknowledge the rulebook is still needed
+ * - Capture what makes each game SPECIAL and unique
+ * - Include teaching tips - how to explain this to others
  */
 
 import type { ParsedPDF } from './types'
@@ -24,6 +31,13 @@ YOUR VOICE:
 - Occasionally playful (but not cheesy or overboard)
 - Clear and scannable - respect the reader's time
 
+CONTENT PHILOSOPHY:
+- You create QUICK START GUIDES, not rulebook replacements
+- Focus on getting people PLAYING and having fun quickly
+- For complex games (20+ page rulebooks), be honest: "Keep the rulebook handy for edge cases"
+- Capture what makes each game SPECIAL - the hook, the clever twist, the "aha" moments
+- Think "What would I want to know before my first game?" not "How do I cover every rule?"
+
 WRITING PRINCIPLES:
 - Lead with what's exciting about the game, not dry definitions
 - Anticipate confusion and address it naturally
@@ -37,7 +51,13 @@ CONTENT QUALITY:
 - Every piece of content should feel crafted, not generated
 - Include the "why" when it helps understanding (why a rule exists)
 - Acknowledge when a game has unusual or tricky rules
-- Be thorough but not exhaustive - cover essentials first
+- Honest about complexity - don't oversimplify heavy games
+
+TEACHING MINDSET:
+- Write as if you're helping someone teach this game to friends
+- Note the "gotchas" - rules people commonly miss on first play
+- Highlight what makes this game click - the satisfying moments
+- For expansions, focus on what's NEW and how it changes the experience
 
 TECHNICAL REQUIREMENTS:
 - Return ONLY valid JSON - no markdown, no text outside the JSON
@@ -530,6 +550,8 @@ QUALITY CHECKLIST:
 /**
  * Enhanced rules summary prompt that uses all available Wikipedia data
  * and optionally includes family context for expansions
+ *
+ * Phase 2 Update: Reframed as "Quick Start Guide" with new sections
  */
 export function getEnhancedRulesSummaryPrompt(
   rulebookText: string,
@@ -538,11 +560,19 @@ export function getEnhancedRulesSummaryPrompt(
     wikipediaContext?: string | null
     familyContext?: string | null
     expansionNote?: string | null
+    rulebookPageCount?: number | null
   }
 ): string {
   const truncatedText = rulebookText.length > 35000
     ? rulebookText.substring(0, 35000) + '\n\n[...rulebook truncated...]'
     : rulebookText
+
+  // Determine complexity tier based on rulebook length
+  const isComplexGame = (context.rulebookPageCount && context.rulebookPageCount > 20) ||
+    rulebookText.length > 25000
+  const complexityNote = isComplexGame
+    ? `\nNOTE: This is a complex game with a substantial rulebook. Your Quick Start Guide should:\n- Get players through their FIRST game, not master every rule\n- Explicitly tell them "Keep the rulebook handy for edge cases"\n- Focus on the core loop and save advanced rules for the reference card\n`
+    : ''
 
   // Build context sections
   const contextSections: string[] = []
@@ -563,83 +593,103 @@ export function getEnhancedRulesSummaryPrompt(
     ? contextSections.join('\n')
     : ''
 
-  return `You're writing the rules guide for "${gameName}" on Boardmello. This will be the first thing new players read - make it count!
-${contextBlock}
+  return `You're writing the QUICK START GUIDE for "${gameName}" on Boardmello. This helps people get playing FAST - it's not a rulebook replacement!
+${complexityNote}${contextBlock}
 RULEBOOK TEXT (primary source for all rules):
 ---
 ${truncatedText}
 ---
 
-Create a comprehensive but approachable rules guide. Write in YOUR voice - warm, expert, and genuinely helpful. Never copy rulebook text verbatim.
+Create an approachable quick start guide. Write in YOUR voice - warm, expert, and genuinely helpful. Never copy rulebook text verbatim.
 
 ${context.expansionNote ? `Since this is an expansion, focus on:\n- What NEW mechanics or rules this adds\n- How it CHANGES the base game experience\n- Setup additions/modifications\n- New victory conditions or scoring (if any)\nDon't repeat base game rules unless modified.\n\n` : ''}Return as JSON:
 {
+  "whatMakesThisSpecial": {
+    "hook": "One compelling sentence - what's the unique draw of this game?",
+    "bestMoments": [
+      "The satisfying thing that happens when you...",
+      "The tension when players...",
+      "The clever twist where..."
+    ],
+    "perfectFor": "Who will love this game? Be specific about player types.",
+    "notFor": "Who might not enjoy this? Be honest and helpful."
+  },
+  "atAGlance": {
+    "goal": "One sentence: What are you trying to achieve?",
+    "onYourTurn": "One sentence: What do you do?",
+    "gameEnds": "One sentence: When does it end?",
+    "youWin": "One sentence: How do you win?"
+  },
   "quickStart": [
-    "First thing every player needs to know - what's the goal?",
-    "The core action loop - what do you actually DO on your turn?",
-    "The key decision point - where's the interesting choice?",
-    "The satisfying moment - what makes this game click?",
-    "Pro tip - something that clicks after a few plays"
+    "First thing every player needs to know - the goal",
+    "The core action loop - what you DO",
+    "The key decision - where's the interesting choice?",
+    "The 'aha' moment - when this game clicks",
+    "Pro tip - something that helps after a few plays"
   ],
-  "overview": "3-4 sentences capturing what makes this game special. Lead with the hook - what's exciting? Then explain the core experience. End with who this game is perfect for.${context.expansionNote ? ' Mention how this expansion enhances the base game.' : ''}",
+  "overview": "3-4 sentences capturing the game experience. Lead with what's exciting, explain the core loop, mention who it's perfect for.${context.expansionNote ? ' Describe how this expansion enhances the base game.' : ''}${isComplexGame ? ' Acknowledge this is a deeper game and the guide covers essentials.' : ''}",
   "coreRules": [
     {
       "title": "Category Name (e.g., 'Resources', 'Combat', 'Building')",
       "summary": "One sentence explaining what this system does and why it matters",
       "points": [
-        "Specific rule or mechanic explained clearly",
-        "Another key point players need to know",
-        "Important interaction or exception",
-        "Helpful context or 'gotcha' to watch for"
+        "Essential rule explained clearly",
+        "Key interaction players need to know",
+        "Common 'gotcha' to watch for"
       ]
     }
   ],
   "turnStructure": [
     {
       "phase": "Phase Name",
-      "description": "What you do in this phase - be specific!",
-      "keyChoices": "The main decision(s) you make here"
+      "description": "What you do in this phase",
+      "keyChoices": "The main decision(s) here"
     }
   ],
   "scoring": [
     {
       "category": "Scoring Category",
-      "points": "How many points and how to earn them",
-      "strategy": "Brief tip on when/why to pursue this"
+      "points": "How many and how to earn them",
+      "strategy": "Brief tip on this scoring path"
     }
   ],
   "endGameConditions": [
-    "Specific trigger that ends the game (with exact numbers/conditions)",
-    "Alternative end condition if applicable"
+    "Specific trigger (with numbers if applicable)"
   ],
-  "winCondition": "Exactly how the winner is determined. Include tiebreakers if they exist.",
+  "winCondition": "How the winner is determined, including tiebreakers.",
   "keyTerms": [
     {
       "term": "Game-specific term",
-      "definition": "What it means in plain language"
+      "definition": "Plain language explanation"
     }
   ],
   "tips": [
-    "Strategic insight that new players often miss",
+    "Strategic insight for new players",
     "Common mistake to avoid",
-    "Something experienced players wish they knew earlier",
-    "Timing tip or tempo advice"
+    "What experienced players wish they knew"
   ],
   "rulesNotes": [
     "Tricky rule that's easy to get wrong",
-    "Important clarification or edge case"
-  ]
+    "Important clarification"
+  ],
+  "teachingTips": {
+    "openingExplanation": "How to introduce this game in 2-3 sentences",
+    "startWithThis": "What to explain first to get started",
+    "saveForLater": "What can wait until it comes up in play",
+    "commonQuestions": [
+      "Question new players often ask, with answer"
+    ]
+  }${isComplexGame ? `,
+  "complexityNote": "This is a deeper game - this guide covers the essentials to get you playing. Keep the rulebook handy for edge cases and advanced situations."` : ''}
 }
 
 QUALITY CHECKLIST:
-- quickStart should let someone understand the game in 60 seconds
-- overview should make someone WANT to play (not just describe the theme)${context.wikipediaContext ? '\n- Use Wikipedia reception/awards to add credibility if notable' : ''}
-- coreRules should have 3-6 categories covering all major systems
-- turnStructure should walk through a complete turn
-- scoring should include ALL ways to earn points
-- tips should be genuinely useful, not generic
-- keyTerms for any game-specific vocabulary
-- rulesNotes for things players commonly get wrong`
+- whatMakesThisSpecial should make someone WANT to play
+- atAGlance should be readable in 10 seconds
+- quickStart should get someone oriented in 60 seconds
+- coreRules: 3-6 categories, essentials only (not every rule!)
+- teachingTips: genuinely helpful for explaining to friends${context.wikipediaContext ? '\n- Use Wikipedia reception to add credibility if game is notable' : ''}
+- Be honest about complexity - don't oversimplify heavy games`
 }
 
 /**
@@ -748,7 +798,12 @@ QUALITY CHECKLIST:
 - steps should be in logical order (board first, then cards, then player pieces, etc.)
 - Include player count variations where relevant
 - firstPlayerRule should use the game's actual thematic rule if it has one
-- Tips should be genuinely useful, from experience`
+- Tips should be genuinely useful, from experience
+
+TEACHING MINDSET:
+- Setup is often when you teach the game - note when to explain rules during setup
+- Mention if certain components need to be kept secret or visible
+- Note any "aha" moments during setup that preview the game experience`
 }
 
 /**

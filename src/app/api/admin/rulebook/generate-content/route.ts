@@ -13,7 +13,7 @@ import type {
   ReferenceContent,
 } from '@/lib/rulebook'
 import { generateJSON } from '@/lib/ai/claude'
-import { buildAIContext, parseGameContextFromDb, type FamilyContext } from '@/lib/vecna'
+import { buildAIContext, parseGameContextFromDb, buildFamilyContextFromDb, type FamilyContext } from '@/lib/vecna'
 import type { Json } from '@/types/database'
 
 /**
@@ -88,54 +88,8 @@ export async function POST(request: NextRequest) {
       isExpansion = true
       relationToBase = gameRelation.relation_type
 
-      // Fetch the base game data with full Wikipedia context
-      const { data: baseGame } = await supabase
-        .from('games')
-        .select(`
-          id, name, rules_content, setup_content,
-          wikipedia_summary, wikipedia_gameplay, wikipedia_origins,
-          wikipedia_reception, wikipedia_awards, wikipedia_infobox
-        `)
-        .eq('id', gameRelation.target_game_id)
-        .single()
-
-      if (baseGame) {
-        // Build family context from base game with full Wikipedia data
-        const rulesContent = baseGame.rules_content as RulesContent | null
-        const setupContent = baseGame.setup_content as SetupContent | null
-        const wikiSummary = baseGame.wikipedia_summary as { themes?: string[]; mechanics?: string[] } | null
-        const wikiAwards = baseGame.wikipedia_awards as Array<{ name: string; status?: string }> | null
-        const wikiInfobox = baseGame.wikipedia_infobox as {
-          designers?: string[]
-          publishers?: Array<{ name: string }> | string[]
-        } | null
-
-        // Extract award names for context
-        const awardNames = wikiAwards
-          ?.filter(a => a.status === 'winner' || !a.status)
-          .map(a => a.name) || null
-
-        // Extract publisher names (handle both array of objects and array of strings)
-        const publisherNames = wikiInfobox?.publishers
-          ? wikiInfobox.publishers.map(p => typeof p === 'string' ? p : p.name)
-          : null
-
-        familyContext = {
-          baseGameId: baseGame.id,
-          baseGameName: baseGame.name,
-          coreMechanics: wikiSummary?.mechanics || rulesContent?.coreRules?.slice(0, 3).map(r => r.title) || [],
-          coreTheme: wikiSummary?.themes?.[0] || null,
-          baseRulesOverview: rulesContent?.quickStart?.join(' ') || null,
-          baseSetupSummary: setupContent?.steps?.slice(0, 3).map(s => s.step).join('. ') || null,
-          componentTypes: setupContent?.components?.map(c => c.name) || [],
-          // Enhanced: Include base game Wikipedia context
-          baseGameOrigins: baseGame.wikipedia_origins as string | null,
-          baseGameReception: baseGame.wikipedia_reception as string | null,
-          baseGameAwards: awardNames,
-          baseGameDesigners: wikiInfobox?.designers || null,
-          baseGamePublishers: publisherNames,
-        }
-      }
+      // Build family context using consolidated function
+      familyContext = await buildFamilyContextFromDb(supabase, gameRelation.target_game_id)
     }
 
     if (!game.rulebook_url) {
@@ -164,16 +118,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If no stored text, parse the PDF
+    // If no stored text, parse the PDF (should only happen if called directly outside pipeline)
     if (!rulebookText) {
+      // In pipeline mode, parse step should have already run
+      // Only re-parse if called directly outside pipeline
+      console.warn('No stored parsed text found - parse step may not have completed. Re-parsing PDF...')
       try {
-        console.log('No stored text found, parsing PDF...')
         const pdf = await parsePdfFromUrl(game.rulebook_url)
         rulebookText = pdf.text
       } catch (error) {
         return NextResponse.json({
           success: false,
-          error: `Failed to parse rulebook PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          error: `Failed to parse rulebook PDF: ${error instanceof Error ? error.message : 'Unknown error'}. Ensure parse step completed first.`,
         })
       }
     }
@@ -328,6 +284,7 @@ export async function POST(request: NextRequest) {
         const expansionIds = expansions.map(e => e.source_game_id)
 
         // Reset generated expansions to taxonomy_assigned so they get regenerated
+        // NOTE: We don't reset 'published' expansions - those are already live and should be manually handled
         const { data: updatedExpansions, error: expansionError } = await supabase
           .from('games')
           .update({
@@ -335,13 +292,13 @@ export async function POST(request: NextRequest) {
             vecna_error: 'Base game content updated - regeneration recommended',
           })
           .in('id', expansionIds)
-          .in('vecna_state', ['generated', 'review_pending', 'published'])
+          .in('vecna_state', ['generated', 'review_pending'])
           .select('id, name')
 
         if (!expansionError && updatedExpansions && updatedExpansions.length > 0) {
           invalidatedExpansionCount = updatedExpansions.length
           invalidatedExpansionNames = updatedExpansions.map(e => e.name)
-          console.log(`Marked ${invalidatedExpansionCount} expansion(s) for regeneration:`,
+          console.log(`Marked ${invalidatedExpansionCount} unpublished expansion(s) for regeneration:`,
             invalidatedExpansionNames.join(', '))
         }
       }

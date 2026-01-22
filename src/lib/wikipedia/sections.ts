@@ -58,13 +58,55 @@ const GAMEPLAY_SECTION_NAMES = [
 const EXPANSIONS_SECTION_NAMES = [
   'expansions',
   'expansion',
-  'variants',
   'editions',
   'versions',
   'supplements',
   'extensions',
   'spin-offs',
   'spinoffs',
+]
+
+// Names that indicate Variants section (separate from expansions)
+const VARIANTS_SECTION_NAMES = [
+  'variants',
+  'variant',
+  'house rules',
+  'alternative rules',
+  'optional rules',
+  'advanced rules',
+  'solo variant',
+  'solo mode',
+  'two-player variant',
+]
+
+// Names that indicate Strategy section (rare but valuable)
+const STRATEGY_SECTION_NAMES = [
+  'strategy',
+  'tactics',
+  'strategic',
+  'tips',
+  'strategy and tactics',
+  'playing tips',
+]
+
+// Names that indicate Components section
+const COMPONENTS_SECTION_NAMES = [
+  'components',
+  'contents',
+  'equipment',
+  'game components',
+  'materials',
+  'pieces',
+]
+
+// Names that indicate Legacy/Impact section
+const LEGACY_SECTION_NAMES = [
+  'legacy',
+  'cultural impact',
+  'influence',
+  'impact',
+  'in popular culture',
+  'cultural significance',
 ]
 
 // =====================================================
@@ -75,10 +117,12 @@ const EXPANSIONS_SECTION_NAMES = [
  * Extract known sections from a Wikipedia article
  *
  * @param articleUrl - Wikipedia article URL
+ * @param includeAllSections - If true, extract ALL sections into allSections map
  * @returns Object containing extracted section content
  */
 export async function extractKnownSections(
-  articleUrl: string
+  articleUrl: string,
+  includeAllSections: boolean = false
 ): Promise<WikipediaSections> {
   const result: WikipediaSections = {}
 
@@ -105,6 +149,16 @@ export async function extractKnownSections(
       level: parseInt(s.level, 10),
     }))
 
+    // Extract lead section (index 0, before first heading)
+    try {
+      result.lead = await extractSectionContent(title, 0)
+      if (result.lead) {
+        console.log(`  [Wikipedia] Extracted Lead section`)
+      }
+    } catch {
+      // Lead section extraction failed, continue
+    }
+
     // Find and extract each type of section
     const originsSection = findSection(sectionInfos, ORIGINS_SECTION_NAMES)
     if (originsSection) {
@@ -128,6 +182,52 @@ export async function extractKnownSections(
     if (expansionsSection) {
       result.expansions = await extractSectionContent(title, expansionsSection.index)
       console.log(`  [Wikipedia] Extracted Expansions section: "${expansionsSection.title}"`)
+    }
+
+    // NEW: Extract additional valuable sections
+    const variantsSection = findSection(sectionInfos, VARIANTS_SECTION_NAMES)
+    if (variantsSection) {
+      result.variants = await extractSectionContent(title, variantsSection.index)
+      console.log(`  [Wikipedia] Extracted Variants section: "${variantsSection.title}"`)
+    }
+
+    const strategySection = findSection(sectionInfos, STRATEGY_SECTION_NAMES)
+    if (strategySection) {
+      result.strategy = await extractSectionContent(title, strategySection.index)
+      console.log(`  [Wikipedia] Extracted Strategy section: "${strategySection.title}"`)
+    }
+
+    const componentsSection = findSection(sectionInfos, COMPONENTS_SECTION_NAMES)
+    if (componentsSection) {
+      result.components = await extractSectionContent(title, componentsSection.index)
+      console.log(`  [Wikipedia] Extracted Components section: "${componentsSection.title}"`)
+    }
+
+    const legacySection = findSection(sectionInfos, LEGACY_SECTION_NAMES)
+    if (legacySection) {
+      result.legacy = await extractSectionContent(title, legacySection.index)
+      console.log(`  [Wikipedia] Extracted Legacy section: "${legacySection.title}"`)
+    }
+
+    // NEW: Extract ALL sections if requested (for comprehensive storage)
+    if (includeAllSections) {
+      result.allSections = {}
+      for (const section of sectionInfos) {
+        // Skip meta sections like "See also", "References", "External links"
+        const lowerTitle = section.title.toLowerCase()
+        if (['see also', 'references', 'external links', 'notes', 'further reading', 'bibliography'].includes(lowerTitle)) {
+          continue
+        }
+        try {
+          const content = await extractSectionContent(title, section.index)
+          if (content && content.length > 50) { // Only store non-trivial sections
+            result.allSections[section.title] = content
+          }
+        } catch {
+          // Skip failed sections
+        }
+      }
+      console.log(`  [Wikipedia] Extracted ${Object.keys(result.allSections).length} total sections`)
     }
 
     return result
@@ -267,6 +367,10 @@ export async function analyzeSections(
   hasReception: boolean
   hasGameplay: boolean
   hasExpansions: boolean
+  hasVariants: boolean
+  hasStrategy: boolean
+  hasComponents: boolean
+  hasLegacy: boolean
   allSections: string[]
 }> {
   const sections = await getArticleSections(articleUrl)
@@ -277,6 +381,10 @@ export async function analyzeSections(
     hasReception: findSection(sections, RECEPTION_SECTION_NAMES) !== null,
     hasGameplay: findSection(sections, GAMEPLAY_SECTION_NAMES) !== null,
     hasExpansions: findSection(sections, EXPANSIONS_SECTION_NAMES) !== null,
+    hasVariants: findSection(sections, VARIANTS_SECTION_NAMES) !== null,
+    hasStrategy: findSection(sections, STRATEGY_SECTION_NAMES) !== null,
+    hasComponents: findSection(sections, COMPONENTS_SECTION_NAMES) !== null,
+    hasLegacy: findSection(sections, LEGACY_SECTION_NAMES) !== null,
     allSections: sections.map((s) => s.title),
   }
 }

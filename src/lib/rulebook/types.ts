@@ -125,8 +125,22 @@ export interface RulebookParseResult {
   error?: string
 }
 
-// AI-generated rules content structure (V2 - richer content)
+// AI-generated rules content structure (V3 - Quick Start Guide format)
 export interface RulesContent {
+  // NEW: What makes this game special (Phase 2)
+  whatMakesThisSpecial?: {
+    hook: string
+    bestMoments: string[]
+    perfectFor: string
+    notFor?: string
+  }
+  // NEW: At-a-glance summary (Phase 2)
+  atAGlance?: {
+    goal: string
+    onYourTurn: string
+    gameEnds: string
+    youWin: string
+  }
   quickStart: string[]
   overview: string
   coreRules: {
@@ -149,6 +163,15 @@ export interface RulesContent {
   keyTerms?: { term: string; definition: string }[]
   tips: string[]
   rulesNotes?: string[]
+  // NEW: Teaching tips (Phase 2)
+  teachingTips?: {
+    openingExplanation: string
+    startWithThis: string
+    saveForLater: string
+    commonQuestions?: string[]
+  }
+  // NEW: Complexity acknowledgment for heavy games (Phase 2)
+  complexityNote?: string
 }
 
 // AI-generated setup content structure (V2 - richer content)

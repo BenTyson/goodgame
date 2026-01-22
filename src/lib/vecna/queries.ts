@@ -1,11 +1,87 @@
 /**
- * Vecna Taxonomy Query Utilities
+ * Vecna Query Utilities
  *
- * Shared functions for fetching game taxonomy data (categories, mechanics, themes, player experiences).
- * Consolidates duplicated query code from the admin pages.
+ * Shared functions for fetching game taxonomy and relation data.
+ * Consolidates duplicated query code from the admin pages and pipeline routes.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
+
+// =====================================================
+// Expansion Detection Utilities
+// =====================================================
+
+/**
+ * Get set of game IDs that are expansions (have expansion_of or standalone_expansion_of relations)
+ *
+ * @param supabase - Supabase client instance
+ * @param gameIds - Array of game IDs to check
+ * @returns Set of game IDs that are expansions
+ */
+export async function getExpansionGameIds(
+  supabase: SupabaseClient,
+  gameIds: string[]
+): Promise<Set<string>> {
+  if (gameIds.length === 0) return new Set()
+
+  const { data } = await supabase
+    .from('game_relations')
+    .select('source_game_id')
+    .in('source_game_id', gameIds)
+    .in('relation_type', ['expansion_of', 'standalone_expansion_of'])
+
+  return new Set(data?.map(r => r.source_game_id) || [])
+}
+
+/**
+ * Check if a single game is an expansion and get its base game ID
+ *
+ * @param supabase - Supabase client instance
+ * @param gameId - Game ID to check
+ * @returns Object with isExpansion flag, base game ID, and relation type
+ */
+export async function getExpansionInfo(
+  supabase: SupabaseClient,
+  gameId: string
+): Promise<{ isExpansion: boolean; baseGameId: string | null; relationType: string | null }> {
+  const { data } = await supabase
+    .from('game_relations')
+    .select('relation_type, target_game_id')
+    .eq('source_game_id', gameId)
+    .in('relation_type', ['expansion_of', 'standalone_expansion_of'])
+    .limit(1)
+    .maybeSingle()
+
+  return {
+    isExpansion: !!data,
+    baseGameId: data?.target_game_id ?? null,
+    relationType: data?.relation_type ?? null,
+  }
+}
+
+/**
+ * Get all expansion IDs for a base game
+ *
+ * @param supabase - Supabase client instance
+ * @param baseGameId - Base game ID to get expansions for
+ * @returns Array of expansion game IDs
+ */
+export async function getExpansionsOfGame(
+  supabase: SupabaseClient,
+  baseGameId: string
+): Promise<string[]> {
+  const { data } = await supabase
+    .from('game_relations')
+    .select('source_game_id')
+    .eq('target_game_id', baseGameId)
+    .in('relation_type', ['expansion_of', 'standalone_expansion_of'])
+
+  return data?.map(r => r.source_game_id) || []
+}
+
+// =====================================================
+// Taxonomy Query Utilities
+// =====================================================
 import type {
   TaxonomyMaps,
   CategoryRow,

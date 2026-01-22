@@ -384,15 +384,33 @@ export async function enrichGameFromWikipedia(
       console.warn(`  [Wikipedia] Infobox extraction failed:`, error)
     }
 
-    // Step 3: Extract known sections (Origins, Reception)
+    // Step 3: Extract known sections (Origins, Reception, Gameplay, and new sections)
     try {
-      result.sections = await extractKnownSections(searchResult.url)
-      const sectionCount = Object.values(result.sections).filter(Boolean).length
+      // Pass true to extract all sections for comprehensive storage
+      result.sections = await extractKnownSections(searchResult.url, true)
+      const sectionCount = Object.values(result.sections).filter(v => v && typeof v === 'string').length
       if (sectionCount > 0) {
         console.log(`  [Wikipedia] Extracted ${sectionCount} sections`)
       }
+
+      // Copy new sections to top-level result for easier access
+      if (result.sections.lead) result.lead = result.sections.lead
+      if (result.sections.variants) result.variants = result.sections.variants
+      if (result.sections.strategy) result.strategy = result.sections.strategy
+      if (result.sections.components) result.components = result.sections.components
+      if (result.sections.expansions) result.expansionsSection = result.sections.expansions
+      if (result.sections.allSections) result.allSections = result.sections.allSections
     } catch (error) {
       console.warn(`  [Wikipedia] Section extraction failed:`, error)
+    }
+
+    // Step 3b: Fetch full article text for comprehensive context
+    try {
+      const fullTextResult = await fetchWikipediaContent(searchResult.url)
+      result.fullText = fullTextResult.rawContent
+      console.log(`  [Wikipedia] Fetched full text (${fullTextResult.wordCount} words)`)
+    } catch (error) {
+      console.warn(`  [Wikipedia] Full text fetch failed:`, error)
     }
 
     // Step 4: Generate AI summary (only if we have content to summarize)
@@ -468,11 +486,19 @@ export interface WikipediaStorageData {
   wikipedia_reception?: string
   wikipedia_fetched_at?: string
   wikipedia_search_confidence?: 'high' | 'medium' | 'low'
-  // New Tier 1 fields
+  // Tier 1 fields
   wikipedia_images?: Json
   wikipedia_external_links?: Json
   wikipedia_awards?: Json
   wikipedia_gameplay?: string
+  // Enhanced storage fields (Phase 1)
+  wikipedia_full_text?: string
+  wikipedia_lead?: string
+  wikipedia_variants?: string
+  wikipedia_strategy?: string
+  wikipedia_components?: string
+  wikipedia_expansions_section?: string
+  wikipedia_all_sections?: Json
 }
 
 export function prepareWikipediaStorageData(
@@ -506,7 +532,7 @@ export function prepareWikipediaStorageData(
     data.wikipedia_search_confidence = enrichmentResult.searchConfidence
   }
 
-  // New Tier 1 fields
+  // Tier 1 fields
   if (enrichmentResult.images && enrichmentResult.images.length > 0) {
     data.wikipedia_images = enrichmentResult.images as unknown as Json
   }
@@ -521,6 +547,35 @@ export function prepareWikipediaStorageData(
 
   if (enrichmentResult.gameplay) {
     data.wikipedia_gameplay = enrichmentResult.gameplay
+  }
+
+  // Enhanced storage fields (Phase 1)
+  if (enrichmentResult.fullText) {
+    data.wikipedia_full_text = enrichmentResult.fullText
+  }
+
+  if (enrichmentResult.lead) {
+    data.wikipedia_lead = enrichmentResult.lead
+  }
+
+  if (enrichmentResult.variants) {
+    data.wikipedia_variants = enrichmentResult.variants
+  }
+
+  if (enrichmentResult.strategy) {
+    data.wikipedia_strategy = enrichmentResult.strategy
+  }
+
+  if (enrichmentResult.components) {
+    data.wikipedia_components = enrichmentResult.components
+  }
+
+  if (enrichmentResult.expansionsSection) {
+    data.wikipedia_expansions_section = enrichmentResult.expansionsSection
+  }
+
+  if (enrichmentResult.allSections && Object.keys(enrichmentResult.allSections).length > 0) {
+    data.wikipedia_all_sections = enrichmentResult.allSections as unknown as Json
   }
 
   return data
