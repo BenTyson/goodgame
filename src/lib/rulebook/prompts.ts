@@ -946,7 +946,13 @@ ${truncatedText}
 
 Return valid JSON matching this structure exactly:
 
-{"themes":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason","isPrimary":true}],"playerExperiences":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason"}],"newSuggestions":[]}
+{"themes":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason","isPrimary":true}],"playerExperiences":[{"id":"<uuid>","confidence":0.9,"reasoning":"short reason"}],"newSuggestions":[{"type":"theme","name":"Short Name","description":"One sentence description","reasoning":"Why existing options don't fit"}]}
+
+CONFIDENCE SCORING GUIDE:
+- 0.9+: Perfect thematic match, central to the game experience
+- 0.7-0.9: Strong match, clearly present in gameplay
+- 0.5-0.7: Moderate match, secondary element
+- <0.5: Weak match, tangential at best
 
 Rules:
 1. Select 1-3 themes, mark ONE as isPrimary:true, others isPrimary:false
@@ -954,6 +960,13 @@ Rules:
 3. Use exact UUIDs from lists above
 4. confidence: number 0.0-1.0
 5. reasoning: one short sentence, use only straight quotes
-6. newSuggestions: leave as empty array []
+6. newSuggestions: If a game's theme/experience is NOT well-represented by existing options, suggest NEW ones:
+   - type: "theme" or "player_experience"
+   - name: Short, consistent name (e.g., "Trains & Railways", "Deckbuilding", "Sports")
+   - description: One sentence explaining this taxonomy
+   - reasoning: Why existing options don't fit this game
+   - ONLY suggest new items when confidence in ALL existing matches is < 0.5
+   - Prefer existing taxonomy whenever possible
+   - Leave as empty array [] if existing options fit well
 7. Return ONLY the JSON object, no other text`
 }

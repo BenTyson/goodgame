@@ -840,6 +840,36 @@ function cleanDescription(description: string): string {
 // BGG category mappings are defined in @/lib/config/bgg-mappings.ts
 
 /**
+ * Track unmapped BGG tags for visibility and future mapping improvements
+ */
+async function trackUnmappedBGGTags(
+  supabase: SupabaseClient<Database>,
+  bggId: number,
+  unmappedTags: { name: string; type: 'category' | 'mechanic' }[]
+): Promise<void> {
+  if (unmappedTags.length === 0) return
+
+  // Log unmapped tags for visibility
+  const tagList = unmappedTags.map(t => t.name).join(', ')
+  console.log(`  [Taxonomy] ${unmappedTags.length} unmapped BGG tags: [${tagList}]`)
+
+  // Upsert into tracking table (if it exists)
+  // Uses raw query to avoid TypeScript errors before migration is applied
+  try {
+    for (const tag of unmappedTags) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('track_unmapped_bgg_tag', {
+        p_bgg_id: bggId,
+        p_bgg_name: tag.name,
+        p_bgg_type: tag.type,
+      })
+    }
+  } catch {
+    // Silently ignore if tracking table/function doesn't exist yet
+  }
+}
+
+/**
  * Check if a game exists in our database by BGG ID
  */
 async function gameExistsByBggId(
@@ -1168,7 +1198,7 @@ export async function importGameFromBGG(
   }
 
   // Link to categories based on BGG categories (alias system + name fallback)
-  await linkGameToCategories(newGame.id, bggData.categoryLinks, bggData.categories)
+  await linkGameToCategories(newGame.id, bggData.categoryLinks, bggData.categories, bggData.id)
 
   // Link to themes based on BGG categories (alias system + name fallback)
   await linkGameToThemes(newGame.id, bggData.categoryLinks, bggData.categories)
@@ -1298,7 +1328,7 @@ export async function importGameFromBGG(
  * Link a game to categories based on BGG categories
  * Uses alias system (BGG ID lookup) with fallback to name-based mapping
  */
-async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[]): Promise<void> {
+async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[], bggCategories: string[], bggId?: number): Promise<void> {
   const supabase = createAdminClient()
 
   // Get our categories
@@ -1311,15 +1341,19 @@ async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[],
   const categoryBySlug = new Map(categories.map(c => [c.slug, c.id]))
   const categoryById = new Map(categories.map(c => [c.id, c.slug]))
   const matchedCategoryIds = new Set<string>()
+  const matchedBggCategories = new Set<string>()
 
   // Step 1: Resolve via alias system (BGG IDs)
   if (bggCategoryLinks.length > 0) {
     const bggIds = bggCategoryLinks.map(link => link.id)
     const aliasMap = await resolveBGGAliases(bggIds, 'category', 'category')
 
-    for (const [, targetId] of aliasMap) {
+    for (const [bggLinkId, targetId] of aliasMap) {
       if (categoryById.has(targetId)) {
         matchedCategoryIds.add(targetId)
+        // Find the original BGG category name for tracking
+        const link = bggCategoryLinks.find(l => l.id === bggLinkId)
+        if (link) matchedBggCategories.add(link.name)
       }
     }
   }
@@ -1330,7 +1364,18 @@ async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[],
     if (ourSlug && categoryBySlug.has(ourSlug)) {
       const categoryId = categoryBySlug.get(ourSlug)!
       matchedCategoryIds.add(categoryId)
+      matchedBggCategories.add(bggCat)
     }
+  }
+
+  // Track unmapped categories
+  const unmappedCategories = bggCategories.filter(cat => !matchedBggCategories.has(cat))
+  if (unmappedCategories.length > 0 && bggId) {
+    await trackUnmappedBGGTags(
+      supabase,
+      bggId,
+      unmappedCategories.map(name => ({ name, type: 'category' as const }))
+    )
   }
 
   // Insert category links
@@ -1339,7 +1384,8 @@ async function linkGameToCategories(gameId: string, bggCategoryLinks: BGGLink[],
     const links = categoryIdArray.map((categoryId, index) => ({
       game_id: gameId,
       category_id: categoryId,
-      is_primary: index === 0  // First match is primary
+      is_primary: index === 0,  // First match is primary
+      source: 'bgg',
     }))
 
     await supabase.from('game_categories').insert(links)
@@ -1391,7 +1437,8 @@ async function linkGameToThemes(gameId: string, bggCategoryLinks: BGGLink[], bgg
   const links = themeIdArray.map((themeId, index) => ({
     game_id: gameId,
     theme_id: themeId,
-    is_primary: index === 0  // First match is primary
+    is_primary: index === 0,  // First match is primary
+    source: 'bgg',
   }))
 
   await supabase.from('game_themes').insert(links)
@@ -1447,7 +1494,8 @@ async function linkGameToPlayerExperiences(
   const links = expIdArray.map((expId, index) => ({
     game_id: gameId,
     player_experience_id: expId,
-    is_primary: index === 0  // First match is primary
+    is_primary: index === 0,  // First match is primary
+    source: 'bgg',
   }))
 
   await supabase.from('game_player_experiences').insert(links)

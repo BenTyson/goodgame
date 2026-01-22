@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Star, Sparkles, HelpCircle } from 'lucide-react'
+import { Star, Sparkles, HelpCircle, Plus, Loader2, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TaxonomySuggestion } from '@/types/database'
 import type { SelectedTaxonomyItem } from '@/lib/admin/wizard'
@@ -19,14 +21,22 @@ interface TaxonomyItem {
 
 type TaxonomyType = 'category' | 'mechanic' | 'theme' | 'player_experience'
 
+interface NewTaxonomyCreateResult {
+  id: string
+  name: string
+  slug: string
+}
+
 interface TaxonomySelectorProps<T extends TaxonomyItem> {
   items: T[]
   selected: SelectedTaxonomyItem[]
   suggestions?: TaxonomySuggestion[]
   onChange: (selected: SelectedTaxonomyItem[]) => void
+  onNewTaxonomyCreated?: (item: NewTaxonomyCreateResult) => void
   type: TaxonomyType
   allowPrimary?: boolean
   className?: string
+  gameId?: string
 }
 
 function getTypeLabel(type: TaxonomyType): string {
@@ -53,10 +63,15 @@ export function TaxonomySelector<T extends TaxonomyItem>({
   selected,
   suggestions = [],
   onChange,
+  onNewTaxonomyCreated,
   type,
   allowPrimary = true,
   className,
+  gameId,
 }: TaxonomySelectorProps<T>) {
+  const [creatingId, setCreatingId] = useState<string | null>(null)
+  const [slugInputs, setSlugInputs] = useState<Record<string, string>>({})
+  const [rejectedSuggestionIds, setRejectedSuggestionIds] = useState<Set<string>>(new Set())
   // Memoize suggestion map - only recalculate when suggestions or type change
   const suggestionMap = useMemo(() => new Map(
     suggestions
@@ -116,6 +131,74 @@ export function TaxonomySelector<T extends TaxonomyItem>({
     () => sortedItems.filter(item => !suggestionMap.has(item.id)),
     [sortedItems, suggestionMap]
   )
+
+  // Filter new taxonomy suggestions for this type
+  const newTaxonomySuggestionType = type === 'theme' ? 'new_theme' : type === 'player_experience' ? 'new_experience' : null
+  const newSuggestions = useMemo(
+    () => suggestions.filter(s =>
+      s.suggestion_type === newTaxonomySuggestionType &&
+      s.status === 'pending' &&
+      !rejectedSuggestionIds.has(s.id)
+    ),
+    [suggestions, newTaxonomySuggestionType, rejectedSuggestionIds]
+  )
+
+  // Handle creating new taxonomy from suggestion
+  const handleCreateAndApply = useCallback(async (suggestion: TaxonomySuggestion) => {
+    if (!gameId || !suggestion.suggested_name) return
+
+    const slug = slugInputs[suggestion.id] || suggestion.suggested_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+    setCreatingId(suggestion.id)
+    try {
+      const response = await fetch('/api/admin/games/taxonomy/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suggestionId: suggestion.id,
+          gameId,
+          type: type === 'theme' ? 'theme' : 'player_experience',
+          name: suggestion.suggested_name,
+          description: suggestion.suggested_description,
+          slug,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Failed to create taxonomy:', error)
+        return
+      }
+
+      const result = await response.json()
+
+      // Notify parent of new taxonomy item
+      if (onNewTaxonomyCreated && result.item) {
+        onNewTaxonomyCreated(result.item)
+      }
+
+      // Auto-select the new item
+      onChange([...selected, { id: result.item.id, isPrimary: false }])
+    } catch (error) {
+      console.error('Failed to create taxonomy:', error)
+    } finally {
+      setCreatingId(null)
+    }
+  }, [gameId, slugInputs, type, onNewTaxonomyCreated, onChange, selected])
+
+  // Handle rejecting a new taxonomy suggestion
+  const handleRejectSuggestion = useCallback(async (suggestionId: string) => {
+    try {
+      await fetch('/api/admin/games/taxonomy', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestionId, status: 'rejected' }),
+      })
+      setRejectedSuggestionIds(prev => new Set([...prev, suggestionId]))
+    } catch (error) {
+      console.error('Failed to reject suggestion:', error)
+    }
+  }, [])
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -253,6 +336,84 @@ export function TaxonomySelector<T extends TaxonomyItem>({
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* New Taxonomy Suggestions Section */}
+      {newSuggestions.length > 0 && (type === 'theme' || type === 'player_experience') && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 uppercase tracking-wider text-xs text-amber-600 dark:text-amber-400 font-medium">
+            <Plus className="h-4 w-4" />
+            Suggested New {type === 'theme' ? 'Themes' : 'Player Experiences'}
+          </div>
+          <div className="space-y-2">
+            {newSuggestions.map(suggestion => (
+              <div
+                key={suggestion.id}
+                className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-amber-700 dark:text-amber-300">
+                        {suggestion.suggested_name}
+                      </span>
+                      <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400">
+                        AI Suggested
+                      </Badge>
+                    </div>
+                    {suggestion.suggested_description && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {suggestion.suggested_description}
+                      </p>
+                    )}
+                    {suggestion.reasoning && (
+                      <p className="text-xs text-muted-foreground mt-2 italic">
+                        Reasoning: {suggestion.reasoning}
+                      </p>
+                    )}
+                    <div className="mt-3 flex items-center gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Slug (auto-generated)"
+                        value={slugInputs[suggestion.id] || ''}
+                        onChange={(e) => setSlugInputs(prev => ({ ...prev, [suggestion.id]: e.target.value }))}
+                        className="h-8 text-sm max-w-[200px]"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCreateAndApply(suggestion)}
+                        disabled={creatingId === suggestion.id}
+                        className="h-8 text-xs"
+                      >
+                        {creatingId === suggestion.id ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-3 w-3 mr-1" />
+                            Create & Apply
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRejectSuggestion(suggestion.id)}
+                        className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

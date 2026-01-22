@@ -78,6 +78,19 @@ export const TaxonomyTab = forwardRef<TaxonomyTabRef, TaxonomyTabProps>(
   const [selectedThemes, setSelectedThemes] = useState<SelectedTaxonomyItem[]>(initialSelections.initialThemes)
   const [selectedExperiences, setSelectedExperiences] = useState<SelectedTaxonomyItem[]>(initialSelections.initialExperiences)
 
+  // Track newly created taxonomy items to add to the items lists
+  const [newThemes, setNewThemes] = useState<{ id: string; name: string; slug: string; description: string | null }[]>([])
+  const [newExperiences, setNewExperiences] = useState<{ id: string; name: string; slug: string; description: string | null }[]>([])
+
+  // Handlers for when new taxonomy is created
+  const handleNewThemeCreated = useCallback((item: { id: string; name: string; slug: string }) => {
+    setNewThemes(prev => [...prev, { ...item, description: null }])
+  }, [])
+
+  const handleNewExperienceCreated = useCallback((item: { id: string; name: string; slug: string }) => {
+    setNewExperiences(prev => [...prev, { ...item, description: null }])
+  }, [])
+
   // Track initial state for detecting unsaved changes
   const initialStateRef = useRef<{
     categories: SelectedTaxonomyItem[]
@@ -290,12 +303,14 @@ export const TaxonomyTab = forwardRef<TaxonomyTabRef, TaxonomyTabProps>(
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={initialData.themes ?? []}
+            items={[...(initialData.themes ?? []), ...newThemes]}
             selected={selectedThemes}
             suggestions={initialData.suggestions}
             onChange={setSelectedThemes}
+            onNewTaxonomyCreated={handleNewThemeCreated}
             type="theme"
             allowPrimary={true}
+            gameId={game.id}
           />
         </CardContent>
       </Card>
@@ -317,12 +332,14 @@ export const TaxonomyTab = forwardRef<TaxonomyTabRef, TaxonomyTabProps>(
         </CardHeader>
         <CardContent>
           <TaxonomySelector
-            items={initialData.playerExperiences ?? []}
+            items={[...(initialData.playerExperiences ?? []), ...newExperiences]}
             selected={selectedExperiences}
             suggestions={initialData.suggestions}
             onChange={setSelectedExperiences}
+            onNewTaxonomyCreated={handleNewExperienceCreated}
             type="player_experience"
             allowPrimary={false}
+            gameId={game.id}
           />
         </CardContent>
       </Card>

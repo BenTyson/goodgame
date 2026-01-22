@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
           game_id: gameId,
           category_id: c.categoryId,
           is_primary: c.isPrimary,
+          source: 'manual',
         }))
 
         const { error: insertCategoriesError } = await adminClient
@@ -159,6 +160,7 @@ export async function POST(request: NextRequest) {
         const mechanicInserts = mechanics.map(m => ({
           game_id: gameId,
           mechanic_id: m.mechanicId,
+          source: 'manual',
         }))
 
         const { error: insertMechanicsError } = await adminClient
@@ -187,6 +189,7 @@ export async function POST(request: NextRequest) {
           game_id: gameId,
           theme_id: t.themeId,
           is_primary: t.isPrimary,
+          source: 'manual',
         }))
 
         const { error: insertThemesError } = await adminClient
@@ -215,6 +218,7 @@ export async function POST(request: NextRequest) {
           game_id: gameId,
           player_experience_id: e.experienceId,
           is_primary: e.isPrimary,
+          source: 'manual',
         }))
 
         const { error: insertExperiencesError } = await adminClient

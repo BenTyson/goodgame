@@ -2,7 +2,54 @@
 
 > Last Updated: 2026-01-21
 
-## Current Phase: 92 - Vecna Pipeline & Content Quality (COMPLETE)
+## Current Phase: 93 - Taxonomy System Audit & Implementation (COMPLETE)
+
+### Session Summary (2026-01-21) - Taxonomy Improvements
+
+**What was done:**
+
+**Phase 1: Enable New Taxonomy Suggestions**
+- Updated AI prompt to enable `newSuggestions` with confidence calibration (0.9+ = perfect, 0.7-0.9 = strong, etc.)
+- Added "Create & Apply" UI in TaxonomySelector for new_theme/new_experience suggestions
+- Created API endpoint (`/api/admin/games/taxonomy/create`) to create new taxonomy from suggestions
+- Parse route already handled newSuggestions storage (verified existing implementation)
+
+**Phase 2: BGG Unmapped Logging**
+- Added `trackUnmappedBGGTags()` function to log unmapped BGG categories during import
+- Created `bgg_unmapped_tags` tracking table with occurrence counts and example BGG IDs
+- Console logs now show which BGG categories didn't map to our taxonomy
+
+**Phase 3: Expand Static Mappings**
+- Added theme mappings: Prehistoric, Trains, Transportation, Sports, Educational, Pop-culture, Literary
+- Added experience mappings: Dexterity (Action/Dexterity, Flicking, Stacking), Memory, Real-time (Speed, Pattern Recognition)
+
+**Phase 4: Source Tracking**
+- Added `source` column to `game_player_experiences` (was missing from migration 00061)
+- Updated all taxonomy inserts to include source: 'bgg' (importer), 'ai' (Vecna), 'manual' (admin)
+- Backfill marks existing records as 'legacy'
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/00094_bgg_unmapped_tracking.sql` | Track unmapped BGG tags with counts |
+| `supabase/migrations/00095_player_experience_source.sql` | Add source column to player experiences |
+| `src/app/api/admin/games/taxonomy/create/route.ts` | Create new taxonomy from AI suggestions |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/lib/rulebook/prompts.ts` | Updated taxonomy prompt to enable newSuggestions with confidence guidance |
+| `src/components/admin/game-editor/TaxonomySelector.tsx` | Added new taxonomy suggestion UI with Create & Apply |
+| `src/components/admin/game-editor/TaxonomyTab.tsx` | Added handlers for newly created taxonomy items |
+| `src/lib/bgg/importer.ts` | Added unmapped tag tracking, source='bgg' to inserts |
+| `src/lib/config/bgg-mappings.ts` | Expanded theme and experience mappings |
+| `src/app/api/admin/games/taxonomy/route.ts` | Added source='manual' to all taxonomy inserts |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 92 - Vecna Pipeline & Content Quality (COMPLETE)
 
 ### Session Summary (2026-01-21) - Pipeline Fixes + Content Quality System
 

@@ -49,6 +49,7 @@
 - **Family processing needs locks for concurrency**: Family processing can race if triggered multiple times (e.g., UI click + auto-process). Use `acquireProcessingLock()` and `releaseProcessingLock()` from `src/lib/vecna/processing.ts`. Locks expire after 30 minutes as safety. Uses RPC functions in `00092_processing_lock.sql`.
 - **Taxonomy step was no-op until Phase 92**: Before Phase 92, the taxonomy step only changed state without applying suggestions. Now `runTaxonomyStep()` auto-accepts high-confidence (≥70%) suggestions to junction tables (`game_themes`, `game_player_experiences`). Key file: `src/lib/vecna/processing.ts`.
 - **Quality validation catches AI artifacts**: Generated content must be validated before publishing. `validateAllContent()` in `src/lib/vecna/quality.ts` detects AI artifacts ("I'll", "Let me", "As an AI") and placeholders ([brackets], TODO, TBD). Use `/api/admin/vecna/[gameId]/validate` endpoint.
+- **Taxonomy inserts need source tracking**: All taxonomy junction tables (`game_themes`, `game_player_experiences`, `game_categories`, `game_mechanics`) have a `source` column. Always include `source: 'bgg'` (importer), `'ai'` (Vecna), or `'manual'` (admin) when inserting. Key files: `src/lib/bgg/importer.ts`, `src/lib/vecna/processing.ts`, `src/app/api/admin/games/taxonomy/route.ts`.
 
 ## Tech Stack
 

@@ -107,6 +107,7 @@ export const BGG_THEME_MAP: Record<string, string> = {
   'Political': 'historical',
   'Post-Napoleonic': 'historical',
   'Renaissance': 'historical',
+  'Prehistoric': 'historical',
 
   // Horror theme
   'Horror': 'horror',
@@ -137,6 +138,8 @@ export const BGG_THEME_MAP: Record<string, string> = {
   'Economic': 'economic',
   'Industry / Manufacturing': 'economic',
   'Negotiation': 'economic',
+  'Trains': 'economic',
+  'Transportation': 'economic',
 
   // Pirates/Nautical theme
   'Pirates': 'pirates',
@@ -162,6 +165,21 @@ export const BGG_THEME_MAP: Record<string, string> = {
   'Mythology': 'mythology',
   'Greek Mythology': 'mythology',
   'Norse Mythology': 'mythology',
+
+  // Sports theme (games about athletic competition)
+  'Sports': 'sports',
+  'Racing': 'sports',
+
+  // Educational theme
+  'Educational': 'educational',
+  'Math': 'educational',
+  'Trivia': 'educational',
+
+  // Media-based themes
+  'Movies / TV / Radio theme': 'pop-culture',
+  'Video Game Theme': 'pop-culture',
+  'Novel-based': 'literary',
+  'Book': 'literary',
 } as const
 
 /**
@@ -238,6 +256,20 @@ export const BGG_EXPERIENCE_MAP: Record<string, string> = {
   'Deduction': 'hidden-roles',
   'Spies/Secret Agents': 'hidden-roles',
   'Traitor Game': 'hidden-roles',
+
+  // Physical/Dexterity
+  'Action / Dexterity': 'dexterity',
+  'Dexterity': 'dexterity',
+  'Flicking': 'dexterity',
+  'Stacking and Balancing': 'dexterity',
+
+  // Memory-based
+  'Memory': 'memory',
+
+  // Real-time/Fast-paced
+  'Real-Time': 'real-time',
+  'Speed': 'real-time',
+  'Pattern Recognition': 'real-time',
 } as const
 
 /**
