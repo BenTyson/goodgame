@@ -20,10 +20,10 @@ import {
   CheckCircle2,
   FileEdit,
   Clock,
-  Dices,
   Trash2,
   Loader2,
 } from 'lucide-react'
+import { PlaceholderGameImage } from '@/components/games/PlaceholderGameImage'
 import { STATUS_COLORS } from '@/lib/admin/ui-theme'
 
 interface GameCardProps {
@@ -71,9 +71,8 @@ export function GameCard({ game }: GameCardProps) {
   const getStatusBadge = () => {
     if (game.is_published) {
       return (
-        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS.success.badge}`}>
-          <CheckCircle2 className="h-3 w-3" />
-          Published
+        <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-500 shadow-md">
+          <CheckCircle2 className="h-4 w-4 text-white" />
         </span>
       )
     }
@@ -85,10 +84,14 @@ export function GameCard({ game }: GameCardProps) {
         </span>
       )
     }
+    // Hide badge for "none" or empty status
+    if (!game.content_status || game.content_status === 'none') {
+      return null
+    }
     return (
       <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS.neutral.badge}`}>
         <Clock className="h-3 w-3" />
-        {game.content_status || 'No content'}
+        {game.content_status}
       </span>
     )
   }
@@ -112,17 +115,8 @@ export function GameCard({ game }: GameCardProps) {
                 source="uploaded"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
               />
-            ) : game.bgg_raw_data?.thumbnail ? (
-              <SourcedImage
-                src={game.bgg_raw_data.thumbnail}
-                alt={game.name}
-                source="bgg"
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-              />
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Dices className="h-8 w-8 text-muted-foreground/30" />
-              </div>
+              <PlaceholderGameImage gameName={game.name} gameId={game.id} hideComingSoon />
             )}
             <div className="absolute top-1.5 right-1.5">
               {getStatusBadge()}

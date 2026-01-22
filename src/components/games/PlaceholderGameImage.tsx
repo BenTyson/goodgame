@@ -6,6 +6,7 @@ interface PlaceholderGameImageProps {
   gameName: string
   gameId: string
   className?: string
+  hideComingSoon?: boolean
 }
 
 // Color palettes for variety - each game gets a consistent color based on ID
@@ -31,7 +32,7 @@ function hashString(str: string): number {
   return Math.abs(hash)
 }
 
-export function PlaceholderGameImage({ gameName, gameId, className }: PlaceholderGameImageProps) {
+export function PlaceholderGameImage({ gameName, gameId, className, hideComingSoon }: PlaceholderGameImageProps) {
   const paletteIndex = hashString(gameId) % COLOR_PALETTES.length
   const palette = COLOR_PALETTES[paletteIndex]
 
@@ -119,11 +120,13 @@ export function PlaceholderGameImage({ gameName, gameId, className }: Placeholde
         </h3>
 
         {/* Preview indicator */}
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center">
-          <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
-            Image Coming Soon
-          </span>
-        </div>
+        {!hideComingSoon && (
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+            <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+              Image Coming Soon
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

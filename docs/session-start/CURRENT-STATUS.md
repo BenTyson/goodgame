@@ -29,6 +29,13 @@
 - Added error icon indicator on game cards when `vecna_error` is set
 - Hover tooltip shows the error message
 
+**Admin Games List Improvements:**
+- Replaced BGG reference image fallback with `PlaceholderGameImage` component (gradient + initials)
+- Added `hideComingSoon` prop to PlaceholderGameImage for admin context (hides "Image Coming Soon" text)
+- Published status badge: now shows just green checkmark icon (removed text, more prominent)
+- Hidden badge entirely for games with "none" or empty content status
+- Removed unused `Dices` icon import from GameCard
+
 **Files Modified:**
 | File | Changes |
 |------|---------|
@@ -40,6 +47,8 @@
 | `src/lib/vecna/context.ts` | Updated expansion note to handle minimal rulebooks |
 | `src/lib/rulebook/prompts.ts` | Updated rules/setup/reference prompts for minimal expansion rulebooks |
 | `src/app/api/admin/rulebook/generate-content/route.ts` | Changed expansion invalidation to warning-only (preserves state) |
+| `src/components/admin/GameCard.tsx` | Replaced BGG/dice fallback with PlaceholderGameImage, updated status badges |
+| `src/components/games/PlaceholderGameImage.tsx` | Added `hideComingSoon` prop |
 
 **Build Status:** Passing
 
