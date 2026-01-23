@@ -166,6 +166,7 @@ export function GameDiscoveryCard({
             gameSlug={game.slug}
             gameName={game.name}
             hasRulebook={game.has_rulebook}
+            rulebookUrl={game.rulebook_url}
             onRulebookSet={onRulebookSet}
           >
             <Button

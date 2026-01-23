@@ -176,7 +176,9 @@ export async function POST(
 
 /**
  * PATCH /api/admin/vecna/[gameId]/discover-rulebook
- * Set the rulebook URL for a game from discovery results
+ * Set or clear the rulebook URL for a game
+ *
+ * Pass { url: null } to clear the rulebook and reset the game state
  */
 export async function PATCH(
   request: NextRequest,
@@ -190,8 +192,41 @@ export async function PATCH(
 
     const { gameId } = await params
     const body = await request.json()
-    const { url, source } = body as { url: string; source: string }
+    const { url, source } = body as { url: string | null; source?: string }
 
+    const supabase = createAdminClient()
+
+    // Handle clearing the rulebook (url = null)
+    if (url === null) {
+      const { data: game, error } = await supabase
+        .from('games')
+        .update({
+          rulebook_url: null,
+          rulebook_source: null,
+          vecna_state: 'enriched', // Reset to enriched state
+          vecna_processed_at: new Date().toISOString(),
+          vecna_error: null,
+        })
+        .eq('id', gameId)
+        .select('id, name, rulebook_url, vecna_state')
+        .single()
+
+      if (error) {
+        console.error('Failed to clear rulebook URL:', error)
+        return NextResponse.json({ error: 'Failed to clear rulebook' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        gameId: game.id,
+        name: game.name,
+        rulebookUrl: game.rulebook_url,
+        state: game.vecna_state,
+        cleared: true,
+      })
+    }
+
+    // Setting a URL - validate it
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL required' }, { status: 400 })
     }
@@ -205,8 +240,6 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
-
     // Map source to rulebook_source enum
     const sourceMap: Record<string, string> = {
       wikidata: 'wikidata',
@@ -219,7 +252,7 @@ export async function PATCH(
       .from('games')
       .update({
         rulebook_url: url,
-        rulebook_source: sourceMap[source] || 'manual',
+        rulebook_source: sourceMap[source || 'manual'] || 'manual',
         vecna_state: 'rulebook_ready',
         vecna_processed_at: new Date().toISOString(),
         vecna_error: null,

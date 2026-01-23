@@ -9,6 +9,8 @@ import {
   AlertCircle,
   Search,
   CheckCircle2,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +25,7 @@ interface QuickRulebookPopoverProps {
   gameSlug: string
   gameName: string
   hasRulebook: boolean
+  rulebookUrl?: string | null
   onRulebookSet?: () => void
   children: React.ReactNode
 }
@@ -32,6 +35,7 @@ export function QuickRulebookPopover({
   gameSlug,
   gameName,
   hasRulebook,
+  rulebookUrl,
   onRulebookSet,
   children,
 }: QuickRulebookPopoverProps) {
@@ -40,8 +44,42 @@ export function QuickRulebookPopover({
   const [url, setUrl] = useState('')
   const [isSetting, setIsSetting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Truncate URL for display
+  const truncatedUrl = rulebookUrl
+    ? rulebookUrl.length > 40
+      ? rulebookUrl.substring(0, 37) + '...'
+      : rulebookUrl
+    : null
+
+  const handleClearRulebook = async () => {
+    setIsClearing(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/vecna/${gameId}/discover-rulebook`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: null, source: 'manual' }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to clear rulebook')
+      }
+
+      setOpen(false)
+      onRulebookSet?.()
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear rulebook')
+    } finally {
+      setIsClearing(false)
+    }
+  }
 
   const handleSetUrl = async () => {
     if (!url.trim()) return
@@ -136,6 +174,55 @@ export function QuickRulebookPopover({
               {hasRulebook ? 'Change Rulebook' : 'Add Rulebook'}
             </span>
           </div>
+
+          {/* Current rulebook status */}
+          {hasRulebook && rulebookUrl && (
+            <div className="p-2 bg-muted rounded-md space-y-2">
+              <div className="text-xs text-muted-foreground">Current rulebook:</div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={rulebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate flex-1"
+                  title={rulebookUrl}
+                >
+                  {truncatedUrl}
+                </a>
+                <a
+                  href={rulebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+                onClick={handleClearRulebook}
+                disabled={isClearing || isSetting || isUploading}
+              >
+                {isClearing ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                ) : (
+                  <Trash2 className="h-3 w-3 mr-1.5" />
+                )}
+                Clear Rulebook
+              </Button>
+            </div>
+          )}
+
+          {hasRulebook && !rulebookUrl && (
+            <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
+              <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span>Rulebook URL is set but could not be loaded. Upload a new one or set a valid URL.</span>
+              </div>
+            </div>
+          )}
 
           {/* URL input */}
           <div className="space-y-2">
