@@ -49,7 +49,7 @@ export async function runParseStep(
     .eq('id', gameId)
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3399'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3399'
     const response = await fetch(`${baseUrl}/api/admin/rulebook/parse`, {
       method: 'POST',
       headers: {
@@ -120,7 +120,7 @@ export async function runGenerateStep(
     .eq('id', gameId)
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3399'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3399'
     const response = await fetch(`${baseUrl}/api/admin/rulebook/generate-content`, {
       method: 'POST',
       headers: {
