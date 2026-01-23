@@ -438,7 +438,20 @@ export function AutoProcessModal({
                 Completed in {summary.duration}s
               </div>
 
-              {/* Game Results List */}
+              {/* Error Details (always show if there are errors) */}
+              {summary.errors > 0 && gamesList.length === 1 && gamesList[0].error && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-medium">Error processing {gamesList[0].gameName}:</div>
+                      <div className="text-red-600 dark:text-red-400">{gamesList[0].error}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Game Results List (for multiple games) */}
               {gamesList.length > 1 && (
                 <ScrollArea className="h-48 border rounded-lg">
                   <div className="p-2 space-y-1">
