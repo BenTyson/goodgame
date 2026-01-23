@@ -2,7 +2,43 @@
 
 > Last Updated: 2026-01-22
 
-## Current Phase: 94 - Vecna Processing UX Fixes
+## Current Phase: 95 - Admin Users Page
+
+### Session Summary (2026-01-22) - Admin Users Management
+
+**What was done:**
+- Created `/admin/users` page for managing user accounts and activity
+- Filter tabs: All, Admin, Active (30 days), Inactive, Sellers
+- Search by username/display_name with pagination (60 items/page)
+- UserTable component with avatar, name, role badge, games count, followers, last active
+- UserDetailPanel slide-out sheet with:
+  - User header (avatar, name, role, location, joined date)
+  - Activity stats grid (games, ratings, reviews, followers, following, last active)
+  - Shelf breakdown (owned, want_to_buy, want_to_play, wishlist, previously_owned)
+  - Marketplace stats for sellers (sales, purchases, rating, Stripe status)
+  - Social links section
+  - Admin actions: View Profile, Toggle Admin Role (with confirmation dialog)
+- API route for user detail fetching and role updates
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/admin-user-queries.ts` | Query functions: getAdminUsers, getAdminUserCounts, getAdminUserDetail, updateUserRole |
+| `src/app/admin/(dashboard)/users/page.tsx` | Server component with filters, search, pagination |
+| `src/app/admin/(dashboard)/users/components/UserTable.tsx` | Client table component with clickable rows |
+| `src/app/admin/(dashboard)/users/components/UserDetailPanel.tsx` | Sheet component with full user details |
+| `src/app/api/admin/users/[id]/route.ts` | GET user detail, PATCH role update |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/admin/AdminSidebar.tsx` | Added Users nav item with UserCog icon |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 94 - Vecna Processing UX Fixes (COMPLETE)
 
 ### Session Summary (2026-01-22) - Processing Tab UX & Expansion Handling
 
