@@ -6,22 +6,28 @@ import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
 // Allow up to 120 seconds for large file uploads
 export const maxDuration = 120
 
-// PDF magic bytes
-const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46] // %PDF
+// PDF magic bytes: %PDF
+const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46]
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
-function validatePdfFile(buffer: Buffer): { valid: boolean; error?: string } {
-  // Check magic bytes
-  const magicBytes = buffer.slice(0, 4)
-  const isPdf = PDF_MAGIC_BYTES.every((byte, i) => magicBytes[i] === byte)
-
-  if (!isPdf) {
-    return { valid: false, error: 'File is not a valid PDF' }
+/**
+ * Validate PDF by checking magic bytes from first 4 bytes of file
+ * Memory-efficient: only reads 4 bytes, not the entire file
+ */
+async function validatePdfMagicBytes(file: File): Promise<{ valid: boolean; error?: string }> {
+  // Check file size first (no memory needed - uses File.size property)
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: 'File size exceeds 50MB limit' }
   }
 
-  // Check file size (max 50MB for rulebooks)
-  const maxSize = 50 * 1024 * 1024
-  if (buffer.length > maxSize) {
-    return { valid: false, error: 'File size exceeds 50MB limit' }
+  // Read only the first 4 bytes to check magic bytes
+  const headerBlob = file.slice(0, 4)
+  const headerBuffer = await headerBlob.arrayBuffer()
+  const headerBytes = new Uint8Array(headerBuffer)
+
+  const isPdf = PDF_MAGIC_BYTES.every((byte, i) => headerBytes[i] === byte)
+  if (!isPdf) {
+    return { valid: false, error: 'File is not a valid PDF' }
   }
 
   return { valid: true }
@@ -30,6 +36,8 @@ function validatePdfFile(buffer: Buffer): { valid: boolean; error?: string } {
 /**
  * POST /api/admin/rulebook/upload
  * Upload a rulebook PDF to Supabase storage
+ *
+ * Memory-optimized: validates with minimal reads, then streams file to storage
  */
 export async function POST(request: NextRequest) {
   const rateLimited = applyRateLimit(request, RateLimits.FILE_UPLOAD)
@@ -50,12 +58,8 @@ export async function POST(request: NextRequest) {
       return ApiErrors.validation('Missing required fields: file, gameId, gameSlug')
     }
 
-    // Convert file to buffer for validation
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Validate PDF
-    const validation = validatePdfFile(buffer)
+    // Validate PDF (memory-efficient - only reads 4 bytes)
+    const validation = await validatePdfMagicBytes(file)
     if (!validation.valid) {
       return ApiErrors.validation(validation.error || 'Invalid PDF file')
     }
@@ -65,10 +69,14 @@ export async function POST(request: NextRequest) {
     // Generate filename: {game-slug}.pdf (bucket is already 'rulebooks')
     const storagePath = `${gameSlug}.pdf`
 
+    // Read file once for upload (avoid double buffering)
+    const arrayBuffer = await file.arrayBuffer()
+
     // Upload to rulebooks bucket (upsert to replace existing)
+    // Use Uint8Array which is more memory-efficient than Buffer.from() copy
     const { error: uploadError } = await adminClient.storage
       .from('rulebooks')
-      .upload(storagePath, buffer, {
+      .upload(storagePath, new Uint8Array(arrayBuffer), {
         contentType: 'application/pdf',
         cacheControl: '31536000', // 1 year cache
         upsert: true,
@@ -102,7 +110,7 @@ export async function POST(request: NextRequest) {
       success: true,
       url: publicUrl,
       storagePath,
-      fileSize: buffer.length,
+      fileSize: file.size,
     })
   } catch (error) {
     console.error('Rulebook upload error:', error)

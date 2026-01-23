@@ -238,6 +238,54 @@ export function validatePdfFile(
 }
 
 /**
+ * Memory-efficient PDF validation from a File object
+ *
+ * Only reads the first few bytes to check magic bytes, and uses
+ * File.size property for size check (no memory needed).
+ * Use this for large file uploads to avoid OOM errors.
+ */
+export async function validatePdfFileFromFile(
+  file: File,
+  options: PdfValidationOptions = {}
+): Promise<FileValidationResult> {
+  const opts = { ...DEFAULT_PDF_OPTIONS, ...options }
+
+  // Check minimum size (File.size doesn't require reading the file)
+  if (file.size < opts.minSizeBytes) {
+    return {
+      valid: false,
+      error: `File too small (minimum ${opts.minSizeBytes} bytes)`,
+    }
+  }
+
+  // Check maximum size
+  if (file.size > opts.maxSizeBytes) {
+    return {
+      valid: false,
+      error: `File too large (maximum ${Math.round(opts.maxSizeBytes / 1024 / 1024)}MB)`,
+    }
+  }
+
+  // Read only the first 4 bytes to check magic bytes
+  const headerBlob = file.slice(0, 4)
+  const headerBuffer = await headerBlob.arrayBuffer()
+  const headerBytes = new Uint8Array(headerBuffer)
+
+  const isPdf = PDF_SIGNATURE.every((byte, index) => headerBytes[index] === byte)
+  if (!isPdf) {
+    return {
+      valid: false,
+      error: 'File does not appear to be a valid PDF',
+    }
+  }
+
+  return {
+    valid: true,
+    detectedType: 'application/pdf',
+  }
+}
+
+/**
  * Generate a secure filename for PDF documents
  *
  * Format: {gameSlug}/{documentType}/{timestamp}-{random}.pdf

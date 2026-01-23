@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { validatePdfFile, generateSecurePdfFilename } from '@/lib/upload/validation'
+import { validatePdfFileFromFile, generateSecurePdfFilename } from '@/lib/upload/validation'
 import { generateDocumentThumbnail, deleteDocumentThumbnail } from '@/lib/rulebook/thumbnail'
 import { ApiErrors } from '@/lib/api/errors'
 import { applyRateLimit, RateLimits } from '@/lib/api/rate-limit'
@@ -94,12 +94,8 @@ export async function POST(request: NextRequest) {
       return ApiErrors.validation(`Invalid documentType. Must be one of: ${VALID_DOCUMENT_TYPES.join(', ')}`)
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Validate PDF
-    const validation = validatePdfFile(buffer)
+    // Validate PDF (memory-efficient - only reads header bytes)
+    const validation = await validatePdfFileFromFile(file)
     if (!validation.valid) {
       return ApiErrors.validation(validation.error || 'Invalid file')
     }
@@ -109,10 +105,14 @@ export async function POST(request: NextRequest) {
     // Generate secure filename
     const storagePath = generateSecurePdfFilename(gameSlug, documentType)
 
+    // Read file once for upload (avoid double buffering)
+    const arrayBuffer = await file.arrayBuffer()
+
     // Upload to storage (reuse rulebooks bucket)
+    // Use Uint8Array which is more memory-efficient than Buffer.from() copy
     const { error: uploadError } = await adminClient.storage
       .from('rulebooks')
-      .upload(storagePath, buffer, {
+      .upload(storagePath, new Uint8Array(arrayBuffer), {
         contentType: 'application/pdf',
         cacheControl: '31536000', // 1 year cache
         upsert: false,
