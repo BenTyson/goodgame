@@ -2,6 +2,9 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+// Force dynamic rendering to allow cookie-based admin checks
+export const dynamic = 'force-dynamic'
+
 import {
   AdminPreviewBanner,
   GameHero,
