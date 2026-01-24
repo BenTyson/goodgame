@@ -87,22 +87,37 @@ function transformScoreSheetConfig(config: Awaited<ReturnType<typeof getScoreShe
 
 export default async function GamePage({ params }: GamePageProps) {
   const { slug } = await params
-  const userIsAdmin = await isAdmin()
+  console.log('[GamePage] Starting render for slug:', slug)
+
+  let userIsAdmin = false
+  try {
+    userIsAdmin = await isAdmin()
+    console.log('[GamePage] isAdmin check passed:', userIsAdmin)
+  } catch (e) {
+    console.error('[GamePage] isAdmin check failed:', e)
+  }
 
   let game = await getGameWithDetails(slug)
+  console.log('[GamePage] getGameWithDetails result:', game ? 'found' : 'not found')
+
   let isAdminPreview = false
 
   // If no published game found and user is admin, try admin query
   if (!game && userIsAdmin) {
+    console.log('[GamePage] Trying admin query...')
     game = await getGameWithDetailsForAdmin(slug)
+    console.log('[GamePage] getGameWithDetailsForAdmin result:', game ? 'found' : 'not found')
     if (game) {
       isAdminPreview = true
     }
   }
 
   if (!game) {
+    console.log('[GamePage] No game found, returning 404')
     notFound()
   }
+
+  console.log('[GamePage] Game found:', game.name, 'isAdminPreview:', isAdminPreview)
 
   const breadcrumbs = [
     { name: 'Home', href: '/' },
