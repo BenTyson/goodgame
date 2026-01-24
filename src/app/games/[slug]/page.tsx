@@ -111,29 +111,37 @@ export default async function GamePage({ params }: GamePageProps) {
   ]
 
   // Parallel data fetching for all tabs
-  const [
-    gameAwards,
-    gameRelations,
-    gameDocuments,
-    reviewsData,
-    aggregateRating,
-    rawScoreSheetConfig,
-    vibeStats,
-    vibesData,
-    gamePromos,
-    familyTreeData,
-  ] = await Promise.all([
-    getGameAwards(game.id),
-    getGameRelationsGrouped(game.id),
-    getGameDocuments(game.id),
-    getGameReviews(game.id),
-    getGameAggregateRating(game.id),
-    game.has_score_sheet ? getScoreSheetConfig(game.id) : Promise.resolve(null),
-    getGameVibeStats(game.id),
-    getGameVibes(game.id),
-    getGamePromos(game.id),
-    getGameFamilyTreeData(game.id),
-  ])
+  let gameAwards, gameRelations, gameDocuments, reviewsData, aggregateRating,
+      rawScoreSheetConfig, vibeStats, vibesData, gamePromos, familyTreeData
+
+  try {
+    [
+      gameAwards,
+      gameRelations,
+      gameDocuments,
+      reviewsData,
+      aggregateRating,
+      rawScoreSheetConfig,
+      vibeStats,
+      vibesData,
+      gamePromos,
+      familyTreeData,
+    ] = await Promise.all([
+      getGameAwards(game.id),
+      getGameRelationsGrouped(game.id),
+      getGameDocuments(game.id),
+      getGameReviews(game.id),
+      getGameAggregateRating(game.id),
+      game.has_score_sheet ? getScoreSheetConfig(game.id) : Promise.resolve(null),
+      getGameVibeStats(game.id),
+      getGameVibes(game.id),
+      getGamePromos(game.id),
+      getGameFamilyTreeData(game.id),
+    ])
+  } catch (error) {
+    console.error('Game page data fetch error for:', game.slug, error)
+    throw error
+  }
 
   const scoreSheetConfig = transformScoreSheetConfig(rawScoreSheetConfig)
 
