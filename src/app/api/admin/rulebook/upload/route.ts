@@ -92,12 +92,15 @@ export async function POST(request: NextRequest) {
       .from('rulebooks')
       .getPublicUrl(storagePath)
 
-    // Update game record with the rulebook URL
+    // Update game record with the rulebook URL and reset state
     const { error: updateError } = await adminClient
       .from('games')
       .update({
         rulebook_url: publicUrl,
         rulebook_source: 'user_submitted',
+        vecna_state: 'rulebook_ready',
+        vecna_error: null,
+        vecna_processed_at: new Date().toISOString(),
       })
       .eq('id', gameId)
 
