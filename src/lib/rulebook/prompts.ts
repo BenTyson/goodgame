@@ -59,9 +59,12 @@ TEACHING MINDSET:
 - Highlight what makes this game click - the satisfying moments
 - For expansions, focus on what's NEW and how it changes the experience
 
-TECHNICAL REQUIREMENTS:
-- Return ONLY valid JSON - no markdown, no text outside the JSON
-- Use null for information genuinely not in the rulebook
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY a valid JSON object - nothing else
+- NEVER start with explanatory text like "I notice that..." or "Based on..."
+- NEVER include markdown formatting, code blocks, or commentary
+- If information is missing, use null values - but ALWAYS return the JSON structure
+- Even for expansion rulebooks with minimal content, return the full JSON structure
 - Be precise with numbers, components, and game terms
 - Maintain game terminology (use the game's actual terms)`
 

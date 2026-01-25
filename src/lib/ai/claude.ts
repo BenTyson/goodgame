@@ -185,6 +185,30 @@ function repairJSON(str: string): string {
 }
 
 /**
+ * Check if a string appears to be conversational text rather than JSON
+ */
+function isConversationalResponse(str: string): boolean {
+  const conversationalStarts = [
+    'i notice',
+    'i see',
+    'based on',
+    'looking at',
+    'the rulebook',
+    'this appears',
+    'unfortunately',
+    'i apologize',
+    'i cannot',
+    'i\'m unable',
+    'let me',
+    'here\'s',
+    'note that',
+    'it seems',
+  ]
+  const normalized = str.toLowerCase().trim()
+  return conversationalStarts.some(start => normalized.startsWith(start))
+}
+
+/**
  * Generate JSON content with automatic parsing
  */
 export async function generateJSON<T>(
@@ -197,6 +221,12 @@ export async function generateJSON<T>(
   // Extract JSON from response (handle markdown code blocks)
   let jsonStr = result.content.trim()
 
+  // Check if the response is conversational text instead of JSON
+  if (isConversationalResponse(jsonStr)) {
+    const preview = jsonStr.substring(0, 100).replace(/\n/g, ' ')
+    throw new Error(`AI returned conversational text instead of JSON. Response starts with: "${preview}..."`)
+  }
+
   // Remove markdown code blocks if present
   if (jsonStr.startsWith('```json')) {
     jsonStr = jsonStr.slice(7)
@@ -207,6 +237,12 @@ export async function generateJSON<T>(
     jsonStr = jsonStr.slice(0, -3)
   }
   jsonStr = jsonStr.trim()
+
+  // Check again after stripping code blocks
+  if (isConversationalResponse(jsonStr)) {
+    const preview = jsonStr.substring(0, 100).replace(/\n/g, ' ')
+    throw new Error(`AI returned conversational text instead of JSON. Response starts with: "${preview}..."`)
+  }
 
   // Attempt to repair common JSON issues from AI responses
   jsonStr = repairJSON(jsonStr)
