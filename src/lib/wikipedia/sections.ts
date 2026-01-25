@@ -343,6 +343,8 @@ function cleanSectionWikitext(wikitext: string): string {
       // Convert bold/italic markup
       .replace(/'''([^']+)'''/g, '$1')
       .replace(/''([^']+)''/g, '$1')
+      // Remove [edit] links that appear in Wikipedia extracts
+      .replace(/\[\s*edit\s*\]/gi, '')
       // Normalize multiple blank lines to single paragraph break
       .replace(/\n{3,}/g, '\n\n')
       // Trim horizontal whitespace from each line (preserve newlines)

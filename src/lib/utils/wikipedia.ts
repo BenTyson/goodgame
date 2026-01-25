@@ -13,6 +13,7 @@
 export function cleanWikipediaContent(content: string): string {
   return content
     .replace(/\[\d+\]/g, '')                      // Remove citation markers [1], [2], etc.
+    .replace(/\[\s*edit\s*\]/gi, '')              // Remove [edit] links from Wikipedia
     .replace(/thumb\|/gi, '')                     // Remove thumb| prefix
     .replace(/\[\[File:[^\]]*\]\]/gi, '')         // Remove [[File:...]] patterns
     .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1')  // Convert [[Link|Text]] to Text

@@ -230,7 +230,13 @@ export async function fetchWikipediaContent(
     throw new Error(`Wikipedia article not found: ${articleTitle}`)
   }
 
-  const rawContent = page.extract || ''
+  // Clean the extract content
+  let rawContent = page.extract || ''
+  // Remove [edit] links that appear in Wikipedia extracts
+  rawContent = rawContent.replace(/\[\s*edit\s*\]/gi, '')
+  // Normalize whitespace
+  rawContent = rawContent.replace(/\n{3,}/g, '\n\n').trim()
+
   const wordCount = rawContent.split(/\s+/).filter(Boolean).length
 
   return {
