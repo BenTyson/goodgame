@@ -50,6 +50,8 @@
 - **Taxonomy step was no-op until Phase 92**: Before Phase 92, the taxonomy step only changed state without applying suggestions. Now `runTaxonomyStep()` auto-accepts high-confidence (≥70%) suggestions to junction tables (`game_themes`, `game_player_experiences`). Key file: `src/lib/vecna/processing.ts`.
 - **Quality validation catches AI artifacts**: Generated content must be validated before publishing. `validateAllContent()` in `src/lib/vecna/quality.ts` detects AI artifacts ("I'll", "Let me", "As an AI") and placeholders ([brackets], TODO, TBD). Use `/api/admin/vecna/[gameId]/validate` endpoint.
 - **Taxonomy inserts need source tracking**: All taxonomy junction tables (`game_themes`, `game_player_experiences`, `game_categories`, `game_mechanics`) have a `source` column. Always include `source: 'bgg'` (importer), `'ai'` (Vecna), or `'manual'` (admin) when inserting. Key files: `src/lib/bgg/importer.ts`, `src/lib/vecna/processing.ts`, `src/app/api/admin/games/taxonomy/route.ts`.
+- **Large file uploads need direct-to-storage pattern**: Server-side buffering of large files (>10MB PDFs) causes memory issues on Railway. Use signed URLs for direct client-to-Supabase upload: 1) Server generates signed URL via `createSignedUploadUrl()`, 2) Client uploads directly to storage, 3) Server confirms and updates DB. Key files: `src/app/api/admin/rulebook/signed-url/route.ts`, `src/app/api/admin/rulebook/confirm/route.ts`.
+- **Static game pages with cookies need force-dynamic**: Game pages using `isAdmin()` (which calls `cookies()`) will fail during static generation with `DYNAMIC_SERVER_USAGE` error. Add `export const dynamic = 'force-dynamic'` to the page. Key file: `src/app/games/[slug]/page.tsx`.
 
 ## Tech Stack
 

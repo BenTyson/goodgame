@@ -1,8 +1,65 @@
 # Current Status
 
-> Last Updated: 2026-01-22
+> Last Updated: 2026-01-25
 
-## Current Phase: 95 - Admin Users Page
+## Current Phase: 96 - Production Vecna Testing & Fixes
+
+### Session Summary (2026-01-25) - Production Testing & Bug Fixes
+
+**What was done:**
+
+**Rulebook Upload Memory Fix:**
+- Fixed "Failed to fetch" error when uploading large PDFs on production
+- Implemented direct-to-Supabase upload using signed URLs (bypasses server memory)
+- New 3-step flow: Server generates signed URL → Client uploads directly to storage → Server confirms and updates DB
+- No longer buffers entire file in server memory
+
+**AI Content Generation Fixes:**
+- Fixed "Invalid JSON response: I notice that..." errors during expansion processing
+- Strengthened system prompt to forbid conversational responses
+- Added detection for conversational text before JSON parsing
+- Clearer error messages when AI fails to return JSON
+
+**Wikipedia Content Cleanup:**
+- Removed `[ edit ]` artifacts from Wikipedia extracts
+- Decoded HTML entities (`&#91;` → `[`, `&#93;` → `]`)
+- Cleaned citation markers with spaces: `[ 1 ]`, `[ 2 ]`
+- Removed `[citation needed]` markers
+
+**GameCard Simplification:**
+- Removed hover overlay with Rules/Setup/Ref quick action buttons
+- Removed BGG weight score display
+- Reduced padding throughout for tighter layout
+
+**Other Fixes:**
+- Added `YOUTUBE_API_KEY` missing from Railway (user action)
+- Fixed game page 500 errors for unpublished games (`force-dynamic` export)
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/app/api/admin/rulebook/signed-url/route.ts` | Generate signed URL for direct upload |
+| `src/app/api/admin/rulebook/confirm/route.ts` | Confirm upload and update game record |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/app/admin/(dashboard)/vecna/components/discovery/QuickRulebookPopover.tsx` | Use 3-step direct upload flow |
+| `src/app/admin/(dashboard)/vecna/components/RulebookDiscovery.tsx` | Use 3-step direct upload flow |
+| `src/middleware.ts` | Exclude all `/api/admin/rulebook` routes |
+| `src/lib/ai/claude.ts` | Added conversational response detection |
+| `src/lib/rulebook/prompts.ts` | Strengthened JSON-only requirements |
+| `src/lib/utils/wikipedia.ts` | Added HTML entity decoding, citation cleanup |
+| `src/lib/wikipedia/index.ts` | Clean [edit] and citations from fetched content |
+| `src/lib/wikipedia/sections.ts` | Clean [edit] and citations from section extraction |
+| `src/components/games/GameCard.tsx` | Removed hover overlay, BGG weight, reduced padding |
+| `src/app/games/[slug]/page.tsx` | Added `force-dynamic` for cookie-based admin checks |
+
+**Build Status:** Passing
+
+---
+
+## Previous Phase: 95 - Admin Users Page (COMPLETE)
 
 ### Session Summary (2026-01-22) - Admin Users Management
 
