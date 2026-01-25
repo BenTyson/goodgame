@@ -128,19 +128,45 @@ export function QuickRulebookPopover({
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('gameId', gameId)
-      formData.append('gameSlug', gameSlug)
-
-      const response = await fetch('/api/admin/rulebook/upload', {
+      // Step 1: Get signed upload URL from our server
+      const signedUrlResponse = await fetch('/api/admin/rulebook/signed-url', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameSlug }),
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Upload failed')
+      if (!signedUrlResponse.ok) {
+        const data = await signedUrlResponse.json()
+        throw new Error(data.error || 'Failed to get upload URL')
+      }
+
+      const { signedUrl, token, publicUrl } = await signedUrlResponse.json()
+
+      // Step 2: Upload directly to Supabase Storage (bypasses our server)
+      const uploadResponse = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+        body: file,
+      })
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text()
+        console.error('Direct upload failed:', errorText)
+        throw new Error('Upload to storage failed')
+      }
+
+      // Step 3: Confirm upload and update game record
+      const confirmResponse = await fetch('/api/admin/rulebook/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId, publicUrl }),
+      })
+
+      if (!confirmResponse.ok) {
+        const data = await confirmResponse.json()
+        throw new Error(data.error || 'Failed to confirm upload')
       }
 
       setOpen(false)

@@ -103,6 +103,6 @@ export const config = {
     // Match all routes except:
     // - Static files (_next/static, _next/image, favicon, images)
     // - API upload routes (they handle auth internally and need raw body)
-    '/((?!_next/static|_next/image|favicon.ico|api/admin/game-documents|api/admin/upload|api/admin/rulebook/upload|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/admin/game-documents|api/admin/upload|api/admin/rulebook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
