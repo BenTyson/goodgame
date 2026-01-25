@@ -12,8 +12,13 @@
  */
 export function cleanWikipediaContent(content: string): string {
   return content
-    .replace(/\[\d+\]/g, '')                      // Remove citation markers [1], [2], etc.
+    // Decode HTML entities for brackets (&#91; = [, &#93; = ])
+    .replace(/&#91;/g, '[')
+    .replace(/&#93;/g, ']')
+    // Remove citation markers [1], [2], etc. (with optional spaces)
+    .replace(/\[\s*\d+\s*\]/g, '')
     .replace(/\[\s*edit\s*\]/gi, '')              // Remove [edit] links from Wikipedia
+    .replace(/\[\s*citation needed\s*\]/gi, '')   // Remove [citation needed]
     .replace(/thumb\|/gi, '')                     // Remove thumb| prefix
     .replace(/\[\[File:[^\]]*\]\]/gi, '')         // Remove [[File:...]] patterns
     .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1')  // Convert [[Link|Text]] to Text

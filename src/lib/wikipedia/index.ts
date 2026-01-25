@@ -232,8 +232,12 @@ export async function fetchWikipediaContent(
 
   // Clean the extract content
   let rawContent = page.extract || ''
-  // Remove [edit] links that appear in Wikipedia extracts
+  // Decode HTML entities for brackets
+  rawContent = rawContent.replace(/&#91;/g, '[').replace(/&#93;/g, ']')
+  // Remove [edit] links and citation markers
   rawContent = rawContent.replace(/\[\s*edit\s*\]/gi, '')
+  rawContent = rawContent.replace(/\[\s*\d+\s*\]/g, '')
+  rawContent = rawContent.replace(/\[\s*citation needed\s*\]/gi, '')
   // Normalize whitespace
   rawContent = rawContent.replace(/\n{3,}/g, '\n\n').trim()
 
