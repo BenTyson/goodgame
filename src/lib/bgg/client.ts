@@ -805,6 +805,201 @@ export async function fetchEnrichedGame(bggId: number): Promise<ConsolidatedGame
   }
 }
 
+// ============================================================================
+// PUFFIN CONTENT TYPES & FUNCTIONS
+// ============================================================================
+
+/**
+ * Puffin AI-generated content fields for a game
+ * 22 content fields plus metadata about generation
+ */
+export interface PuffinContentFields {
+  tagline?: string
+  description?: string
+  quickStart?: string
+  strategyTips?: string
+  historicalContext?: string
+  accessibilityNotes?: string
+  replayabilityFactors?: string
+  componentQuality?: string
+  playerInteraction?: string
+  learningCurve?: string
+  thematicIntegration?: string
+  soloPlayNotes?: string
+  competitiveNotes?: string
+  cooperativeNotes?: string
+  familyPlayNotes?: string
+  expansionNotes?: string
+  houseRules?: string
+  similarGames?: string
+  proTips?: string
+  commonMistakes?: string
+  setupTips?: string
+  teachingScript?: string
+  // Metadata
+  source?: string
+  model?: string
+  sourceUrls?: string[]
+  generatedAt?: string
+  updatedAt?: string
+}
+
+/**
+ * Puffin completeness metadata for content generation
+ */
+export interface PuffinContentCompleteness {
+  fieldCount: number
+  totalFields: number
+  missingFields: string[]
+  isComplete: boolean
+  subtype?: string
+}
+
+/**
+ * Single item in the Puffin content feed
+ */
+export interface PuffinContentFeedItem {
+  bggId: number
+  content: PuffinContentFields
+  completeness: PuffinContentCompleteness
+  updatedAt: string
+}
+
+/**
+ * Response from Puffin content feed endpoint
+ */
+export interface PuffinContentFeedResponse {
+  items: PuffinContentFeedItem[]
+  meta: {
+    since: string
+    count: number
+    hasMore: boolean
+  }
+}
+
+/**
+ * Response from Puffin content batch endpoint
+ */
+export interface PuffinContentBatchResponse {
+  content: Record<string, {
+    content: PuffinContentFields
+    completeness: PuffinContentCompleteness
+    updatedAt: string
+  }>
+  missing: number[]
+  meta: {
+    requested: number
+    found: number
+  }
+}
+
+/**
+ * Response from Puffin single content endpoint
+ */
+export interface PuffinContentSingleResponse {
+  content: PuffinContentFields
+  completeness: PuffinContentCompleteness
+  updatedAt: string
+}
+
+/**
+ * Fetch content feed from Puffin (cursor-based pagination)
+ * Returns content updated since the given timestamp
+ */
+export async function fetchPuffinContentFeed(
+  since: string,
+  limit: number = 50
+): Promise<PuffinContentFeedResponse | null> {
+  if (!shouldUsePuffin()) return null
+
+  try {
+    const params = new URLSearchParams({ since, limit: limit.toString() })
+    const response = await fetch(`${PUFFIN_API_URL}/content/feed?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'boardmello',
+      },
+      signal: AbortSignal.timeout(15000),
+    })
+
+    if (!response.ok) {
+      markPuffinUnhealthy()
+      return null
+    }
+
+    return await response.json() as PuffinContentFeedResponse
+  } catch (error) {
+    console.warn('Puffin content feed fetch failed:', error)
+    markPuffinUnhealthy()
+    return null
+  }
+}
+
+/**
+ * Fetch content for multiple games from Puffin by BGG IDs
+ */
+export async function fetchPuffinContentBatch(
+  bggIds: number[]
+): Promise<PuffinContentBatchResponse | null> {
+  if (!shouldUsePuffin() || bggIds.length === 0) return null
+
+  try {
+    const response = await fetch(`${PUFFIN_API_URL}/content?ids=${bggIds.join(',')}`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'boardmello',
+      },
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!response.ok) {
+      markPuffinUnhealthy()
+      return null
+    }
+
+    return await response.json() as PuffinContentBatchResponse
+  } catch (error) {
+    console.warn('Puffin content batch fetch failed:', error)
+    markPuffinUnhealthy()
+    return null
+  }
+}
+
+/**
+ * Fetch content for a single game from Puffin by BGG ID
+ * Returns null on 404 (game has no content yet)
+ */
+export async function fetchPuffinContentSingle(
+  bggId: number
+): Promise<PuffinContentSingleResponse | null> {
+  if (!shouldUsePuffin()) return null
+
+  try {
+    const response = await fetch(`${PUFFIN_API_URL}/content/${bggId}`, {
+      headers: {
+        'Authorization': `Bearer ${PUFFIN_API_KEY}`,
+        'X-Client': 'boardmello',
+      },
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (response.status === 404) {
+      return null
+    }
+
+    if (!response.ok) {
+      markPuffinUnhealthy()
+      return null
+    }
+
+    return await response.json() as PuffinContentSingleResponse
+  } catch (error) {
+    console.warn(`Puffin content fetch failed for ${bggId}:`, error)
+    markPuffinUnhealthy()
+    return null
+  }
+}
+
 /**
  * Search for games on BGG by name
  */

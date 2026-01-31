@@ -17,6 +17,7 @@ import {
   extractRelationData,
   determineVecnaStateFromPuffin,
 } from './enrichment-mapper'
+import { importContentForSingleGame } from './content-importer'
 
 /**
  * Fetch a game from Puffin with automatic retry for pending games
@@ -1307,6 +1308,16 @@ export async function importGameFromBGG(
     }).eq('id', newGame.id)
 
     console.log(`  [Puffin] No enrichment available yet, marked as imported`)
+  }
+
+  // Attempt to pull Puffin AI content (non-blocking)
+  try {
+    const contentResult = await importContentForSingleGame(bggId)
+    if (contentResult.updated) {
+      console.log(`  [Puffin Content] Applied AI content for ${bggData.name}`)
+    }
+  } catch (error) {
+    console.warn(`  [Puffin Content] Failed (non-blocking):`, error)
   }
 
   // Update has_unimported_relations flag for this game

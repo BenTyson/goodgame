@@ -22,6 +22,15 @@ export {
   type WikidataResult,
   type WikipediaResult,
   type CommonsImage,
+  // Puffin content functions
+  fetchPuffinContentFeed,
+  fetchPuffinContentBatch,
+  fetchPuffinContentSingle,
+  type PuffinContentFields,
+  type PuffinContentCompleteness,
+  type PuffinContentFeedResponse,
+  type PuffinContentBatchResponse,
+  type PuffinContentSingleResponse,
 } from './client'
 
 // Enrichment Mapper
@@ -40,6 +49,17 @@ export {
   getQueueStats,
   type ImportResult,
 } from './importer'
+
+// Puffin Content Importer
+export {
+  syncContentFromFeed,
+  importContentForGames,
+  importContentForSingleGame,
+  getContentSyncStatus,
+  type ContentImportResult,
+  type ContentSyncResult,
+  type SyncStatus,
+} from './content-importer'
 
 // Queue Seeder
 export {

@@ -79,10 +79,14 @@ type GameWithCategories = Omit<GameRow,
   | 'wikipedia_summary' | 'wikipedia_fetched_at' | 'wikipedia_url' | 'wikipedia_infobox'
   | 'wikipedia_origins' | 'wikipedia_reception' | 'wikipedia_gameplay'
   | 'wikipedia_images' | 'wikipedia_external_links' | 'wikipedia_awards' | 'wikipedia_search_confidence'
+  | 'wikipedia_all_sections' | 'wikipedia_components' | 'wikipedia_expansions_section'
+  | 'wikipedia_full_text' | 'wikipedia_lead' | 'wikipedia_strategy' | 'wikipedia_variants'
   | 'vecna_state' | 'vecna_processed_at' | 'vecna_error'
   | 'wikidata_series_id'
   | 'parent_game_id' | 'is_promo'
   | 'is_preview_visible'
+  | 'publisher_description' | 'publisher_description_source'
+  | 'puffin_content' | 'puffin_content_completeness' | 'puffin_content_updated_at'
 > & {
   data_source?: string | null
   field_sources?: Json | null
@@ -118,6 +122,18 @@ type GameWithCategories = Omit<GameRow,
   parent_game_id?: string | null
   is_promo?: boolean | null
   is_preview_visible?: boolean | null
+  publisher_description?: string | null
+  publisher_description_source?: string | null
+  puffin_content?: Json | null
+  puffin_content_completeness?: Json | null
+  puffin_content_updated_at?: string | null
+  wikipedia_all_sections?: Json | null
+  wikipedia_components?: string | null
+  wikipedia_expansions_section?: string | null
+  wikipedia_full_text?: string | null
+  wikipedia_lead?: string | null
+  wikipedia_strategy?: string | null
+  wikipedia_variants?: string | null
   categories: Pick<Category, 'slug' | 'name'>[]
   images?: GameImage[]
 }

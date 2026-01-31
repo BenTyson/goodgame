@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_links: {
@@ -290,6 +315,36 @@ export type Database = {
           id?: string
           target_id?: string
           target_type?: string
+        }
+        Relationships: []
+      }
+      bgg_unmapped_tags: {
+        Row: {
+          bgg_name: string
+          bgg_type: string
+          example_bgg_ids: number[] | null
+          first_seen_at: string | null
+          id: string
+          last_seen_at: string | null
+          occurrence_count: number | null
+        }
+        Insert: {
+          bgg_name: string
+          bgg_type: string
+          example_bgg_ids?: number[] | null
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          occurrence_count?: number | null
+        }
+        Update: {
+          bgg_name?: string
+          bgg_type?: string
+          example_bgg_ids?: number[] | null
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          occurrence_count?: number | null
         }
         Relationships: []
       }
@@ -937,6 +992,8 @@ export type Database = {
           name: string
           slug: string
           updated_at: string | null
+          vecna_processing_lock: string | null
+          vecna_processing_lock_by: string | null
           wikidata_series_id: string | null
         }
         Insert: {
@@ -950,6 +1007,8 @@ export type Database = {
           name: string
           slug: string
           updated_at?: string | null
+          vecna_processing_lock?: string | null
+          vecna_processing_lock_by?: string | null
           wikidata_series_id?: string | null
         }
         Update: {
@@ -963,6 +1022,8 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string | null
+          vecna_processing_lock?: string | null
+          vecna_processing_lock_by?: string | null
           wikidata_series_id?: string | null
         }
         Relationships: [
@@ -1105,16 +1166,19 @@ export type Database = {
           game_id: string
           is_primary: boolean | null
           player_experience_id: string
+          source: string | null
         }
         Insert: {
           game_id: string
           is_primary?: boolean | null
           player_experience_id: string
+          source?: string | null
         }
         Update: {
           game_id?: string
           is_primary?: boolean | null
           player_experience_id?: string
+          source?: string | null
         }
         Relationships: [
           {
@@ -1395,6 +1459,11 @@ export type Database = {
           player_count_min: number
           priority: number | null
           publisher: string | null
+          publisher_description: string | null
+          publisher_description_source: string | null
+          puffin_content: Json | null
+          puffin_content_completeness: Json | null
+          puffin_content_updated_at: string | null
           reference_content: Json | null
           rulebook_parsed_at: string | null
           rulebook_source: string | null
@@ -1414,17 +1483,24 @@ export type Database = {
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
           wikidata_series_id: string | null
+          wikipedia_all_sections: Json | null
           wikipedia_awards: Json | null
+          wikipedia_components: string | null
+          wikipedia_expansions_section: string | null
           wikipedia_external_links: Json | null
           wikipedia_fetched_at: string | null
+          wikipedia_full_text: string | null
           wikipedia_gameplay: string | null
           wikipedia_images: Json | null
           wikipedia_infobox: Json | null
+          wikipedia_lead: string | null
           wikipedia_origins: string | null
           wikipedia_reception: string | null
           wikipedia_search_confidence: string | null
+          wikipedia_strategy: string | null
           wikipedia_summary: Json | null
           wikipedia_url: string | null
+          wikipedia_variants: string | null
           year_published: number | null
         }
         Insert: {
@@ -1482,6 +1558,11 @@ export type Database = {
           player_count_min?: number
           priority?: number | null
           publisher?: string | null
+          publisher_description?: string | null
+          publisher_description_source?: string | null
+          puffin_content?: Json | null
+          puffin_content_completeness?: Json | null
+          puffin_content_updated_at?: string | null
           reference_content?: Json | null
           rulebook_parsed_at?: string | null
           rulebook_source?: string | null
@@ -1501,17 +1582,24 @@ export type Database = {
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
           wikidata_series_id?: string | null
+          wikipedia_all_sections?: Json | null
           wikipedia_awards?: Json | null
+          wikipedia_components?: string | null
+          wikipedia_expansions_section?: string | null
           wikipedia_external_links?: Json | null
           wikipedia_fetched_at?: string | null
+          wikipedia_full_text?: string | null
           wikipedia_gameplay?: string | null
           wikipedia_images?: Json | null
           wikipedia_infobox?: Json | null
+          wikipedia_lead?: string | null
           wikipedia_origins?: string | null
           wikipedia_reception?: string | null
           wikipedia_search_confidence?: string | null
+          wikipedia_strategy?: string | null
           wikipedia_summary?: Json | null
           wikipedia_url?: string | null
+          wikipedia_variants?: string | null
           year_published?: number | null
         }
         Update: {
@@ -1569,6 +1657,11 @@ export type Database = {
           player_count_min?: number
           priority?: number | null
           publisher?: string | null
+          publisher_description?: string | null
+          publisher_description_source?: string | null
+          puffin_content?: Json | null
+          puffin_content_completeness?: Json | null
+          puffin_content_updated_at?: string | null
           reference_content?: Json | null
           rulebook_parsed_at?: string | null
           rulebook_source?: string | null
@@ -1588,17 +1681,24 @@ export type Database = {
           wikidata_image_url?: string | null
           wikidata_last_synced?: string | null
           wikidata_series_id?: string | null
+          wikipedia_all_sections?: Json | null
           wikipedia_awards?: Json | null
+          wikipedia_components?: string | null
+          wikipedia_expansions_section?: string | null
           wikipedia_external_links?: Json | null
           wikipedia_fetched_at?: string | null
+          wikipedia_full_text?: string | null
           wikipedia_gameplay?: string | null
           wikipedia_images?: Json | null
           wikipedia_infobox?: Json | null
+          wikipedia_lead?: string | null
           wikipedia_origins?: string | null
           wikipedia_reception?: string | null
           wikipedia_search_confidence?: string | null
+          wikipedia_strategy?: string | null
           wikipedia_summary?: Json | null
           wikipedia_url?: string | null
+          wikipedia_variants?: string | null
           year_published?: number | null
         }
         Relationships: [
@@ -2884,6 +2984,27 @@ export type Database = {
           },
         ]
       }
+      sync_cursors: {
+        Row: {
+          cursor_value: string
+          key: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          cursor_value: string
+          key: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          cursor_value?: string
+          key?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       table_comments: {
         Row: {
           content: string
@@ -3935,6 +4056,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      acquire_family_processing_lock: {
+        Args: { p_family_id: string; p_lock_holder: string }
+        Returns: boolean
+      }
       are_friends: {
         Args: { p_user1: string; p_user2: string }
         Returns: boolean
@@ -4564,6 +4689,10 @@ export type Database = {
       refresh_game_request_counts: { Args: never; Returns: undefined }
       refresh_game_vibe_stats: { Args: never; Returns: undefined }
       refresh_seller_reputation: { Args: never; Returns: undefined }
+      release_family_processing_lock: {
+        Args: { p_family_id: string }
+        Returns: undefined
+      }
       release_transaction_funds: {
         Args: { p_transaction_id: string; p_transfer_id?: string }
         Returns: {
@@ -4695,6 +4824,11 @@ export type Database = {
           player_count_min: number
           priority: number | null
           publisher: string | null
+          publisher_description: string | null
+          publisher_description_source: string | null
+          puffin_content: Json | null
+          puffin_content_completeness: Json | null
+          puffin_content_updated_at: string | null
           reference_content: Json | null
           rulebook_parsed_at: string | null
           rulebook_source: string | null
@@ -4714,17 +4848,24 @@ export type Database = {
           wikidata_image_url: string | null
           wikidata_last_synced: string | null
           wikidata_series_id: string | null
+          wikipedia_all_sections: Json | null
           wikipedia_awards: Json | null
+          wikipedia_components: string | null
+          wikipedia_expansions_section: string | null
           wikipedia_external_links: Json | null
           wikipedia_fetched_at: string | null
+          wikipedia_full_text: string | null
           wikipedia_gameplay: string | null
           wikipedia_images: Json | null
           wikipedia_infobox: Json | null
+          wikipedia_lead: string | null
           wikipedia_origins: string | null
           wikipedia_reception: string | null
           wikipedia_search_confidence: string | null
+          wikipedia_strategy: string | null
           wikipedia_summary: Json | null
           wikipedia_url: string | null
+          wikipedia_variants: string | null
           year_published: number | null
         }[]
         SetofOptions: {
@@ -4790,6 +4931,10 @@ export type Database = {
         }
       }
       slugify: { Args: { text_input: string }; Returns: string }
+      track_unmapped_bgg_tag: {
+        Args: { p_bgg_id: number; p_bgg_name: string; p_bgg_type: string }
+        Returns: undefined
+      }
       upsert_saved_search: {
         Args: {
           p_alert_email?: boolean
@@ -5144,6 +5289,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: [
