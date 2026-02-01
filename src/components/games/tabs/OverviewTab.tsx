@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { ExternalLink, BookOpen, Brain, ChevronDown, ChevronUp, ArrowRight, Rocket, Lightbulb, GraduationCap } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { CreditsSection } from '@/components/games/CreditsSection'
@@ -29,6 +30,7 @@ import type {
   Publisher,
   CrunchBreakdown,
 } from '@/types/database'
+import type { PuffinContentFields } from '@/lib/bgg'
 import type { GameAwardWithDetails } from '@/lib/supabase/award-queries'
 import type { ReviewWithUser } from '@/lib/supabase/review-queries'
 import type { GroupedGameRelations } from '@/lib/supabase/family-queries'
@@ -247,6 +249,43 @@ function CrunchScoreCard({ score, breakdown }: { score: number; breakdown: Crunc
   )
 }
 
+// Collapsible content section for Puffin AI content
+function CollapsibleContentSection({
+  icon: Icon,
+  title,
+  content,
+  defaultOpen = false,
+}: {
+  icon: typeof Lightbulb
+  title: string
+  content: string
+  defaultOpen?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <section>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 w-full text-left group cursor-pointer"
+      >
+        <Icon className="h-5 w-5 text-primary shrink-0" />
+        <h2 className="text-[22px] font-light uppercase tracking-widest flex-1">{title}</h2>
+        {isOpen ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="mt-4 text-muted-foreground leading-relaxed whitespace-pre-line">
+          {content}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export interface FeaturedVideo {
   id: string
   youtube_video_id: string
@@ -287,6 +326,7 @@ export interface OverviewTabProps {
     crunch_score?: number | null
     crunch_breakdown?: Json | null
     featured_video?: FeaturedVideo | null
+    puffin_content?: Json | null
   }
   gameAwards: GameAwardWithDetails[]
   gameRelations: GroupedGameRelations
@@ -305,6 +345,8 @@ export function OverviewTab({
   initialHasMore,
   reviewVideos,
 }: OverviewTabProps) {
+  const puffinContent = game.puffin_content as PuffinContentFields | null
+
   const hasWikipediaContent = game.wikipedia_gameplay || game.wikipedia_reception
   const hasRelations = gameRelations.baseGame || gameRelations.expansions.length > 0 || gameRelations.otherRelations.length > 0
   const hasTaxonomy = (game.mechanics && game.mechanics.length > 0) ||
@@ -321,12 +363,30 @@ export function OverviewTab({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       {/* Main Content Column */}
       <div className={cn('space-y-12', hasSidebar ? 'lg:col-span-2' : 'lg:col-span-3')}>
-        {/* About Section - Uses Wikipedia summary (CC-licensed) */}
-        {game.wikipedia_summary && typeof game.wikipedia_summary === 'string' && (
+        {/* About Section - Falls back through Wikipedia summary -> Puffin description */}
+        {(game.wikipedia_summary && typeof game.wikipedia_summary === 'string'
+          ? game.wikipedia_summary
+          : puffinContent?.description
+        ) && (
           <section>
             <h2 className="text-[22px] font-light uppercase tracking-widest mb-4">About</h2>
             <p className="text-muted-foreground leading-relaxed">
-              {game.wikipedia_summary}
+              {game.wikipedia_summary && typeof game.wikipedia_summary === 'string'
+                ? game.wikipedia_summary
+                : puffinContent?.description}
+            </p>
+          </section>
+        )}
+
+        {/* Quick Start - from Puffin AI content */}
+        {puffinContent?.quickStart && (
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Rocket className="h-5 w-5 text-primary" />
+              <h2 className="text-[22px] font-light uppercase tracking-widest">Quick Start</h2>
+            </div>
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+              {puffinContent.quickStart}
             </p>
           </section>
         )}
@@ -353,6 +413,25 @@ export function OverviewTab({
               }}
             />
           </section>
+        )}
+
+        {/* Strategy Tips - from Puffin AI content */}
+        {puffinContent?.strategyTips && (
+          <CollapsibleContentSection
+            icon={Lightbulb}
+            title="Strategy Tips"
+            content={puffinContent.strategyTips}
+            defaultOpen
+          />
+        )}
+
+        {/* Teaching Script - from Puffin AI content */}
+        {puffinContent?.teachingScript && (
+          <CollapsibleContentSection
+            icon={GraduationCap}
+            title="Teaching Script"
+            content={puffinContent.teachingScript}
+          />
         )}
 
         {/* Image Gallery */}

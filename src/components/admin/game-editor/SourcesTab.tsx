@@ -26,6 +26,7 @@ import {
   Info,
 } from 'lucide-react'
 import type { Game } from '@/types/database'
+import type { PuffinContentCompleteness } from '@/lib/bgg'
 import type {
   BggRawData,
   WikipediaSummary,
@@ -190,6 +191,9 @@ export function SourcesTab({ game }: SourcesTabProps) {
   const wikipediaLinks = game.wikipedia_external_links as WikipediaExternalLink[] | null
   const wikipediaAwards = game.wikipedia_awards as WikipediaAward[] | null
 
+  const puffinCompleteness = game.puffin_content_completeness as PuffinContentCompleteness | null
+  const hasPuffinContent = !!game.puffin_content
+
   // Check data availability
   const hasBgg = !!game.bgg_id || !!bggData
   const hasWikidata = !!game.wikidata_id
@@ -212,7 +216,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* BGG Status */}
             <SourceStatusCard
               title="BoardGameGeek"
@@ -255,6 +259,19 @@ export function SourcesTab({ game }: SourcesTabProps) {
               </p>
               <p className="text-xs text-muted-foreground">
                 Fetched: {game.wikipedia_fetched_at ? formatDate(game.wikipedia_fetched_at) : hasWikipediaData ? 'Data present' : 'Never'}
+              </p>
+            </SourceStatusCard>
+
+            {/* Puffin AI Content Status */}
+            <SourceStatusCard
+              title="Puffin AI"
+              isLinked={hasPuffinContent}
+            >
+              <p className="text-xs text-muted-foreground">
+                Fields: {puffinCompleteness?.fieldCount || 0}/{puffinCompleteness?.totalFields || 22}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Updated: {formatDate(game.puffin_content_updated_at)}
               </p>
             </SourceStatusCard>
           </div>
@@ -619,7 +636,7 @@ export function SourcesTab({ game }: SourcesTabProps) {
                       <Badge variant="outline" className="text-xs shrink-0">
                         {link.type}
                       </Badge>
-                      <span className="truncate flex-1">{link.domain || new URL(link.url).hostname}</span>
+                      <span className="truncate flex-1">{link.domain || (() => { try { return new URL(link.url).hostname } catch { return link.url } })()}</span>
                       <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                     </a>
                   ))}

@@ -445,7 +445,11 @@ function GameRow({ game, selected, onToggle }: GameRowProps) {
       </TableCell>
       <TableCell className="text-center">
         <EnrichmentBadges
-          sources={game.sources}
+          sources={{
+            ...game.sources,
+            puffinContent: game.hasPuffinContent,
+            puffinContentFieldCount: game.puffinContentFieldCount,
+          }}
           importedToBoardmello={game.importedToBoardmello}
           boardmelloSlug={game.boardmelloSlug}
           compact

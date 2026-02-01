@@ -2,11 +2,58 @@
 
 > Last Updated: 2026-01-31
 
-## Current Phase: 97 - Auto-Import Puffin Content Backend
+## Current Phase: 97 - Puffin AI Content Frontend (COMPLETE)
 
-### Session Summary (2026-01-31) - Auto-Import Puffin Content Backend
+### Session Summary (2026-01-31) - Puffin AI Content Frontend
 
-*Session in progress...*
+**What was done:**
+
+**Game Page -- Surface Puffin Content:**
+- About section now falls back through `wikipedia_summary` -> `puffin_content.description` -> nothing
+- Added Quick Start section (Rocket icon) showing `puffinContent.quickStart` after About
+- Added Strategy Tips section (Lightbulb icon, collapsible, open by default) after How It Plays
+- Added Teaching Script section (GraduationCap icon, collapsible, collapsed by default) after Strategy Tips
+- GameHero tagline now falls back to `puffinContent.tagline` when `game.tagline` is empty
+
+**Admin -- Puffin Tab in Game Editor:**
+- Created dedicated Puffin tab (8th tab) in admin game editor with Sparkles icon
+- Overview card with field count, completeness %, progress bar, last updated, model metadata
+- All 22 content fields displayed in 5 groups: Core, Play Modes, Player Experience, Teaching & Tips, Context
+- Each field shows green check or gray indicator for present/missing status
+- Removed Puffin collapsible section from Sources tab (overview status card remains)
+
+**Admin -- Enrichment Badges & Dashboard:**
+- Added amber "C" badge to EnrichmentBadges showing "Has AI content (X/22 fields)"
+- Puffin browser passes content status through to badges
+- Puffin API route now returns `hasPuffinContent` and `puffinContentFieldCount`
+- Dashboard Content Pipeline card shows "AI Content" count with Sparkles icon
+
+**Bug Fix:**
+- Fixed `new URL()` crash in SourcesTab Wikipedia external links when URL is malformed
+
+**Content Sync:**
+- Ran one-shot sync script pulling content from Puffin API into games table
+- 3 games updated with 22/22 fields: Ark Nova, Brass: Birmingham, Dune: Imperium
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/admin/game-editor/PuffinTab.tsx` | Dedicated admin tab showing all 22 Puffin AI content fields |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/components/games/tabs/OverviewTab.tsx` | About fallback to puffin description, Quick Start/Strategy Tips/Teaching Script sections |
+| `src/components/games/GameHero.tsx` | Tagline fallback from puffin_content |
+| `src/components/admin/import/EnrichmentBadges.tsx` | Added "C" badge for AI content |
+| `src/app/api/admin/puffin/games/route.ts` | Added puffin_content_completeness to query, hasPuffinContent/fieldCount in response |
+| `src/components/admin/import/PuffinBrowser.tsx` | Passes content status to EnrichmentBadges |
+| `src/components/admin/game-editor/SourcesTab.tsx` | Removed Puffin collapsible section (kept overview card), fixed URL crash |
+| `src/components/admin/game-editor/index.ts` | Added PuffinTab export |
+| `src/components/admin/GameEditor.tsx` | Added Puffin tab (8th tab), Sparkles icon import |
+| `src/app/admin/(dashboard)/page.tsx` | Added puffin_content to stats query, AI Content count in pipeline card |
+
+**Build Status:** Passing
 
 ---
 
@@ -1566,7 +1613,7 @@ Session 2 tried switching to `@supabase/ssr` but didn't clear stale localStorage
 
 ### Admin
 - **Vecna Pipeline** (`/admin/vecna`) - 4-phase content pipeline, 2-tab game panel (Pipeline + Details)
-- **Game Editor** (`/admin/games/[id]`) - 7 tabs: Details, Taxonomy, Rulebook, Content, Sources, Media, Purchase
+- **Game Editor** (`/admin/games/[id]`) - 8 tabs: Details, Taxonomy, Documents, Content, Sources, Puffin, Media, Purchase
 - **Import Wizard** (`/admin/import`) - BGG game import with relation management and real-time progress
 - Rulebook parsing + Crunch Score generation
 - AI content generation (rules, setup, reference)

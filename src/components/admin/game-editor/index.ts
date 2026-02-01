@@ -7,6 +7,7 @@ export type { TaxonomyTabRef } from './TaxonomyTab'
 export { SourcesTab } from './SourcesTab'
 export { MediaTab } from './MediaTab'
 export { PurchaseLinksTab } from './PurchaseLinksTab'
+export { PuffinTab } from './PuffinTab'
 
 // Sub-components
 export { TaxonomySelector } from './TaxonomySelector'

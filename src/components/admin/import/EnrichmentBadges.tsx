@@ -15,6 +15,8 @@ interface EnrichmentBadgesProps {
     wikipedia: boolean
     commons: boolean
     rulebook: boolean
+    puffinContent?: boolean
+    puffinContentFieldCount?: number
   }
   importedToBoardmello?: boolean
   boardmelloSlug?: string
@@ -104,6 +106,21 @@ export function EnrichmentBadges({
             </Badge>
           </TooltipTrigger>
           <TooltipContent>Has rulebook URL - best for Vecna</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
+  if (sources.puffinContent) {
+    badges.push(
+      <TooltipProvider key="puffin-content">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400">
+              C
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>Has AI content ({sources.puffinContentFieldCount || 0}/22 fields)</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     )

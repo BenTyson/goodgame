@@ -13,6 +13,7 @@ import {
   Package,
   BookOpen,
   Wand2,
+  Sparkles,
 } from 'lucide-react'
 
 async function getGameStats() {
@@ -21,7 +22,7 @@ async function getGameStats() {
   // Get game counts with content fields
   const { data: games } = await supabase
     .from('games')
-    .select('is_published, content_status, crunch_score, rulebook_url, rules_content')
+    .select('is_published, content_status, crunch_score, rulebook_url, rules_content, puffin_content')
 
   if (!games) return null
 
@@ -35,6 +36,7 @@ async function getGameStats() {
   const withCrunchScore = games.filter(g => g.crunch_score != null).length
   const withRulebook = games.filter(g => g.rulebook_url).length
   const withRulesContent = games.filter(g => g.rules_content).length
+  const withPuffinContent = games.filter(g => g.puffin_content != null).length
 
   return {
     published,
@@ -45,6 +47,7 @@ async function getGameStats() {
     withCrunchScore,
     withRulebook,
     withRulesContent,
+    withPuffinContent,
   }
 }
 
@@ -166,7 +169,7 @@ export default async function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold">{gameStats?.withRulebook || 0}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Have Rulebook</p>
@@ -181,6 +184,13 @@ export default async function AdminDashboard() {
                   <p className="text-2xl font-bold">{gameStats?.withCrunchScore || 0}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">Crunch Score</p>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-500/10">
+                <div className="flex items-center justify-center gap-1">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <p className="text-2xl font-bold">{gameStats?.withPuffinContent || 0}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">AI Content</p>
               </div>
             </div>
             <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">

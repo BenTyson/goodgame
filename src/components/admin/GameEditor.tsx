@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DetailsTab, DocumentsTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab } from './game-editor'
+import { DetailsTab, DocumentsTab, ContentTab, TaxonomyTab, SourcesTab, MediaTab, PurchaseLinksTab, PuffinTab } from './game-editor'
 import type { TaxonomyTabRef } from './game-editor'
 import { useAsyncAction, useGameEditorShortcuts, useGameEditorCache } from '@/hooks/admin'
 import {
@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe,
+  Sparkles,
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -359,9 +360,9 @@ export function GameEditor({ editorData }: GameEditorProps) {
         </div>
       </div>
 
-      {/* Editor Tabs - 7 tabs */}
+      {/* Editor Tabs - 8 tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid bg-muted/50 border border-border/50 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 lg:w-auto lg:inline-grid bg-muted/50 border border-border/50 p-1 rounded-xl">
           <TabsTrigger
             value="details"
             className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
@@ -396,6 +397,13 @@ export function GameEditor({ editorData }: GameEditorProps) {
           >
             <Database className="h-4 w-4 hidden sm:block" />
             Sources
+          </TabsTrigger>
+          <TabsTrigger
+            value="puffin"
+            className="gap-2 data-[state=active]:!bg-primary/10 data-[state=active]:!text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+          >
+            <Sparkles className="h-4 w-4 hidden sm:block" />
+            Puffin
           </TabsTrigger>
           <TabsTrigger
             value="media"
@@ -449,6 +457,11 @@ export function GameEditor({ editorData }: GameEditorProps) {
         {/* Sources Tab */}
         <TabsContent value="sources">
           <SourcesTab game={game} />
+        </TabsContent>
+
+        {/* Puffin Tab */}
+        <TabsContent value="puffin">
+          <PuffinTab game={game} />
         </TabsContent>
 
         {/* Media Tab */}

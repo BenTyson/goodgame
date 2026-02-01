@@ -16,6 +16,7 @@ import { RecommendToFriendButton } from './RecommendToFriendButton'
 import { HostTableButton } from './HostTableButton'
 import { cn } from '@/lib/utils'
 import type { GameImage, Json, ComplexityTier, Category, Award, AwardCategory } from '@/types/database'
+import type { PuffinContentFields } from '@/lib/bgg'
 
 interface BaseGame {
   id: string
@@ -52,6 +53,7 @@ interface GameHeroProps {
     min_age?: number | null
     amazon_asin?: string | null
     categories?: Category[] | null
+    puffin_content?: Json | null
   }
   aggregateRating?: {
     average: number | null
@@ -62,6 +64,8 @@ interface GameHeroProps {
 }
 
 export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameHeroProps) {
+  const puffinContent = game.puffin_content as PuffinContentFields | null
+
   // Get primary image - try multiple sources
   const heroImage = game.images?.find(img => img.image_type === 'cover' || img.is_primary)
     || game.images?.[0]
@@ -146,9 +150,9 @@ export function GameHero({ game, aggregateRating, baseGame, awards = [] }: GameH
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
               {game.name}
             </h1>
-            {game.tagline && (
+            {(game.tagline || puffinContent?.tagline) && (
               <p className="text-xl text-muted-foreground max-w-2xl">
-                {game.tagline}
+                {game.tagline || puffinContent?.tagline}
               </p>
             )}
           </div>

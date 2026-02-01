@@ -49,6 +49,8 @@ export interface PuffinBrowseGame {
   isExpansion: boolean
   importedToBoardmello: boolean
   boardmelloSlug?: string
+  hasPuffinContent: boolean
+  puffinContentFieldCount?: number
 }
 
 export interface PuffinBrowseResponse {
@@ -158,27 +160,36 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient()
     const { data: existingGames } = await supabase
       .from('games')
-      .select('bgg_id, slug')
+      .select('bgg_id, slug, puffin_content_completeness')
       .in('bgg_id', bggIds)
 
     const existingMap = new Map(
-      (existingGames || []).map(g => [g.bgg_id!, g.slug])
+      (existingGames || []).map(g => [g.bgg_id!, {
+        slug: g.slug,
+        puffinCompleteness: g.puffin_content_completeness as { fieldCount?: number } | null,
+      }])
     )
 
     // Merge Puffin data with Boardmello import status
-    const games: PuffinBrowseGame[] = puffinData.games.map(g => ({
-      bggId: g.bggId,
-      name: g.name,
-      yearPublished: g.yearPublished,
-      rating: Math.round(g.rating * 10) / 10,
-      rank: g.rank,
-      thumbnail: g.thumbnail,
-      sources: g.sources,
-      expansionCount: g.expansionCount,
-      isExpansion: g.isExpansion,
-      importedToBoardmello: existingMap.has(g.bggId),
-      boardmelloSlug: existingMap.get(g.bggId),
-    }))
+    const games: PuffinBrowseGame[] = puffinData.games.map(g => {
+      const existing = existingMap.get(g.bggId)
+      const fieldCount = existing?.puffinCompleteness?.fieldCount
+      return {
+        bggId: g.bggId,
+        name: g.name,
+        yearPublished: g.yearPublished,
+        rating: Math.round(g.rating * 10) / 10,
+        rank: g.rank,
+        thumbnail: g.thumbnail,
+        sources: g.sources,
+        expansionCount: g.expansionCount,
+        isExpansion: g.isExpansion,
+        importedToBoardmello: !!existing,
+        boardmelloSlug: existing?.slug,
+        hasPuffinContent: (fieldCount ?? 0) > 0,
+        puffinContentFieldCount: fieldCount ?? undefined,
+      }
+    })
 
     const response: PuffinBrowseResponse = {
       games,
